@@ -1,4 +1,3 @@
-import { isRuntimeOnly } from 'vue';
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
@@ -118,6 +117,12 @@ async function selectFile() {
     tableData.value.push(colData);
   }
 }
+
+function textareaChange(event: any) {
+  const textarea = event.target;
+  textarea.style.height = "auto";
+  textarea.style.height = textarea.scrollHeight + "px";
+}
 </script>
 
 <template>
@@ -130,10 +135,11 @@ async function selectFile() {
       </el-select>
     </el-form-item>
     <el-form-item>
-      <el-input
+      <textarea
         v-model="form.sqlsrc"
-        :autosize="{ minRows: 4, maxRows: 6 }"
-        type="textarea"
+        rows="1"
+        class="txt"
+        @input="textareaChange"
         placeholder="Please input sql script"
       />
     </el-form-item>
@@ -172,5 +178,21 @@ async function selectFile() {
 }
 .el-icon {
   font-size: 30px; /* 根据需要调整图标大小 */
+}
+.txt {
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 16px;
+  display: block;
+  width: 100%;
+  resize: none;
+  line-height: 2;
+  background: transparent;
+  color: inherit;
+  overflow: hidden;
+}
+.txt.autosize {
+  min-height: 40px; /* 设置一个最小高度 */
+  height: auto !important; /* 允许高度自动调整 */
 }
 </style>
