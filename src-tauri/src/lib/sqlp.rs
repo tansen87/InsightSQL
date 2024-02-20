@@ -183,9 +183,9 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
         .extension()
         .map_or(false, |ext| ext.eq_ignore_ascii_case("sql"))
     {
-        let mut file = File::open(&sqlsrc).unwrap();
+        let mut file = File::open(&sqlsrc)?;
         let mut sql_script = String::new();
-        file.read_to_string(&mut sql_script).unwrap();
+        file.read_to_string(&mut sql_script)?;
         sql_script
             .split(';')
             .map(std::string::ToString::to_string)
@@ -213,15 +213,12 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
             current_query = current_query.replace(table_alias, &(format!(r#""{table_name}""#)));
         }
 
-        let exec_window = window.clone();
-        let exec1_window = window.clone();
-
         if is_last_query {
             // if this is the last query, we use the output mode specified by the user
-            output_mode.execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), exec_window).unwrap()
+            output_mode.execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), window.clone()).unwrap()
         } else {
             // this is not the last query, we only execute the query, but don't write the output
-            no_output.execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), exec1_window).unwrap()
+            no_output.execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), window.clone()).unwrap()
         };
     }
 
@@ -250,7 +247,6 @@ fn expired() -> bool {
 
 #[tauri::command]
 pub async fn get(path: String, sep: String, window: tauri::Window) -> Vec<String> {
-    let window_exp = window.clone();
     let mut vec_headers = Vec::new();
     if !expired() {
         let headers = match async { get_headers(path.as_str(), sep) }.await {
@@ -264,8 +260,7 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> Vec<String
         vec_headers.push(headers);
     } else {
         let expired_msg = "Your application has expired. Please renew your subscription.".to_string();
-        window_exp.emit("expired", expired_msg.clone()).unwrap();
-        eprintln!("expired error: {}", expired_msg);
+        window.emit("expired", expired_msg).unwrap();
     }
 
     vec_headers[0].clone()
@@ -274,7 +269,6 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> Vec<String
 #[tauri::command]
 pub async fn query(path: String, sqlsrc: String, sep: String, window: tauri::Window) {
     let start = Instant::now();
-    let time_window = window.clone();
     let filepath: Vec<&str> = path.split(',').collect();
     let prep_window = window.clone();
     match async { prepare_query(filepath, &sqlsrc.as_str(), sep, prep_window) }.await {
@@ -289,5 +283,5 @@ pub async fn query(path: String, sqlsrc: String, sep: String, window: tauri::Win
     let elapsed = end.duration_since(start);
     let elapsed_seconds = elapsed.as_secs_f64();
     let run_time = format!("{elapsed_seconds:.2} s");
-    time_window.emit("run_time", run_time).unwrap();
+    window.emit("run_time", run_time).unwrap();
 }
