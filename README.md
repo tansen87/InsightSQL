@@ -10,24 +10,24 @@ pnpm install
 
 ```sh
 # 桌面端
-pnpm dev
+pnpm tauri:dev
 ```
 
 ```sh
 # 浏览器端
-pnpm browser:dev
+pnpm dev
 ```
 
 ### 打包
 
 ```sh
 # 桌面端
-pnpm build
+pnpm tauri:build
 ```
 
 ```sh
 # 浏览器端
-pnpm browser:build
+pnpm build
 ```
 
 ### 图标生成
