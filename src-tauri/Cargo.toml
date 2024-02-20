@@ -2,7 +2,7 @@
 name = "sqlp"
 version = "1.0.0"
 description = "sqlp"
-authors = ["pure-admin"]
+authors = ["tansen"]
 license = "MIT"
 repository = ""
 default-run = "sqlp"
