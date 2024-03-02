@@ -169,7 +169,7 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
             .with_missing_is_null(true)
             .with_separator(sepu8)
             .with_dtype_overwrite(Some(&Arc::new(schema.clone())))
-            .low_memory(true)
+            .low_memory(true)      
             .finish()?;
 
         ctx.register(table_name, lf.with_optimizations(optimization_state));
