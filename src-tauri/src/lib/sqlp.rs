@@ -75,20 +75,15 @@ impl OutputMode {
     }
 }
 
-impl std::str::FromStr for OutputMode {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "csv" => Ok(OutputMode::Csv),
-            _ => Err(format!("Invalid output mode: {s}")),
-        }
-    }
-}
-
 fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
     let mut ctx = SQLContext::new();
-    let sepu8 = sep.clone().into_bytes()[0];
+    let mut separator = Vec::new();
+    let sep_u8 = if sep == "\\t" {
+        b'\t'
+    } else {
+        sep.clone().into_bytes()[0]
+    };
+    separator.push(sep_u8);
     let mut output: Vec<Option<String>> = Vec::new();
     let current_time = chrono::Local::now().format("%Y-%m-%d %H.%M.%S");
     let output_suffix = format!("sqlp {}.csv", current_time);
@@ -148,7 +143,7 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
         table_aliases.insert(table_name.to_string(), format!("_t_{}", idx + 1));
 
         let tmp_df = match CsvReader::from_path(table).unwrap()
-            .with_separator(sepu8)
+            .with_separator(separator[0])
             .with_n_rows(Some(1))
             .with_n_threads(Some(1))
             .finish() {
@@ -167,9 +162,9 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
         let lf = LazyCsvReader::new(table)
             .has_header(true)
             .with_missing_is_null(true)
-            .with_separator(sepu8)
+            .with_separator(separator[0])
             .with_dtype_overwrite(Some(&Arc::new(schema.clone())))
-            .low_memory(true)      
+            .low_memory(false)      
             .finish()?;
 
         ctx.register(table_name, lf.with_optimizations(optimization_state));
