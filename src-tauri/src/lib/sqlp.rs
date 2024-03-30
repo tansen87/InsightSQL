@@ -92,7 +92,7 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
     };
     separator.push(sep_u8);
     let mut output: Vec<Option<String>> = Vec::new();
-    let current_time = chrono::Local::now().format("%Y-%m-%d %H.%M.%S");
+    let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
     let output_suffix = format!("sqlp {}.csv", current_time);
     for path in filepath.clone() {
         let mut output_path = PathBuf::from(path);
