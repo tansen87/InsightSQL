@@ -122,6 +122,7 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
             streaming:           false,
             fast_projection:     true,
             eager:               false,
+            row_estimate:        true,
         };
 
     let mut table_aliases = HashMap::with_capacity(filepath.len());
