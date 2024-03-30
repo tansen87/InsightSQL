@@ -34,6 +34,13 @@ enum OutputMode {
 impl OutputMode {
     fn execute_query(&self, query: &str, ctx: &mut SQLContext, sep: String, output: Option<String>, window: tauri::Window) -> Result<(usize, usize), Box<dyn Error>> {
         let mut df = DataFrame::default();
+        let mut separator = Vec::new();
+        let sep_u8 = if sep == "\\t" {
+            b'\t'
+        } else {
+            sep.clone().into_bytes()[0]
+        };
+        separator.push(sep_u8);
         let execute_inner = || {
             df = ctx
                 .execute(query)
@@ -53,7 +60,7 @@ impl OutputMode {
             let mut w = BufWriter::with_capacity(256_000, w);
             let out_result = match self {
                 OutputMode::Csv => CsvWriter::new(&mut w)
-                    .with_separator(sep.into_bytes()[0])
+                    .with_separator(separator[0])
                     .n_threads(4)
                     .finish(&mut df),
                 OutputMode::None => Ok(()),
