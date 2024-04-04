@@ -19,19 +19,18 @@ path = "src/lib/mod.rs"
 tauri-build = { version = "1.5.1", features = [] }
 
 [dependencies]
-csv = "1.3.0"
 chrono = "0.4.37"
 serde = { version = "1.0.196", features = ["derive"] }
 tauri = { version = "1.6.1", features = [ "api-all"] }
 polars = { version = "0.38.3", features = [
     "lazy",
     "diagonal_concat",
-    "streaming",
+    # "streaming",
     "asof_join",
     "cross_join",
     "semi_anti_join",
     "sql",
-    "cse",
+    # "cse",
     "csv",
     ] }
 

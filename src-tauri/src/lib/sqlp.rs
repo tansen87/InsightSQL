@@ -118,19 +118,9 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
     }
 
     let optimization_state = polars::lazy::frame::OptState {
-            projection_pushdown: true,
-            predicate_pushdown:  true,
-            type_coercion:       true,
-            simplify_expr:       true,
-            file_caching:        true,
-            slice_pushdown:      true,
-            comm_subplan_elim:   true,
-            comm_subexpr_elim:   true,
-            streaming:           false,
-            fast_projection:     true,
-            eager:               false,
-            row_estimate:        true,
-        };
+        file_caching: true,
+        ..Default::default()
+    };
 
     let mut table_aliases = HashMap::with_capacity(filepath.len());
     let mut lossy_table_name = Cow::default();
@@ -150,7 +140,7 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
             });
         table_aliases.insert(table_name.to_string(), format!("_t_{}", idx + 1));
 
-        let tmp_df = match CsvReader::from_path(table).unwrap()
+        let tmp_df = match CsvReader::from_path(table)?
             .with_separator(separator[0])
             .with_n_rows(Some(1))
             .with_n_threads(Some(1))
@@ -229,12 +219,20 @@ fn prepare_query(filepath: Vec<&str>, sqlsrc: &str, sep: String, window: tauri::
 }
 
 fn get_headers(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
-    let mut rdr = csv::ReaderBuilder::new()
-        .delimiter(sep.into_bytes()[0])
-        .has_headers(true)
-        .from_reader(File::open(path)?);
+    let mut separator = Vec::new();
+    let sep_u8 = if sep == "\\t" {
+        b'\t'
+    } else {
+        sep.clone().into_bytes()[0]
+    };
+    separator.push(sep_u8);
 
-    let headers = rdr.headers()?.clone();
+    let tmp_df = CsvReader::from_path(path)?
+        .with_separator(separator[0])
+        .with_n_rows(Some(1))
+        .with_n_threads(Some(1))
+        .finish()?;
+    let headers = tmp_df.get_column_names();
     let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
 
     Ok(vec_headers)
