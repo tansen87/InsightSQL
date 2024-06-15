@@ -1,21 +1,20 @@
 <h1>sqlp</h1>
 
+> 截图
+
+![image](https://github.com/tansen87/sqlp/assets/98570790/100967af-df90-4137-bd5d-32a3ee5dc5d1)
+
 ### 安装依赖
 
 ```sh
-pnpm install
+pnpm i
 ```
 
-### 启动
+### 运行
 
 ```sh
 # 桌面端
 pnpm tauri:dev
-```
-
-```sh
-# 浏览器端
-pnpm dev
 ```
 
 ### 打包
@@ -23,11 +22,6 @@ pnpm dev
 ```sh
 # 桌面端
 pnpm tauri:build
-```
-
-```sh
-# 浏览器端
-pnpm build
 ```
 
 ### 图标生成
