@@ -14,10 +14,8 @@ const isRuntime = ref(false);
 const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext"]
-});
-const form = reactive({
-  sqlsrc: "select * from table",
+  fileFormats: ["csv", "txt", "tsv", "spext"],
+  sqlsrc: "select * from filename",
   sep: ","
 });
 
@@ -57,20 +55,20 @@ async function queryData() {
     ElMessage.warning("未选择csv文件");
     return;
   }
-  if (form.sqlsrc == "") {
+  if (data.sqlsrc == "") {
     ElMessage.warning("sql script is empty");
     return;
   }
 
-  if (data.filePath != "" && form.sqlsrc != "") {
+  if (data.filePath != "" && data.sqlsrc != "") {
     ElMessage.info("waiting...");
     isLoading.value = true;
     isFinish.value = false;
     isRuntime.value = false;
     await invoke("query", {
       path: data.filePath,
-      sqlsrc: form.sqlsrc,
-      sep: form.sep
+      sqlsrc: data.sqlsrc,
+      sep: data.sep
     });
     isLoading.value = false;
     isFinish.value = true;
@@ -107,7 +105,7 @@ async function selectFile() {
   }
   const headers: any = await invoke("get", {
     path: data.filePath,
-    sep: form.sep
+    sep: data.sep
   });
 
   for (let i = 0; i < headers.length; i++) {
@@ -126,9 +124,9 @@ function textareaChange(event: any) {
 </script>
 
 <template>
-  <el-form :model="form">
+  <el-form :model="data">
     <el-form-item label="Separator">
-      <el-select v-model="form.sep" placeholder="please select delimiter">
+      <el-select v-model="data.sep" placeholder="please select delimiter">
         <el-option label="," value="," />
         <el-option label="|" value="|" />
         <el-option label="\t" value="\t" />
@@ -136,7 +134,7 @@ function textareaChange(event: any) {
     </el-form-item>
     <el-form-item>
       <textarea
-        v-model="form.sqlsrc"
+        v-model="data.sqlsrc"
         rows="1"
         class="txt"
         @input="textareaChange"
