@@ -10,7 +10,7 @@ import { MockMethod } from "vite-plugin-mock";
 const permissionRouter = {
   path: "/permission",
   meta: {
-    title: "权限管理",
+    title: "nil page",
     icon: "lollipop",
     rank: 10
   },
@@ -19,17 +19,8 @@ const permissionRouter = {
       path: "/permission/page/index",
       name: "PermissionPage",
       meta: {
-        title: "页面权限",
+        title: "nil page",
         roles: ["admin", "common"]
-      }
-    },
-    {
-      path: "/permission/button/index",
-      name: "PermissionButton",
-      meta: {
-        title: "按钮权限",
-        roles: ["admin", "common"],
-        auths: ["btn_add", "btn_edit", "btn_delete"]
       }
     }
   ]
