@@ -3,24 +3,14 @@ use std::{
   collections::HashMap,
   error::Error,
   fs::File,
-  io::{ Read, Write, BufWriter },
+  io::{ BufWriter, Read, Write },
   path::{ Path, PathBuf },
   time::Instant,
 };
 
 use polars::{
-  datatypes::DataType,
-  prelude::{
-    Arc,
-    CsvReader,
-    CsvWriter,
-    Schema,
-    SerReader,
-    DataFrame,
-    SerWriter,
-    LazyCsvReader,
-    LazyFileListReader,
-  },
+  io::{ csv::read::{ CsvParseOptions, CsvReadOptions }, SerReader },
+  prelude::{ CsvWriter, DataFrame, LazyCsvReader, LazyFileListReader, SerWriter },
   sql::SQLContext,
 };
 use chrono::TimeZone;
@@ -124,7 +114,6 @@ fn prepare_query(
   let mut table_aliases = HashMap::with_capacity(filepath.len());
   let mut lossy_table_name = Cow::default();
   let mut table_name;
-  let mut schema = Schema::new();
 
   for (idx, table) in filepath.iter().enumerate() {
     // as we are using the table name as alias, we need to make sure that the table name is a
@@ -138,31 +127,29 @@ fn prepare_query(
       });
     table_aliases.insert(table_name.to_string(), format!("_t_{}", idx + 1));
 
-    let tmp_df = match
-      CsvReader::from_path(table)?
-        .with_separator(separator[0])
-        .with_n_rows(Some(1))
-        .with_n_threads(Some(1))
-        .finish()
-    {
-      Ok(df) => df,
-      Err(err) => {
-        let err_msg = format!("error: {} | {}", table, err);
-        eprintln!("{}", err_msg);
-        return Ok(());
-      }
-    };
-    let header = tmp_df.get_column_names();
-    for h in header.iter() {
-      schema.with_column(h.to_string().into(), DataType::String);
-    }
+    // let tmp_df = match
+    //   CsvReadOptions::default()
+    //     .with_parse_options(CsvParseOptions::default().with_separator(separator[0]))
+    //     .with_infer_schema_length(Some(0))
+    //     .with_n_rows(Some(1))
+    //     .with_n_threads(Some(1))
+    //     .try_into_reader_with_file_path(Some(table.into()))?
+    //     .finish()
+    // {
+    //   Ok(df) => df,
+    //   Err(err) => {
+    //     let err_msg = format!("error: {} | {}", table, err);
+    //     eprintln!("{}", err_msg);
+    //     return Ok(());
+    //   }
+    // };
 
     let lf = LazyCsvReader::new(table)
-      .has_header(true)
+      .with_has_header(true)
       .with_missing_is_null(true)
       .with_separator(separator[0])
-      .with_dtype_overwrite(Some(&Arc::new(schema.clone())))
-      .low_memory(false)
+      .with_infer_schema_length(Some(0))
+      .with_low_memory(false)
       .finish()?;
 
     ctx.register(table_name, lf.with_optimizations(optimization_state));
@@ -228,10 +215,12 @@ fn get_headers(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
   let sep_u8 = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
   separator.push(sep_u8);
 
-  let tmp_df = CsvReader::from_path(path)?
-    .with_separator(separator[0])
+  let tmp_df = CsvReadOptions::default()
+    .with_parse_options(CsvParseOptions::default().with_separator(separator[0]))
+    .with_infer_schema_length(Some(0))
     .with_n_rows(Some(1))
     .with_n_threads(Some(1))
+    .try_into_reader_with_file_path(Some(path.into()))?
     .finish()?;
   let headers = tmp_df.get_column_names();
   let vec_headers: Vec<String> = headers
@@ -244,7 +233,7 @@ fn get_headers(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
 
 fn expired() -> bool {
   let current_date = chrono::Local::now().time();
-  let expiration_date = chrono::Local.with_ymd_and_hms(2024, 5, 11, 23, 59, 0).unwrap().time();
+  let expiration_date = chrono::Local.with_ymd_and_hms(2024, 7, 11, 23, 59, 0).unwrap().time();
 
   current_date > expiration_date
 }
