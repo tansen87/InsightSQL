@@ -16,7 +16,7 @@ name = "lib"
 path = "src/lib/mod.rs"
 
 [build-dependencies]
-tauri-build = { version = "1.5.1", features = [] }
+tauri-build = { version = "1.5.2", features = [] }
 
 [dependencies]
 chrono = "0.4.38"
