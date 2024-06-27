@@ -14,6 +14,7 @@ use polars::{
   sql::SQLContext,
 };
 use chrono::TimeZone;
+use indexmap::IndexMap;
 
 #[derive(Default, Clone, PartialEq)]
 enum OutputMode {
@@ -210,28 +211,54 @@ fn prepare_query(
   Ok(())
 }
 
-fn get_headers(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
+fn csv_to_json(file: String, sep: String) -> Result<String, Box<dyn Error>> {
   let mut separator = Vec::new();
-  let sep_u8 = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
-  separator.push(sep_u8);
+  let sep = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
+  separator.push(sep);
 
-  let tmp_df = CsvReadOptions::default()
-    .with_parse_options(CsvParseOptions::default().with_separator(separator[0]))
+  let df = CsvReadOptions::default()
+    .with_parse_options(
+      CsvParseOptions::default().with_separator(separator[0]).with_missing_is_null(false)
+    )
     .with_infer_schema_length(Some(0))
-    .with_n_rows(Some(1))
-    .with_n_threads(Some(1))
-    .try_into_reader_with_file_path(Some(path.into()))?
+    .with_n_threads(Some(4))
+    .with_n_rows(Some(20))
+    .try_into_reader_with_file_path(Some(file.into()))?
     .finish()?;
-  let headers = tmp_df.get_column_names();
-  let vec_headers: Vec<String> = headers
-    .iter()
-    .map(|h| h.to_string())
-    .collect();
 
-  Ok(vec_headers)
+  let column_names = df.get_column_names();
+  let mut height = Vec::new();
+  if df.height() <= 20 {
+    height.push(df.height());
+  } else {
+    height.push(5);
+  }
+
+  let buffer = (0..height[0])
+    .into_iter()
+    .map(|i| {
+      let row = df
+        .get_row(i)
+        .expect(&*format!("Could not access row {}, please try again.", i + 2)).0;
+
+      let object = column_names
+        .iter()
+        .zip(row.iter())
+        .map(|(column, data)| (column.to_string(), data.get_str().unwrap_or("").to_owned()))
+        .collect::<IndexMap<String, String>>();
+      serde_json::to_string(&object).expect("Unable to serialize the result.")
+    })
+    .collect::<Vec<String>>();
+  let result = if height[0] > 1 {
+    format!("[{}]", buffer.join(","))
+  } else {
+    buffer.get(0).expect("Unable to get value from buffer.").clone()
+  };
+
+  Ok(result)
 }
 
-fn expired() -> bool {
+pub fn expired() -> bool {
   let current_date = chrono::Local::now().time();
   let expiration_date = chrono::Local.with_ymd_and_hms(2024, 7, 11, 23, 59, 0).unwrap().time();
 
@@ -239,24 +266,34 @@ fn expired() -> bool {
 }
 
 #[tauri::command]
-pub async fn get(path: String, sep: String, window: tauri::Window) -> Vec<String> {
-  let mut vec_headers = Vec::new();
+pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
+  let mut vec_results = Vec::new();
   if !expired() {
-    let headers = match (async { get_headers(path.as_str(), sep) }).await {
+    let results = match (async { csv_to_json(path, sep) }).await {
       Ok(result) => result,
       Err(err) => {
         eprintln!("get headers error: {err}");
         window.emit("get_err", &err.to_string()).unwrap();
-        return Vec::new();
+        err.to_string()
       }
     };
-    vec_headers.push(headers);
+    vec_results.push(results);
   } else {
     let expired_msg = "Your application has expired. Please renew your subscription.".to_string();
     window.emit("expired", expired_msg).unwrap();
   }
 
-  vec_headers[0].clone()
+  vec_results[0].clone()
+  // let results = match (async { csv_to_json(path, sep) }).await {
+  //   Ok(result) => result,
+  //   Err(err) => {
+  //     eprintln!("get headers error: {err}");
+  //     window.emit("get_err", &err.to_string()).unwrap();
+  //     err.to_string()
+  //   }
+  // };
+
+  // results
 }
 
 #[tauri::command]

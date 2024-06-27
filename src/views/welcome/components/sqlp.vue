@@ -7,6 +7,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { Select, Loading } from "@element-plus/icons-vue";
 
 const selectedFiles = ref([]);
+const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
 const isFinish = ref(false);
@@ -14,8 +15,8 @@ const isRuntime = ref(false);
 const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext"],
-  sqlsrc: "select * from filename",
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  sqlsrc: "select * from `filename`",
   sep: ","
 });
 
@@ -103,17 +104,17 @@ async function selectFile() {
   } else {
     data.filePath = selected;
   }
-  const headers: any = await invoke("get", {
+  const results: any = await invoke("get", {
     path: data.filePath,
     sep: data.sep
   });
-
-  for (let i = 0; i < headers.length; i++) {
-    const colData = {
-      col1: headers[i]
-    };
-    tableData.value.push(colData);
-  }
+  const jsonData = JSON.parse(results);
+  columns.value = Object.keys(jsonData[0]).map(key => ({
+    name: key,
+    label: key,
+    prop: key
+  }));
+  tableData.value = jsonData;
 }
 
 function textareaChange(event: any) {
@@ -126,7 +127,7 @@ function textareaChange(event: any) {
 <template>
   <el-form :model="data">
     <el-form-item label="Separator">
-      <el-select v-model="data.sep" placeholder="please select delimiter">
+      <el-select v-model="data.sep">
         <el-option label="," value="," />
         <el-option label="|" value="|" />
         <el-option label="\t" value="\t" />
@@ -162,8 +163,14 @@ function textareaChange(event: any) {
   <el-table :data="selectedFiles" height="140" style="width: 100%">
     <el-table-column prop="filename" label="file" />
   </el-table>
-  <el-table :data="tableData" height="450" style="width: 100%">
-    <el-table-column prop="col1" label="headers" />
+
+  <el-table :data="tableData" style="width: 100%">
+    <el-table-column
+      v-for="column in columns"
+      :prop="column.prop"
+      :label="column.label"
+      :key="column.prop"
+    />
   </el-table>
 </template>
 
