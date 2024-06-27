@@ -284,16 +284,6 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
   }
 
   vec_results[0].clone()
-  // let results = match (async { csv_to_json(path, sep) }).await {
-  //   Ok(result) => result,
-  //   Err(err) => {
-  //     eprintln!("get headers error: {err}");
-  //     window.emit("get_err", &err.to_string()).unwrap();
-  //     err.to_string()
-  //   }
-  // };
-
-  // results
 }
 
 #[tauri::command]
