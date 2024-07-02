@@ -60,7 +60,6 @@ async function queryData() {
     ElMessage.warning("sql script is empty");
     return;
   }
-
   if (data.filePath != "" && data.sqlsrc != "") {
     isLoading.value = true;
     isFinish.value = false;
@@ -162,10 +161,9 @@ function textareaChange(event: any) {
       </div>
     </el-form-item>
   </el-form>
-  <el-table :data="selectedFiles" height="140" style="width: 100%">
+  <el-table :data="selectedFiles" height="120" style="width: 100%">
     <el-table-column prop="filename" label="file" />
   </el-table>
-
   <el-table :data="tableData" height="520" style="width: 100%">
     <el-table-column
       v-for="column in columns"
