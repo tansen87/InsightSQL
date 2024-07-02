@@ -16,13 +16,13 @@ name = "lib"
 path = "src/lib/mod.rs"
 
 [build-dependencies]
-tauri-build = { version = "1.5.2", features = [] }
+tauri-build = { version = "1.5.3", features = [] }
 
 [dependencies]
 chrono = "0.4.38"
 serde = { version = "1", features = ["derive"] }
-tauri = { version = "1.6.8", features = [ "api-all"] }
-polars = { version = "0.41.2", features = [
+tauri = { version = "1.7.1", features = [ "api-all"] }
+polars = { version = "0.41.3", features = [
     "lazy",
     "diagonal_concat",
     # "streaming",
