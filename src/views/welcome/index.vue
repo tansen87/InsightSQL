@@ -11,11 +11,6 @@ defineOptions({
     <el-row>
       <el-col>
         <el-card class="box-card">
-          <template #header>
-            <div class="card-header cursor">
-              <span>sql query csv</span>
-            </div>
-          </template>
           <sqlp />
         </el-card>
       </el-col>

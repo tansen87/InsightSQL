@@ -62,7 +62,6 @@ async function queryData() {
   }
 
   if (data.filePath != "" && data.sqlsrc != "") {
-    ElMessage.info("waiting...");
     isLoading.value = true;
     isFinish.value = false;
     isRuntime.value = false;
@@ -74,11 +73,11 @@ async function queryData() {
     isLoading.value = false;
     isFinish.value = true;
     isRuntime.value = true;
-    ElMessage.success("sql query done.");
   }
 }
 
 async function selectFile() {
+  columns.value = [];
   tableData.value = [];
   selectedFiles.value = [];
   isLoading.value = false;
@@ -125,26 +124,29 @@ function textareaChange(event: any) {
 </script>
 
 <template>
-  <el-form :model="data">
-    <el-form-item label="Separator">
-      <el-select v-model="data.sep">
-        <el-option label="," value="," />
-        <el-option label="|" value="|" />
-        <el-option label="\t" value="\t" />
-      </el-select>
-    </el-form-item>
+  <el-form>
+    <div style="display: flex; align-items: flex-start">
+      <el-button type="primary" @click="selectFile()">Open File</el-button>
+      <el-form-item style="margin-left: 10px">
+        <el-select v-model="data.sep">
+          <el-option label="," value="," />
+          <el-option label="|" value="|" />
+          <el-option label="\t" value="\t" />
+          <el-option label=";" value=";" />
+        </el-select>
+      </el-form-item>
+    </div>
     <el-form-item>
       <textarea
         v-model="data.sqlsrc"
         rows="1"
         class="txt"
         @input="textareaChange"
-        placeholder="Please input sql script"
+        placeholder="select * from `filename`"
       />
     </el-form-item>
     <el-form-item>
-      <el-button type="primary" @click="selectFile()">Open File</el-button>
-      <el-button type="success" @click="queryData()">Query</el-button>
+      <el-button type="success" @click="queryData()">Execute</el-button>
       <div class="icon-group">
         <el-icon v-if="isLoading" color="#FF4500" class="is-loading">
           <Loading />
@@ -164,7 +166,7 @@ function textareaChange(event: any) {
     <el-table-column prop="filename" label="file" />
   </el-table>
 
-  <el-table :data="tableData" style="width: 100%">
+  <el-table :data="tableData" height="520" style="width: 100%">
     <el-table-column
       v-for="column in columns"
       :prop="column.prop"
