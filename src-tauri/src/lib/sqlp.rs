@@ -268,8 +268,10 @@ pub fn expired() -> bool {
 #[tauri::command]
 pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
   let mut vec_results = Vec::new();
+  let vec_path: Vec<&str> = path.split(',').collect();
+  let file = vec_path[0].to_string();
   if !expired() {
-    let results = match (async { csv_to_json(path, sep) }).await {
+    let results = match (async { csv_to_json(file, sep) }).await {
       Ok(result) => result,
       Err(err) => {
         eprintln!("get headers error: {err}");
