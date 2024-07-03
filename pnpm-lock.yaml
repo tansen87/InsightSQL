@@ -7,10 +7,10 @@ settings:
 dependencies:
   '@pureadmin/descriptions':
     specifier: ^1.1.1
-    version: 1.1.1(element-plus@2.3.4)
+    version: 1.1.1(element-plus@2.7.6)
   '@pureadmin/table':
     specifier: ^2.1.0
-    version: 2.1.0(element-plus@2.3.4)
+    version: 2.1.0(element-plus@2.7.6)
   '@pureadmin/utils':
     specifier: ^1.8.9
     version: 1.8.9(echarts@5.4.2)(vue@3.3.1)
@@ -36,8 +36,8 @@ dependencies:
     specifier: ^5.4.2
     version: 5.4.2
   element-plus:
-    specifier: ^2.3.4
-    version: 2.3.4(vue@3.3.1)
+    specifier: ^2.3.9
+    version: 2.7.6(vue@3.3.1)
   element-resize-detector:
     specifier: ^1.2.4
     version: 1.2.4
@@ -802,6 +802,14 @@ packages:
       vue: 3.3.1
     dev: false
 
+  /@element-plus/icons-vue@2.3.1(vue@3.3.1):
+    resolution: {integrity: sha512-XxVUZv48RZAd87ucGS48jPf6pKu0yV5UCg9f4FFwtrYxXOwWuVJo6wOvSLKEoMQKjv8GsX/mhP6UsC1lRwbUWg==}
+    peerDependencies:
+      vue: ^3.2.0
+    dependencies:
+      vue: 3.3.1
+    dev: false
+
   /@esbuild/android-arm64@0.17.18:
     resolution: {integrity: sha512-/iq0aK0eeHgSC3z55ucMAHO05OIqmQehiGay8eP5l/5l+iEr4EIbh4/MI8xD9qRFjqzgkc0JkX0LculNC9mXBw==}
     engines: {node: '>=12'}
@@ -1193,22 +1201,22 @@ packages:
     dev: true
     optional: true
 
-  /@pureadmin/descriptions@1.1.1(element-plus@2.3.4):
+  /@pureadmin/descriptions@1.1.1(element-plus@2.7.6):
     resolution: {integrity: sha512-4BHLKomLU/LxGs5EUA+h+aKNrJEkhrU6+QE8VoWfJZ8VTU6ddvFLT/Pi4WuO5CWNXM9ZjqvHLFFVwEPlKntqtg==}
     peerDependencies:
       element-plus: ^2.0.0
     dependencies:
       '@element-plus/icons-vue': 2.1.0(vue@3.3.1)
-      element-plus: 2.3.4(vue@3.3.1)
+      element-plus: 2.7.6(vue@3.3.1)
       vue: 3.3.1
     dev: false
 
-  /@pureadmin/table@2.1.0(element-plus@2.3.4):
+  /@pureadmin/table@2.1.0(element-plus@2.7.6):
     resolution: {integrity: sha512-svPWYqT/7XScfaM/LFYd1bXIq/kMbOeRQ/5pi79XvxtO4CyA9Y6uiFxQzW1m8rwPDGc2wfs5DiiayyS53Bdv9A==}
     peerDependencies:
       element-plus: ^2.0.0
     dependencies:
-      element-plus: 2.3.4(vue@3.3.1)
+      element-plus: 2.7.6(vue@3.3.1)
       vue: 3.3.1
     dev: false
 
@@ -2830,13 +2838,13 @@ packages:
     resolution: {integrity: sha512-TXQOMW9tnhIms3jGy/lJctLjICOgyueZFJ1KUtm6DTQ+QpxX3p7ZBwB6syuZ9KBuT5S4XX7bgY1ECPgfxKUdOg==}
     dev: true
 
-  /element-plus@2.3.4(vue@3.3.1):
-    resolution: {integrity: sha512-SQr0J9z7N4z48WYk/l9NE2tizl8Q7j2OhqlpTc42k4pGncry3+rVX6dsmcsglFynn6vt3NzYxWJqmLFyDKQq+g==}
+  /element-plus@2.7.6(vue@3.3.1):
+    resolution: {integrity: sha512-36sw1K23hYjgeooR10U6CiCaCp2wvOqwoFurADZVlekeQ9v5U1FhJCFGEXO6i/kZBBMwsE1c9fxjLs9LENw2Rg==}
     peerDependencies:
       vue: ^3.2.0
     dependencies:
       '@ctrl/tinycolor': 3.6.0
-      '@element-plus/icons-vue': 2.1.0(vue@3.3.1)
+      '@element-plus/icons-vue': 2.3.1(vue@3.3.1)
       '@floating-ui/dom': 1.2.7
       '@popperjs/core': /@sxzz/popperjs-es@2.11.7
       '@types/lodash': 4.14.194

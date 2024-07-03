@@ -30,6 +30,7 @@ impl OutputMode {
     ctx: &mut SQLContext,
     sep: String,
     output: Option<String>,
+    show: bool,
     window: tauri::Window
   ) -> Result<(usize, usize), Box<dyn Error>> {
     let mut df = DataFrame::default();
@@ -38,25 +39,35 @@ impl OutputMode {
     separator.push(sep_u8);
     let execute_inner = || {
       df = ctx.execute(query).and_then(polars::prelude::LazyFrame::collect)?;
+      if show {
+        let display_df = df.head(Some(100));
+        let res = query_df_to_json(display_df)?;
+        window.emit("show", res).unwrap();
 
-      // we don't want to write anything if the output mode is None
-      if matches!(self, OutputMode::None) {
-        return Ok(());
+        // we don't want to write anything if the output mode is None
+        if matches!(self, OutputMode::None) {
+          return Ok(());
+        }
+
+        let w = match output {
+          Some(path) => { Box::new(File::create(path)?) as Box<dyn Write> }
+          None => Box::new(std::io::stdout()) as Box<dyn Write>,
+        };
+        let mut w = BufWriter::with_capacity(256_000, w);
+        let out_result = match self {
+          OutputMode::Csv =>
+            CsvWriter::new(&mut w).with_separator(separator[0]).n_threads(4).finish(&mut df),
+          OutputMode::None => Ok(()),
+        };
+
+        w.flush()?;
+        out_result
+      } else {
+        let display_df = df.head(Some(100));
+        let res = query_df_to_json(display_df)?;
+        window.emit("show", res).unwrap();
+        Ok(())
       }
-
-      let w = match output {
-        Some(path) => { Box::new(File::create(path)?) as Box<dyn Write> }
-        None => Box::new(std::io::stdout()) as Box<dyn Write>,
-      };
-      let mut w = BufWriter::with_capacity(256_000, w);
-      let out_result = match self {
-        OutputMode::Csv =>
-          CsvWriter::new(&mut w).with_separator(separator[0]).n_threads(4).finish(&mut df),
-        OutputMode::None => Ok(()),
-      };
-
-      w.flush()?;
-      out_result
     };
 
     match execute_inner() {
@@ -75,6 +86,7 @@ fn prepare_query(
   filepath: Vec<&str>,
   sqlsrc: &str,
   sep: String,
+  show: bool,
   window: tauri::Window
 ) -> Result<(), Box<dyn Error>> {
   let mut ctx = SQLContext::new();
@@ -198,12 +210,12 @@ fn prepare_query(
     if is_last_query {
       // if this is the last query, we use the output mode specified by the user
       output_mode
-        .execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), window.clone())
+        .execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), show, window.clone())
         .unwrap();
     } else {
       // this is not the last query, we only execute the query, but don't write the output
       no_output
-        .execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), window.clone())
+        .execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), show, window.clone())
         .unwrap();
     }
   }
@@ -229,6 +241,39 @@ fn csv_to_json(file: String, sep: String) -> Result<String, Box<dyn Error>> {
   let column_names = df.get_column_names();
   let mut height = Vec::new();
   if df.height() <= 20 {
+    height.push(df.height());
+  } else {
+    height.push(5);
+  }
+
+  let buffer = (0..height[0])
+    .into_iter()
+    .map(|i| {
+      let row = df
+        .get_row(i)
+        .expect(&*format!("Could not access row {}, please try again.", i + 2)).0;
+
+      let object = column_names
+        .iter()
+        .zip(row.iter())
+        .map(|(column, data)| (column.to_string(), data.get_str().unwrap_or("").to_owned()))
+        .collect::<IndexMap<String, String>>();
+      serde_json::to_string(&object).expect("Unable to serialize the result.")
+    })
+    .collect::<Vec<String>>();
+  let result = if height[0] > 1 {
+    format!("[{}]", buffer.join(","))
+  } else {
+    buffer.get(0).expect("Unable to get value from buffer.").clone()
+  };
+
+  Ok(result)
+}
+
+fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsError> {
+  let column_names = df.get_column_names();
+  let mut height = Vec::new();
+  if df.height() <= 100 {
     height.push(df.height());
   } else {
     height.push(5);
@@ -289,11 +334,11 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
 }
 
 #[tauri::command]
-pub async fn query(path: String, sqlsrc: String, sep: String, window: tauri::Window) {
+pub async fn query(path: String, sqlsrc: String, sep: String, show: bool, window: tauri::Window) {
   let start = Instant::now();
   let filepath: Vec<&str> = path.split(',').collect();
   let prep_window = window.clone();
-  match (async { prepare_query(filepath, &sqlsrc.as_str(), sep, prep_window) }).await {
+  match (async { prepare_query(filepath, &sqlsrc.as_str(), sep, show, prep_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("sql query error: {error}");

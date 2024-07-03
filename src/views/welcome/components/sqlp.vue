@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Select, Loading } from "@element-plus/icons-vue";
+import { Select, Loading, Hide, View } from "@element-plus/icons-vue";
 
 const selectedFiles = ref([]);
 const columns = ref([]);
@@ -17,7 +17,8 @@ const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   sqlsrc: "select * from `filename`",
-  sep: ","
+  sep: ",",
+  show: false
 });
 
 listen("run_time", (event: any) => {
@@ -49,9 +50,21 @@ listen("get_err", (event: any) => {
   const getErrmsg: any = "get_err: " + error;
   ElMessage.error(getErrmsg);
 });
+listen("show", (event: any) => {
+  const df: any = event.payload;
+  const jsonData = JSON.parse(df);
+  columns.value = Object.keys(jsonData[0]).map(key => ({
+    name: key,
+    label: key,
+    prop: key
+  }));
+  tableData.value = jsonData;
+});
 
 // query data
 async function queryData() {
+  columns.value = [];
+  tableData.value = [];
   if (data.filePath == "") {
     ElMessage.warning("未选择csv文件");
     return;
@@ -67,7 +80,8 @@ async function queryData() {
     await invoke("query", {
       path: data.filePath,
       sqlsrc: data.sqlsrc,
-      sep: data.sep
+      sep: data.sep,
+      show: data.show
     });
     isLoading.value = false;
     isFinish.value = true;
@@ -146,6 +160,11 @@ function textareaChange(event: any) {
     </el-form-item>
     <el-form-item>
       <el-button type="success" @click="queryData()">Execute</el-button>
+      <el-switch
+        v-model="data.show"
+        :active-action-icon="View"
+        :inactive-action-icon="Hide"
+      />
       <div class="icon-group">
         <el-icon v-if="isLoading" color="#FF4500" class="is-loading">
           <Loading />
