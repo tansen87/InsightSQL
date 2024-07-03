@@ -36,7 +36,7 @@ dependencies:
     specifier: ^5.4.2
     version: 5.4.2
   element-plus:
-    specifier: ^2.3.9
+    specifier: ^2.7.6
     version: 2.7.6(vue@3.3.1)
   element-resize-detector:
     specifier: ^1.2.4
