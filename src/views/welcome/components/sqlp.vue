@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Select, Loading, Hide, View } from "@element-plus/icons-vue";
+import { Select, Loading, View, Download } from "@element-plus/icons-vue";
 
 const selectedFiles = ref([]);
 const columns = ref([]);
@@ -140,7 +140,7 @@ function textareaChange(event: any) {
   <el-form>
     <div style="display: flex; align-items: flex-start">
       <el-button type="primary" @click="selectFile()">Open File</el-button>
-      <el-form-item style="margin-left: 10px">
+      <el-form-item style="margin-left: 10px; width: 200px">
         <el-select v-model="data.sep">
           <el-option label="," value="," />
           <el-option label="|" value="|" />
@@ -162,8 +162,9 @@ function textareaChange(event: any) {
       <el-button type="success" @click="queryData()">Execute</el-button>
       <el-switch
         v-model="data.show"
-        :active-action-icon="View"
-        :inactive-action-icon="Hide"
+        :active-action-icon="Download"
+        :inactive-action-icon="View"
+        style="margin-left: 20px"
       />
       <div class="icon-group">
         <el-icon v-if="isLoading" color="#FF4500" class="is-loading">
