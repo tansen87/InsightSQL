@@ -13,7 +13,7 @@ dependencies:
     version: 2.1.0(element-plus@2.7.6)
   '@pureadmin/utils':
     specifier: ^1.8.9
-    version: 1.8.9(echarts@5.4.2)(vue@3.3.1)
+    version: 1.8.9(echarts@5.5.1)(vue@3.3.1)
   '@tauri-apps/api':
     specifier: ^1.5.1
     version: 1.5.3
@@ -33,8 +33,8 @@ dependencies:
     specifier: ^1.11.7
     version: 1.11.7
   echarts:
-    specifier: ^5.4.2
-    version: 5.4.2
+    specifier: ^5.5.1
+    version: 5.5.1
   element-plus:
     specifier: ^2.7.6
     version: 2.7.6(vue@3.3.1)
@@ -1228,7 +1228,7 @@ packages:
       string-hash: 1.1.3
     dev: true
 
-  /@pureadmin/utils@1.8.9(echarts@5.4.2)(vue@3.3.1):
+  /@pureadmin/utils@1.8.9(echarts@5.5.1)(vue@3.3.1):
     resolution: {integrity: sha512-P+MfCuCImwHXeXmZuKQVEYdx7O0FDTuhSUD0HaXamPRerbd5LTuwSV0MN2pMsNUCYrHySHKRPkmah2wXl0XDjw==}
     peerDependencies:
       echarts: '*'
@@ -1239,7 +1239,7 @@ packages:
       vue:
         optional: true
     dependencies:
-      echarts: 5.4.2
+      echarts: 5.5.1
       vue: 3.3.1
     dev: false
 
@@ -2823,11 +2823,11 @@ packages:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
     dev: true
 
-  /echarts@5.4.2:
-    resolution: {integrity: sha512-2W3vw3oI2tWJdyAz+b8DuWS0nfXtSDqlDmqgin/lfzbkB01cuMEN66KWBlmur3YMp5nEDEEt5s23pllnAzB4EA==}
+  /echarts@5.5.1:
+    resolution: {integrity: sha512-Fce8upazaAXUVUVsjgV6mBnGuqgO+JNDlcgF79Dksy4+wgGpQB2lmYoO4TSweFg/mZITdpGHomw/cNBJZj1icA==}
     dependencies:
       tslib: 2.3.0
-      zrender: 5.4.3
+      zrender: 5.6.0
     dev: false
 
   /ee-first@1.1.1:
@@ -6710,8 +6710,8 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /zrender@5.4.3:
-    resolution: {integrity: sha512-DRUM4ZLnoaT0PBVvGBDO9oWIDBKFdAVieNWxWwK0niYzJCMwGchRk21/hsE+RKkIveH3XHCyvXcJDkgLVvfizQ==}
+  /zrender@5.6.0:
+    resolution: {integrity: sha512-uzgraf4njmmHAbEUxMJ8Oxg+P3fT04O+9p7gY+wJRVxo8Ge+KmYv0WJev945EH4wFuc4OY2NLXz46FZrWS9xJg==}
     dependencies:
       tslib: 2.3.0
     dev: false
