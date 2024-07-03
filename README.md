@@ -1,8 +1,9 @@
 <h1>sqlp</h1>
+> A tool for quickly viewing CSV
 
-> 截图
+### 截图
 
-![image](https://github.com/tansen87/sqlp/assets/98570790/100967af-df90-4137-bd5d-32a3ee5dc5d1)
+![image](/demo/screen1.png)
 
 ### 安装依赖
 
@@ -13,14 +14,12 @@ pnpm i
 ### 运行
 
 ```sh
-# 桌面端
 pnpm tauri:dev
 ```
 
 ### 打包
 
 ```sh
-# 桌面端
 pnpm tauri:build
 ```
 
