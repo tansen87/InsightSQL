@@ -65,9 +65,7 @@ impl OutputMode {
         out_result
       } else {
         let display_df = df.head(Some(100));
-        println!("{}", display_df.clone());
         let res = query_df_to_json(display_df)?;
-        println!("{}", res.clone());
         window.emit("show", res).unwrap();
         Ok(())
       }
