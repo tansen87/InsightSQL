@@ -53,12 +53,16 @@ listen("get_err", (event: any) => {
 listen("show", (event: any) => {
   const df: any = event.payload;
   const jsonData = JSON.parse(df);
-  columns.value = Object.keys(jsonData[0]).map(key => ({
+
+  // 检查 jsonData 是否是数组，如果不是，则将其转换为数组
+  const isJsonArray = Array.isArray(jsonData);
+  const data = isJsonArray ? jsonData : [jsonData];
+  columns.value = Object.keys(data[0]).map(key => ({
     name: key,
     label: key,
     prop: key
   }));
-  tableData.value = jsonData;
+  tableData.value = data;
 });
 
 // query data

@@ -9,6 +9,7 @@ use std::{
 };
 
 use polars::{
+  datatypes::AnyValue,
   io::{ csv::read::{ CsvParseOptions, CsvReadOptions }, SerReader },
   prelude::{ CsvWriter, DataFrame, LazyCsvReader, LazyFileListReader, SerWriter },
   sql::SQLContext,
@@ -64,7 +65,9 @@ impl OutputMode {
         out_result
       } else {
         let display_df = df.head(Some(100));
+        println!("{}", display_df.clone());
         let res = query_df_to_json(display_df)?;
+        println!("{}", res.clone());
         window.emit("show", res).unwrap();
         Ok(())
       }
@@ -210,12 +213,26 @@ fn prepare_query(
     if is_last_query {
       // if this is the last query, we use the output mode specified by the user
       output_mode
-        .execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), show, window.clone())
+        .execute_query(
+          &current_query,
+          &mut ctx,
+          sep.clone(),
+          output[0].clone(),
+          show,
+          window.clone()
+        )
         .unwrap();
     } else {
       // this is not the last query, we only execute the query, but don't write the output
       no_output
-        .execute_query(&current_query, &mut ctx, sep.clone(), output[0].clone(), show, window.clone())
+        .execute_query(
+          &current_query,
+          &mut ctx,
+          sep.clone(),
+          output[0].clone(),
+          show,
+          window.clone()
+        )
         .unwrap();
     }
   }
@@ -289,11 +306,25 @@ fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsErro
       let object = column_names
         .iter()
         .zip(row.iter())
-        .map(|(column, data)| (column.to_string(), data.get_str().unwrap_or("").to_owned()))
+        .map(|(column_name, data)| {
+          let formatted_value = match data {
+            AnyValue::Float64(f) => format!("{:.2}", f),
+            AnyValue::Float32(f) => format!("{:.2}", f),
+            AnyValue::Int64(i) => i.to_string(),
+            AnyValue::Int32(i) => i.to_string(),
+            AnyValue::Int16(i) => i.to_string(),
+            AnyValue::UInt64(u) => u.to_string(),
+            AnyValue::UInt32(u) => u.to_string(),
+            AnyValue::Boolean(b) => b.to_string(),
+            _ => data.to_string(),
+          };
+          (column_name.to_string(), formatted_value)
+        })
         .collect::<IndexMap<String, String>>();
       serde_json::to_string(&object).expect("Unable to serialize the result.")
     })
     .collect::<Vec<String>>();
+
   let result = if height[0] > 1 {
     format!("[{}]", buffer.join(","))
   } else {
