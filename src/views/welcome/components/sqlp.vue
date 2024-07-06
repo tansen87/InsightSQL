@@ -141,11 +141,22 @@ function textareaChange(event: any) {
 
 const addLineNumber = () => {
   let content = data.sqlsrc;
+  // 先删除原有的行号，假设行号都是以数字开头，后面跟一个空格
+  content = content.replace(/^\d+ /gm, "");
+  // 计算内容中实际的行数
   const lines = content.split("\n").length;
-  if (lines === 2 && !content.startsWith("1")) {
-    content = "1 " + content;
+  // 给每一行添加行号
+  const lineNumberedContent = content.split("\n").map((line, index) => {
+    return `${index + 1} ${line}`;
+  });
+  // 将行号和内容重新组合成单一的字符串
+  content = lineNumberedContent.join("\n");
+  // 如果是两行，并且第一行不以"1 "开头，则添加行号"1 "
+  if (lines === 2 && !content.startsWith("1 ")) {
+    content = "1 " + content.replace(/^\d+ /, "");
   }
-  content = content + `${lines} `;
+
+  // 更新 data 对象中的 sqlsrc 属性
   data.sqlsrc = content;
 };
 </script>
