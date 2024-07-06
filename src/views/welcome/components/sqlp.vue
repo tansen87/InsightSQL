@@ -138,6 +138,16 @@ function textareaChange(event: any) {
   textarea.style.height = "auto";
   textarea.style.height = textarea.scrollHeight + "px";
 }
+
+const addLineNumber = () => {
+  let content = data.sqlsrc;
+  const lines = content.split("\n").length;
+  if (lines === 2 && !content.startsWith("1")) {
+    content = "1 " + content;
+  }
+  content = content + `${lines} `;
+  data.sqlsrc = content;
+};
 </script>
 
 <template>
@@ -160,6 +170,7 @@ function textareaChange(event: any) {
         class="txt"
         @input="textareaChange"
         placeholder="select * from `filename`"
+        @keyup.enter.native="addLineNumber()"
       />
     </el-form-item>
     <el-form-item>
@@ -209,13 +220,14 @@ function textareaChange(event: any) {
   font-size: 30px; /* 根据需要调整图标大小 */
 }
 .txt {
-  border: 1px solid #ccc;
+  border: 1px solid #cccccc;
   outline: none;
   font-size: 16px;
+  font-family: "Cascadia Code", monospace;
   display: block;
   width: 100%;
   resize: none;
-  line-height: 2;
+  line-height: 1.5;
   background: transparent;
   color: inherit;
   overflow: hidden;

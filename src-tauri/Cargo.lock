@@ -4388,6 +4388,7 @@ dependencies = [
  "chrono",
  "indexmap 2.2.6",
  "polars",
+ "regex",
  "serde",
  "serde_json",
  "tauri",

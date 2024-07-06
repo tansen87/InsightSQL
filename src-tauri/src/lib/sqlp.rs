@@ -365,9 +365,17 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
 #[tauri::command]
 pub async fn query(path: String, sqlsrc: String, sep: String, show: bool, window: tauri::Window) {
   let start = Instant::now();
+
   let filepath: Vec<&str> = path.split(',').collect();
+  let re = regex::Regex::new(r"^\s*\d+\s+").unwrap();
+  let sql_replace: String = sqlsrc
+    .lines()
+    .map(|line| re.replace_all(line, " "))
+    .collect();
+  let sql = sql_replace.as_str();
+
   let prep_window = window.clone();
-  match (async { prepare_query(filepath, &sqlsrc.as_str(), sep, show, prep_window) }).await {
+  match (async { prepare_query(filepath, sql, sep, show, prep_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("sql query error: {error}");
