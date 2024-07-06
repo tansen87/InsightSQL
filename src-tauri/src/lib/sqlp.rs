@@ -245,7 +245,10 @@ fn csv_to_json(file: String, sep: String) -> Result<String, Box<dyn Error>> {
 
   let df = CsvReadOptions::default()
     .with_parse_options(
-      CsvParseOptions::default().with_separator(separator[0]).with_missing_is_null(false)
+      CsvParseOptions::default()
+        .with_separator(separator[0])
+        .with_missing_is_null(false)
+        .with_truncate_ragged_lines(true)
     )
     .with_infer_schema_length(Some(0))
     .with_n_threads(Some(4))
