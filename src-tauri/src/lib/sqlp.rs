@@ -210,28 +210,24 @@ fn prepare_query(
 
     if is_last_query {
       // if this is the last query, we use the output mode specified by the user
-      output_mode
-        .execute_query(
-          &current_query,
-          &mut ctx,
-          sep.clone(),
-          output[0].clone(),
-          show,
-          window.clone()
-        )
-        .unwrap();
+      output_mode.execute_query(
+        &current_query,
+        &mut ctx,
+        sep.clone(),
+        output[0].clone(),
+        show,
+        window.clone()
+      )?;
     } else {
       // this is not the last query, we only execute the query, but don't write the output
-      no_output
-        .execute_query(
-          &current_query,
-          &mut ctx,
-          sep.clone(),
-          output[0].clone(),
-          show,
-          window.clone()
-        )
-        .unwrap();
+      no_output.execute_query(
+        &current_query,
+        &mut ctx,
+        sep.clone(),
+        output[0].clone(),
+        show,
+        window.clone()
+      )?;
     }
   }
 
