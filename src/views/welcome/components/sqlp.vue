@@ -81,12 +81,16 @@ async function queryData() {
     isLoading.value = true;
     isFinish.value = false;
     isRuntime.value = false;
-    await invoke("query", {
-      path: data.filePath,
-      sqlsrc: data.sqlsrc,
-      sep: data.sep,
-      show: data.show
-    });
+    try {
+      await invoke("query", {
+        path: data.filePath,
+        sqlsrc: data.sqlsrc,
+        sep: data.sep,
+        show: data.show
+      });
+    } catch (err) {
+      ElMessage.error(err);
+    }
     isLoading.value = false;
     isFinish.value = true;
     isRuntime.value = true;
