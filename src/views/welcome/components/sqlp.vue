@@ -143,7 +143,7 @@ function textareaChange(event: any) {
   textarea.style.height = textarea.scrollHeight + "px";
 }
 
-const addLineNumber = () => {
+/* const addLineNumber = () => {
   let content = data.sqlsrc;
   // 先删除原有的行号，假设行号都是以数字开头，后面跟一个空格
   content = content.replace(/^\d+ /gm, "");
@@ -162,7 +162,8 @@ const addLineNumber = () => {
 
   // 更新 data 对象中的 sqlsrc 属性
   data.sqlsrc = content;
-};
+}; 
+@keyup.enter.native="addLineNumber()" */
 </script>
 
 <template>
@@ -185,7 +186,6 @@ const addLineNumber = () => {
         class="txt"
         @input="textareaChange"
         placeholder="select * from `filename`"
-        @keyup.enter.native="addLineNumber()"
       />
     </el-form-item>
     <el-form-item>
