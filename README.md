@@ -20,7 +20,16 @@
    select * from temp limit 10;
    ```
 
-   
+
+
+
+### 首页登录
+
+* 账号: `admin`
+
+* 密码: `admin123`
+
+
 
 ### 安装依赖
 
