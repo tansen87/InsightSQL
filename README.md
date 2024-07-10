@@ -5,6 +5,23 @@
 
 ![image](/demo/screen1.png)
 
+### 两种查询模式
+
+1. 查询较简单时，在Execute上面的方框内输入sql语句，比如
+
+   ```sql
+   select * from `filename`
+   ```
+
+2. 查询较复杂时，在Execute上面的方框内填写sql脚本的地址，注意用`;`分隔sql语句，比如`E:/Desktop/test_data/sqlp_test/test.sql`，然后编写sql语句
+
+   ```sql
+   create table temp as select * from "GL" where code like '1%';
+   select * from temp limit 10;
+   ```
+
+   
+
 ### 安装依赖
 
 ```sh
@@ -23,9 +40,15 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
-### 图标生成
-* 修改public文件夹下的app-icon.png图标为实际项目图标，格式为1024x1024px的png，然后执行下面的命令即可一键生成所有平台的icon并放在src-tauri/icons文件夹中
-pnpm icon
+
+
+### release
+
+* [sqlp](https://github.com/tansen87/sqlp/releases/)
+
+### video
+
+* [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c)
 
 ### 致谢
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)
