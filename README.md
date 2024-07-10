@@ -13,7 +13,7 @@
    select * from `filename`
    ```
 
-2. 查询较复杂时，在Execute上面的方框内填写sql脚本的地址，注意用`;`分隔sql语句，比如`E:/Desktop/test_data/sqlp_test/test.sql`，然后编写sql语句
+2. 查询较复杂时，在Execute上面的方框内填写sql脚本的地址，比如`E:/Desktop/test_data/sqlp_test/test.sql`，然后编写sql语句(注意用`;`分隔sql语句)
 
    ```sql
    create table temp as select * from "GL" where code like '1%';
