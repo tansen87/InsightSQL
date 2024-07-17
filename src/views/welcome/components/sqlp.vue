@@ -124,6 +124,7 @@ async function selectFile() {
   } else {
     data.filePath = selected;
   }
+  /*
   const results: any = await invoke("get", {
     path: data.filePath,
     sep: data.sep
@@ -135,6 +136,7 @@ async function selectFile() {
     prop: key
   }));
   tableData.value = jsonData;
+  */
 }
 
 function textareaChange(event: any) {
