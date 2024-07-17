@@ -31,20 +31,16 @@ impl OutputMode {
     ctx: &mut SQLContext,
     sep: String,
     output: Option<String>,
-    show: bool,
+    write: bool,
     window: tauri::Window
-  ) -> Result<(usize, usize), Box<dyn Error>> {
+  ) -> Result<String, Box<dyn Error>> {
     let mut df = DataFrame::default();
     let mut separator = Vec::new();
     let sep_u8 = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
     separator.push(sep_u8);
     let execute_inner = || {
       df = ctx.execute(query).and_then(polars::prelude::LazyFrame::collect)?;
-      if show {
-        let display_df = df.head(Some(100));
-        let res = query_df_to_json(display_df)?;
-        window.emit("show", res).unwrap();
-
+      if write {
         // we don't want to write anything if the output mode is None
         if matches!(self, OutputMode::None) {
           return Ok(());
@@ -64,20 +60,17 @@ impl OutputMode {
         w.flush()?;
         out_result
       } else {
-        let display_df = df.head(Some(100));
-        let res = query_df_to_json(display_df)?;
-        window.emit("show", res).unwrap();
         Ok(())
       }
     };
 
     match execute_inner() {
-      Ok(()) => Ok(df.shape()),
+      Ok(()) => Ok(query_df_to_json(df.head(Some(100)))?),
       Err(e) => {
         eprintln!("Failed to execute query: {query}: {e}");
         let errmsg = format!("Failed to execute query: {query}: {e}");
-        window.emit("exec_err", errmsg)?;
-        return Ok((0, 0));
+        window.emit("exec_err", errmsg.clone())?;
+        return Ok(errmsg);
       }
     }
   }
@@ -87,7 +80,7 @@ fn prepare_query(
   filepath: Vec<&str>,
   sqlsrc: &str,
   sep: String,
-  show: bool,
+  write: bool,
   window: tauri::Window
 ) -> Result<(), Box<dyn Error>> {
   let mut ctx = SQLContext::new();
@@ -104,7 +97,7 @@ fn prepare_query(
     let metadata = std::fs::metadata(path)?;
     let file_size = metadata.len();
     let kb = file_size / 1024;
-    if kb > 7_340_032 {
+    if kb > 8_388_608 {
       let size_msg = format!("{path} - {kb}, the data is too large.");
       window.emit("size_msg", size_msg)?;
       return Ok(());
@@ -140,7 +133,6 @@ fn prepare_query(
         &lossy_table_name
       });
     table_aliases.insert(table_name.to_string(), format!("_t_{}", idx + 1));
-    println!("{:?}", table_aliases);
 
     // let tmp_df = match
     //   CsvReadOptions::default()
@@ -211,14 +203,15 @@ fn prepare_query(
 
     if is_last_query {
       // if this is the last query, we use the output mode specified by the user
-      output_mode.execute_query(
+      let res = output_mode.execute_query(
         &current_query,
         &mut ctx,
         sep.clone(),
         output[0].clone(),
-        show,
+        write,
         window.clone()
       )?;
+      window.emit("show", res)?;
     } else {
       // this is not the last query, we only execute the query, but don't write the output
       no_output.execute_query(
@@ -226,7 +219,7 @@ fn prepare_query(
         &mut ctx,
         sep.clone(),
         output[0].clone(),
-        show,
+        write,
         window.clone()
       )?;
     }
@@ -334,7 +327,7 @@ fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsErro
 
 pub fn expired() -> bool {
   let current_date = chrono::Local::now().time();
-  let expiration_date = chrono::Local.with_ymd_and_hms(2024, 7, 11, 23, 59, 0).unwrap().time();
+  let expiration_date = chrono::Local.with_ymd_and_hms(2024, 8, 11, 23, 59, 0).unwrap().time();
 
   current_date > expiration_date
 }
@@ -363,26 +356,20 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
 }
 
 #[tauri::command]
-pub async fn query(path: String, sqlsrc: String, sep: String, show: bool, window: tauri::Window) {
+pub async fn query(path: String, sqlsrc: String, sep: String, write: bool, window: tauri::Window) {
   let start = Instant::now();
 
   let filepath: Vec<&str> = path.split(',').collect();
-  // let re = regex::Regex::new(r"^\s*\d+\s+").unwrap();
-  // let sql_replace: String = sqlsrc
-  //   .lines()
-  //   .map(|line| re.replace_all(line, " "))
-  //   .collect();
-  // let sql = sql_replace.as_str();
 
   let prep_window = window.clone();
-  match (async { prepare_query(filepath, sqlsrc.as_str(), sep, show, prep_window) }).await {
+  match (async { prepare_query(filepath, sqlsrc.as_str(), sep, write, prep_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("sql query error: {error}");
       window.emit("query_err", &error.to_string()).unwrap();
       return ();
     }
-  }
+  };
   let end = Instant::now();
   let elapsed = end.duration_since(start);
   let elapsed_seconds = elapsed.as_secs_f64();

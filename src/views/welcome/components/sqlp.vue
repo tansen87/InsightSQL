@@ -18,7 +18,7 @@ const data = reactive({
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   sqlsrc: "select * from `filename`",
   sep: ",",
-  show: false
+  write: false
 });
 
 listen("run_time", (event: any) => {
@@ -86,7 +86,7 @@ async function queryData() {
         path: data.filePath,
         sqlsrc: data.sqlsrc,
         sep: data.sep,
-        show: data.show
+        write: data.write
       });
     } catch (err) {
       ElMessage.error(err);
@@ -142,28 +142,6 @@ function textareaChange(event: any) {
   textarea.style.height = "auto";
   textarea.style.height = textarea.scrollHeight + "px";
 }
-
-/* const addLineNumber = () => {
-  let content = data.sqlsrc;
-  // 先删除原有的行号，假设行号都是以数字开头，后面跟一个空格
-  content = content.replace(/^\d+ /gm, "");
-  // 计算内容中实际的行数
-  const lines = content.split("\n").length;
-  // 给每一行添加行号
-  const lineNumberedContent = content.split("\n").map((line, index) => {
-    return `${index + 1} ${line}`;
-  });
-  // 将行号和内容重新组合成单一的字符串
-  content = lineNumberedContent.join("\n");
-  // 如果是两行，并且第一行不以"1 "开头，则添加行号"1 "
-  if (lines === 2 && !content.startsWith("1 ")) {
-    content = "1 " + content.replace(/^\d+ /, "");
-  }
-
-  // 更新 data 对象中的 sqlsrc 属性
-  data.sqlsrc = content;
-}; 
-@keyup.enter.native="addLineNumber()" */
 </script>
 
 <template>
@@ -191,7 +169,7 @@ function textareaChange(event: any) {
     <el-form-item>
       <el-button type="success" @click="queryData()">Execute</el-button>
       <el-switch
-        v-model="data.show"
+        v-model="data.write"
         :active-action-icon="Download"
         :inactive-action-icon="View"
         style="margin-left: 20px"
