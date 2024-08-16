@@ -113,10 +113,7 @@ fn prepare_query(
     output.push(output_str);
   }
 
-  let optimization_state = polars::lazy::frame::OptState {
-    file_caching: true,
-    ..Default::default()
-  };
+  let optimization_state = polars::lazy::frame::OptState::default();
 
   let mut table_aliases = HashMap::with_capacity(filepath.len());
   let mut lossy_table_name = Cow::default();

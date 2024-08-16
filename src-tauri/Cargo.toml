@@ -7,7 +7,7 @@ license = "MIT"
 repository = ""
 default-run = "sqlp"
 edition = "2021"
-rust-version = "1.79.0"
+rust-version = "1.80.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,7 +22,7 @@ tauri-build = { version = "1.5.3", features = [] }
 chrono = "0.4.38"
 serde = { version = "1", features = ["derive"] }
 tauri = { version = "1.7.1", features = [ "api-all"] }
-polars = { version = "0.41.3", features = [
+polars = { version = "0.42.0", features = [
     "lazy",
     "diagonal_concat",
     # "streaming",
