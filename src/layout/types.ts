@@ -8,7 +8,7 @@ export const routerArrays: Array<RouteConfigs> =
           path: "/welcome",
           parentPath: "/",
           meta: {
-            title: "首页",
+            title: "sqlp",
             icon: "homeFilled"
           }
         }
