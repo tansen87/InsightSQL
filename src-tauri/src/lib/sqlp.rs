@@ -11,7 +11,7 @@ use std::{
 use polars::{
   datatypes::AnyValue,
   io::{ csv::read::{ CsvParseOptions, CsvReadOptions }, SerReader },
-  prelude::{ CsvWriter, DataFrame, LazyCsvReader, LazyFileListReader, SerWriter },
+  prelude::{ CsvWriter, DataFrame, LazyCsvReader, LazyFileListReader, LazyFrame, SerWriter },
   sql::SQLContext,
 };
 use chrono::TimeZone;
@@ -147,14 +147,23 @@ fn prepare_query(
     //     return Ok(());
     //   }
     // };
+    let file_extension = match Path::new(table).extension() {
+      Some(ext) => ext.to_string_lossy().to_lowercase(),
+      None => return Err(("File extension not found").into()),
+    };
 
-    let lf = LazyCsvReader::new(table)
-      .with_has_header(true)
-      .with_missing_is_null(true)
-      .with_separator(separator[0])
-      .with_infer_schema_length(Some(0))
-      .with_low_memory(false)
-      .finish()?;
+    let lf = if file_extension == "parquet" {
+      LazyFrame::scan_parquet(table, Default::default())?
+    } else {
+      let csv_reader = LazyCsvReader::new(table)
+        .with_has_header(true)
+        .with_missing_is_null(true)
+        .with_separator(separator[0])
+        .with_infer_schema_length(Some(0))
+        .with_low_memory(false);
+
+      csv_reader.finish()?
+    };
 
     ctx.register(table_name, lf.with_optimizations(optimization_state));
   }

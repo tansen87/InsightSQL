@@ -15,7 +15,7 @@ const isRuntime = ref(false);
 const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat", "parquet"],
   sqlsrc: "select * from `filename`",
   sep: ",",
   write: false
