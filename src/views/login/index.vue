@@ -9,14 +9,14 @@ import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter, getTopMenu } from "@/router/utils";
 import { bg, avatar, illustration } from "./utils/static";
-import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+// import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { ref, reactive, toRaw, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
-import Lock from "@iconify-icons/ri/lock-fill";
-import User from "@iconify-icons/ri/user-3-fill";
+// import Lock from "@iconify-icons/ri/lock-fill";
+// import User from "@iconify-icons/ri/user-3-fill";
 
 defineOptions({
   name: "Login"
@@ -49,7 +49,7 @@ const onLogin = async (formEl: FormInstance | undefined) => {
             // 获取后端路由
             initRouter().then(() => {
               router.push(getTopMenu(true).path);
-              message("登录成功", { type: "success" });
+              message("hi there", { type: "success" });
             });
           }
         });
@@ -73,6 +73,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.document.removeEventListener("keypress", onkeypress);
+});
+
+onMounted(async () => {
+  await onLogin(ruleFormRef.value);
 });
 </script>
 
@@ -106,7 +110,7 @@ onBeforeUnmount(() => {
             :rules="loginRules"
             size="large"
           >
-            <Motion :delay="100">
+            <!-- <Motion :delay="100">
               <el-form-item
                 :rules="[
                   {
@@ -124,9 +128,9 @@ onBeforeUnmount(() => {
                   :prefix-icon="useRenderIcon(User)"
                 />
               </el-form-item>
-            </Motion>
+            </Motion> -->
 
-            <Motion :delay="150">
+            <!-- <Motion :delay="150">
               <el-form-item prop="password">
                 <el-input
                   clearable
@@ -136,7 +140,7 @@ onBeforeUnmount(() => {
                   :prefix-icon="useRenderIcon(Lock)"
                 />
               </el-form-item>
-            </Motion>
+            </Motion> -->
 
             <Motion :delay="250">
               <el-button
@@ -146,7 +150,7 @@ onBeforeUnmount(() => {
                 :loading="loading"
                 @click="onLogin(ruleFormRef)"
               >
-                登录
+                waiting
               </el-button>
             </Motion>
           </el-form>
