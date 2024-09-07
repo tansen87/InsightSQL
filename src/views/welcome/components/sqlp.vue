@@ -18,7 +18,8 @@ const data = reactive({
   fileFormats: ["csv", "txt", "tsv", "spext", "dat", "parquet"],
   sqlsrc: "select * from `filename`",
   sep: ",",
-  write: false
+  write: false,
+  writeFormat: "csv"
 });
 
 listen("run_time", (event: any) => {
@@ -86,7 +87,8 @@ async function queryData() {
         path: data.filePath,
         sqlsrc: data.sqlsrc,
         sep: data.sep,
-        write: data.write
+        write: data.write,
+        writeFormat: data.writeFormat
       });
     } catch (err) {
       ElMessage.error(err);
@@ -176,6 +178,13 @@ function textareaChange(event: any) {
         :inactive-action-icon="View"
         style="margin-left: 20px"
       />
+      <el-select
+        v-model="data.writeFormat"
+        style="margin-left: 20px; width: 80px"
+      >
+        <el-option label="csv" value="csv" />
+        <el-option label="xlsx" value="xlsx" />
+      </el-select>
       <div class="icon-group">
         <el-icon v-if="isLoading" color="#FF4500" class="is-loading">
           <Loading />

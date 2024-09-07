@@ -14,6 +14,7 @@ use polars::{
   prelude::{ CsvWriter, DataFrame, LazyCsvReader, LazyFileListReader, LazyFrame, SerWriter },
   sql::SQLContext,
 };
+use polars_excel_writer::PolarsXlsxWriter;
 use chrono::TimeZone;
 use indexmap::IndexMap;
 
@@ -32,33 +33,46 @@ impl OutputMode {
     sep: String,
     output: Option<String>,
     write: bool,
+    write_format: &str,
     window: tauri::Window
-  ) -> Result<String, Box<dyn Error>> {
+  ) -> Result<String, Box<polars::error::PolarsError>> {
     let mut df = DataFrame::default();
     let mut separator = Vec::new();
     let sep_u8 = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
     separator.push(sep_u8);
-    let execute_inner = || {
+    let execute_inner = || -> Result<(), polars::error::PolarsError> {
       df = ctx.execute(query).and_then(polars::prelude::LazyFrame::collect)?;
-      if write {
+      if write 
+      {
         // we don't want to write anything if the output mode is None
         if matches!(self, OutputMode::None) {
           return Ok(());
         }
 
-        let w = match output {
-          Some(path) => { Box::new(File::create(path)?) as Box<dyn Write> }
-          None => Box::new(std::io::stdout()) as Box<dyn Write>,
-        };
-        let mut w = BufWriter::with_capacity(256_000, w);
-        let out_result = match self {
-          OutputMode::Csv =>
-            CsvWriter::new(&mut w).with_separator(separator[0]).n_threads(4).finish(&mut df),
-          OutputMode::None => Ok(()),
-        };
+        if (df.shape().0 < 104_0000) && (write_format == "xlsx") {
+          let mut xlsx_writer = PolarsXlsxWriter::new();
+          xlsx_writer.write_dataframe(&df)?;
+          let xlsx_path = match output.as_ref() {
+            Some(path) => Path::new(path),
+            None => Path::new("result.xlsx"),
+          };
+          xlsx_writer.save(xlsx_path)?;
+          Ok(())
+        } else {
+          let w = match output {
+            Some(path) => { Box::new(File::create(path)?) as Box<dyn Write> }
+            None => Box::new(std::io::stdout()) as Box<dyn Write>,
+          };
+          let mut w = BufWriter::with_capacity(256_000, w);
+          let out_result = match self {
+            OutputMode::Csv =>
+              CsvWriter::new(&mut w).with_separator(separator[0]).n_threads(4).finish(&mut df),
+            OutputMode::None => Ok(()),
+          };
 
-        w.flush()?;
-        out_result
+          w.flush()?;
+          out_result
+        }
       } else {
         Ok(())
       }
@@ -69,7 +83,7 @@ impl OutputMode {
       Err(e) => {
         eprintln!("Failed to execute query: {query}: {e}");
         let errmsg = format!("Failed to execute query: {query}: {e}");
-        window.emit("exec_err", errmsg.clone())?;
+        window.emit("exec_err", errmsg.clone()).unwrap();
         return Ok(errmsg);
       }
     }
@@ -81,6 +95,7 @@ fn prepare_query(
   sqlsrc: &str,
   sep: String,
   write: bool,
+  write_format: &str,
   window: tauri::Window
 ) -> Result<(), Box<dyn Error>> {
   let mut ctx = SQLContext::new();
@@ -89,7 +104,12 @@ fn prepare_query(
   separator.push(sep_u8);
   let mut output: Vec<Option<String>> = Vec::new();
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
-  let output_suffix = format!("sqlp {}.csv", current_time);
+
+  let output_suffix = match write_format {
+    "xlsx" => format!("sqlp {}.xlsx", current_time),
+    _ => format!("sqlp {}.csv", current_time),
+  };
+  
   for path in filepath.clone() {
     let mut output_path = PathBuf::from(path);
 
@@ -103,7 +123,7 @@ fn prepare_query(
       return Ok(());
     }
 
-    output_path.set_extension(output_suffix.clone());
+    output_path.set_extension(&output_suffix);
     let output_str = if let Some(output_path_str) = output_path.to_str() {
       Some(output_path_str.to_string())
     } else {
@@ -215,6 +235,7 @@ fn prepare_query(
         sep.clone(),
         output[0].clone(),
         write,
+        write_format,
         window.clone()
       )?;
       window.emit("show", res)?;
@@ -226,6 +247,7 @@ fn prepare_query(
         sep.clone(),
         output[0].clone(),
         write,
+        write_format,
         window.clone()
       )?;
     }
@@ -362,13 +384,13 @@ pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
 }
 
 #[tauri::command]
-pub async fn query(path: String, sqlsrc: String, sep: String, write: bool, window: tauri::Window) {
+pub async fn query(path: String, sqlsrc: String, sep: String, write: bool, write_format: String, window: tauri::Window) {
   let start = Instant::now();
 
   let filepath: Vec<&str> = path.split(',').collect();
 
   let prep_window = window.clone();
-  match (async { prepare_query(filepath, sqlsrc.as_str(), sep, write, prep_window) }).await {
+  match (async { prepare_query(filepath, sqlsrc.as_str(), sep, write, write_format.as_str(), prep_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("sql query error: {error}");
