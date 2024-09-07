@@ -1,9 +1,11 @@
 <h1>sqlp</h1>
-> A tool for quickly viewing CSV
+> A tool for quickly viewing CSV and Parquet
 
 ### 截图
 
 ![image](/demo/screen1.png)
+
+
 
 ### 两种查询模式
 
