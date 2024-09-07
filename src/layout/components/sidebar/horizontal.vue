@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Search from "../search/index.vue";
-import Notice from "../notice/index.vue";
 import { ref, watch, nextTick } from "vue";
 import SidebarItem from "./sidebarItem.vue";
 import { useNav } from "@/layout/hooks/useNav";
