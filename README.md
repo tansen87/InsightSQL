@@ -1,9 +1,17 @@
 <h1>sqlp</h1>
-> A tool for quickly viewing CSV and Parquet
+> A tool that can quickly view Excel, CSV, and Parquet using SQL
 
 ### 截图
 
-![image](/demo/screen1.png)
+![image](/demo/screen.png)
+
+
+
+### 如何使用?
+
+1. 下载[release](https://github.com/tansen87/sqlp/releases/)，解压运行sqlp.exe
+2. Open File => 打开需要查询的文件(xls, xlsx, xlsm, xlsb, csv, parquet)，csv文件需要选择Open File旁边的分割符
+3. 编写sql语句，点击Execute开始查询
 
 
 
@@ -24,29 +32,39 @@
 
 
 
-### 安装依赖
+### 运行环境
 
-```sh
-pnpm i
-```
+* Node.js 18+
+* pnpm 8.x+
+* rust 1.80.1+
 
-### 运行
+### 源码安装
 
-```sh
-pnpm tauri:dev
-```
+1. 克隆该项目
 
-### 打包
+   ```bash
+   git clone https://github.com/tansen87/sqlp.git
+   ```
 
-```sh
-pnpm tauri:build
-```
+2. cd到该项目的目录
 
+3. 安装依赖
 
+   ```bash
+   pnpm i
+   ```
 
-### release
+4. 运行
 
-* [sqlp](https://github.com/tansen87/sqlp/releases/)
+   ```bash
+   pnpm tauri:dev
+   ```
+
+5. 打包
+
+   ```bash
+   pnpm tauri:build
+   ```
 
 ### video
 
