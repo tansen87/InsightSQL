@@ -398,7 +398,7 @@ onBeforeMount(() => {
         height="15"
         style="margin-right: 4px"
       />
-      清空缓存并刷新
+      clear cache
     </el-button>
   </panel>
 </template>

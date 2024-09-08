@@ -11,12 +11,14 @@ use std::{
 use polars::{
   datatypes::AnyValue,
   io::{ csv::read::{ CsvParseOptions, CsvReadOptions }, SerReader },
-  prelude::{ CsvWriter, DataFrame, LazyCsvReader, LazyFileListReader, LazyFrame, SerWriter },
+  prelude::{ CsvWriter, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame, SerWriter },
   sql::SQLContext,
 };
 use polars_excel_writer::PolarsXlsxWriter;
 use chrono::TimeZone;
 use indexmap::IndexMap;
+
+use crate::excel::{ExcelReader, ToPolarsDataFrame};
 
 #[derive(Default, Clone, PartialEq)]
 enum OutputMode {
@@ -172,18 +174,24 @@ fn prepare_query(
       None => return Err(("File extension not found").into()),
     };
 
-    let lf = if file_extension == "parquet" {
-      LazyFrame::scan_parquet(table, Default::default())?
-    } else {
-      let csv_reader = LazyCsvReader::new(table)
-        .with_has_header(true)
-        .with_missing_is_null(true)
-        .with_separator(separator[0])
-        .with_infer_schema_length(Some(0))
-        .with_low_memory(false);
+    let lf = match file_extension.as_str() {
+      "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
+      "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
+        let mut excel_reader: ExcelReader = ExcelReader::new(table);
+        let df: DataFrame = excel_reader.worksheet_range_at(0).unwrap().to_df().unwrap();
+        df.lazy()
+      },
+      _ => {
+        let csv_reader = LazyCsvReader::new(table)
+          .with_has_header(true)
+          .with_missing_is_null(true)
+          .with_separator(separator[0])
+          .with_infer_schema_length(Some(0))
+          .with_low_memory(false);
 
-      csv_reader.finish()?
-    };
+        csv_reader.finish()?
+      }
+  };
 
     ctx.register(table_name, lf.with_optimizations(optimization_state));
   }

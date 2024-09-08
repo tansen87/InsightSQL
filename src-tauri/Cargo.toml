@@ -19,6 +19,7 @@ path = "src/lib/mod.rs"
 tauri-build = { version = "1.5.3", features = [] }
 
 [dependencies]
+calamine = "0.25.0"
 chrono = "0.4.38"
 serde = { version = "1", features = ["derive"] }
 tauri = { version = "1.7.1", features = [ "api-all"] }

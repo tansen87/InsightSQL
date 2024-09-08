@@ -15,7 +15,19 @@ const isRuntime = ref(false);
 const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat", "parquet"],
+  fileFormats: [
+    "csv",
+    "txt",
+    "tsv",
+    "spext",
+    "dat",
+    "parquet",
+    "xls",
+    "xlsx",
+    "xlsm",
+    "xlsb",
+    "ods"
+  ],
   sqlsrc: "select * from `filename`",
   sep: ",",
   write: false,
@@ -71,7 +83,7 @@ async function queryData() {
   columns.value = [];
   tableData.value = [];
   if (data.filePath == "") {
-    ElMessage.warning("未选择csv文件");
+    ElMessage.warning("未选择文件");
     return;
   }
   if (data.sqlsrc == "") {
