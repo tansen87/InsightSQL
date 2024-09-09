@@ -4571,7 +4571,6 @@ dependencies = [
  "indexmap 2.2.6",
  "polars",
  "polars_excel_writer",
- "regex",
  "serde",
  "serde_json",
  "tauri",
