@@ -178,7 +178,7 @@ fn prepare_query(
       "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let mut excel_reader: ExcelReader = ExcelReader::new(table);
-        let df: DataFrame = excel_reader.worksheet_range_at(0).unwrap().to_df().unwrap();
+        let df: DataFrame = excel_reader.worksheet_range_at(0)?.to_df()?;
         df.lazy()
       },
       _ => {

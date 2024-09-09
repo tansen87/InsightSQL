@@ -70,11 +70,11 @@ impl ExcelReader {
 
   /// Get the nth worksheet. Shortcut for getting the nth
   /// sheet_name, then the corresponding worksheet.
-  pub fn worksheet_range_at(&mut self, n: usize) -> Option<Range<Data>> {
-    if let Ok(sheet_range) = self.workbook.worksheet_range_at(n)? {
-      Some(sheet_range)
-    } else {
-      None
+  pub fn worksheet_range_at(&mut self, n: usize) -> Result<Range<Data>, Box<dyn Error>> {
+    match self.workbook.worksheet_range_at(n) {
+      Some(Ok(sheet_range)) => Ok(sheet_range),
+      Some(Err(e)) => Err(Box::new(e)),
+      None => Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Worksheet index out of bounds"))),
     }
   }
 }

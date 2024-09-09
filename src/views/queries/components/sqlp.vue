@@ -46,21 +46,21 @@ listen("expired", (event: any) => {
 });
 listen("query_err", (event: any) => {
   const error: any = event.payload;
-  const queryErrmsg: any = "query_err: " + error;
+  const queryErrmsg: any = "Error: " + error;
   ElMessage.error(queryErrmsg);
 });
 listen("size_msg", (event: any) => {
   const error: any = event.payload;
-  const sizeMsg: any = "file size error: " + error;
+  const sizeMsg: any = "Error: " + error;
   ElMessage.error(sizeMsg);
 });
 listen("exec_err", (event: any) => {
-  const error: any = "exec_err: " + event.payload;
+  const error: any = "Error: " + event.payload;
   ElMessage.error(error);
 });
 listen("get_err", (event: any) => {
   const error: any = event.payload;
-  const getErrmsg: any = "get_err: " + error;
+  const getErrmsg: any = "Error: " + error;
   ElMessage.error(getErrmsg);
 });
 listen("show", (event: any) => {
