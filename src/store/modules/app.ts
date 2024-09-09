@@ -37,7 +37,7 @@ export const useAppStore = defineStore({
       );
       if (opened && resize) {
         this.sidebar.withoutAnimation = true;
-        this.sidebar.opened = true;
+        this.sidebar.opened = false;
         layout.sidebarStatus = true;
       } else if (!opened && resize) {
         this.sidebar.withoutAnimation = true;
