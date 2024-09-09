@@ -5,7 +5,7 @@ export default {
   path: "/",
   name: "Home",
   component: Layout,
-  redirect: "/welcome",
+  redirect: "/queries",
   meta: {
     icon: "homeFilled",
     title: "sqlp",
@@ -13,9 +13,9 @@ export default {
   },
   children: [
     {
-      path: "/welcome",
+      path: "/queries",
       name: "Welcome",
-      component: () => import("@/views/welcome/index.vue"),
+      component: () => import("@/views/queries/index.vue"),
       meta: {
         title: "sqlp - A tool for quickly viewing Excel, CSV and Parquet",
         showLink: VITE_HIDE_HOME === "true" ? false : true
