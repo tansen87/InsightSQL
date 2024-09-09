@@ -1,6 +1,6 @@
 [package]
 name = "sqlp"
-version = "1.0.0"
+version = "1.0.3"
 description = "sqlp"
 authors = ["tansen"]
 license = "MIT"
@@ -16,13 +16,13 @@ name = "lib"
 path = "src/lib/mod.rs"
 
 [build-dependencies]
-tauri-build = { version = "1.5.3", features = [] }
+tauri-build = { version = "1.5.4", features = [] }
 
 [dependencies]
 calamine = "0.25.0"
 chrono = "0.4.38"
 serde = { version = "1", features = ["derive"] }
-tauri = { version = "1.7.1", features = [ "api-all"] }
+tauri = { version = "1.7.2", features = [ "api-all"] }
 polars = { version = "0.42.0", features = [
     "lazy",
     "diagonal_concat",
@@ -38,7 +38,7 @@ polars = { version = "0.42.0", features = [
 polars_excel_writer = "0.8.0"
 serde_json = "1"
 indexmap = {version = "2.2.6", features = ["serde"] }
-regex = "1"
+regex = "1.10.6"
 
 [features]
 # by default Tauri runs in production mode
