@@ -1,66 +1,71 @@
-<h1>sqlp</h1>
-> A tool that can quickly view Excel, CSV, and Parquet using SQL
+<h1>InsightSQL</h1>
 
-### 截图
+> A tool that can quickly view Excel, CSV and Parquet using SQL
+
+### screenshot
 
 ![image](/demo/screen.png)
 
 
 
-### 如何使用?
+## ✨Features
 
-1. 下载[release](https://github.com/tansen87/sqlp/releases/)，解压运行sqlp.exe
-2. Open File => 打开需要查询的文件(xls, xlsx, xlsm, xlsb, csv, parquet)，csv文件需要选择Open File旁边的分割符
-3. 编写sql语句，点击Execute开始查询
+- [x] Allows to load local Excel, CSV and Parquet files
+- [x] Support exporting as csv or xlsx files
+- [x] Use Polars SQL for querying
 
+### 🍖How to use?
 
+* Download [InsightSQL.7z](https://github.com/tansen87/sqlp/releases/), extract and run InsightSQL.exe
 
-### 两种查询模式
+### 🧀Two query modes
 
-1. 查询较简单时，在Execute上面的方框内输入sql语句，比如
+1. Directly enter SQL statements, such as:
 
    ```sql
    select * from `filename`
    ```
 
-2. 查询较复杂时，在Execute上面的方框内填写sql脚本的地址，比如`E:/Desktop/test_data/sqlp_test/test.sql`，然后编写sql语句(注意用`;`分隔sql语句)
+2. Write an SQL script, then select it and run it, for example:
 
    ```sql
-   create table temp as select * from "GL" where code like '1%';
+   create table temp as select * from "filename" where code like '1%';
    select * from temp limit 10;
    ```
 
-
-
-### 运行环境
+### 🏃‍Runtime Environment
 
 * Node.js 18+
 * pnpm 8.x+
-* rust 1.80.1+
+* 🦀Rust 1.80.1+
 
-### 源码安装
+## 🚀Development
 
-1. 克隆该项目
+1. Clone this repositories
 
    ```bash
-   git clone https://github.com/tansen87/sqlp.git
+   git clone https://github.com/tansen87/InsightSQL.git
    ```
 
-2. cd到该项目的目录
+2. cd to the directory of the project
 
-3. 安装依赖
+   ```bash
+   cd InsightSQL
+   ```
+
+3. Install dependencies
 
    ```bash
    pnpm i
    ```
 
-4. 运行
+4. Development
 
    ```bash
    pnpm tauri:dev
    ```
 
-5. 打包
+5. Build
 
    ```bash
    pnpm tauri:build
@@ -70,5 +75,5 @@
 
 * [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c)
 
-### 致谢
+### Thanks
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)

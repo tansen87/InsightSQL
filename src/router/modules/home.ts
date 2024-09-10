@@ -17,7 +17,7 @@ export default {
       name: "Welcome",
       component: () => import("@/views/queries/index.vue"),
       meta: {
-        title: "sqlp - A tool for quickly viewing Excel, CSV and Parquet",
+        title: "sqlp",
         showLink: VITE_HIDE_HOME === "true" ? false : true
       }
     }

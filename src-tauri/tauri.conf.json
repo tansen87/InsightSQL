@@ -7,7 +7,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "sqlp",
+    "productName": "InsightSQL",
     "version": "../package.json"
   },
   "tauri": {
@@ -16,7 +16,7 @@
         "fullscreen": false,
         "height": 768,
         "resizable": true,
-        "title": "sqlp",
+        "title": "InsightSQL",
         "width": 1024
       }
     ],

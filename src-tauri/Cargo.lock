@@ -3,6 +3,21 @@
 version = 3
 
 [[package]]
+name = "InsightSQL"
+version = "1.0.3"
+dependencies = [
+ "calamine",
+ "chrono",
+ "indexmap 2.2.6",
+ "polars",
+ "polars_excel_writer",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4560,21 +4575,6 @@ dependencies = [
  "gobject-sys",
  "libc",
  "system-deps 5.0.0",
-]
-
-[[package]]
-name = "sqlp"
-version = "1.0.3"
-dependencies = [
- "calamine",
- "chrono",
- "indexmap 2.2.6",
- "polars",
- "polars_excel_writer",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
 ]
 
 [[package]]

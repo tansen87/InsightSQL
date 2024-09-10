@@ -1,11 +1,11 @@
 [package]
-name = "sqlp"
+name = "InsightSQL"
 version = "1.0.3"
-description = "sqlp"
+description = "InsightSQL"
 authors = ["tansen"]
 license = "MIT"
 repository = ""
-default-run = "sqlp"
+default-run = "InsightSQL"
 edition = "2021"
 rust-version = "1.80.1"
 
