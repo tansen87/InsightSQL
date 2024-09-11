@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted, watchEffect } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Select, Loading, View, Download } from "@element-plus/icons-vue";
+import { FolderOpened, Search } from "@element-plus/icons-vue";
+import Prism from "prismjs";
+import "prismjs/components/prism-sql";
+import "prismjs/themes/prism.css";
 
-const selectedFiles = ref([]);
+// const selectedFiles = ref([]);
 const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
@@ -28,7 +32,7 @@ const data = reactive({
     "xlsb",
     "ods"
   ],
-  sqlsrc: "select * from `filename`",
+  sqlsrc: "select * from _t_1",
   sep: ",",
   write: false,
   writeFormat: "csv"
@@ -44,18 +48,13 @@ listen("expired", (event: any) => {
     confirmButtonText: "OK"
   });
 });
-listen("query_err", (event: any) => {
-  const error: any = event.payload;
-  const queryErrmsg: any = "Error: " + error;
-  ElMessage.error(queryErrmsg);
-});
 listen("size_msg", (event: any) => {
   const error: any = event.payload;
   const sizeMsg: any = "Error: " + error;
   ElMessage.error(sizeMsg);
 });
 listen("exec_err", (event: any) => {
-  const error: any = "Error: " + event.payload;
+  const error: any = "" + event.payload;
   ElMessage.error(error);
 });
 listen("get_err", (event: any) => {
@@ -86,18 +85,19 @@ async function queryData() {
     ElMessage.warning("未选择文件");
     return;
   }
-  if (data.sqlsrc == "") {
+  console.log(sqlsrc);
+  if (sqlsrc.value == "") {
     ElMessage.warning("sql script is empty");
     return;
   }
-  if (data.filePath != "" && data.sqlsrc != "") {
+  if (data.filePath != "" && sqlsrc.value != "") {
     isLoading.value = true;
     isFinish.value = false;
     isRuntime.value = false;
     try {
       await invoke("query", {
         path: data.filePath,
-        sqlsrc: data.sqlsrc,
+        sqlsrc: sqlsrc.value,
         sep: data.sep,
         write: data.write,
         writeFormat: data.writeFormat
@@ -114,7 +114,7 @@ async function queryData() {
 async function selectFile() {
   columns.value = [];
   tableData.value = [];
-  selectedFiles.value = [];
+  // selectedFiles.value = [];
   isLoading.value = false;
   isFinish.value = false;
   isRuntime.value = false;
@@ -122,17 +122,17 @@ async function selectFile() {
     multiple: true,
     filters: [
       {
-        name: "csv",
+        name: "",
         extensions: data.fileFormats
       }
     ]
   });
   if (Array.isArray(selected)) {
     data.filePath = selected.toString();
-    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((row: any) => {
-      return { filename: row };
-    });
+    // const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
+    // selectedFiles.value = nonEmptyRows.map((row: any) => {
+    //   return { filename: row };
+    // });
   } else if (selected === null) {
     return;
   } else {
@@ -153,37 +153,86 @@ async function selectFile() {
   */
 }
 
-function textareaChange(event: any) {
-  const textarea = event.target;
+// function textareaChange(event: any) {
+//   const textarea = event.target;
+//   textarea.style.height = "auto";
+//   textarea.style.height = textarea.scrollHeight + "px";
+// }
+const sqlsrc = ref("select * from _t_1");
+const highlightedCode = ref(null);
+
+const textareaChange = event => {
+  sqlsrc.value = event.target.value;
+  adjustTextareaHeight(event.target);
+};
+
+const adjustTextareaHeight = textarea => {
   textarea.style.height = "auto";
-  textarea.style.height = textarea.scrollHeight + "px";
-}
+  textarea.style.height = `${textarea.scrollHeight}px`;
+};
+
+const updateHighlightedCode = () => {
+  if (highlightedCode.value) {
+    highlightedCode.value.innerHTML = Prism.highlight(
+      sqlsrc.value,
+      Prism.languages.sql,
+      "sql"
+    );
+  }
+};
+
+watchEffect(() => {
+  updateHighlightedCode();
+});
+
+onMounted(() => {
+  updateHighlightedCode();
+});
 </script>
 
 <template>
   <el-form>
-    <div style="display: flex; align-items: flex-start">
-      <el-button type="primary" @click="selectFile()">Open File</el-button>
-      <el-form-item style="margin-left: 10px; width: 200px">
-        <el-select v-model="data.sep">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
-      </el-form-item>
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      "
+    >
+      <div style="display: flex; align-items: flex-start">
+        <el-button
+          type="primary"
+          @click="selectFile()"
+          :icon="FolderOpened"
+          plain
+        >
+          Open File
+        </el-button>
+        <el-form-item style="margin-left: 10px; width: 140px">
+          <el-select v-model="data.sep">
+            <el-option label="," value="," />
+            <el-option label="|" value="|" />
+            <el-option label="\t" value="\t" />
+            <el-option label=";" value=";" />
+          </el-select>
+        </el-form-item>
+      </div>
+      <el-text tag="ins">{{ data.filePath }}</el-text>
     </div>
-    <el-form-item>
+    <el-form-item class="editor-container">
       <textarea
-        v-model="data.sqlsrc"
+        :value="sqlsrc"
+        @input="textareaChange"
         rows="1"
         class="txt"
-        @input="textareaChange"
-        placeholder="select * from `filename`"
+        placeholder="select * from _t_1"
       />
+      <div ref="highlightedCode" class="highlighted-code" />
     </el-form-item>
     <el-form-item>
-      <el-button type="success" @click="queryData()">Execute</el-button>
+      <el-button type="success" @click="queryData()" :icon="Search" plain>
+        Execute
+      </el-button>
       <el-switch
         v-model="data.write"
         :active-action-icon="Download"
@@ -212,10 +261,7 @@ function textareaChange(event: any) {
       </div>
     </el-form-item>
   </el-form>
-  <el-table :data="selectedFiles" height="120" style="width: 100%">
-    <el-table-column prop="filename" label="file" />
-  </el-table>
-  <el-table :data="tableData" height="520" style="width: 100%">
+  <el-table :data="tableData" height="700" border style="width: 100%">
     <el-table-column
       v-for="column in columns"
       :prop="column.prop"
@@ -236,10 +282,9 @@ function textareaChange(event: any) {
   font-size: 30px; /* 根据需要调整图标大小 */
 }
 .txt {
-  border: 1px solid #cccccc;
+  border: 1px solid #f0dddd;
   outline: none;
-  font-size: 16px;
-  font-family: "Cascadia Code", monospace;
+  font-size: 20px;
   display: block;
   width: 100%;
   resize: none;
@@ -248,8 +293,23 @@ function textareaChange(event: any) {
   color: inherit;
   overflow: hidden;
 }
-.txt.autosize {
-  min-height: 40px; /* 设置一个最小高度 */
-  height: auto !important; /* 允许高度自动调整 */
+.highlighted-code {
+  border: 1px solid #f0dddd;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none; /* 确保点击事件不会影响到 <div> */
+  white-space: pre-wrap; /* 保留换行符和空格 */
+  word-wrap: break-word; /* 单词换行 */
+  background-color: transparent; /* 背景透明 */
+  color: inherit; /* 文字颜色继承 */
+  font-family: inherit; /* 字体继承 */
+  font-size: 20px;
+  padding: 0; /* 消除默认填充 */
+  margin: 0; /* 消除默认边距 */
+  line-height: 1.5;
 }
 </style>

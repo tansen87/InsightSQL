@@ -83,9 +83,9 @@ impl OutputMode {
     match execute_inner() {
       Ok(()) => Ok(query_df_to_json(df.head(Some(100)))?),
       Err(e) => {
-        eprintln!("Failed to execute query: {query}: {e}");
-        let errmsg = format!("Failed to execute query: {query}: {e}");
-        window.emit("exec_err", errmsg.clone()).unwrap();
+        eprintln!("Failed to execute query: {query}\n{e}");
+        let errmsg = format!("{e}");
+        window.emit("exec_err", &errmsg).unwrap();
         return Ok(errmsg);
       }
     }
@@ -402,7 +402,7 @@ pub async fn query(path: String, sqlsrc: String, sep: String, write: bool, write
     Ok(result) => result,
     Err(error) => {
       eprintln!("sql query error: {error}");
-      window.emit("query_err", &error.to_string()).unwrap();
+      // window.emit("query_err", &error.to_string()).unwrap();
       return ();
     }
   };
