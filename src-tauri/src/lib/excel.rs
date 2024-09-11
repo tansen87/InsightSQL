@@ -44,7 +44,7 @@ where
     let series: Vec<Series> = columns
       .into_iter()
       .zip(headers)
-      .map(|(col, name)| Series::new(&name, col))
+      .map(|(col, name)| Series::new((&name).into(), col))
       .collect();
 
     // constructing DataFrame

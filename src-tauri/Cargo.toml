@@ -23,7 +23,7 @@ calamine = "0.25.0"
 chrono = "0.4.38"
 serde = { version = "1", features = ["derive"] }
 tauri = { version = "1.7.2", features = [ "api-all"] }
-polars = { version = "0.42.0", features = [
+polars = { version = "0.43.0", features = [
     "lazy",
     "diagonal_concat",
     # "streaming",
@@ -35,7 +35,7 @@ polars = { version = "0.42.0", features = [
     "csv",
     "parquet",
     ] }
-polars_excel_writer = "0.8.0"
+rust_xlsxwriter = "0.75.0"
 serde_json = "1"
 indexmap = {version = "2.2.6", features = ["serde"] }
 

@@ -10,15 +10,17 @@ use std::{
 
 use polars::{
   datatypes::AnyValue,
+  error::PolarsError,
   io::{ csv::read::{ CsvParseOptions, CsvReadOptions }, SerReader },
-  prelude::{ CsvWriter, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame, SerWriter },
+  prelude::{ CsvWriter, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame, OptFlags, SerWriter },
   sql::SQLContext,
 };
-use polars_excel_writer::PolarsXlsxWriter;
+// use polars_excel_writer::PolarsXlsxWriter;
 use chrono::TimeZone;
 use indexmap::IndexMap;
 
 use crate::excel::{ExcelReader, ToPolarsDataFrame};
+use crate::xlsx_writer::write_xlsx;
 
 #[derive(Default, Clone, PartialEq)]
 enum OutputMode {
@@ -37,13 +39,13 @@ impl OutputMode {
     write: bool,
     write_format: &str,
     window: tauri::Window
-  ) -> Result<String, Box<polars::error::PolarsError>> {
+  ) -> Result<String, Box<PolarsError>> {
     let mut df = DataFrame::default();
     let mut separator = Vec::new();
     let sep_u8 = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
     separator.push(sep_u8);
-    let execute_inner = || -> Result<(), polars::error::PolarsError> {
-      df = ctx.execute(query).and_then(polars::prelude::LazyFrame::collect)?;
+    let execute_inner = || -> Result<(), PolarsError> {
+      df = ctx.execute(query).and_then(LazyFrame::collect)?;
       if write 
       {
         // we don't want to write anything if the output mode is None
@@ -52,13 +54,19 @@ impl OutputMode {
         }
 
         if (df.shape().0 < 104_0000) && (write_format == "xlsx") {
-          let mut xlsx_writer = PolarsXlsxWriter::new();
-          xlsx_writer.write_dataframe(&df)?;
-          let xlsx_path = match output.as_ref() {
-            Some(path) => Path::new(path),
-            None => Path::new("result.xlsx"),
-          };
-          xlsx_writer.save(xlsx_path)?;
+          let output: Option<PathBuf> = output.map(|s| PathBuf::from(s));
+          let output_path = match output {
+            Some(path) => path,
+            None => PathBuf::new(),
+        };
+          write_xlsx(df.clone(), output_path).expect("Writing to xlsx failed.");
+          // let mut xlsx_writer = PolarsXlsxWriter::new();
+          // xlsx_writer.write_dataframe(&df)?;
+          // let xlsx_path = match output.as_ref() {
+          //   Some(path) => Path::new(path),
+          //   None => Path::new("result.xlsx"),
+          // };
+          // xlsx_writer.save(xlsx_path)?;
           Ok(())
         } else {
           let w = match output {
@@ -135,9 +143,9 @@ fn prepare_query(
     output.push(output_str);
   }
 
-  let optimization_state = polars::lazy::frame::OptState::default();
-  // optimization_state.set(polars::lazy::frame::OptState::FILE_CACHING, false);
-  // optimization_state.set(polars::lazy::frame::OptState::STREAMING, true);
+  let optimization_state = OptFlags::default();
+  // optimization_state.set(OptFlags::FILE_CACHING, false);
+  // optimization_state.set(OptFlags::STREAMING, true);
 
   let mut table_aliases = HashMap::with_capacity(filepath.len());
   let mut lossy_table_name = Cow::default();
