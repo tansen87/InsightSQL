@@ -380,8 +380,8 @@ onBeforeMount(() => {
       <li>
         <span class="dark:text-white">标签风格</span>
         <el-radio-group v-model="markValue" size="small" @change="onChange">
-          <el-radio label="card">卡片</el-radio>
-          <el-radio label="smart">灵动</el-radio>
+          <el-radio value="card">卡片</el-radio>
+          <el-radio value="smart">灵动</el-radio>
         </el-radio-group>
       </li>
     </ul>

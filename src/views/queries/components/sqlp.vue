@@ -3,7 +3,7 @@ import { ref, reactive, onMounted, watchEffect } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { Select, Loading, View, Download } from "@element-plus/icons-vue";
 import { FolderOpened, Search } from "@element-plus/icons-vue";
 import Prism from "prismjs";
@@ -47,19 +47,13 @@ listen("expired", (event: any) => {
     confirmButtonText: "OK"
   });
 });
-listen("size_msg", (event: any) => {
-  const error: any = event.payload;
-  const sizeMsg: any = "Error: " + error;
-  ElMessage.error(sizeMsg);
-});
 listen("exec_err", (event: any) => {
   const error: any = "" + event.payload;
-  ElMessage.error(error);
-});
-listen("get_err", (event: any) => {
-  const error: any = event.payload;
-  const getErrmsg: any = "Error: " + error;
-  ElMessage.error(getErrmsg);
+  ElMessage({
+    message: error,
+    type: "error",
+    plain: true
+  });
 });
 listen("show", (event: any) => {
   const df: any = event.payload;
@@ -81,11 +75,19 @@ async function queryData() {
   columns.value = [];
   tableData.value = [];
   if (data.filePath == "") {
-    ElMessage.warning("未选择文件");
+    ElMessage({
+      message: "未选择文件",
+      type: "warning",
+      plain: true
+    });
     return;
   }
   if (sqlsrc.value == "") {
-    ElMessage.warning("sql script is empty");
+    ElMessage({
+      message: "sql script is empty",
+      type: "warning",
+      plain: true
+    });
     return;
   }
   if (data.filePath != "" && sqlsrc.value != "") {
@@ -101,7 +103,12 @@ async function queryData() {
         writeFormat: data.writeFormat
       });
     } catch (err) {
-      ElMessage.error(err);
+      ElNotification({
+        title: "invoke query",
+        message: err,
+        position: "bottom-right",
+        type: "error"
+      });
     }
     isLoading.value = false;
     isFinish.value = true;
@@ -181,6 +188,10 @@ watchEffect(() => {
 onMounted(() => {
   updateHighlightedCode();
 });
+
+const indexMethod = (index: number) => {
+  return (index + 1) * 1;
+};
 </script>
 
 <template>
@@ -255,6 +266,7 @@ onMounted(() => {
     </el-form-item>
   </el-form>
   <el-table :data="tableData" height="700" border style="width: 100%">
+    <el-table-column type="index" :index="indexMethod" />
     <el-table-column
       v-for="column in columns"
       :prop="column.prop"

@@ -21,8 +21,8 @@ export function viteBuildInfo(): Plugin {
         bold(
           green(
             `👏欢迎使用${blue(
-              "[sqlp]"
-            )},如果您感觉不错,记得点击后面链接给个star哦💖 https://github.com/tansen87/sqlp`
+              "[InsightSQL]"
+            )},如果您感觉不错,记得点击后面链接给个star哦💖 https://github.com/tansen87/InsightSQL`
           )
         )
       );
