@@ -32,7 +32,6 @@ const data = reactive({
     "xlsb",
     "ods"
   ],
-  sqlsrc: "select * from _t_1",
   sep: ",",
   write: false,
   writeFormat: "csv"
@@ -85,7 +84,6 @@ async function queryData() {
     ElMessage.warning("未选择文件");
     return;
   }
-  console.log(sqlsrc);
   if (sqlsrc.value == "") {
     ElMessage.warning("sql script is empty");
     return;
@@ -153,11 +151,6 @@ async function selectFile() {
   */
 }
 
-// function textareaChange(event: any) {
-//   const textarea = event.target;
-//   textarea.style.height = "auto";
-//   textarea.style.height = textarea.scrollHeight + "px";
-// }
 const sqlsrc = ref("select * from _t_1");
 const highlightedCode = ref(null);
 
@@ -279,12 +272,12 @@ onMounted(() => {
   align-items: center; /* 确保图标和按钮垂直对齐 */
 }
 .el-icon {
-  font-size: 30px; /* 根据需要调整图标大小 */
+  font-size: 30px;
 }
 .txt {
   border: 1px solid #f0dddd;
   outline: none;
-  font-size: 20px;
+  font-size: 18px;
   display: block;
   width: 100%;
   resize: none;
@@ -292,6 +285,7 @@ onMounted(() => {
   background: transparent;
   color: inherit;
   overflow: hidden;
+  font-family: "Consolas", monospace;
 }
 .highlighted-code {
   border: 1px solid #f0dddd;
@@ -307,9 +301,10 @@ onMounted(() => {
   background-color: transparent; /* 背景透明 */
   color: inherit; /* 文字颜色继承 */
   font-family: inherit; /* 字体继承 */
-  font-size: 20px;
+  font-size: 18px;
   padding: 0; /* 消除默认填充 */
   margin: 0; /* 消除默认边距 */
   line-height: 1.5;
+  font-family: "Consolas", monospace;
 }
 </style>
