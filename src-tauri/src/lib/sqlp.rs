@@ -116,14 +116,14 @@ fn prepare_query(
     let mut output_path = PathBuf::from(path);
 
     // check file size
-    let metadata = std::fs::metadata(path)?;
-    let file_size = metadata.len();
-    let kb = file_size / 1024;
-    if kb > 8_388_608 {
-      let size_msg = format!("{path} - {kb}, the data is too large.");
-      window.emit("size_msg", size_msg)?;
-      return Ok(());
-    }
+    // let metadata = std::fs::metadata(path)?;
+    // let file_size = metadata.len();
+    // let kb = file_size / 1024;
+    // if kb > 8_388_608 {
+    //   let size_msg = format!("{path} - {kb}, the data is too large.");
+    //   window.emit("size_msg", size_msg)?;
+    //   return Ok(());
+    // }
 
     output_path.set_extension(&output_suffix);
     let output_str = if let Some(output_path_str) = output_path.to_str() {
@@ -136,6 +136,8 @@ fn prepare_query(
   }
 
   let optimization_state = polars::lazy::frame::OptState::default();
+  // optimization_state.set(polars::lazy::frame::OptState::FILE_CACHING, false);
+  // optimization_state.set(polars::lazy::frame::OptState::STREAMING, true);
 
   let mut table_aliases = HashMap::with_capacity(filepath.len());
   let mut lossy_table_name = Cow::default();
