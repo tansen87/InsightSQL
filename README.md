@@ -13,6 +13,8 @@
 - [x] Allows to load local Excel, CSV and Parquet files
 - [x] Support exporting as csv or xlsx files
 - [x] Use Polars SQL for querying
+- [x] Exports Excel to a csv file
+- [x] Exports csv to a xlsx file
 
 ### 🍖How to use?
 
