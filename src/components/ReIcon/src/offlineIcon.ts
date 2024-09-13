@@ -8,7 +8,9 @@ import { addIcon } from "@iconify/vue/dist/offline";
 import HomeFilled from "@iconify-icons/ri/search-eye-line";
 import InformationLine from "@iconify-icons/ri/information-line";
 import Lollipop from "@iconify-icons/ep/lollipop";
+import Command from "@iconify-icons/ri/code-box-line";
 
 addIcon("homeFilled", HomeFilled);
 addIcon("informationLine", InformationLine);
 addIcon("lollipop", Lollipop);
+addIcon("command", Command);

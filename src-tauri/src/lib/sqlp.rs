@@ -197,11 +197,11 @@ fn prepare_query(
           .with_missing_is_null(true)
           .with_separator(separator[0])
           .with_infer_schema_length(Some(0))
-          .with_low_memory(false);
+          .with_low_memory(false).finish()?;
 
-        csv_reader.finish()?
+        csv_reader
       }
-  };
+    };
 
     ctx.register(table_name, lf.with_optimizations(optimization_state));
   }
