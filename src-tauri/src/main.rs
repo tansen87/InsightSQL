@@ -12,6 +12,7 @@ fn main() {
       sqlp::query,
       cat::concat,
       convert::switch_excel,
+      convert::switch_csv,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

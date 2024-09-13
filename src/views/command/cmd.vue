@@ -9,6 +9,9 @@ function toCat() {
 function toExcelToCsv() {
   router.push("/command/excel");
 }
+function toCsvToXlsx() {
+  router.push("/command/csv");
+}
 </script>
 
 <template>
@@ -25,7 +28,13 @@ function toExcelToCsv() {
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <el-card class="box-card" shadow="hover" @click="toExcelToCsv">
           <span class="titleColor">Excel to csv</span>
-          <p class="descriptionColor">Quickly convert excel to csv.</p>
+          <p class="descriptionColor">Exports Excel to a csv file.</p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+        <el-card class="box-card" shadow="hover" @click="toCsvToXlsx">
+          <span class="titleColor">csv to xlsx</span>
+          <p class="descriptionColor">Exports csv to a xlsx file.</p>
         </el-card>
       </el-col>
     </el-row>

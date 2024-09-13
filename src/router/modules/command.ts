@@ -29,7 +29,16 @@ export default {
       name: "excel",
       component: () => import("@/views/command/excel.vue"),
       meta: {
-        title: "Excel to Csv",
+        title: "Excel to csv",
+        showLink: false
+      }
+    },
+    {
+      path: "/command/csv",
+      name: "csv",
+      component: () => import("@/views/command/csv.vue"),
+      meta: {
+        title: "csv to xlsx",
         showLink: false
       }
     }

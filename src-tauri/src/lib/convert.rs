@@ -1,8 +1,17 @@
-use std::{ error::Error, path::PathBuf };
+use calamine::{Data, Range, Reader};
+use polars::{
+  io::SerReader,
+  prelude::{CsvParseOptions, CsvReadOptions},
+};
 use rayon::prelude::*;
-use calamine::{ Reader, Range, Data };
+use std::{
+  error::Error,
+  path::{Path, PathBuf},
+};
 
-fn convert(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
+use crate::xlsx_writer::write_xlsx;
+
+fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   /* convert excel to csv */
   let vec_path: Vec<&str> = path.split(',').collect();
   let mut count: usize = 0;
@@ -95,10 +104,9 @@ fn convert(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
                 float_val = *f;
 
                 #[allow(clippy::cast_precision_loss)]
-                if
-                  float_val.fract().abs() > f64::EPSILON ||
-                  float_val > (i64::MAX as f64) ||
-                  float_val < (i64::MIN as f64)
+                if float_val.fract().abs() > f64::EPSILON
+                  || float_val > (i64::MAX as f64)
+                  || float_val < (i64::MIN as f64)
                 {
                   record.push_field(ryu_buffer.format_finite(float_val));
                 } else {
@@ -154,10 +162,78 @@ fn convert(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   Ok(())
 }
 
+fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
+  /* csv to xlsx */
+  let vec_path: Vec<&str> = path.split(',').collect();
+  let mut separator = Vec::new();
+  let sep = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
+  separator.push(sep);
+
+  let mut count: usize = 0;
+  let file_len = vec_path.len();
+
+  for file in vec_path.iter() {
+    let start_convert = format!("{}|start", file);
+    window.emit("start_convert", start_convert)?;
+
+    let file_name = match Path::new(&file).file_name() {
+      Some(name) => match name.to_str() {
+        Some(name_str) => name_str.split('.').collect::<Vec<&str>>(),
+        None => vec![],
+      },
+      None => vec![],
+    };
+
+    let sce = PathBuf::from(file);
+    let dest = sce.with_extension("xlsx");
+    let df = CsvReadOptions::default()
+      .with_parse_options(
+        CsvParseOptions::default()
+          .with_separator(separator[0])
+          .with_missing_is_null(false),
+      )
+      .with_infer_schema_length(Some(0))
+      .try_into_reader_with_file_path(Some(file.into()))?
+      .finish()?;
+    let rows = df.shape().0;
+    if rows < 104_0000 {
+      write_xlsx(df, dest)?;
+      let c2x_msg = format!("{}", file);
+      window.emit("c2x_msg", c2x_msg)?;
+    } else {
+      let rows_msg = format!(
+        "{}.{}|rows:{}, cannot converted.",
+        file_name[0], file_name[1], rows
+      );
+      window.emit("rows_err", rows_msg)?;
+    }
+
+    count += 1;
+    let progress = ((count as f32) / (file_len as f32)) * 100.0;
+    let progress_s = format!("{progress:.0}");
+    window.emit("c2x_progress", progress_s)?;
+  }
+
+  Ok(())
+}
+
+#[tauri::command]
+pub async fn switch_csv(path: String, sep: String, window: tauri::Window) {
+  let copy_window = window.clone();
+  match (async { csv_to_xlsx(path, sep, copy_window) }).await {
+    Ok(result) => result,
+    Err(error) => {
+      eprintln!("write_range error: {error}");
+      window.emit("c2x_err", &error.to_string()).unwrap();
+      error.to_string();
+    }
+  };
+}
+
 #[tauri::command]
 pub async fn switch_excel(path: String, window: tauri::Window) {
   let file_window = window.clone();
-  match (async { convert(path, file_window) }).await {
+  match (async { excel_to_csv(path, file_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("write_range error: {error}");
