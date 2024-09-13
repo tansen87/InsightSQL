@@ -23,6 +23,15 @@ export default {
         title: "cat",
         showLink: false
       }
+    },
+    {
+      path: "/command/excel",
+      name: "excel",
+      component: () => import("@/views/command/excel.vue"),
+      meta: {
+        title: "Excel to Csv",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

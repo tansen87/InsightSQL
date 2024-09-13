@@ -3,25 +3,29 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-function handleCardClick() {
+function toCat() {
   router.push("/command/cat");
+}
+function toExcelToCsv() {
+  router.push("/command/excel");
 }
 </script>
 
 <template>
   <div class="app-container">
-    <el-row>
-      <el-col>
-        <el-card
-          class="box-card"
-          style="width: 25%"
-          shadow="hover"
-          @click="handleCardClick"
-        >
+    <el-row :gutter="20">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+        <el-card class="box-card" shadow="hover" @click="toCat">
           <span class="titleColor">cat</span>
           <p class="descriptionColor">
             Concatenate CSV and Excel files by column.
           </p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+        <el-card class="box-card" shadow="hover" @click="toExcelToCsv">
+          <span class="titleColor">Excel to csv</span>
+          <p class="descriptionColor">Quickly convert excel to csv.</p>
         </el-card>
       </el-col>
     </el-row>

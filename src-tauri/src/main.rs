@@ -2,6 +2,7 @@
 
 use lib::sqlp;
 use lib::cat;
+use lib::convert;
 
 fn main() {
   tauri::Builder
@@ -10,6 +11,7 @@ fn main() {
       sqlp::get, 
       sqlp::query,
       cat::concat,
+      convert::switch_excel,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

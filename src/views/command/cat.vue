@@ -88,7 +88,7 @@ async function selectFile() {
 
 <template>
   <div class="box">
-    <el-form :model="data">
+    <el-form>
       <div
         style="
           display: flex;
@@ -140,5 +140,8 @@ async function selectFile() {
 <style lang="scss">
 .box {
   margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #fff;
 }
 </style>
