@@ -8,10 +8,8 @@ import { handleAliveRoute, getTopMenu } from "@/router/utils";
 import { useSettingStoreHook } from "@/store/modules/settings";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { ref, watch, unref, toRaw, nextTick, onBeforeMount } from "vue";
-import { useResizeObserver, useDebounceFn, useFullscreen } from "@vueuse/core";
+import { useResizeObserver, useDebounceFn } from "@vueuse/core";
 
-import ExitFullscreen from "@iconify-icons/ri/fullscreen-exit-fill";
-import Fullscreen from "@iconify-icons/ri/fullscreen-fill";
 import ArrowDown from "@iconify-icons/ri/arrow-down-s-line";
 import ArrowRightSLine from "@iconify-icons/ri/arrow-right-s-line";
 import ArrowLeftSLine from "@iconify-icons/ri/arrow-left-s-line";
@@ -29,7 +27,6 @@ const {
   buttonLeft,
   showModel,
   translateX,
-  pureSetting,
   activeIndex,
   getTabStyle,
   iconIsActive,
@@ -40,8 +37,7 @@ const {
   closeMenu,
   onMounted,
   onMouseenter,
-  onMouseleave,
-  onContentFullScreen
+  onMouseleave
 } = useTags();
 
 const tabDom = ref();
@@ -50,7 +46,6 @@ const scrollbarDom = ref();
 const isShowArrow = ref(false);
 const topPath = getTopMenu().path;
 const { VITE_HIDE_HOME } = import.meta.env;
-const { isFullscreen, toggle } = useFullscreen();
 
 const dynamicTagView = () => {
   const index = multiTags.value.findIndex(item => {
@@ -290,32 +285,6 @@ function onClickDrop(key, item, selectRoute?: RouteConfigs) {
       router.push(topPath);
       handleAliveRoute(route as toRouteType);
       break;
-    case 6:
-      // 整体页面全屏
-      toggle();
-      setTimeout(() => {
-        if (isFullscreen.value) {
-          tagsViews[6].icon = ExitFullscreen;
-          tagsViews[6].text = "退出全屏";
-        } else {
-          tagsViews[6].icon = Fullscreen;
-          tagsViews[6].text = "全屏";
-        }
-      }, 100);
-      break;
-    case 7:
-      // 内容区全屏
-      onContentFullScreen();
-      setTimeout(() => {
-        if (pureSetting.hiddenSideBar) {
-          tagsViews[7].icon = ExitFullscreen;
-          tagsViews[7].text = "内容区退出全屏";
-        } else {
-          tagsViews[7].icon = Fullscreen;
-          tagsViews[7].text = "内容区全屏";
-        }
-      }, 100);
-      break;
   }
   setTimeout(() => {
     showMenuModel(route.fullPath, route.query);
@@ -492,11 +461,6 @@ onBeforeMount(() => {
 watch([route], () => {
   activeIndex.value = -1;
   dynamicTagView();
-});
-
-watch(isFullscreen, () => {
-  tagsViews[6].icon = Fullscreen;
-  tagsViews[6].text = "全屏";
 });
 
 onMounted(() => {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Search from "./search/index.vue";
 import mixNav from "./sidebar/mixNav.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import Breadcrumb from "./sidebar/breadCrumb.vue";
@@ -28,10 +27,6 @@ const { layout, device, onPanel, pureApp, toggleSideBar } = useNav();
     <mixNav v-if="layout === 'mix'" />
 
     <div v-if="layout === 'vertical'" class="vertical-header-right">
-      <!-- 菜单搜索 -->
-      <Search />
-      <!-- 通知 -->
-      <Notice id="header-notice" />
       <span
         class="set-icon navbar-bg-hover"
         title="打开项目配置"

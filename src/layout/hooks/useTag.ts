@@ -22,7 +22,6 @@ import {
   hasClass
 } from "@pureadmin/utils";
 
-import Fullscreen from "@iconify-icons/ri/fullscreen-fill";
 import CloseAllTags from "@iconify-icons/ri/subtract-line";
 import CloseOtherTags from "@iconify-icons/ri/text-spacing";
 import CloseRightTags from "@iconify-icons/ri/text-direction-l";
@@ -103,20 +102,6 @@ export function useTags() {
       divided: false,
       disabled: multiTags.value.length > 1 ? false : true,
       show: true
-    },
-    {
-      icon: Fullscreen,
-      text: "整体页面全屏",
-      divided: true,
-      disabled: false,
-      show: true
-    },
-    {
-      icon: Fullscreen,
-      text: "内容区全屏",
-      divided: false,
-      disabled: false,
-      show: true
     }
   ]);
 
@@ -195,12 +180,6 @@ export function useTags() {
     }
   }
 
-  function onContentFullScreen() {
-    pureSetting.hiddenSideBar
-      ? pureSetting.changeSetting({ key: "hiddenSideBar", value: false })
-      : pureSetting.changeSetting({ key: "hiddenSideBar", value: true });
-  }
-
   onMounted(() => {
     if (!showModel.value) {
       const configure = storageLocal().getItem<StorageConfigs>(
@@ -244,7 +223,6 @@ export function useTags() {
     closeMenu,
     onMounted,
     onMouseenter,
-    onMouseleave,
-    onContentFullScreen
+    onMouseleave
   };
 }

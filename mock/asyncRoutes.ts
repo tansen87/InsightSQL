@@ -12,7 +12,8 @@ const permissionRouter = {
   meta: {
     title: "nil page",
     icon: "lollipop",
-    rank: 10
+    rank: 10,
+    showLink: false
   },
   children: [
     {

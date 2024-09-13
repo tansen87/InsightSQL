@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import extraIcon from "./extraIcon.vue";
-import Search from "../search/index.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import { ref, toRaw, watch, onMounted, nextTick } from "vue";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { getParentPaths, findRouteByPath } from "@/router/utils";
 import { usePermissionStoreHook } from "@/store/modules/permission";
-import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
 import Setting from "@iconify-icons/ri/settings-3-line";
 
 const menuRef = ref();
@@ -16,13 +14,10 @@ const {
   route,
   device,
   routers,
-  logout,
   onPanel,
   menuSelect,
   resolvePath,
-  username,
-  getDivStyle,
-  avatarsStyle
+  getDivStyle
 } = useNav();
 
 function getDefaultActive(routePath) {
@@ -89,31 +84,6 @@ watch(
       </el-menu-item>
     </el-menu>
     <div class="horizontal-header-right">
-      <!-- 菜单搜索 -->
-      <Search />
-      <!-- 通知 -->
-      <Notice id="header-notice" />
-      <!-- 退出登录 -->
-      <el-dropdown trigger="click">
-        <span class="el-dropdown-link navbar-bg-hover select-none">
-          <img
-            src="https://avatars.githubusercontent.com/u/44761321?v=4"
-            :style="avatarsStyle"
-          />
-          <p v-if="username" class="dark:text-white">{{ username }}</p>
-        </span>
-        <template #dropdown>
-          <el-dropdown-menu class="logout">
-            <el-dropdown-item @click="logout">
-              <IconifyIconOffline
-                :icon="LogoutCircleRLine"
-                style="margin: 5px"
-              />
-              退出系统
-            </el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
       <span
         class="set-icon navbar-bg-hover"
         title="打开项目配置"
