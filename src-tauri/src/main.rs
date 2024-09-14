@@ -3,6 +3,7 @@
 use lib::sqlp;
 use lib::cat;
 use lib::convert;
+use lib::count;
 
 fn main() {
   tauri::Builder
@@ -13,6 +14,7 @@ fn main() {
       cat::concat,
       convert::switch_excel,
       convert::switch_csv,
+      count::count,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

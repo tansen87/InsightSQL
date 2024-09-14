@@ -87,7 +87,7 @@ async function selectFile() {
 </script>
 
 <template>
-  <div class="box">
+  <div class="page-container">
     <el-form>
       <div
         style="
@@ -105,25 +105,22 @@ async function selectFile() {
           >
             Open File
           </el-button>
-          <el-form-item style="margin-left: 20px; width: 100px">
-            <el-select v-model="data.sep">
-              <el-option label="," value="," />
-              <el-option label="|" value="|" />
-              <el-option label="\t" value="\t" />
-              <el-option label=";" value=";" />
-            </el-select>
-          </el-form-item>
-          <el-form-item style="margin-left: 20px">
-            <el-button
-              type="success"
-              @click="concatData()"
-              :loading="isLoading"
-              :icon="Connection"
-              plain
-            >
-              Concat
-            </el-button>
-          </el-form-item>
+          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
+            <el-option label="," value="," />
+            <el-option label="|" value="|" />
+            <el-option label="\t" value="\t" />
+            <el-option label=";" value=";" />
+          </el-select>
+          <el-button
+            type="success"
+            @click="concatData()"
+            :loading="isLoading"
+            :icon="Connection"
+            plain
+            style="margin-left: 16px"
+          >
+            Concat
+          </el-button>
         </div>
         <el-text type="primary" size="large">
           <el-icon> <Connection /> </el-icon>
@@ -138,7 +135,7 @@ async function selectFile() {
 </template>
 
 <style lang="scss">
-.box {
+.page-container {
   margin-bottom: 20px;
   padding: 20px;
   border-radius: 10px;

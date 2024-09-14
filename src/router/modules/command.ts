@@ -41,6 +41,15 @@ export default {
         title: "csv to xlsx",
         showLink: false
       }
+    },
+    {
+      path: "/command/count",
+      name: "count",
+      component: () => import("@/views/command/count.vue"),
+      meta: {
+        title: "count",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

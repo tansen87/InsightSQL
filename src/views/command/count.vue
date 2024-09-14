@@ -3,19 +3,9 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage, ElIcon, TableColumnCtx } from "element-plus";
-import {
-  FolderOpened,
-  SwitchFilled,
-  Loading,
-  Select,
-  CloseBold
-} from "@element-plus/icons-vue";
+import { ElMessage, ElIcon } from "element-plus";
+import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
 
-interface FileStatus {
-  filename: string;
-  status: string;
-}
 const isProcessing = ref(false);
 const progress = ref(0);
 const selectedFiles = ref([]);
@@ -26,14 +16,6 @@ const customColors = [
   { color: "#ADFF2F", percentage: 80 },
   { color: "#9ACD32", percentage: 100 }
 ];
-const filterFileStatus = (
-  value: string,
-  row: FileStatus,
-  column: TableColumnCtx<FileStatus>
-) => {
-  const property = column["property"];
-  return row[property] === value;
-};
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
@@ -48,77 +30,41 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("c2x_err", (event: any) => {
-  const error: any = "c2x_err: " + event.payload;
-  ElMessage({
-    showClose: true,
-    message: error,
-    type: "error",
-    duration: 0
+listen("count_err", (event: any) => {
+  const error: any = event.payload;
+  const countErrMsg: any = "count error: " + error;
+  ElMessage.error(countErrMsg);
+});
+listen("count_msg", (event: any) => {
+  const countMsg: any = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename.split("\\").pop() === countMsg.split("|")[0]) {
+      file.status = countMsg.split("|")[1];
+    }
   });
 });
-listen("c2x_progress", (event: any) => {
+listen("count_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
 });
-listen("read_err", (event: any) => {
-  const error: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === error.split("|")[0]) {
-      file.status = "error";
-    }
-  });
-  ElMessage({
-    showClose: true,
-    message: "read_err: " + error,
-    type: "error",
-    duration: 0
-  });
-});
-listen("rows_err", (event: any) => {
-  const error: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === error.split("|")[0]) {
-      file.status = "error";
-    }
-  });
-  ElMessage({
-    showClose: true,
-    message: "rows_err: " + error,
-    type: "error",
-    duration: 0
-  });
-});
-listen("c2x_msg", (event: any) => {
-  const c2xMsg: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === c2xMsg) {
-      file.status = "completed";
-    }
-  });
-});
 
-// convert csv to xlsx
-async function csvToxlsx() {
+// count csv rows
+async function countData() {
   if (data.filePath == "") {
     ElMessage.warning("未选择csv文件");
     return;
   }
+  isProcessing.value = true;
+  ElMessage.info("Running...");
+  await invoke("count", {
+    path: data.filePath,
+    sep: data.sep
+  });
 
-  if (data.filePath != "") {
-    ElMessage.info("Running...");
-    isProcessing.value = true;
-    await invoke("switch_csv", {
-      path: data.filePath,
-      sep: data.sep
-    });
-    ElMessage.success("convert done.");
-  }
+  ElMessage.success("count done.");
 }
 
-// open file
 async function selectFile() {
-  selectedFiles.value = [];
   isProcessing.value = false;
   progress.value = 0;
   const selected = await open({
@@ -137,7 +83,6 @@ async function selectFile() {
       return { filename: file, status: "" };
     });
   } else if (selected === null) {
-    ElMessage.warning("未选择文件");
     return;
   } else {
     data.filePath = selected;
@@ -153,6 +98,7 @@ async function selectFile() {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
+          position: sticky;
         "
       >
         <div style="display: flex; align-items: flex-start">
@@ -172,45 +118,32 @@ async function selectFile() {
           </el-select>
           <el-button
             type="success"
-            @click="csvToxlsx()"
-            :icon="SwitchFilled"
+            @click="countData()"
+            :icon="Grape"
             plain
             style="margin-left: 16px"
           >
-            Convert
+            Count
           </el-button>
         </div>
         <el-text type="primary" size="large">
-          <el-icon> <SwitchFilled /> </el-icon>
-          Exports csv to a xlsx file
+          <el-icon> <Grape /> </el-icon>
+          Count the rows of CSV files
         </el-text>
       </div>
+
+      <el-table :data="selectedFiles" height="760" style="width: 100%">
+        <el-table-column prop="filename" label="file" style="width: 80%" />
+        <el-table-column label="rows" width="100">
+          <template #default="scope">
+            <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
+              <Loading />
+            </ElIcon>
+            <span>{{ scope.row.status }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-form>
-    <el-table :data="selectedFiles" height="760" style="width: 100%">
-      <el-table-column prop="filename" label="file" style="width: 80%" />
-      <el-table-column
-        prop="status"
-        label="status"
-        :filters="[
-          { text: 'x', value: 'error' },
-          { text: '√', value: 'completed' }
-        ]"
-        :filter-method="filterFileStatus"
-        width="100"
-      >
-        <template #default="scope">
-          <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
-            <Loading />
-          </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
-            <Select />
-          </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
-            <CloseBold />
-          </ElIcon>
-        </template>
-      </el-table-column>
-    </el-table>
     <el-progress
       v-if="isProcessing"
       :percentage="progress"

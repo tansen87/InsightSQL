@@ -59,7 +59,7 @@ listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert.split("|")[0]) {
-      file.status = "awaiting";
+      file.status = "loading";
     }
   });
 });
@@ -132,7 +132,7 @@ async function excelToCsv() {
 </script>
 
 <template>
-  <div class="box">
+  <div class="page-container">
     <el-form>
       <div
         style="
@@ -179,7 +179,7 @@ async function excelToCsv() {
         width="100"
       >
         <template #default="scope">
-          <ElIcon v-if="scope.row.status === 'awaiting'" class="is-loading">
+          <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
             <Loading />
           </ElIcon>
           <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
@@ -200,7 +200,7 @@ async function excelToCsv() {
 </template>
 
 <style lang="scss">
-.box {
+.page-container {
   margin-bottom: 20px;
   padding: 20px;
   border-radius: 10px;
