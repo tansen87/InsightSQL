@@ -4,3 +4,4 @@ pub mod xlsx_writer;
 pub mod cat;
 pub mod convert;
 pub mod count;
+pub mod rename;

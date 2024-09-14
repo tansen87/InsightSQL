@@ -50,6 +50,15 @@ export default {
         title: "count",
         showLink: false
       }
+    },
+    {
+      path: "/command/rename",
+      name: "rename",
+      component: () => import("@/views/command/rename.vue"),
+      meta: {
+        title: "rename",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

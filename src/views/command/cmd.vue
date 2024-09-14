@@ -15,6 +15,9 @@ function toCsvToXlsx() {
 function toCount() {
   router.push("/command/count");
 }
+function toRename() {
+  router.push("/command/rename");
+}
 </script>
 
 <template>
@@ -44,6 +47,12 @@ function toCount() {
         <el-card class="box-card" shadow="hover" @click="toCount">
           <span class="titleColor">Count</span>
           <p class="descriptionColor">Count the rows of CSV files.</p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+        <el-card class="box-card" shadow="hover" @click="toRename">
+          <span class="titleColor">Rename</span>
+          <p class="descriptionColor">Rename the columns of a CSV.</p>
         </el-card>
       </el-col>
     </el-row>
