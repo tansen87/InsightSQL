@@ -14,10 +14,11 @@
     "windows": [
       {
         "fullscreen": false,
+        "width": 1024,
         "height": 768,
         "resizable": true,
         "title": "InsightSQL",
-        "width": 1024
+        "fileDropEnabled": false
       }
     ],
     "bundle": {
@@ -30,9 +31,9 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "copyright": "Copyright © 2020-present, pure-admin",
+      "copyright": "",
       "category": "DeveloperTool",
-      "identifier": "com.tauri.pure",
+      "identifier": "",
       "macOS": {
         "entitlements": null,
         "exceptionDomain": "",
@@ -55,9 +56,6 @@
     },
     "security": {
       "csp": null
-    },
-    "updater": {
-      "active": false
     },
     "allowlist": {
       "all": true

@@ -36,6 +36,33 @@ listen("cat_err", (event: any) => {
   });
 });
 
+// open file
+async function selectFile() {
+  selectedFiles.value = [];
+  const selected = await open({
+    multiple: true,
+    filters: [
+      {
+        name: "",
+        extensions: data.fileFormats
+      }
+    ]
+  });
+  if (Array.isArray(selected)) {
+    data.filePath = selected.join("|").toString();
+    console.log(data.filePath);
+    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
+    selectedFiles.value = nonEmptyRows.map((file: any) => {
+      return { filename: file };
+    });
+  } else if (selected === null) {
+    ElMessage.warning("未选择文件");
+    return;
+  } else {
+    data.filePath = selected;
+  }
+}
+
 // data concat
 async function concatData() {
   if (data.filePath == "") {
@@ -56,32 +83,6 @@ async function concatData() {
       type: "success",
       duration: 0
     });
-  }
-}
-
-// open file
-async function selectFile() {
-  selectedFiles.value = [];
-  const selected = await open({
-    multiple: true,
-    filters: [
-      {
-        name: "",
-        extensions: data.fileFormats
-      }
-    ]
-  });
-  if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
-    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file };
-    });
-  } else if (selected === null) {
-    ElMessage.warning("未选择文件");
-    return;
-  } else {
-    data.filePath = selected;
   }
 }
 </script>

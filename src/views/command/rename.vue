@@ -11,12 +11,12 @@ import {
   FolderOpened
 } from "@element-plus/icons-vue";
 
-const getCSVMsg = ref("");
 const tableData: any = ref([]);
 const writeRows = ref(0);
 const isFinish = ref(false);
 const isLoading = ref(false);
 const isWrite = ref(false);
+const isPath = ref(false);
 const search = ref("");
 const filterTableData = computed(() =>
   tableData.value.filter(
@@ -51,6 +51,7 @@ async function selectFile() {
   isLoading.value = false;
   isFinish.value = false;
   isWrite.value = false;
+  isPath.value = false;
   const selected = await open({
     multiple: false,
     filters: [
@@ -68,7 +69,7 @@ async function selectFile() {
     data.filePath = selected;
   }
 
-  getCSVMsg.value = selected.toString();
+  isPath.value = true;
 
   const headers: any = await invoke("get_headers", {
     path: data.filePath,
@@ -159,7 +160,8 @@ async function headerEdit(row: any) {
 
         <el-text type="primary" size="large">
           <el-icon> <Watermelon /> </el-icon>
-          Rename the columns of a CSV
+          <span v-if="isPath">{{ data.filePath }}</span>
+          <span v-else>Rename the columns of a CSV</span>
         </el-text>
       </div>
       <el-table :data="filterTableData" height="760" style="width: 100%">
@@ -185,7 +187,6 @@ async function headerEdit(row: any) {
         </el-table-column>
       </el-table>
     </el-form>
-    <el-text class="mx-1" type="primary">{{ getCSVMsg }}</el-text>
   </div>
 </template>
 

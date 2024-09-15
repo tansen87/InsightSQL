@@ -16,24 +16,19 @@ use crate::{
 fn concat_all(path: String, sep: String) -> Result<(), Box<dyn Error>> {
   /* concat csv and excel files into a xlsx or csv file */
   let mut separator = Vec::new();
-  let sep_u8 = if sep == "\\t" {
+  let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep_u8);
+  separator.push(sep);
 
-  let vec_path: Vec<&str> = path.split(',').collect();
+  let vec_path: Vec<&str> = path.split('|').collect();
+
   let mut lfs = Vec::new();
 
   for file in vec_path.iter() {
-    let fname = match Path::new(&file).file_name() {
-      Some(name) => match name.to_str() {
-        Some(name_str) => name_str.split('.').collect::<Vec<&str>>(),
-        None => vec![],
-      },
-      None => vec![],
-    };
+    let fname = Path::new(&file).file_name().unwrap();
 
     let file_extension = match Path::new(file).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
@@ -60,7 +55,7 @@ fn concat_all(path: String, sep: String) -> Result<(), Box<dyn Error>> {
       }
     };
 
-    let file_name = format!("{}.{}", fname[0], fname[1]);
+    let file_name = format!("{:#?}", fname);
     let lf = lf.with_column(lit(file_name).alias("FileName"));
     lfs.push(lf);
   }
@@ -78,7 +73,7 @@ fn concat_all(path: String, sep: String) -> Result<(), Box<dyn Error>> {
   )?
   .collect()?;
 
-  let file_path = Path::new(&path)
+  let file_path = Path::new(&vec_path[0])
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap_or_else(|| "Default Path".to_string().into());

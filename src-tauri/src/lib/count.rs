@@ -13,7 +13,7 @@ fn count_rows(
     sep.into_bytes()[0]
   };
   separator.push(sep);
-  let vec_path: Vec<&str> = path.split(',').collect();
+  let vec_path: Vec<&str> = path.split('|').collect();
   let mut vec_file = Vec::new();
   let mut countf: usize = 0;
   let file_len = vec_path.len();

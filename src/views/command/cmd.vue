@@ -18,41 +18,48 @@ function toCount() {
 function toRename() {
   router.push("/command/rename");
 }
+function toSelect() {
+  router.push("/command/select");
+}
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="page-container">
     <el-row :gutter="20">
-      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
         <el-card class="box-card" shadow="hover" @click="toCat">
-          <span class="titleColor">Cat</span>
-          <p class="descriptionColor">
-            Concatenate CSV and Excel files by column.
-          </p>
+          <span class="title-color">Cat</span>
+          <p class="description-color">Concatenate CSV and Excel files.</p>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
         <el-card class="box-card" shadow="hover" @click="toExcelToCsv">
-          <span class="titleColor">Excel to csv</span>
-          <p class="descriptionColor">Exports Excel to csv files.</p>
+          <span class="title-color">Excel to csv</span>
+          <p class="description-color">Exports Excel to csv files.</p>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-        <el-card class="box-card" shadow="hover" @click="toCsvToXlsx">
-          <span class="titleColor">Csv to xlsx</span>
-          <p class="descriptionColor">Exports csv to xlsx files.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
         <el-card class="box-card" shadow="hover" @click="toCount">
-          <span class="titleColor">Count</span>
-          <p class="descriptionColor">Count the rows of CSV files.</p>
+          <span class="title-color">Count</span>
+          <p class="description-color">Count the rows of CSV files.</p>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+        <el-card class="box-card" shadow="hover" @click="toCsvToXlsx">
+          <span class="title-color">Csv to xlsx</span>
+          <p class="description-color">Exports csv to xlsx files.</p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
         <el-card class="box-card" shadow="hover" @click="toRename">
-          <span class="titleColor">Rename</span>
-          <p class="descriptionColor">Rename the columns of a CSV.</p>
+          <span class="title-color">Rename</span>
+          <p class="description-color">Rename the columns of a CSV.</p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+        <el-card class="box-card" shadow="hover" @click="toSelect">
+          <span class="title-color">Select</span>
+          <p class="description-color">Select, re-order or drop columns.</p>
         </el-card>
       </el-col>
     </el-row>
@@ -60,57 +67,19 @@ function toRename() {
 </template>
 
 <style lang="scss" scoped>
-.app-container {
+.page-container {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
-.el-form {
-  flex: 1;
-}
-.el-table {
-  flex: 1;
-}
 .box-card {
-  margin-bottom: 20px;
-
-  :deep(.el-card__header) {
-    padding-bottom: 0;
-    border: none;
-  }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-weight: 600;
-  }
-
-  .card-content {
-    ::deep(.el-progress-bar__outer) {
-      height: 17px !important;
-    }
-
-    .numerical-value {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 10px;
-
-      .number {
-        color: var(--text-color-primary);
-        font-size: var(--font-size-extra-large);
-        font-weight: 600;
-      }
-    }
-  }
+  margin-bottom: 16px;
 }
-
-.titleColor {
+.title-color {
   font-weight: bold;
   font-size: 30px;
 }
-.descriptionColor {
+.description-color {
   font-size: 15px;
 }
 </style>

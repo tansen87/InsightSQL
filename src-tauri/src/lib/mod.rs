@@ -5,3 +5,4 @@ pub mod cat;
 pub mod convert;
 pub mod count;
 pub mod rename;
+pub mod select;

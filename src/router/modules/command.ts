@@ -59,6 +59,15 @@ export default {
         title: "rename",
         showLink: false
       }
+    },
+    {
+      path: "/command/select",
+      name: "select",
+      component: () => import("@/views/command/select.vue"),
+      meta: {
+        title: "select",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

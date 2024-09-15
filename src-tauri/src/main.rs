@@ -5,6 +5,7 @@ use lib::cat;
 use lib::convert;
 use lib::count;
 use lib::rename;
+use lib::select;
 
 fn main() {
   tauri::Builder
@@ -18,6 +19,8 @@ fn main() {
       count::count,
       rename::get_headers,
       rename::rename,
+      select::has_headers,
+      select::select,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

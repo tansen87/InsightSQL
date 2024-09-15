@@ -133,7 +133,7 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.filePath = selected.join("|").toString();
     // const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     // selectedFiles.value = nonEmptyRows.map((row: any) => {
     //   return { filename: row };

@@ -13,7 +13,7 @@ use crate::xlsx_writer::write_xlsx;
 
 fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   /* convert excel to csv */
-  let vec_path: Vec<&str> = path.split(',').collect();
+  let vec_path: Vec<&str> = path.split('|').collect();
   let mut count: usize = 0;
   let file_len = vec_path.len();
 
@@ -164,7 +164,7 @@ fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error
 
 fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   /* csv to xlsx */
-  let vec_path: Vec<&str> = path.split(',').collect();
+  let vec_path: Vec<&str> = path.split('|').collect();
   let mut separator = Vec::new();
   let sep = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
   separator.push(sep);
