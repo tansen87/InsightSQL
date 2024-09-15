@@ -53,7 +53,7 @@ fn select_columns(
   let cols_cleaned: String = cols.replace("\r", "").replace("\n", "");
   let cols_select: Vec<&str> = cols_cleaned.split('|').collect();
   let vec_path: Vec<&str> = path.split('|').collect();
-  println!("{:?}", vec_path);
+
   for f in vec_path.iter() {
     let file_path = Path::new(&f);
     let file_name = match file_path.file_name() {

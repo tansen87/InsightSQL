@@ -3,8 +3,14 @@
 > A tool that can quickly view Excel, CSV and Parquet using SQL
 
 ### screenshot
-
-![image](/demo/screen.png)
+* polars SQL for query
+![sqlp](/demo/sqlp.png)
+* cat
+![cat](/demo/cat.png)
+* rename
+![rename](/demo/rename.png)
+* select
+![select](/demo/select.png)
 
 
 
@@ -13,8 +19,13 @@
 - [x] Allows to load local Excel, CSV and Parquet files
 - [x] Support exporting as csv or xlsx files
 - [x] Use Polars SQL for querying
+- [x] Concatenate CSV and Excel files
 - [x] Exports Excel to a csv file
+- [x] Count the rows of CSV files
 - [x] Exports csv to a xlsx file
+- [x] Rename the columns of a CSV
+- [x] Select, re-order, duplicate or drop columns
+
 
 ### 🍖How to use?
 
@@ -37,9 +48,9 @@
 
 ### 🏃‍Runtime Environment
 
-* Node.js 18+
-* pnpm 8.x+
-* 🦀Rust 1.80.1+
+* Node.js 20+
+* pnpm 9.9.0+
+* 🦀Rust 1.81.0+
 
 ## 🚀Development
 
@@ -79,3 +90,4 @@
 
 ### Thanks
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)
+* [qsv](https://github.com/jqnatividad/qsv)

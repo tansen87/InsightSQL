@@ -17,8 +17,8 @@ const data = reactive({
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   sep: ","
 });
-const list1 = ref([]);
-const list2 = ref([]);
+const originalList = ref([]);
+const selectList = ref([]);
 const isLoading = ref(false);
 const isFinish = ref(false);
 const isPath = ref(false);
@@ -37,8 +37,8 @@ async function selectFile() {
   isLoading.value = false;
   isFinish.value = false;
   isPath.value = false;
-  list1.value = [];
-  list2.value = [];
+  originalList.value = [];
+  selectList.value = [];
   const selected = await open({
     multiple: false,
     filters: [
@@ -62,7 +62,7 @@ async function selectFile() {
     path: data.filePath,
     sep: data.sep
   });
-  list1.value = headers;
+  originalList.value = headers;
 }
 
 // select data
@@ -71,13 +71,13 @@ async function selectColumns() {
     ElMessage.warning("未选择文件");
     return;
   }
-  if (list2.value.length === 0) {
+  if (selectList.value.length === 0) {
     ElMessage.warning("未选择columns");
     return;
   }
 
   const names = computed(() => {
-    return list2.value.map(item => item.name).join("|");
+    return selectList.value.map(item => item.name).join("|");
   });
 
   isLoading.value = true;
@@ -160,13 +160,13 @@ async function selectColumns() {
         >
           <VueDraggable
             class="flex flex-col gap-2 p-4 w-full h-full bg-gray-500/5 rounded overflow-auto"
-            v-model="list1"
+            v-model="originalList"
             animation="150"
             ghostClass="ghost"
-            group="people"
+            group="selectGroup"
           >
             <div
-              v-for="item in list1"
+              v-for="item in originalList"
               :key="item.id"
               class="cursor-move h-30 bg-gray-500/5 rounded p-3"
             >
@@ -183,13 +183,13 @@ async function selectColumns() {
         >
           <VueDraggable
             class="flex flex-col gap-2 p-4 w-full h-full bg-gray-500/5 rounded overflow-auto"
-            v-model="list2"
+            v-model="selectList"
             animation="150"
-            group="people"
+            group="selectGroup"
             ghostClass="ghost"
           >
             <div
-              v-for="item in list2"
+              v-for="item in selectList"
               :key="item.id"
               class="cursor-move h-30 bg-gray-500/5 rounded p-3"
             >
