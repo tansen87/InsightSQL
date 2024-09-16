@@ -21,6 +21,9 @@ function toRename() {
 function toSelect() {
   router.push("/command/select");
 }
+function toSearch() {
+  router.push("/command/search");
+}
 </script>
 
 <template>
@@ -60,6 +63,14 @@ function toSelect() {
         <el-card class="box-card" shadow="hover" @click="toSelect">
           <span class="title-color">Select</span>
           <p class="description-color">Select, re-order or drop columns.</p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+        <el-card class="box-card" shadow="hover" @click="toSearch">
+          <span class="title-color">Search</span>
+          <p class="description-color">
+            Select fields and shows only matching rows.
+          </p>
         </el-card>
       </el-col>
     </el-row>

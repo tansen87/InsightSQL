@@ -6,3 +6,4 @@ pub mod convert;
 pub mod count;
 pub mod rename;
 pub mod select;
+pub mod search;

@@ -68,6 +68,15 @@ export default {
         title: "select",
         showLink: false
       }
+    },
+    {
+      path: "/command/search",
+      name: "search",
+      component: () => import("@/views/command/search.vue"),
+      meta: {
+        title: "search",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

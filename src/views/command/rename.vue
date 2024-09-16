@@ -98,7 +98,6 @@ async function renameData() {
   const headersString = headersStringArray.join(",");
   isLoading.value = true;
   isFinish.value = false;
-  isWrite.value = true;
   await invoke("rename", {
     path: data.filePath,
     sep: data.sep,
@@ -106,6 +105,7 @@ async function renameData() {
   });
   isLoading.value = false;
   isFinish.value = true;
+  isWrite.value = true;
   ElMessage.success("rename done.");
 }
 

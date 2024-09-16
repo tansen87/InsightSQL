@@ -6,6 +6,7 @@ use lib::convert;
 use lib::count;
 use lib::rename;
 use lib::select;
+use lib::search;
 
 fn main() {
   tauri::Builder
@@ -21,6 +22,8 @@ fn main() {
       rename::rename,
       select::has_headers,
       select::select,
+      search::search_headers,
+      search::search,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
