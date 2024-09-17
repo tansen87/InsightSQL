@@ -16,6 +16,7 @@ const tableData = ref([]);
 const isLoading = ref(false);
 const isFinish = ref(false);
 const isRuntime = ref(false);
+const isPath = ref(false);
 const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
@@ -123,6 +124,7 @@ async function selectFile() {
   isLoading.value = false;
   isFinish.value = false;
   isRuntime.value = false;
+  isPath.value = false;
   const selected = await open({
     multiple: true,
     filters: [
@@ -143,6 +145,8 @@ async function selectFile() {
   } else {
     data.filePath = selected;
   }
+
+  isPath.value = true;
   /*
   const results: any = await invoke("get", {
     path: data.filePath,
@@ -221,7 +225,12 @@ const indexMethod = (index: number) => {
           </el-select>
         </el-form-item>
       </div>
-      <el-text tag="ins">{{ data.filePath }}</el-text>
+      <el-text type="primary" size="large" tag="ins">
+        <span v-if="isPath">{{ data.filePath }}</span>
+        <span v-else>
+          A tool that can quickly view Excel, CSV and Parquet using SQL
+        </span>
+      </el-text>
     </div>
     <el-form-item class="editor-container">
       <textarea
@@ -260,12 +269,13 @@ const indexMethod = (index: number) => {
         <el-text
           v-if="isRuntime"
           :style="{ color: '#32CD32', fontSize: '20px' }"
-          >{{ runtime }}</el-text
         >
+          {{ runtime }}
+        </el-text>
       </div>
     </el-form-item>
   </el-form>
-  <el-table :data="tableData" height="700" border style="width: 100%">
+  <el-table :data="tableData" height="680" border style="width: 100%">
     <el-table-column type="index" :index="indexMethod" />
     <el-table-column
       v-for="column in columns"
@@ -279,9 +289,9 @@ const indexMethod = (index: number) => {
 <style scoped>
 .icon-group {
   display: flex;
-  justify-content: flex-end; /* 将图标对齐到右侧 */
-  margin-left: 50px; /* 增加左侧的间距 */
-  align-items: center; /* 确保图标和按钮垂直对齐 */
+  justify-content: flex-end;
+  margin-left: 50px;
+  align-items: center;
 }
 .el-icon {
   font-size: 30px;
@@ -307,15 +317,15 @@ const indexMethod = (index: number) => {
   right: 0;
   bottom: 0;
   overflow: hidden;
-  pointer-events: none; /* 确保点击事件不会影响到 <div> */
-  white-space: pre-wrap; /* 保留换行符和空格 */
-  word-wrap: break-word; /* 单词换行 */
-  background-color: transparent; /* 背景透明 */
-  color: inherit; /* 文字颜色继承 */
-  font-family: inherit; /* 字体继承 */
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: transparent;
+  color: inherit;
+  font-family: inherit;
   font-size: 18px;
-  padding: 0; /* 消除默认填充 */
-  margin: 0; /* 消除默认边距 */
+  padding: 0;
+  margin: 0;
   line-height: 1.5;
   font-family: "Consolas", monospace;
 }
