@@ -25,6 +25,8 @@
 - [x] Exports csv to a xlsx file
 - [x] Rename the columns of a CSV
 - [x] Select, re-order, duplicate or drop columns
+- [x] Select fields and shows only matching rows
+- [x] Fill empty fields in selected columns of a CSV
 
 
 ### 🍖How to use?
