@@ -6,7 +6,7 @@ import { listen } from "@tauri-apps/api/event";
 import { ElMessage, ElIcon } from "element-plus";
 import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
 
-const isProcessing = ref(false);
+const isLoading = ref(false);
 const progress = ref(0);
 const selectedFiles = ref([]);
 const customColors = [
@@ -34,6 +34,7 @@ listen("count_err", (event: any) => {
   const error: any = event.payload;
   const countErrMsg: any = "count error: " + error;
   ElMessage.error(countErrMsg);
+  isLoading.value = false;
 });
 listen("count_msg", (event: any) => {
   const countMsg: any = event.payload;
@@ -54,7 +55,7 @@ async function countData() {
     ElMessage.warning("未选择csv文件");
     return;
   }
-  isProcessing.value = true;
+  isLoading.value = true;
   ElMessage.info("Running...");
   await invoke("count", {
     path: data.filePath,
@@ -65,7 +66,7 @@ async function countData() {
 }
 
 async function selectFile() {
-  isProcessing.value = false;
+  isLoading.value = false;
   progress.value = 0;
   const selected = await open({
     multiple: true,
@@ -145,7 +146,7 @@ async function selectFile() {
       </el-table>
     </el-form>
     <el-progress
-      v-if="isProcessing"
+      v-if="isLoading"
       :percentage="progress"
       :color="customColors"
     />

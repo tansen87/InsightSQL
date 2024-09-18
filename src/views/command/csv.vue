@@ -16,7 +16,7 @@ interface FileStatus {
   filename: string;
   status: string;
 }
-const isProcessing = ref(false);
+const isLoading = ref(false);
 const progress = ref(0);
 const selectedFiles = ref([]);
 const customColors = [
@@ -56,6 +56,7 @@ listen("c2x_err", (event: any) => {
     type: "error",
     duration: 0
   });
+  isLoading.value = false;
 });
 listen("c2x_progress", (event: any) => {
   const pgs: any = event.payload;
@@ -74,6 +75,7 @@ listen("read_err", (event: any) => {
     type: "error",
     duration: 0
   });
+  isLoading.value = false;
 });
 listen("rows_err", (event: any) => {
   const error: any = event.payload;
@@ -88,6 +90,7 @@ listen("rows_err", (event: any) => {
     type: "error",
     duration: 0
   });
+  isLoading.value = false;
 });
 listen("c2x_msg", (event: any) => {
   const c2xMsg: any = event.payload;
@@ -107,7 +110,7 @@ async function csvToxlsx() {
 
   if (data.filePath != "") {
     ElMessage.info("Running...");
-    isProcessing.value = true;
+    isLoading.value = true;
     await invoke("switch_csv", {
       path: data.filePath,
       sep: data.sep
@@ -119,7 +122,7 @@ async function csvToxlsx() {
 // open file
 async function selectFile() {
   selectedFiles.value = [];
-  isProcessing.value = false;
+  isLoading.value = false;
   progress.value = 0;
   const selected = await open({
     multiple: true,
@@ -212,7 +215,7 @@ async function selectFile() {
       </el-table-column>
     </el-table>
     <el-progress
-      v-if="isProcessing"
+      v-if="isLoading"
       :percentage="progress"
       :color="customColors"
     />

@@ -35,11 +35,13 @@ listen("get_err", (event: any) => {
   const error: any = event.payload;
   const getErrMsg: any = "get error: " + error;
   ElMessage.error(getErrMsg);
+  isLoading.value = false;
 });
 listen("rename_err", (event: any) => {
   const error: any = event.payload;
   const renameErrMsg: any = "rename error: " + error;
   ElMessage.error(renameErrMsg);
+  isLoading.value = false;
 });
 listen("count_rows", (event: any) => {
   const count: any = event.payload;
@@ -71,7 +73,7 @@ async function selectFile() {
 
   isPath.value = true;
 
-  const headers: any = await invoke("get_headers", {
+  const headers: any = await invoke("get_rename_headers", {
     path: data.filePath,
     sep: data.sep
   });

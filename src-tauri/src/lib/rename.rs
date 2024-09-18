@@ -85,7 +85,7 @@ fn rename_headers(
 }
 
 #[tauri::command]
-pub async fn get_headers(path: String, sep: String, window: tauri::Window) -> Vec<String> {
+pub async fn get_rename_headers(path: String, sep: String, window: tauri::Window) -> Vec<String> {
   let headers = match (async { get_header(path.as_str(), sep) }).await {
     Ok(result) => result,
     Err(err) => {

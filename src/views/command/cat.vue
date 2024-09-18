@@ -34,6 +34,7 @@ listen("cat_err", (event: any) => {
     type: "error",
     duration: 0
   });
+  isLoading.value = false;
 });
 
 // open file

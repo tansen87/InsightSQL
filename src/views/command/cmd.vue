@@ -24,6 +24,9 @@ function toSelect() {
 function toSearch() {
   router.push("/command/search");
 }
+function toFill() {
+  router.push("/command/fill");
+}
 </script>
 
 <template>
@@ -70,6 +73,14 @@ function toSearch() {
           <span class="title-color">Search</span>
           <p class="description-color">
             Select fields and shows only matching rows.
+          </p>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+        <el-card class="box-card" shadow="hover" @click="toFill">
+          <span class="title-color">Fill</span>
+          <p class="description-color">
+            Fill empty fields in selected columns of a CSV.
           </p>
         </el-card>
       </el-col>

@@ -18,7 +18,7 @@ interface FileStatus {
   status: string;
 }
 const selectedFiles = ref([]);
-const isProcessing = ref(false);
+const isLoading = ref(false);
 const progress = ref(0);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
@@ -54,6 +54,7 @@ listen("row_count_err", (event: any) => {
       file.status = "error";
     }
   });
+  isLoading.value = false;
 });
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
@@ -83,11 +84,12 @@ listen("e2c_err", (event: any) => {
     type: "error",
     duration: 0
   });
+  isLoading.value = false;
 });
 
 // open file
 async function selectFile() {
-  isProcessing.value = false;
+  isLoading.value = false;
   selectedFiles.value = [];
   progress.value = 0;
   const selected = await open({
@@ -122,7 +124,7 @@ async function excelToCsv() {
 
   if (data.filePath != "") {
     ElMessage.info("Running...");
-    isProcessing.value = true;
+    isLoading.value = true;
     await invoke("switch_excel", {
       path: data.filePath
     });
@@ -192,7 +194,7 @@ async function excelToCsv() {
       </el-table-column>
     </el-table>
     <el-progress
-      v-if="isProcessing"
+      v-if="isLoading"
       :percentage="progress"
       :color="customColors"
     />

@@ -30,6 +30,7 @@ listen("select_err", (event: any) => {
 listen("wtr_err", (event: any) => {
   const wtrMsg = event.payload;
   ElMessage.error("wtr_err: " + wtrMsg);
+  isLoading.value = false;
 });
 
 // open file
@@ -58,7 +59,7 @@ async function selectFile() {
 
   isPath.value = true;
 
-  const headers: any = await invoke("has_headers", {
+  const headers: any = await invoke("get_select_headers", {
     path: data.filePath,
     sep: data.sep
   });

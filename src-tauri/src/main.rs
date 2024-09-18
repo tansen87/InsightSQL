@@ -7,6 +7,7 @@ use lib::count;
 use lib::rename;
 use lib::select;
 use lib::search;
+use lib::fill;
 
 fn main() {
   tauri::Builder
@@ -18,12 +19,14 @@ fn main() {
       convert::switch_excel,
       convert::switch_csv,
       count::count,
-      rename::get_headers,
+      rename::get_rename_headers,
       rename::rename,
-      select::has_headers,
+      select::get_select_headers,
       select::select,
-      search::search_headers,
+      search::get_search_headers,
       search::search,
+      fill::get_fill_headers,
+      fill::fill,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

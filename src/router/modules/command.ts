@@ -77,6 +77,15 @@ export default {
         title: "search",
         showLink: false
       }
+    },
+    {
+      path: "/command/fill",
+      name: "fill",
+      component: () => import("@/views/command/fill.vue"),
+      meta: {
+        title: "fill",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

@@ -63,16 +63,16 @@ fn select_columns(
       },
       None => vec![],
     };
-    let current_time = chrono::Local::now();
-    let file_path_copy = file_path
+    let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
+    let parent_path = file_path
       .parent()
       .map(|parent| parent.to_string_lossy())
       .unwrap_or_else(|| "Default Path".to_string().into());
     let output_path = format!(
       "{}/{}_select {}.csv",
-      file_path_copy,
+      parent_path,
       file_name[0],
-      current_time.format("%Y-%m-%d-%H%M%S")
+      current_time
     );
 
     let mut rdr = csv::ReaderBuilder::new()
@@ -125,7 +125,7 @@ fn select_columns(
 }
 
 #[tauri::command]
-pub async fn has_headers(path: String, sep: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
+pub async fn get_select_headers(path: String, sep: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
   let headers = match (async { get_header(path.as_str(), sep) }).await {
     Ok(result) => result,
     Err(err) => {
