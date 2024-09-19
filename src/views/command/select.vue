@@ -4,7 +4,7 @@ import { VueDraggable } from "vue-draggable-plus";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage } from "element-plus";
+import { ElNotification } from "element-plus";
 import {
   SuccessFilled,
   Loading,
@@ -24,12 +24,22 @@ const isFinish = ref(false);
 const isPath = ref(false);
 
 listen("select_err", (event: any) => {
-  const error: any = "select_err: " + event.payload;
-  ElMessage.error(error);
+  ElNotification({
+    title: "Select Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
 });
 listen("wtr_err", (event: any) => {
-  const wtrMsg = event.payload;
-  ElMessage.error("wtr_err: " + wtrMsg);
+  ElNotification({
+    title: "Write Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 
@@ -69,11 +79,21 @@ async function selectFile() {
 // select data
 async function selectColumns() {
   if (data.filePath === "") {
-    ElMessage.warning("未选择文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
   if (selectList.value.length === 0) {
-    ElMessage.warning("未选择columns");
+    ElNotification({
+      title: "Column not defined",
+      message: "未选择columns",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
 
@@ -84,7 +104,6 @@ async function selectColumns() {
   isLoading.value = true;
   isPath.value = true;
   if (data.filePath != "") {
-    ElMessage.info("Running...");
     await invoke("select", {
       path: data.filePath,
       sep: data.sep,
@@ -92,7 +111,13 @@ async function selectColumns() {
     });
     isLoading.value = false;
     isFinish.value = true;
-    ElMessage.success("done.");
+    ElNotification({
+      title: "",
+      message: "Select done.",
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
   }
 }
 </script>

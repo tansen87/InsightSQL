@@ -3,7 +3,7 @@ import { ref, reactive, computed } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage } from "element-plus";
+import { ElNotification } from "element-plus";
 import {
   SuccessFilled,
   Loading,
@@ -32,15 +32,23 @@ const data = reactive({
 });
 
 listen("get_err", (event: any) => {
-  const error: any = event.payload;
-  const getErrMsg: any = "get error: " + error;
-  ElMessage.error(getErrMsg);
+  ElNotification({
+    title: "Get Rename Headers Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 listen("rename_err", (event: any) => {
-  const error: any = event.payload;
-  const renameErrMsg: any = "rename error: " + error;
-  ElMessage.error(renameErrMsg);
+  ElNotification({
+    title: "Rename Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 listen("count_rows", (event: any) => {
@@ -90,11 +98,14 @@ async function selectFile() {
 // rename csv headers
 async function renameData() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择csv文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
-
-  ElMessage.info("Running...");
 
   const headersStringArray = tableData.value.map((row: any) => row.col2);
   const headersString = headersStringArray.join(",");
@@ -108,7 +119,13 @@ async function renameData() {
   isLoading.value = false;
   isFinish.value = true;
   isWrite.value = true;
-  ElMessage.success("rename done.");
+  ElNotification({
+    title: "",
+    message: "Rename done.",
+    position: "bottom-right",
+    type: "success",
+    duration: 0
+  });
 }
 
 async function headerEdit(row: any) {
@@ -166,7 +183,7 @@ async function headerEdit(row: any) {
           <span v-else>Rename the columns of a CSV</span>
         </el-text>
       </div>
-      <el-table :data="filterTableData" height="760" style="width: 100%">
+      <el-table :data="filterTableData" height="700" style="width: 100%">
         <el-table-column prop="col1" label="headers" style="width: 50%" />
         <el-table-column prop="col2" label="rename headers" width="300">
           <template #default="{ row }">

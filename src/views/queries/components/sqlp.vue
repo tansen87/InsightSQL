@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, watchEffect } from "vue";
+import { ref, reactive, onMounted, watchEffect, watch } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
+import { ElNotification } from "element-plus";
 import { Select, Loading, View, Download } from "@element-plus/icons-vue";
 import { FolderOpened, Search } from "@element-plus/icons-vue";
 import Prism from "prismjs";
 import "prismjs/components/prism-sql";
 import "prismjs/themes/prism.css";
 
-// const selectedFiles = ref([]);
 const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
@@ -35,26 +34,28 @@ const data = reactive({
   ],
   sep: ",",
   write: false,
-  writeFormat: "csv"
+  writeFormat: "csv",
+  lowMemory: false
 });
 
 listen("run_time", (event: any) => {
-  const time: any = event.payload;
-  runtime.value = time;
+  runtime.value = event.payload;
 });
-listen("expired", (event: any) => {
-  const expired: any = event.payload;
-  ElMessageBox.alert(expired, "Tips", {
-    confirmButtonText: "OK"
-  });
-});
+// listen("expired", (event: any) => {
+//   const expired: any = event.payload;
+//   ElMessageBox.alert(expired, "Tips", {
+//     confirmButtonText: "OK"
+//   });
+// });
 listen("exec_err", (event: any) => {
-  const error: any = "" + event.payload;
-  ElMessage({
-    message: error,
+  ElNotification({
+    title: "Execute Error",
+    message: event.payload,
+    position: "bottom-right",
     type: "error",
-    plain: true
+    duration: 0
   });
+  isLoading.value = false;
 });
 listen("show", (event: any) => {
   const df: any = event.payload;
@@ -76,21 +77,24 @@ async function queryData() {
   columns.value = [];
   tableData.value = [];
   if (data.filePath == "") {
-    ElMessage({
+    ElNotification({
+      title: "Warning",
       message: "未选择文件",
-      type: "warning",
-      plain: true
+      position: "bottom-right",
+      type: "warning"
     });
     return;
   }
   if (sqlsrc.value == "") {
-    ElMessage({
-      message: "sql script is empty",
-      type: "warning",
-      plain: true
+    ElNotification({
+      title: "Warning",
+      message: "SQL script is empty",
+      position: "bottom-right",
+      type: "warning"
     });
     return;
   }
+
   if (data.filePath != "" && sqlsrc.value != "") {
     isLoading.value = true;
     isFinish.value = false;
@@ -101,14 +105,16 @@ async function queryData() {
         sqlsrc: sqlsrc.value,
         sep: data.sep,
         write: data.write,
-        writeFormat: data.writeFormat
+        writeFormat: data.writeFormat,
+        lowMemory: data.lowMemory
       });
     } catch (err) {
       ElNotification({
-        title: "invoke query",
+        title: "invoke query error",
         message: err,
         position: "bottom-right",
-        type: "error"
+        type: "error",
+        duration: 0
       });
     }
     isLoading.value = false;
@@ -120,7 +126,6 @@ async function queryData() {
 async function selectFile() {
   columns.value = [];
   tableData.value = [];
-  // selectedFiles.value = [];
   isLoading.value = false;
   isFinish.value = false;
   isRuntime.value = false;
@@ -136,10 +141,6 @@ async function selectFile() {
   });
   if (Array.isArray(selected)) {
     data.filePath = selected.join("|").toString();
-    // const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    // selectedFiles.value = nonEmptyRows.map((row: any) => {
-    //   return { filename: row };
-    // });
   } else if (selected === null) {
     return;
   } else {
@@ -196,6 +197,35 @@ onMounted(() => {
 const indexMethod = (index: number) => {
   return (index + 1) * 1;
 };
+
+watch(
+  () => data.lowMemory,
+  newVal => {
+    if (newVal) {
+      data.write = true;
+      data.writeFormat = "csv";
+    }
+  }
+);
+
+watch(
+  () => data.lowMemory,
+  newVal => {
+    if (!newVal) {
+      data.write = false;
+      data.writeFormat = "csv";
+    }
+  }
+);
+
+watch(
+  () => data.write,
+  newVal => {
+    if (!newVal) {
+      data.lowMemory = false;
+    }
+  }
+);
 </script>
 
 <template>
@@ -216,12 +246,18 @@ const indexMethod = (index: number) => {
         >
           Open File
         </el-button>
-        <el-form-item style="margin-left: 10px; width: 140px">
+        <el-form-item style="margin-left: 10px; width: 80px">
           <el-select v-model="data.sep">
             <el-option label="," value="," />
             <el-option label="|" value="|" />
             <el-option label="\t" value="\t" />
             <el-option label=";" value=";" />
+          </el-select>
+        </el-form-item>
+        <el-form-item style="margin-left: 10px; width: 100px">
+          <el-select v-model="data.lowMemory">
+            <el-option label="Memory" :value="false" />
+            <el-option label="Stream" :value="true" />
           </el-select>
         </el-form-item>
       </div>
@@ -275,8 +311,8 @@ const indexMethod = (index: number) => {
       </div>
     </el-form-item>
   </el-form>
-  <el-table :data="tableData" height="680" border style="width: 100%">
-    <el-table-column type="index" :index="indexMethod" />
+  <el-table :data="tableData" height="640" border style="width: 100%">
+    <el-table-column type="index" label="id" :index="indexMethod" />
     <el-table-column
       v-for="column in columns"
       :prop="column.prop"

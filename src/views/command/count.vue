@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage, ElIcon } from "element-plus";
+import { ElNotification, ElIcon } from "element-plus";
 import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
@@ -31,9 +31,13 @@ listen("start_convert", (event: any) => {
   });
 });
 listen("count_err", (event: any) => {
-  const error: any = event.payload;
-  const countErrMsg: any = "count error: " + error;
-  ElMessage.error(countErrMsg);
+  ElNotification({
+    title: "Count Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 listen("count_msg", (event: any) => {
@@ -52,17 +56,29 @@ listen("count_progress", (event: any) => {
 // count csv rows
 async function countData() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择csv文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
+
   isLoading.value = true;
-  ElMessage.info("Running...");
+
   await invoke("count", {
     path: data.filePath,
     sep: data.sep
   });
 
-  ElMessage.success("count done.");
+  ElNotification({
+    title: "",
+    message: "Count done.",
+    position: "bottom-right",
+    type: "success",
+    duration: 0
+  });
 }
 
 async function selectFile() {
@@ -133,7 +149,7 @@ async function selectFile() {
         </el-text>
       </div>
 
-      <el-table :data="selectedFiles" height="760" style="width: 100%">
+      <el-table :data="selectedFiles" height="700" style="width: 100%">
         <el-table-column prop="filename" label="file" style="width: 80%" />
         <el-table-column label="rows" width="100">
           <template #default="scope">

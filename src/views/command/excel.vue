@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import type { TableColumnCtx } from "element-plus";
-import { ElMessage, ElIcon } from "element-plus";
+import { ElNotification, ElIcon } from "element-plus";
 import {
   CloseBold,
   Select,
@@ -42,10 +42,10 @@ const data = reactive({
 
 listen("row_count_err", (event: any) => {
   const msg: any = event.payload;
-  const warning_msg = "row_count_err: " + event.payload;
-  ElMessage({
-    showClose: true,
-    message: warning_msg,
+  ElNotification({
+    title: "Rows Count",
+    message: msg,
+    position: "bottom-right",
     type: "warning",
     duration: 0
   });
@@ -77,10 +77,10 @@ listen("e2c_progress", (event: any) => {
   progress.value = pgs;
 });
 listen("e2c_err", (event: any) => {
-  const error: any = "e2c_err: " + event.payload;
-  ElMessage({
-    showClose: true,
-    message: error,
+  ElNotification({
+    title: "Switch_excel Error",
+    message: event.payload,
+    position: "bottom-right",
     type: "error",
     duration: 0
   });
@@ -108,7 +108,12 @@ async function selectFile() {
       return { filename: file, status: "" };
     });
   } else if (selected === null) {
-    ElMessage.warning("未选择Excel文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择Excel文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   } else {
     data.filePath = selected;
@@ -118,17 +123,27 @@ async function selectFile() {
 // convert excel to csv
 async function excelToCsv() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择Excel文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择Excel文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
 
   if (data.filePath != "") {
-    ElMessage.info("Running...");
     isLoading.value = true;
     await invoke("switch_excel", {
       path: data.filePath
     });
-    ElMessage.success("convert done.");
+    ElNotification({
+      title: "",
+      message: "Convert done.",
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
   }
 }
 </script>
@@ -168,7 +183,7 @@ async function excelToCsv() {
         </el-text>
       </div>
     </el-form>
-    <el-table :data="selectedFiles" height="760" style="width: 100%">
+    <el-table :data="selectedFiles" height="700" style="width: 100%">
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column
         prop="status"

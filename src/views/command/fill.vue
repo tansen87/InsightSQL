@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage } from "element-plus";
+import { ElNotification } from "element-plus";
 import {
   SuccessFilled,
   Loading,
@@ -30,8 +30,13 @@ listen("fill_rows", (event: any) => {
   fillRows.value = count;
 });
 listen("fill_err", (event: any) => {
-  const wtrMsg = event.payload;
-  ElMessage.error("fill_err: " + wtrMsg);
+  ElNotification({
+    title: "Fill Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 
@@ -68,19 +73,27 @@ async function selectFile() {
 // fill data
 async function fillData() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择csv文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
   if (columns.value.length === 0) {
-    ElMessage.warning("未选择columns");
+    ElNotification({
+      title: "Column not defined",
+      message: "未选择columns",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
 
   const cols = Object.values(columns.value).join("|");
-  console.log(cols);
 
   if (data.filePath != "") {
-    ElMessage.info("Running...");
     isLoading.value = true;
     isFinish.value = false;
     await invoke("fill", {
@@ -92,7 +105,13 @@ async function fillData() {
     isLoading.value = false;
     isFinish.value = true;
     isWrite.value = true;
-    ElMessage.success("fill done.");
+    ElNotification({
+      title: "",
+      message: "Fill done.",
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
   }
 }
 </script>

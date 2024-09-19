@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage } from "element-plus";
+import { ElNotification } from "element-plus";
 import {
   SuccessFilled,
   Loading,
@@ -27,9 +27,13 @@ const data = reactive({
 });
 
 listen("equal_err", (event: any) => {
-  const error: any = event.payload;
-  const equalerr: any = "equal_err error: " + error;
-  ElMessage.error(equalerr);
+  ElNotification({
+    title: "Equal Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 listen("equal_count", (event: any) => {
@@ -37,9 +41,13 @@ listen("equal_count", (event: any) => {
   writeRows.value = count;
 });
 listen("contains_err", (event: any) => {
-  const error: any = event.payload;
-  const containserr: any = "contains_err error: " + error;
-  ElMessage.error(containserr);
+  ElNotification({
+    title: "Contains Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 listen("contains_count", (event: any) => {
@@ -47,9 +55,13 @@ listen("contains_count", (event: any) => {
   writeRows.value = count;
 });
 listen("startswith_err", (event: any) => {
-  const error: any = event.payload;
-  const startswitherr: any = "startswith_err error: " + error;
-  ElMessage.error(startswitherr);
+  ElNotification({
+    title: "Startwith Error",
+    message: event.payload,
+    position: "bottom-right",
+    type: "error",
+    duration: 0
+  });
   isLoading.value = false;
 });
 
@@ -86,16 +98,25 @@ async function selectFile() {
 // search data
 async function searchData() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择csv文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
   if (columns.value.length === 0) {
-    ElMessage.warning("未选择columns");
+    ElNotification({
+      title: "Column not defined",
+      message: "未选择columns",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
 
   if (data.filePath != "") {
-    ElMessage.info("Running...");
     isLoading.value = true;
     isFinish.value = false;
     await invoke("search", {
@@ -108,7 +129,13 @@ async function searchData() {
     isLoading.value = false;
     isFinish.value = true;
     isWrite.value = true;
-    ElMessage.success("search done.");
+    ElNotification({
+      title: "",
+      message: "Search done.",
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
   }
 }
 </script>

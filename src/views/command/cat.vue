@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage } from "element-plus";
+import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
 
 const selectedFiles = ref([]);
@@ -27,10 +27,10 @@ const data = reactive({
 });
 
 listen("cat_err", (event: any) => {
-  const error: any = "cat_err: " + event.payload;
-  ElMessage({
-    showClose: true,
-    message: error,
+  ElNotification({
+    title: "Concat Error",
+    message: event.payload,
+    position: "bottom-right",
     type: "error",
     duration: 0
   });
@@ -57,7 +57,12 @@ async function selectFile() {
       return { filename: file };
     });
   } else if (selected === null) {
-    ElMessage.warning("未选择文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   } else {
     data.filePath = selected;
@@ -67,20 +72,25 @@ async function selectFile() {
 // data concat
 async function concatData() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
   if (data.filePath != "") {
     isLoading.value = true;
-    ElMessage.info("Running...");
     await invoke("concat", {
       filePath: data.filePath,
       sep: data.sep
     });
     isLoading.value = false;
-    ElMessage({
-      showClose: true,
-      message: "concat done.",
+    ElNotification({
+      title: "",
+      message: "Concat done.",
+      position: "bottom-right",
       type: "success",
       duration: 0
     });
@@ -130,7 +140,7 @@ async function concatData() {
         </el-text>
       </div>
     </el-form>
-    <el-table :data="selectedFiles" height="760" style="width: 100%">
+    <el-table :data="selectedFiles" height="700" style="width: 100%">
       <el-table-column prop="filename" />
     </el-table>
   </div>

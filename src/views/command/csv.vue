@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElMessage, ElIcon, TableColumnCtx } from "element-plus";
+import { ElNotification, ElIcon, TableColumnCtx } from "element-plus";
 import {
   FolderOpened,
   SwitchFilled,
@@ -49,10 +49,10 @@ listen("start_convert", (event: any) => {
   });
 });
 listen("c2x_err", (event: any) => {
-  const error: any = "c2x_err: " + event.payload;
-  ElMessage({
-    showClose: true,
-    message: error,
+  ElNotification({
+    title: "Switch csv Error",
+    message: event.payload,
+    position: "bottom-right",
     type: "error",
     duration: 0
   });
@@ -62,21 +62,6 @@ listen("c2x_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
 });
-listen("read_err", (event: any) => {
-  const error: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === error.split("|")[0]) {
-      file.status = "error";
-    }
-  });
-  ElMessage({
-    showClose: true,
-    message: "read_err: " + error,
-    type: "error",
-    duration: 0
-  });
-  isLoading.value = false;
-});
 listen("rows_err", (event: any) => {
   const error: any = event.payload;
   selectedFiles.value.forEach(file => {
@@ -84,9 +69,10 @@ listen("rows_err", (event: any) => {
       file.status = "error";
     }
   });
-  ElMessage({
-    showClose: true,
-    message: "rows_err: " + error,
+  ElNotification({
+    title: "Write Error",
+    message: error,
+    position: "bottom-right",
     type: "error",
     duration: 0
   });
@@ -104,18 +90,28 @@ listen("c2x_msg", (event: any) => {
 // convert csv to xlsx
 async function csvToxlsx() {
   if (data.filePath == "") {
-    ElMessage.warning("未选择csv文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   }
 
   if (data.filePath != "") {
-    ElMessage.info("Running...");
     isLoading.value = true;
     await invoke("switch_csv", {
       path: data.filePath,
       sep: data.sep
     });
-    ElMessage.success("convert done.");
+    ElNotification({
+      title: "",
+      message: "Convert done.",
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
   }
 }
 
@@ -140,7 +136,12 @@ async function selectFile() {
       return { filename: file, status: "" };
     });
   } else if (selected === null) {
-    ElMessage.warning("未选择文件");
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   } else {
     data.filePath = selected;
@@ -189,7 +190,7 @@ async function selectFile() {
         </el-text>
       </div>
     </el-form>
-    <el-table :data="selectedFiles" height="760" style="width: 100%">
+    <el-table :data="selectedFiles" height="700" style="width: 100%">
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column
         prop="status"
