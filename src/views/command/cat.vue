@@ -51,7 +51,6 @@ async function selectFile() {
   });
   if (Array.isArray(selected)) {
     data.filePath = selected.join("|").toString();
-    console.log(data.filePath);
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
       return { filename: file };

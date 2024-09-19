@@ -4,12 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import {
-  SuccessFilled,
-  Loading,
-  IceCreamRound,
-  FolderOpened
-} from "@element-plus/icons-vue";
+import { Loading, IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isFinish = ref(false);
@@ -131,7 +126,7 @@ async function searchData() {
     isWrite.value = true;
     ElNotification({
       title: "",
-      message: "Search done.",
+      message: "Search done, write rows: " + writeRows.value + " lines",
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -170,8 +165,6 @@ async function searchData() {
         <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
           <Loading />
         </el-icon>
-        <el-icon v-if="isFinish" color="#32CD32"> <SuccessFilled /> </el-icon>
-        <el-text v-if="isWrite" class="mx-1">{{ writeRows }}</el-text>
       </el-form-item>
 
       <el-text type="primary" size="large">

@@ -4,12 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import {
-  SuccessFilled,
-  Loading,
-  Cpu,
-  FolderOpened
-} from "@element-plus/icons-vue";
+import { Loading, Cpu, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isFinish = ref(false);
@@ -107,7 +102,7 @@ async function fillData() {
     isWrite.value = true;
     ElNotification({
       title: "",
-      message: "Fill done.",
+      message: "Fill done, fill rows: " + fillRows.value + " lines",
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -186,10 +181,6 @@ async function fillData() {
         <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
           <Loading />
         </el-icon>
-        <el-icon v-if="isFinish" color="#32CD32"> <SuccessFilled /> </el-icon>
-        <el-text v-if="isWrite" class="mx-1">
-          fill rows: {{ fillRows }} lines
-        </el-text>
       </el-form-item>
     </div>
   </div>
