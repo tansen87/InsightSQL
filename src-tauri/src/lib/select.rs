@@ -3,7 +3,7 @@ use std::{
   error::Error,
   fs::File,
   io::BufWriter,
-  path::Path,
+  path::Path, time::Instant,
 };
 
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
@@ -140,7 +140,9 @@ pub async fn get_select_headers(path: String, sep: String, window: tauri::Window
 
 #[tauri::command]
 pub async fn select(path: String, sep: String, cols: String, window: tauri::Window) {
+  let start_time = Instant::now();
   let sel_window = window.clone();
+
   match (async { select_columns(path, sep, cols, sel_window) }).await {
     Ok(result) => result,
     Err(err) => {
@@ -148,4 +150,9 @@ pub async fn select(path: String, sep: String, cols: String, window: tauri::Wind
       window.emit("select_err", &err.to_string()).unwrap();
     }
   }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }

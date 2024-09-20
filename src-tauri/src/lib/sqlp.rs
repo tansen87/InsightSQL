@@ -445,7 +445,7 @@ pub async fn query(
   low_memory: bool,
   window: tauri::Window,
 ) {
-  let start = Instant::now();
+  let start_time = Instant::now();
 
   let filepath: Vec<&str> = path.split('|').collect();
 
@@ -470,9 +470,9 @@ pub async fn query(
       return ();
     }
   };
-  let end = Instant::now();
-  let elapsed = end.duration_since(start);
-  let elapsed_seconds = elapsed.as_secs_f64();
-  let run_time = format!("{elapsed_seconds:.2} s");
-  window.emit("run_time", run_time).unwrap();
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }

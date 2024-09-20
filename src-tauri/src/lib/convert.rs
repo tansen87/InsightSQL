@@ -6,7 +6,7 @@ use polars::{
 use rayon::prelude::*;
 use std::{
   error::Error,
-  path::{Path, PathBuf},
+  path::{Path, PathBuf}, time::Instant,
 };
 
 use crate::xlsx_writer::write_xlsx;
@@ -219,7 +219,9 @@ fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), B
 
 #[tauri::command]
 pub async fn switch_csv(path: String, sep: String, window: tauri::Window) {
+  let start_time = Instant::now();
   let copy_window = window.clone();
+
   match (async { csv_to_xlsx(path, sep, copy_window) }).await {
     Ok(result) => result,
     Err(error) => {
@@ -228,11 +230,18 @@ pub async fn switch_csv(path: String, sep: String, window: tauri::Window) {
       error.to_string();
     }
   };
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }
 
 #[tauri::command]
 pub async fn switch_excel(path: String, window: tauri::Window) {
+  let start_time = Instant::now();
   let file_window = window.clone();
+
   match (async { excel_to_csv(path, file_window) }).await {
     Ok(result) => result,
     Err(error) => {
@@ -241,4 +250,9 @@ pub async fn switch_excel(path: String, window: tauri::Window) {
       error.to_string();
     }
   };
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }

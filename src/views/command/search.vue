@@ -7,10 +7,9 @@ import { ElNotification } from "element-plus";
 import { Loading, IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
-const isFinish = ref(false);
-const isWrite = ref(false);
 const isPath = ref(false);
 const writeRows = ref(0);
+const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
@@ -21,6 +20,9 @@ const data = reactive({
   condition: "银行存款|应收账款"
 });
 
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
+});
 listen("equal_err", (event: any) => {
   ElNotification({
     title: "Equal Error",
@@ -61,9 +63,7 @@ listen("startswith_err", (event: any) => {
 });
 
 async function selectFile() {
-  isFinish.value = false;
   isLoading.value = false;
-  isWrite.value = false;
   isPath.value = false;
   const selected = await open({
     multiple: false,
@@ -113,7 +113,7 @@ async function searchData() {
 
   if (data.filePath != "") {
     isLoading.value = true;
-    isFinish.value = false;
+
     await invoke("search", {
       path: data.filePath,
       sep: data.sep,
@@ -121,12 +121,14 @@ async function searchData() {
       mode: data.mode,
       condition: data.condition
     });
+
     isLoading.value = false;
-    isFinish.value = true;
-    isWrite.value = true;
     ElNotification({
-      title: "",
-      message: "Search done, write rows: " + writeRows.value + " lines",
+      message:
+        "Search done, search rows: " +
+        writeRows.value +
+        " lines, elapsed time: " +
+        runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -170,7 +172,7 @@ async function searchData() {
       <el-text type="primary" size="large">
         <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
-        <span v-else>Select fields and shows only matching rows</span>
+        <span v-else>Select fields matching rows</span>
       </el-text>
     </div>
     <p />

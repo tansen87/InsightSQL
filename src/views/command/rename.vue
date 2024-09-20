@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
@@ -8,11 +8,12 @@ import { Loading, Watermelon, FolderOpened } from "@element-plus/icons-vue";
 
 const tableData: any = ref([]);
 const writeRows = ref(0);
-const isFinish = ref(false);
+const runtime = ref(0.0);
 const isLoading = ref(false);
-const isWrite = ref(false);
 const isPath = ref(false);
 const search = ref("");
+const tableRef = ref(null);
+const windowHeight = ref(window.innerHeight);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -26,6 +27,26 @@ const data = reactive({
   sep: ","
 });
 
+const formHeight = computed(() => {
+  const height = 185;
+  return windowHeight.value - height;
+});
+
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight;
+};
+
+onMounted(() => {
+  window.addEventListener("resize", updateWindowHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateWindowHeight);
+});
+
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
+});
 listen("get_err", (event: any) => {
   ElNotification({
     title: "Get Rename Headers Error",
@@ -51,11 +72,10 @@ listen("count_rows", (event: any) => {
   writeRows.value = count;
 });
 
+// open file
 async function selectFile() {
   tableData.value = [];
   isLoading.value = false;
-  isFinish.value = false;
-  isWrite.value = false;
   isPath.value = false;
   const selected = await open({
     multiple: false,
@@ -105,18 +125,20 @@ async function renameData() {
   const headersStringArray = tableData.value.map((row: any) => row.col2);
   const headersString = headersStringArray.join(",");
   isLoading.value = true;
-  isFinish.value = false;
+
   await invoke("rename", {
     path: data.filePath,
     sep: data.sep,
     headers: headersString
   });
+
   isLoading.value = false;
-  isFinish.value = true;
-  isWrite.value = true;
   ElNotification({
-    title: "",
-    message: "Rename done, write rows: " + writeRows.value + " lines",
+    message:
+      "Rename done, write rows: " +
+      writeRows.value +
+      " lines, elapsed time: " +
+      runtime.value,
     position: "bottom-right",
     type: "success",
     duration: 0
@@ -129,7 +151,7 @@ async function headerEdit(row: any) {
 </script>
 
 <template>
-  <div class="page-container">
+  <el-form class="page-container" :style="formHeight">
     <el-form>
       <div
         style="
@@ -176,7 +198,12 @@ async function headerEdit(row: any) {
           <span v-else>Rename the columns of a CSV</span>
         </el-text>
       </div>
-      <el-table :data="filterTableData" height="700" style="width: 100%">
+      <el-table
+        ref="tableRef"
+        :data="filterTableData"
+        :height="formHeight"
+        style="width: 100%"
+      >
         <el-table-column prop="col1" label="headers" style="width: 50%" />
         <el-table-column prop="col2" label="rename headers" width="300">
           <template #default="{ row }">
@@ -199,7 +226,7 @@ async function headerEdit(row: any) {
         </el-table-column>
       </el-table>
     </el-form>
-  </div>
+  </el-form>
 </template>
 
 <style>

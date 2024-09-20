@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
@@ -9,6 +9,9 @@ import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
 const isLoading = ref(false);
 const progress = ref(0);
 const selectedFiles = ref([]);
+const runtime = ref(0.0);
+const tableRef = ref(null);
+const windowHeight = ref(window.innerHeight);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -22,6 +25,23 @@ const data = reactive({
   sep: ","
 });
 
+const formHeight = computed(() => {
+  const height = 185;
+  return windowHeight.value - height;
+});
+
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight;
+};
+
+onMounted(() => {
+  window.addEventListener("resize", updateWindowHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateWindowHeight);
+});
+
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
@@ -29,6 +49,9 @@ listen("start_convert", (event: any) => {
       file.status = "loading";
     }
   });
+});
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
 });
 listen("count_err", (event: any) => {
   ElNotification({
@@ -53,34 +76,7 @@ listen("count_progress", (event: any) => {
   progress.value = pgs;
 });
 
-// count csv rows
-async function countData() {
-  if (data.filePath == "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
-    return;
-  }
-
-  isLoading.value = true;
-
-  await invoke("count", {
-    path: data.filePath,
-    sep: data.sep
-  });
-
-  ElNotification({
-    title: "",
-    message: "Count done.",
-    position: "bottom-right",
-    type: "success",
-    duration: 0
-  });
-}
-
+// open file
 async function selectFile() {
   isLoading.value = false;
   progress.value = 0;
@@ -105,10 +101,37 @@ async function selectFile() {
     data.filePath = selected;
   }
 }
+
+// count csv rows
+async function countData() {
+  if (data.filePath == "") {
+    ElNotification({
+      title: "File not found",
+      message: "未选择csv文件",
+      position: "bottom-right",
+      type: "warning"
+    });
+    return;
+  }
+
+  isLoading.value = true;
+
+  await invoke("count", {
+    path: data.filePath,
+    sep: data.sep
+  });
+
+  ElNotification({
+    message: "Count done, elapsed time: " + runtime.value,
+    position: "bottom-right",
+    type: "success",
+    duration: 0
+  });
+}
 </script>
 
 <template>
-  <div class="page-container">
+  <el-form class="page-container" :style="formHeight">
     <el-form>
       <div
         style="
@@ -149,7 +172,12 @@ async function selectFile() {
         </el-text>
       </div>
 
-      <el-table :data="selectedFiles" height="700" style="width: 100%">
+      <el-table
+        ref="tableRef"
+        :data="selectedFiles"
+        :height="formHeight"
+        style="width: 100%"
+      >
         <el-table-column prop="filename" label="file" style="width: 80%" />
         <el-table-column label="rows" width="100">
           <template #default="scope">
@@ -166,7 +194,7 @@ async function selectFile() {
       :percentage="progress"
       :color="customColors"
     />
-  </div>
+  </el-form>
 </template>
 
 <style lang="scss">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
@@ -20,6 +20,9 @@ interface FileStatus {
 const selectedFiles = ref([]);
 const isLoading = ref(false);
 const progress = ref(0);
+const runtime = ref(0.0);
+const tableRef = ref(null);
+const windowHeight = ref(window.innerHeight);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -40,6 +43,34 @@ const data = reactive({
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"]
 });
 
+const formHeight = computed(() => {
+  const height = 200;
+  return windowHeight.value - height;
+});
+
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight;
+};
+
+onMounted(() => {
+  window.addEventListener("resize", updateWindowHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateWindowHeight);
+});
+
+listen("start_convert", (event: any) => {
+  const startConvert: any = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === startConvert.split("|")[0]) {
+      file.status = "loading";
+    }
+  });
+});
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
+});
 listen("row_count_err", (event: any) => {
   const msg: any = event.payload;
   ElNotification({
@@ -55,14 +86,6 @@ listen("row_count_err", (event: any) => {
     }
   });
   isLoading.value = false;
-});
-listen("start_convert", (event: any) => {
-  const startConvert: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert.split("|")[0]) {
-      file.status = "loading";
-    }
-  });
 });
 listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
@@ -134,12 +157,13 @@ async function excelToCsv() {
 
   if (data.filePath != "") {
     isLoading.value = true;
+
     await invoke("switch_excel", {
       path: data.filePath
     });
+
     ElNotification({
-      title: "",
-      message: "Convert done.",
+      message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -149,7 +173,7 @@ async function excelToCsv() {
 </script>
 
 <template>
-  <div class="page-container">
+  <el-form class="page-container" :style="formHeight">
     <el-form>
       <div
         style="
@@ -183,7 +207,12 @@ async function excelToCsv() {
         </el-text>
       </div>
     </el-form>
-    <el-table :data="selectedFiles" height="700" style="width: 100%">
+    <el-table
+      ref="tableRef"
+      :data="selectedFiles"
+      :height="formHeight"
+      style="width: 100%"
+    >
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column
         prop="status"
@@ -213,7 +242,7 @@ async function excelToCsv() {
       :percentage="progress"
       :color="customColors"
     />
-  </div>
+  </el-form>
 </template>
 
 <style lang="scss">

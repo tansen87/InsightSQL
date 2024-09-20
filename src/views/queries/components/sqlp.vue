@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, watchEffect, watch } from "vue";
+import {
+  ref,
+  reactive,
+  onMounted,
+  watchEffect,
+  watch,
+  computed,
+  onBeforeUnmount
+} from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Select, Loading, View, Download } from "@element-plus/icons-vue";
+import { Loading, View, Download } from "@element-plus/icons-vue";
 import { FolderOpened, Search } from "@element-plus/icons-vue";
 import Prism from "prismjs";
 import "prismjs/components/prism-sql";
@@ -13,10 +21,10 @@ import "prismjs/themes/prism.css";
 const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
-const isFinish = ref(false);
-const isRuntime = ref(false);
 const isPath = ref(false);
 const runtime = ref(0.0);
+const tableRef = ref(null);
+const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
   fileFormats: [
@@ -38,7 +46,24 @@ const data = reactive({
   lowMemory: false
 });
 
-listen("run_time", (event: any) => {
+const formHeight = computed(() => {
+  const height = 305;
+  return windowHeight.value - height;
+});
+
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight;
+};
+
+onMounted(() => {
+  window.addEventListener("resize", updateWindowHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateWindowHeight);
+});
+
+listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 // listen("expired", (event: any) => {
@@ -78,8 +103,8 @@ async function queryData() {
   tableData.value = [];
   if (data.filePath == "") {
     ElNotification({
-      title: "Warning",
-      message: "未选择文件",
+      title: "File not found",
+      message: "未选择CSV, Excel or Parquet文件",
       position: "bottom-right",
       type: "warning"
     });
@@ -97,8 +122,6 @@ async function queryData() {
 
   if (data.filePath != "" && sqlsrc.value != "") {
     isLoading.value = true;
-    isFinish.value = false;
-    isRuntime.value = false;
     try {
       await invoke("query", {
         path: data.filePath,
@@ -117,9 +140,13 @@ async function queryData() {
         duration: 0
       });
     }
+    ElNotification({
+      message: "Query done, elapsed time: " + runtime.value,
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
     isLoading.value = false;
-    isFinish.value = true;
-    isRuntime.value = true;
   }
 }
 
@@ -127,8 +154,6 @@ async function selectFile() {
   columns.value = [];
   tableData.value = [];
   isLoading.value = false;
-  isFinish.value = false;
-  isRuntime.value = false;
   isPath.value = false;
   const selected = await open({
     multiple: true,
@@ -229,7 +254,7 @@ watch(
 </script>
 
 <template>
-  <el-form>
+  <el-form :style="formHeight">
     <div
       style="
         display: flex;
@@ -263,9 +288,7 @@ watch(
       </div>
       <el-text type="primary" size="large" tag="ins">
         <span v-if="isPath">{{ data.filePath }}</span>
-        <span v-else>
-          A tool that can quickly view Excel, CSV and Parquet using SQL
-        </span>
+        <span v-else>View Excel, CSV and Parquet using SQL</span>
       </el-text>
     </div>
     <el-form-item class="editor-container">
@@ -299,19 +322,16 @@ watch(
         <el-icon v-if="isLoading" color="#FF4500" class="is-loading">
           <Loading />
         </el-icon>
-        <el-icon v-if="isFinish" color="#32CD32">
-          <Select />
-        </el-icon>
-        <el-text
-          v-if="isRuntime"
-          :style="{ color: '#32CD32', fontSize: '20px' }"
-        >
-          {{ runtime }}
-        </el-text>
       </div>
     </el-form-item>
   </el-form>
-  <el-table :data="tableData" height="640" border style="width: 100%">
+  <el-table
+    ref="tableRef"
+    :data="tableData"
+    :height="formHeight"
+    border
+    style="width: 100%"
+  >
     <el-table-column type="index" label="id" :index="indexMethod" />
     <el-table-column
       v-for="column in columns"
@@ -330,7 +350,7 @@ watch(
   align-items: center;
 }
 .el-icon {
-  font-size: 30px;
+  font-size: 25px;
 }
 .txt {
   border: 1px solid #f0dddd;

@@ -1,5 +1,5 @@
 use std::{
-  collections::HashMap, error::Error, fs::File, io::{BufReader, BufWriter}, path::PathBuf
+  collections::HashMap, error::Error, fs::File, io::{BufReader, BufWriter}, path::PathBuf, time::Instant
 };
 
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
@@ -257,6 +257,7 @@ pub async fn search(
   condition: String,
   window: tauri::Window,
 ) {
+  let start_time = Instant::now();
   let equal_window = window.clone();
   let contains_window = window.clone();
   let startswith_window = window.clone();
@@ -298,4 +299,9 @@ pub async fn search(
       }
     }
   }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }

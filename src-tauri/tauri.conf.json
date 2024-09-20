@@ -14,8 +14,8 @@
     "windows": [
       {
         "fullscreen": false,
-        "width": 1024,
-        "height": 768,
+        "width": 840,
+        "height": 640,
         "resizable": true,
         "title": "InsightSQL",
         "fileDropEnabled": false

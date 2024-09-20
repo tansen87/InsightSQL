@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, path::Path};
+use std::{error::Error, fs::File, path::Path, time::Instant};
 
 use polars::{
   frame::DataFrame,
@@ -81,13 +81,13 @@ fn concat_all(path: String, sep: String) -> Result<(), Box<dyn Error>> {
 
   let row_len = union_df.shape().0;
   if row_len < 104_0000 {
-    let save_path = format!("{}/cat {}.xlsx", file_path, current_time);
+    let save_path = format!("{}/cat{}.xlsx", file_path, current_time);
     write_xlsx(union_df, save_path.into())?;
   } else {
-    let save_path = format!("{}/cat {}.csv", file_path, current_time);
+    let save_path = format!("{}/cat{}.csv", file_path, current_time);
     CsvWriter::new(File::create(save_path)?)
-    .with_separator(separator[0])
-    .finish(&mut union_df)?;
+      .with_separator(separator[0])
+      .finish(&mut union_df)?;
   }
 
   Ok(())
@@ -95,6 +95,8 @@ fn concat_all(path: String, sep: String) -> Result<(), Box<dyn Error>> {
 
 #[tauri::command]
 pub async fn concat(file_path: String, sep: String, window: tauri::Window) {
+  let start_time = Instant::now();
+
   match (async { concat_all(file_path, sep) }).await {
     Ok(result) => result,
     Err(err) => {
@@ -103,4 +105,9 @@ pub async fn concat(file_path: String, sep: String, window: tauri::Window) {
       err.to_string();
     }
   };
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }

@@ -5,12 +5,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import {
-  SuccessFilled,
-  Loading,
-  Cherry,
-  FolderOpened
-} from "@element-plus/icons-vue";
+import { Loading, Cherry, FolderOpened } from "@element-plus/icons-vue";
 
 const data = reactive({
   filePath: "",
@@ -20,9 +15,12 @@ const data = reactive({
 const originalList = ref([]);
 const selectList = ref([]);
 const isLoading = ref(false);
-const isFinish = ref(false);
 const isPath = ref(false);
+const runtime = ref(0.0);
 
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
+});
 listen("select_err", (event: any) => {
   ElNotification({
     title: "Select Error",
@@ -46,10 +44,10 @@ listen("wtr_err", (event: any) => {
 // open file
 async function selectFile() {
   isLoading.value = false;
-  isFinish.value = false;
   isPath.value = false;
   originalList.value = [];
   selectList.value = [];
+
   const selected = await open({
     multiple: false,
     filters: [
@@ -109,11 +107,10 @@ async function selectColumns() {
       sep: data.sep,
       cols: names.value
     });
+
     isLoading.value = false;
-    isFinish.value = true;
     ElNotification({
-      title: "",
-      message: "Select done.",
+      message: "Select done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -164,7 +161,6 @@ async function selectColumns() {
           <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
             <Loading />
           </el-icon>
-          <el-icon v-if="isFinish" color="#32CD32"> <SuccessFilled /> </el-icon>
         </el-form-item>
 
         <!-- Title -->

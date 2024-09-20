@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, path::Path};
+use std::{error::Error, fs::File, path::Path, time::Instant};
 
 fn get_header(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
   let mut separator = Vec::new();
@@ -100,12 +100,19 @@ pub async fn get_rename_headers(path: String, sep: String, window: tauri::Window
 
 #[tauri::command]
 pub async fn rename(path: String, sep: String, headers: String, window: tauri::Window) {
-  let rname_window = window.clone();
-  match (async { rename_headers(path.as_str(), sep, headers, rname_window) }).await {
+  let start_time = Instant::now();
+  let rename_window = window.clone();
+
+  match (async { rename_headers(path.as_str(), sep, headers, rename_window) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("rename headers error: {err}");
       window.emit("rename_err", &err.to_string()).unwrap();
     }
   }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
@@ -8,6 +8,9 @@ import { FolderOpened, Connection } from "@element-plus/icons-vue";
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
+const runtime = ref(0.0);
+const tableRef = ref(null);
+const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
   fileFormats: [
@@ -26,6 +29,26 @@ const data = reactive({
   sep: ","
 });
 
+const formHeight = computed(() => {
+  const height = 185;
+  return windowHeight.value - height;
+});
+
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight;
+};
+
+onMounted(() => {
+  window.addEventListener("resize", updateWindowHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateWindowHeight);
+});
+
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
+});
 listen("cat_err", (event: any) => {
   ElNotification({
     title: "Concat Error",
@@ -87,8 +110,7 @@ async function concatData() {
     });
     isLoading.value = false;
     ElNotification({
-      title: "",
-      message: "Concat done.",
+      message: "Cat done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -98,7 +120,7 @@ async function concatData() {
 </script>
 
 <template>
-  <div class="page-container">
+  <el-form class="page-container" :style="formHeight">
     <el-form>
       <div
         style="
@@ -139,10 +161,15 @@ async function concatData() {
         </el-text>
       </div>
     </el-form>
-    <el-table :data="selectedFiles" height="700" style="width: 100%">
+    <el-table
+      ref="tableRef"
+      :data="selectedFiles"
+      :height="formHeight"
+      style="width: 100%"
+    >
       <el-table-column prop="filename" />
     </el-table>
-  </div>
+  </el-form>
 </template>
 
 <style lang="scss">

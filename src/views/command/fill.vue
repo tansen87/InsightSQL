@@ -7,10 +7,9 @@ import { ElNotification } from "element-plus";
 import { Loading, Cpu, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
-const isFinish = ref(false);
-const isWrite = ref(false);
 const isPath = ref(false);
 const fillRows = ref(0);
+const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
@@ -20,6 +19,9 @@ const data = reactive({
   value: "0"
 });
 
+listen("runtime", (event: any) => {
+  runtime.value = event.payload;
+});
 listen("fill_rows", (event: any) => {
   const count: any = event.payload;
   fillRows.value = count;
@@ -35,10 +37,9 @@ listen("fill_err", (event: any) => {
   isLoading.value = false;
 });
 
+// open file
 async function selectFile() {
-  isFinish.value = false;
   isLoading.value = false;
-  isWrite.value = false;
   isPath.value = false;
   const selected = await open({
     multiple: false,
@@ -90,19 +91,22 @@ async function fillData() {
 
   if (data.filePath != "") {
     isLoading.value = true;
-    isFinish.value = false;
+
     await invoke("fill", {
       path: data.filePath,
       sep: data.sep,
       columns: cols,
       values: data.value
     });
+
     isLoading.value = false;
-    isFinish.value = true;
-    isWrite.value = true;
     ElNotification({
       title: "",
-      message: "Fill done, fill rows: " + fillRows.value + " lines",
+      message:
+        "Fill done, fill rows: " +
+        fillRows.value +
+        " lines, elapsed time: " +
+        runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 0

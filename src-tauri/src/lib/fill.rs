@@ -3,6 +3,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
+use std::time::Instant;
 
 fn get_header(path: String, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
   let mut separator = Vec::new();
@@ -124,7 +125,9 @@ pub async fn fill(
   values: String,
   window: tauri::Window,
 ) {
+  let start_time = Instant::now();
   let cnt_window = window.clone();
+
   match (async { fill_values(path, sep, columns, values, cnt_window) }).await {
     Ok(result) => result,
     Err(err) => {
@@ -132,4 +135,9 @@ pub async fn fill(
       window.emit("fill_err", &err.to_string()).unwrap();
     }
   }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  let runtime = format!("{elapsed_time:.2} s");
+  window.emit("runtime", runtime).unwrap();
 }
