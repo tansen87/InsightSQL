@@ -37,22 +37,24 @@ emitter.on("openPanel", () => {
     <div class="right-panel-background" />
     <div ref="target" class="right-panel bg-bg_color">
       <div class="right-panel-items">
-        <div class="project-configuration">
-          <h4 class="dark:text-white">项目配置</h4>
-          <span title="关闭配置" :class="iconClass">
-            <IconifyIconOffline
-              class="dark:text-white"
-              width="20px"
-              height="20px"
-              :icon="Close"
-              @click="show = !show"
-            />
-          </span>
-        </div>
-        <div
-          class="border-b-[1px] border-solid border-[#dcdfe6] dark:border-[#303030]"
-        />
-        <slot />
+        <el-scrollbar>
+          <div class="project-configuration">
+            <h4 class="dark:text-white">项目配置</h4>
+            <span title="关闭配置" :class="iconClass">
+              <IconifyIconOffline
+                class="dark:text-white"
+                width="20px"
+                height="20px"
+                :icon="Close"
+                @click="show = !show"
+              />
+            </span>
+          </div>
+          <div
+            class="border-b-[1px] border-solid border-[#dcdfe6] dark:border-[#303030]"
+          />
+          <slot />
+        </el-scrollbar>
       </div>
     </div>
   </div>
