@@ -1,85 +1,86 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
+import { ref, computed } from "vue";
 
 const router = useRouter();
+const commands = ref([
+  {
+    title: "Cat",
+    description: "Concatenate CSV and Excel files.",
+    route: "/command/cat"
+  },
+  {
+    title: "Excel to csv",
+    description: "Exports Excel to csv files.",
+    route: "/command/excel"
+  },
+  {
+    title: "Count",
+    description: "Count the rows of CSV files.",
+    route: "/command/count"
+  },
+  {
+    title: "Csv to xlsx",
+    description: "Exports csv to xlsx files.",
+    route: "/command/csv"
+  },
+  {
+    title: "Rename",
+    description: "Rename the columns of a CSV.",
+    route: "/command/rename"
+  },
+  {
+    title: "Select",
+    description: "Select, re-order or drop columns.",
+    route: "/command/select"
+  },
+  {
+    title: "Search",
+    description: "Select fields matching rows.",
+    route: "/command/search"
+  },
+  {
+    title: "Fill",
+    description: "Fill empty fields in selected columns of a CSV.",
+    route: "/command/fill"
+  }
+]);
+const searchText = ref("");
+const filteredCommands = computed(() => {
+  return commands.value.filter(command =>
+    command.title.toLowerCase().includes(searchText.value.toLowerCase())
+  );
+});
 
-function toCat() {
-  router.push("/command/cat");
-}
-function toExcelToCsv() {
-  router.push("/command/excel");
-}
-function toCsvToXlsx() {
-  router.push("/command/csv");
-}
-function toCount() {
-  router.push("/command/count");
-}
-function toRename() {
-  router.push("/command/rename");
-}
-function toSelect() {
-  router.push("/command/select");
-}
-function toSearch() {
-  router.push("/command/search");
-}
-function toFill() {
-  router.push("/command/fill");
+function toCommands(route) {
+  router.push(route);
 }
 </script>
 
 <template>
   <div class="page-container">
+    <el-input
+      placeholder="Search for command..."
+      v-model="searchText"
+      class="search-input"
+    />
     <el-row :gutter="20">
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toCat">
-          <span class="title-color">Cat</span>
-          <p class="description-color">Concatenate CSV and Excel files.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toExcelToCsv">
-          <span class="title-color">Excel to csv</span>
-          <p class="description-color">Exports Excel to csv files.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toCount">
-          <span class="title-color">Count</span>
-          <p class="description-color">Count the rows of CSV files.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toCsvToXlsx">
-          <span class="title-color">Csv to xlsx</span>
-          <p class="description-color">Exports csv to xlsx files.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toRename">
-          <span class="title-color">Rename</span>
-          <p class="description-color">Rename the columns of a CSV.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toSelect">
-          <span class="title-color">Select</span>
-          <p class="description-color">Select, re-order or drop columns.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toSearch">
-          <span class="title-color">Search</span>
-          <p class="description-color">Select fields matching rows.</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-        <el-card class="box-card" shadow="hover" @click="toFill">
-          <span class="title-color">Fill</span>
-          <p class="description-color">
-            Fill empty fields in selected columns of a CSV.
-          </p>
+      <el-col
+        :xs="24"
+        :sm="24"
+        :md="8"
+        :lg="8"
+        :xl="8"
+        v-for="(item, index) in filteredCommands"
+        :key="index"
+      >
+        <el-card
+          class="box-card"
+          shadow="hover"
+          @click="toCommands(item.route)"
+        >
+          <span class="title-color">{{ item.title }}</span>
+          <p class="description-color">{{ item.description }}</p>
         </el-card>
       </el-col>
     </el-row>
@@ -91,6 +92,14 @@ function toFill() {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+.search-input {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
 }
 .box-card {
   margin-bottom: 16px;
