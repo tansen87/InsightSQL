@@ -44,7 +44,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 200;
+  const height = 240;
   return windowHeight.value - height;
 });
 
@@ -72,16 +72,16 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("row_count_err", (event: any) => {
-  const msg: any = event.payload;
+  const excelRowCountErr: any = event.payload;
   ElNotification({
     title: "Rows Count",
-    message: msg,
+    message: excelRowCountErr,
     position: "bottom-right",
     type: "warning",
     duration: 0
   });
   selectedFiles.value.forEach(file => {
-    if (file.filename === msg.split("|")[0]) {
+    if (file.filename === excelRowCountErr.split("|")[0]) {
       file.status = "error";
     }
   });
@@ -100,9 +100,10 @@ listen("e2c_progress", (event: any) => {
   progress.value = pgs;
 });
 listen("e2c_err", (event: any) => {
+  const writeCsvErr = event.payload;
   ElNotification({
     title: "Switch_excel Error",
-    message: event.payload,
+    message: writeCsvErr,
     position: "bottom-right",
     type: "error",
     duration: 0

@@ -8,3 +8,4 @@ pub mod rename;
 pub mod select;
 pub mod search;
 pub mod fill;
+pub mod split;

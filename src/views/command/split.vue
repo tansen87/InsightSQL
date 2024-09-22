@@ -4,33 +4,26 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, Cpu, FolderOpened } from "@element-plus/icons-vue";
+import { Loading, IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const fillRows = ref(0);
 const runtime = ref(0.0);
-const columns = ref("");
-const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   sep: ",",
-  value: "0"
+  size: 1000000
 });
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("fill_rows", (event: any) => {
-  const count: any = event.payload;
-  fillRows.value = count;
-});
-listen("fill_err", (event: any) => {
-  const fillErr = event.payload;
+listen("split_err", (event: any) => {
+  const splitErr = event.payload;
   ElNotification({
-    title: "Fill Error",
-    message: fillErr,
+    title: "Split Error",
+    message: splitErr,
     position: "bottom-right",
     type: "error",
     duration: 0
@@ -38,7 +31,6 @@ listen("fill_err", (event: any) => {
   isLoading.value = false;
 });
 
-// open file
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
@@ -59,16 +51,10 @@ async function selectFile() {
     data.filePath = selected;
   }
   isPath.value = true;
-
-  const header: any = await invoke("get_fill_headers", {
-    path: data.filePath,
-    sep: data.sep
-  });
-  originalColumns.value = header;
 }
 
-// fill data
-async function fillData() {
+// split data
+async function splitData() {
   if (data.filePath == "") {
     ElNotification({
       title: "File not found",
@@ -78,36 +64,19 @@ async function fillData() {
     });
     return;
   }
-  if (columns.value.length === 0) {
-    ElNotification({
-      title: "Column not defined",
-      message: "未选择columns",
-      position: "bottom-right",
-      type: "warning"
-    });
-    return;
-  }
-
-  const cols = Object.values(columns.value).join("|");
 
   if (data.filePath != "") {
     isLoading.value = true;
 
-    await invoke("fill", {
-      path: data.filePath,
+    await invoke("split", {
+      filePath: data.filePath,
       sep: data.sep,
-      columns: cols,
-      values: data.value
+      size: data.size
     });
 
     isLoading.value = false;
     ElNotification({
-      title: "",
-      message:
-        "Fill done, fill rows: " +
-        fillRows.value +
-        " lines, elapsed time: " +
-        runtime.value,
+      message: "Split done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 0
@@ -135,35 +104,19 @@ async function fillData() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
+        <el-select v-model="data.sep" style="margin-left: 16px; width: 115px">
           <el-option label="," value="," />
           <el-option label="|" value="|" />
           <el-option label="\t" value="\t" />
           <el-option label=";" value=";" />
         </el-select>
       </div>
-
       <el-text type="primary" size="large">
-        <el-icon> <Cpu /> </el-icon>
+        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
-        <span v-else>Fill empty fields in selected columns of a CSV</span>
+        <span v-else>Split one CSV file into many CSV files</span>
       </el-text>
     </div>
-    <p />
-    <el-select
-      v-model="columns"
-      multiple
-      filterable
-      style="margin-top: 15px; width: 100%"
-      placeholder="please choose column"
-    >
-      <el-option
-        v-for="item in originalColumns"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
-      />
-    </el-select>
     <div
       style="
         display: flex;
@@ -172,17 +125,23 @@ async function fillData() {
         position: sticky;
       "
     >
-      <div style="margin-top: 15px; display: flex; align-items: flex-start">
-        <el-input
-          v-model="data.value"
-          style="width: 120px; margin-right: 16px"
-          clearable
+      <div style="display: flex; align-items: flex-start; margin-top: 10px">
+        <el-input-number
+          v-model="data.size"
+          controls-position="right"
+          style="width: 150px"
         />
-        <el-button type="success" @click="fillData()" :icon="Cpu" plain>
-          Fill
+        <el-button
+          type="success"
+          @click="splitData()"
+          :icon="IceCreamRound"
+          plain
+          style="margin-left: 16px"
+        >
+          Split
         </el-button>
       </div>
-      <el-form-item style="margin-top: 15px">
+      <el-form-item>
         <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
           <Loading />
         </el-icon>
@@ -197,5 +156,8 @@ async function fillData() {
   padding: 20px;
   border-radius: 10px;
   background-color: #fff;
+}
+.is-loading {
+  font-size: 20px;
 }
 </style>

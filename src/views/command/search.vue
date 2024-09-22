@@ -24,9 +24,10 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("equal_err", (event: any) => {
+  const equalErr = event.payload;
   ElNotification({
     title: "Equal Error",
-    message: event.payload,
+    message: equalErr,
     position: "bottom-right",
     type: "error",
     duration: 0
@@ -38,9 +39,10 @@ listen("equal_count", (event: any) => {
   writeRows.value = count;
 });
 listen("contains_err", (event: any) => {
+  const containsErr = event.payload;
   ElNotification({
     title: "Contains Error",
-    message: event.payload,
+    message: containsErr,
     position: "bottom-right",
     type: "error",
     duration: 0
@@ -52,9 +54,10 @@ listen("contains_count", (event: any) => {
   writeRows.value = count;
 });
 listen("startswith_err", (event: any) => {
+  const startswithErr = event.payload;
   ElNotification({
     title: "Startwith Error",
-    message: event.payload,
+    message: startswithErr,
     position: "bottom-right",
     type: "error",
     duration: 0

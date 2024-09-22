@@ -44,7 +44,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 185;
+  const height = 225;
   return windowHeight.value - height;
 });
 
@@ -72,9 +72,10 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("c2x_err", (event: any) => {
+  const writeExcelErr = event.payload;
   ElNotification({
     title: "Switch csv Error",
-    message: event.payload,
+    message: writeExcelErr,
     position: "bottom-right",
     type: "error",
     duration: 0
@@ -86,15 +87,15 @@ listen("c2x_progress", (event: any) => {
   progress.value = pgs;
 });
 listen("rows_err", (event: any) => {
-  const error: any = event.payload;
+  const csvRowsErr: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === error.split("|")[0]) {
+    if (file.filename.split("\\").pop() === csvRowsErr.split("|")[0]) {
       file.status = "error";
     }
   });
   ElNotification({
     title: "Write Error",
-    message: error,
+    message: csvRowsErr,
     position: "bottom-right",
     type: "error",
     duration: 0

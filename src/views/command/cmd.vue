@@ -43,6 +43,11 @@ const commands = ref([
     title: "Fill",
     description: "Fill empty fields in selected columns of a CSV.",
     route: "/command/fill"
+  },
+  {
+    title: "Split",
+    description: "Split one CSV file into many CSV files.",
+    route: "/command/split"
   }
 ]);
 const searchText = ref("");

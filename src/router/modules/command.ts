@@ -86,6 +86,15 @@ export default {
         title: "fill",
         showLink: false
       }
+    },
+    {
+      path: "/command/split",
+      name: "split",
+      component: () => import("@/views/command/split.vue"),
+      meta: {
+        title: "split",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

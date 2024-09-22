@@ -26,7 +26,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 185;
+  const height = 220;
   return windowHeight.value - height;
 });
 
@@ -54,9 +54,10 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("count_err", (event: any) => {
+  const countErr = event.payload;
   ElNotification({
     title: "Count Error",
-    message: event.payload,
+    message: countErr,
     position: "bottom-right",
     type: "error",
     duration: 0

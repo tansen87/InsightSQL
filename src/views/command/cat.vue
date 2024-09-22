@@ -30,7 +30,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 185;
+  const height = 205;
   return windowHeight.value - height;
 });
 
@@ -50,9 +50,10 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("cat_err", (event: any) => {
+  const catErr = event.payload;
   ElNotification({
     title: "Concat Error",
-    message: event.payload,
+    message: catErr,
     position: "bottom-right",
     type: "error",
     duration: 0
@@ -104,10 +105,12 @@ async function concatData() {
   }
   if (data.filePath != "") {
     isLoading.value = true;
+
     await invoke("concat", {
       filePath: data.filePath,
       sep: data.sep
     });
+
     isLoading.value = false;
     ElNotification({
       message: "Cat done, elapsed time: " + runtime.value,

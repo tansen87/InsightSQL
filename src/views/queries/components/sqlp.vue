@@ -47,7 +47,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 305;
+  const height = 345;
   return windowHeight.value - height;
 });
 

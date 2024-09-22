@@ -22,18 +22,20 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("select_err", (event: any) => {
+  const selectErr = event.payload;
   ElNotification({
     title: "Select Error",
-    message: event.payload,
+    message: selectErr,
     position: "bottom-right",
     type: "error",
     duration: 0
   });
 });
 listen("wtr_err", (event: any) => {
+  const writeSelectErr = event.payload;
   ElNotification({
     title: "Write Error",
-    message: event.payload,
+    message: writeSelectErr,
     position: "bottom-right",
     type: "error",
     duration: 0

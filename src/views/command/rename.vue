@@ -28,7 +28,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 185;
+  const height = 205;
   return windowHeight.value - height;
 });
 
@@ -48,9 +48,10 @@ listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
 listen("get_err", (event: any) => {
+  const getRenameHeadersError = event.payload;
   ElNotification({
     title: "Get Rename Headers Error",
-    message: event.payload,
+    message: getRenameHeadersError,
     position: "bottom-right",
     type: "error",
     duration: 0
@@ -58,9 +59,10 @@ listen("get_err", (event: any) => {
   isLoading.value = false;
 });
 listen("rename_err", (event: any) => {
+  const renameError = event.payload;
   ElNotification({
     title: "Rename Error",
-    message: event.payload,
+    message: renameError,
     position: "bottom-right",
     type: "error",
     duration: 0
