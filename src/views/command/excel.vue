@@ -78,7 +78,7 @@ listen("row_count_err", (event: any) => {
     message: excelRowCountErr,
     position: "bottom-right",
     type: "warning",
-    duration: 0
+    duration: 10000
   });
   selectedFiles.value.forEach(file => {
     if (file.filename === excelRowCountErr.split("|")[0]) {
@@ -106,7 +106,7 @@ listen("e2c_err", (event: any) => {
     message: writeCsvErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -116,6 +116,7 @@ async function selectFile() {
   isLoading.value = false;
   selectedFiles.value = [];
   progress.value = 0;
+
   const selected = await open({
     multiple: true,
     filters: [
@@ -167,8 +168,9 @@ async function excelToCsv() {
       message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 5000
     });
+    isLoading.value = false;
   }
 }
 </script>
@@ -196,6 +198,7 @@ async function excelToCsv() {
           <el-button
             type="success"
             @click="excelToCsv()"
+            :loading="isLoading"
             :icon="SwitchFilled"
             plain
           >

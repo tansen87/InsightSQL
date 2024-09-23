@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -30,7 +30,7 @@ listen("equal_err", (event: any) => {
     message: equalErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -45,7 +45,7 @@ listen("contains_err", (event: any) => {
     message: containsErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -60,7 +60,7 @@ listen("startswith_err", (event: any) => {
     message: startswithErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -134,7 +134,7 @@ async function searchData() {
         runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 10000
     });
   }
 }
@@ -154,6 +154,7 @@ async function searchData() {
         <el-button
           type="primary"
           @click="selectFile()"
+          :loading="isLoading"
           :icon="FolderOpened"
           plain
         >
@@ -166,11 +167,6 @@ async function searchData() {
           <el-option label=";" value=";" />
         </el-select>
       </div>
-      <el-form-item>
-        <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
-          <Loading />
-        </el-icon>
-      </el-form-item>
 
       <el-text type="primary" size="large">
         <el-icon> <IceCreamRound /> </el-icon>

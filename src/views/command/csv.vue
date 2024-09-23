@@ -78,7 +78,7 @@ listen("c2x_err", (event: any) => {
     message: writeExcelErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -98,7 +98,7 @@ listen("rows_err", (event: any) => {
     message: csvRowsErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -116,6 +116,7 @@ async function selectFile() {
   selectedFiles.value = [];
   isLoading.value = false;
   progress.value = 0;
+
   const selected = await open({
     multiple: true,
     filters: [
@@ -168,8 +169,9 @@ async function csvToxlsx() {
       message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 5000
     });
+    isLoading.value = false;
   }
 }
 </script>
@@ -202,6 +204,7 @@ async function csvToxlsx() {
           <el-button
             type="success"
             @click="csvToxlsx()"
+            :loading="isLoading"
             :icon="SwitchFilled"
             plain
             style="margin-left: 16px"

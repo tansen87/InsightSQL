@@ -12,7 +12,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, View, Download } from "@element-plus/icons-vue";
+import { View, Download } from "@element-plus/icons-vue";
 import { FolderOpened, Search } from "@element-plus/icons-vue";
 import Prism from "prismjs";
 import "prismjs/components/prism-sql";
@@ -78,7 +78,7 @@ listen("exec_err", (event: any) => {
     message: event.payload,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -137,14 +137,14 @@ async function queryData() {
         message: err,
         position: "bottom-right",
         type: "error",
-        duration: 0
+        duration: 10000
       });
     }
     ElNotification({
       message: "Query done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 5000
     });
     isLoading.value = false;
   }
@@ -155,6 +155,7 @@ async function selectFile() {
   tableData.value = [];
   isLoading.value = false;
   isPath.value = false;
+
   const selected = await open({
     multiple: true,
     filters: [
@@ -302,7 +303,13 @@ watch(
       <div ref="highlightedCode" class="highlighted-code" />
     </el-form-item>
     <el-form-item>
-      <el-button type="success" @click="queryData()" :icon="Search" plain>
+      <el-button
+        type="success"
+        @click="queryData()"
+        :loading="isLoading"
+        :icon="Search"
+        plain
+      >
         Execute
       </el-button>
       <el-switch
@@ -318,11 +325,6 @@ watch(
         <el-option label="csv" value="csv" />
         <el-option label="xlsx" value="xlsx" />
       </el-select>
-      <div class="icon-group">
-        <el-icon v-if="isLoading" color="#FF4500" class="is-loading">
-          <Loading />
-        </el-icon>
-      </div>
     </el-form-item>
   </el-form>
   <el-table

@@ -60,7 +60,7 @@ listen("count_err", (event: any) => {
     message: countErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -81,6 +81,7 @@ listen("count_progress", (event: any) => {
 async function selectFile() {
   isLoading.value = false;
   progress.value = 0;
+
   const selected = await open({
     multiple: true,
     filters: [
@@ -126,8 +127,9 @@ async function countData() {
     message: "Count done, elapsed time: " + runtime.value,
     position: "bottom-right",
     type: "success",
-    duration: 0
+    duration: 5000
   });
+  isLoading.value = false;
 }
 </script>
 
@@ -160,6 +162,7 @@ async function countData() {
           <el-button
             type="success"
             @click="countData()"
+            :loading="isLoading"
             :icon="Grape"
             plain
             style="margin-left: 16px"

@@ -1,6 +1,8 @@
 <h1>InsightSQL</h1>
 
-> A tool that can quickly view Excel, CSV and Parquet using SQL
+English| [中文](./README_CN.md)
+
+> A tool that can quickly view Excel, CSV and Parquet using SQL, base on Tauri.
 
 ### screenshot
 * polars SQL for query
@@ -25,8 +27,9 @@
 - [x] Exports csv to a xlsx file
 - [x] Rename the columns of a CSV
 - [x] Select, re-order, duplicate or drop columns
-- [x] Select fields and shows only matching rows
+- [x] Select fields matching rows
 - [x] Fill empty fields in selected columns of a CSV
+- [x] Split one CSV file into many CSV files
 
 
 ### 🍖How to use?

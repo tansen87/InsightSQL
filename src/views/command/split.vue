@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -26,7 +26,7 @@ listen("split_err", (event: any) => {
     message: splitErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -34,6 +34,7 @@ listen("split_err", (event: any) => {
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
+
   const selected = await open({
     multiple: false,
     filters: [
@@ -79,7 +80,7 @@ async function splitData() {
       message: "Split done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 5000
     });
   }
 }
@@ -134,6 +135,7 @@ async function splitData() {
         <el-button
           type="success"
           @click="splitData()"
+          :loading="isLoading"
           :icon="IceCreamRound"
           plain
           style="margin-left: 16px"
@@ -141,11 +143,6 @@ async function splitData() {
           Split
         </el-button>
       </div>
-      <el-form-item>
-        <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
-          <Loading />
-        </el-icon>
-      </el-form-item>
     </div>
   </div>
 </template>

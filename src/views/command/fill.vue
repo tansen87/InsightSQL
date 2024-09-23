@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, Cpu, FolderOpened } from "@element-plus/icons-vue";
+import { Cpu, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -33,7 +33,7 @@ listen("fill_err", (event: any) => {
     message: fillErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -42,6 +42,7 @@ listen("fill_err", (event: any) => {
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
+
   const selected = await open({
     multiple: false,
     filters: [
@@ -110,7 +111,7 @@ async function fillData() {
         runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 10000
     });
   }
 }
@@ -178,15 +179,16 @@ async function fillData() {
           style="width: 120px; margin-right: 16px"
           clearable
         />
-        <el-button type="success" @click="fillData()" :icon="Cpu" plain>
+        <el-button
+          type="success"
+          @click="fillData()"
+          :loading="isLoading"
+          :icon="Cpu"
+          plain
+        >
           Fill
         </el-button>
       </div>
-      <el-form-item style="margin-top: 15px">
-        <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
-          <Loading />
-        </el-icon>
-      </el-form-item>
     </div>
   </div>
 </template>

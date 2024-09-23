@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, Watermelon, FolderOpened } from "@element-plus/icons-vue";
+import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
 
 const tableData: any = ref([]);
 const writeRows = ref(0);
@@ -54,7 +54,7 @@ listen("get_err", (event: any) => {
     message: getRenameHeadersError,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -65,7 +65,7 @@ listen("rename_err", (event: any) => {
     message: renameError,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -79,6 +79,7 @@ async function selectFile() {
   tableData.value = [];
   isLoading.value = false;
   isPath.value = false;
+
   const selected = await open({
     multiple: false,
     filters: [
@@ -143,7 +144,7 @@ async function renameData() {
       runtime.value,
     position: "bottom-right",
     type: "success",
-    duration: 0
+    duration: 10000
   });
 }
 
@@ -181,6 +182,7 @@ async function headerEdit(row: any) {
           <el-button
             type="success"
             @click="renameData()"
+            :loading="isLoading"
             :icon="Watermelon"
             plain
             style="margin-left: 16px"
@@ -188,11 +190,6 @@ async function headerEdit(row: any) {
             Rename
           </el-button>
         </div>
-        <el-form-item>
-          <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
-            <Loading />
-          </el-icon>
-        </el-form-item>
 
         <el-text type="primary" size="large">
           <el-icon> <Watermelon /> </el-icon>

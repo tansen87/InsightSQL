@@ -5,7 +5,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Loading, Cherry, FolderOpened } from "@element-plus/icons-vue";
+import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 
 const data = reactive({
   filePath: "",
@@ -28,7 +28,7 @@ listen("select_err", (event: any) => {
     message: selectErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
 });
 listen("wtr_err", (event: any) => {
@@ -38,7 +38,7 @@ listen("wtr_err", (event: any) => {
     message: writeSelectErr,
     position: "bottom-right",
     type: "error",
-    duration: 0
+    duration: 10000
   });
   isLoading.value = false;
 });
@@ -115,7 +115,7 @@ async function selectColumns() {
       message: "Select done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 10000
     });
   }
 }
@@ -151,6 +151,7 @@ async function selectColumns() {
           <el-button
             type="success"
             @click="selectColumns()"
+            :loading="isLoading"
             :icon="Cherry"
             plain
             style="margin-left: 16px"
@@ -158,12 +159,6 @@ async function selectColumns() {
             Select
           </el-button>
         </div>
-        <!-- Loading status -->
-        <el-form-item>
-          <el-icon v-if="isLoading" color="#FF8C00" class="is-loading">
-            <Loading />
-          </el-icon>
-        </el-form-item>
 
         <!-- Title -->
         <el-text type="primary" size="large">
