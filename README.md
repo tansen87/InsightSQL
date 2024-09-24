@@ -1,6 +1,6 @@
 <h1>InsightSQL</h1>
 
-English| [中文](./README_CN.md)
+English | [中文](./README_CN.md)
 
 > A tool that can quickly view Excel, CSV and Parquet using SQL, base on Tauri.
 

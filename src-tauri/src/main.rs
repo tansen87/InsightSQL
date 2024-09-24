@@ -9,6 +9,7 @@ use lib::select;
 use lib::search;
 use lib::fill;
 use lib::split;
+use lib::access;
 
 fn main() {
   tauri::Builder
@@ -29,6 +30,7 @@ fn main() {
       fill::get_fill_headers,
       fill::fill,
       split::split,
+      access::access,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

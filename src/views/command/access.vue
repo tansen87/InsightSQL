@@ -13,20 +13,8 @@ const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
-  fileFormats: [
-    "csv",
-    "txt",
-    "tsv",
-    "spext",
-    "dat",
-    "parquet",
-    "xls",
-    "xlsx",
-    "xlsm",
-    "xlsb",
-    "ods"
-  ],
-  sep: ","
+  fileFormats: ["mdb", "accdb"],
+  sep: "|"
 });
 
 const formHeight = computed(() => {
@@ -49,11 +37,11 @@ onBeforeUnmount(() => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("cat_err", (event: any) => {
-  const catErr = event.payload;
+listen("access_err", (event: any) => {
+  const accessErr = event.payload;
   ElNotification({
-    title: "Concat Error",
-    message: catErr,
+    title: "Access Error",
+    message: accessErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
@@ -68,7 +56,7 @@ async function selectFile() {
     multiple: true,
     filters: [
       {
-        name: "",
+        name: "Access",
         extensions: data.fileFormats
       }
     ]
@@ -93,7 +81,7 @@ async function selectFile() {
 }
 
 // data concat
-async function concatData() {
+async function accessData() {
   if (data.filePath == "") {
     ElNotification({
       title: "File not found",
@@ -106,17 +94,17 @@ async function concatData() {
   if (data.filePath != "") {
     isLoading.value = true;
 
-    await invoke("concat", {
+    await invoke("access", {
       filePath: data.filePath,
       sep: data.sep
     });
 
     isLoading.value = false;
     ElNotification({
-      message: "Cat done, elapsed time: " + runtime.value,
+      message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 5000
     });
   }
 }
@@ -149,18 +137,18 @@ async function concatData() {
           </el-select>
           <el-button
             type="success"
-            @click="concatData()"
+            @click="accessData()"
             :loading="isLoading"
             :icon="Connection"
             plain
             style="margin-left: 16px"
           >
-            Concat
+            Convert
           </el-button>
         </div>
         <el-text type="primary" size="large">
           <el-icon> <Connection /> </el-icon>
-          Concatenate CSV and Excel files by column
+          Convert Access Database to CSV
         </el-text>
       </div>
     </el-form>

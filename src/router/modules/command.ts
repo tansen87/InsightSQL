@@ -95,6 +95,15 @@ export default {
         title: "split",
         showLink: false
       }
+    },
+    {
+      path: "/command/access",
+      name: "access",
+      component: () => import("@/views/command/access.vue"),
+      meta: {
+        title: "access to csv",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;
