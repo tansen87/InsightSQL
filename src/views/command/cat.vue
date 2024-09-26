@@ -26,7 +26,8 @@ const data = reactive({
     "xlsb",
     "ods"
   ],
-  sep: ","
+  sep: ",",
+  memory: true
 });
 
 const formHeight = computed(() => {
@@ -108,7 +109,8 @@ async function concatData() {
 
     await invoke("concat", {
       filePath: data.filePath,
-      sep: data.sep
+      sep: data.sep,
+      memory: data.memory
     });
 
     isLoading.value = false;
@@ -147,6 +149,13 @@ async function concatData() {
             <el-option label="\t" value="\t" />
             <el-option label=";" value=";" />
           </el-select>
+          <el-select
+            v-model="data.memory"
+            style="margin-left: 16px; width: 100px"
+          >
+            <el-option label="Memory" :value="true" />
+            <el-option label="Stream" :value="false" />
+          </el-select>
           <el-button
             type="success"
             @click="concatData()"
@@ -160,7 +169,7 @@ async function concatData() {
         </div>
         <el-text type="primary" size="large">
           <el-icon> <Connection /> </el-icon>
-          Concatenate CSV and Excel files by column
+          Cat CSV and Excel files
         </el-text>
       </div>
     </el-form>

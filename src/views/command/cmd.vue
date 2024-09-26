@@ -6,7 +6,7 @@ const router = useRouter();
 const commands = ref([
   {
     title: "Cat",
-    description: "Concatenate CSV and Excel files.",
+    description: "Cat CSV and Excel files.",
     route: "/command/cat"
   },
   {
