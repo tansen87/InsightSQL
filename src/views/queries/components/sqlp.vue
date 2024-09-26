@@ -47,7 +47,7 @@ const data = reactive({
 });
 
 const formHeight = computed(() => {
-  const height = 345;
+  const height = 305;
   return windowHeight.value - height;
 });
 
@@ -174,18 +174,20 @@ async function selectFile() {
   }
 
   isPath.value = true;
+
+  await invoke("query", {
+    path: data.filePath,
+    sqlsrc: "select * from _t_1 limit 5",
+    sep: data.sep,
+    write: false,
+    writeFormat: "csv",
+    lowMemory: false
+  });
   /*
   const results: any = await invoke("get", {
     path: data.filePath,
     sep: data.sep
   });
-  const jsonData = JSON.parse(results);
-  columns.value = Object.keys(jsonData[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = jsonData;
   */
 }
 

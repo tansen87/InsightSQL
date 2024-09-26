@@ -14,10 +14,6 @@ use indexmap::IndexMap;
 use polars::{
   datatypes::AnyValue,
   error::PolarsError,
-  io::{
-    csv::read::{CsvParseOptions, CsvReadOptions},
-    SerReader,
-  },
   prelude::{
     CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame,
     OptFlags, SerWriter,
@@ -287,67 +283,6 @@ fn prepare_query(
   Ok(())
 }
 
-fn csv_to_json(file: String, sep: String) -> Result<String, Box<dyn Error>> {
-  let mut separator = Vec::new();
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.clone().into_bytes()[0]
-  };
-  separator.push(sep);
-
-  let df = CsvReadOptions::default()
-    .with_parse_options(
-      CsvParseOptions::default()
-        .with_separator(separator[0])
-        .with_missing_is_null(false)
-        .with_truncate_ragged_lines(true),
-    )
-    .with_infer_schema_length(Some(0))
-    .with_n_threads(Some(4))
-    .with_n_rows(Some(20))
-    .try_into_reader_with_file_path(Some(file.into()))?
-    .finish()?;
-
-  let column_names = df.get_column_names();
-  let mut height = Vec::new();
-  if df.height() <= 20 {
-    height.push(df.height());
-  } else {
-    height.push(5);
-  }
-
-  let buffer = (0..height[0])
-    .into_iter()
-    .map(|i| {
-      let row = df
-        .get_row(i)
-        .expect(&*format!(
-          "Could not access row {}, please try again.",
-          i + 2
-        ))
-        .0;
-
-      let object = column_names
-        .iter()
-        .zip(row.iter())
-        .map(|(column, data)| (column.to_string(), data.get_str().unwrap_or("").to_owned()))
-        .collect::<IndexMap<String, String>>();
-      serde_json::to_string(&object).expect("Unable to serialize the result.")
-    })
-    .collect::<Vec<String>>();
-  let result = if height[0] > 1 {
-    format!("[{}]", buffer.join(","))
-  } else {
-    buffer
-      .get(0)
-      .expect("Unable to get value from buffer.")
-      .clone()
-  };
-
-  Ok(result)
-}
-
 fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsError> {
   let column_names = df.get_column_names();
   let mut height = Vec::new();
@@ -413,26 +348,13 @@ pub fn expired() -> bool {
 }
 
 #[tauri::command]
-pub async fn get(path: String, sep: String, window: tauri::Window) -> String {
-  let mut vec_results = Vec::new();
-  let vec_path: Vec<&str> = path.split('|').collect();
-  let file = vec_path[0].to_string();
+pub async fn get(window: tauri::Window) {
   if !expired() {
-    let results = match (async { csv_to_json(file, sep) }).await {
-      Ok(result) => result,
-      Err(err) => {
-        eprintln!("get headers error: {err}");
-        window.emit("get_err", &err.to_string()).unwrap();
-        err.to_string()
-      }
-    };
-    vec_results.push(results);
+    "hi there".to_string();
   } else {
     let expired_msg = "Your application has expired. Please renew your subscription.".to_string();
     window.emit("expired", expired_msg).unwrap();
   }
-
-  vec_results[0].clone()
 }
 
 #[tauri::command]
