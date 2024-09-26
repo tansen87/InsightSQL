@@ -154,7 +154,6 @@ async function searchData() {
         <el-button
           type="primary"
           @click="selectFile()"
-          :loading="isLoading"
           :icon="FolderOpened"
           plain
         >
@@ -197,6 +196,7 @@ async function searchData() {
       <el-button
         type="success"
         @click="searchData()"
+        :loading="isLoading"
         :icon="IceCreamRound"
         plain
         style="margin-left: 16px"

@@ -178,7 +178,7 @@ fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), B
 
     let file_name = match Path::new(&file).file_name() {
       Some(name) => match name.to_str() {
-        Some(name_str) => name_str.split('.').collect::<Vec<&str>>(),
+        Some(name_str) => name_str.split('|').collect::<Vec<&str>>(),
         None => vec![],
       },
       None => vec![],

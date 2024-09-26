@@ -104,6 +104,15 @@ export default {
         title: "access to csv",
         showLink: false
       }
+    },
+    {
+      path: "/command/dbf",
+      name: "dbf",
+      component: () => import("@/views/command/dbf.vue"),
+      meta: {
+        title: "dbf to csv",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

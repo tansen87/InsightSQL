@@ -80,7 +80,7 @@ async function selectFile() {
   }
 }
 
-// data concat
+// convert data
 async function accessData() {
   if (data.filePath == "") {
     ElNotification({

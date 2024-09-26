@@ -3,10 +3,10 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon, TableColumnCtx } from "element-plus";
+import { ElNotification, TableColumnCtx } from "element-plus";
 import {
   FolderOpened,
-  SwitchFilled,
+  Connection,
   Loading,
   Select,
   CloseBold
@@ -17,12 +17,17 @@ interface FileStatus {
   status: string;
 }
 
-const isLoading = ref(false);
-const progress = ref(0);
-const runtime = ref(0.0);
 const selectedFiles = ref([]);
+const isLoading = ref(false);
+const runtime = ref(0.0);
+const progress = ref(0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
+const data = reactive({
+  filePath: "",
+  fileFormats: ["*"],
+  sep: "|"
+});
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -38,14 +43,9 @@ const filterFileStatus = (
   const property = column["property"];
   return row[property] === value;
 };
-const data = reactive({
-  filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
-});
 
 const formHeight = computed(() => {
-  const height = 225;
+  const height = 205;
   return windowHeight.value - height;
 });
 
@@ -72,44 +72,28 @@ listen("start_convert", (event: any) => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("c2x_err", (event: any) => {
-  const writeExcelErr = event.payload;
-  ElNotification({
-    title: "Switch csv Error",
-    message: writeExcelErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-listen("c2x_progress", (event: any) => {
+listen("dbf2csv_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
 });
-listen("rows_err", (event: any) => {
-  const csvRowsErr: any = event.payload;
+listen("dbf2csv_msg", (event: any) => {
+  const dbf2csvMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === csvRowsErr.split("|")[0]) {
-      file.status = "error";
+    if (file.filename === dbf2csvMsg) {
+      file.status = "completed";
     }
   });
+});
+listen("dbf2csv_err", (event: any) => {
+  const accessErr = event.payload;
   ElNotification({
-    title: "Write Error",
-    message: csvRowsErr,
+    title: "Dbf Error",
+    message: accessErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
   });
   isLoading.value = false;
-});
-listen("c2x_msg", (event: any) => {
-  const c2xMsg: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === c2xMsg) {
-      file.status = "completed";
-    }
-  });
 });
 
 // open file
@@ -122,7 +106,7 @@ async function selectFile() {
     multiple: true,
     filters: [
       {
-        name: "csv",
+        name: "dbf",
         extensions: data.fileFormats
       }
     ]
@@ -136,7 +120,7 @@ async function selectFile() {
   } else if (selected === null) {
     ElNotification({
       title: "File not found",
-      message: "未选择csv文件",
+      message: "未选择文件",
       position: "bottom-right",
       type: "warning"
     });
@@ -146,33 +130,32 @@ async function selectFile() {
   }
 }
 
-// convert csv to xlsx
-async function csvToxlsx() {
+// convert data
+async function convertData() {
   if (data.filePath == "") {
     ElNotification({
       title: "File not found",
-      message: "未选择csv文件",
+      message: "未选择文件",
       position: "bottom-right",
       type: "warning"
     });
     return;
   }
-
   if (data.filePath != "") {
     isLoading.value = true;
 
-    await invoke("switch_csv", {
-      path: data.filePath,
+    await invoke("dbf", {
+      filePath: data.filePath,
       sep: data.sep
     });
 
+    isLoading.value = false;
     ElNotification({
       message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 5000
     });
-    isLoading.value = false;
   }
 }
 </script>
@@ -204,9 +187,9 @@ async function csvToxlsx() {
           </el-select>
           <el-button
             type="success"
-            @click="csvToxlsx()"
+            @click="convertData()"
             :loading="isLoading"
-            :icon="SwitchFilled"
+            :icon="Connection"
             plain
             style="margin-left: 16px"
           >
@@ -214,8 +197,8 @@ async function csvToxlsx() {
           </el-button>
         </div>
         <el-text type="primary" size="large">
-          <el-icon> <SwitchFilled /> </el-icon>
-          Exports csv to a xlsx file
+          <el-icon> <Connection /> </el-icon>
+          Convert dbf file to CSV
         </el-text>
       </div>
     </el-form>

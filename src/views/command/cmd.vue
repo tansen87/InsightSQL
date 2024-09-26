@@ -53,6 +53,11 @@ const commands = ref([
     title: "Access to csv",
     description: "Convert Access Database to CSV.",
     route: "/command/access"
+  },
+  {
+    title: "Dbf to csv",
+    description: "Convert dbf file to CSV.",
+    route: "/command/dbf"
   }
 ]);
 const searchText = ref("");
