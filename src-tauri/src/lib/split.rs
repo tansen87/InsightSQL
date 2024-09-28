@@ -24,32 +24,30 @@ fn new_writer(
 }
 
 fn split_csv(input_csv: String, sep: String, size: i32) -> Result<(), Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let binding = PathBuf::from(input_csv.clone());
   let path_parent = binding.parent().unwrap();
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(input_csv)?);
 
   let headers = rdr.byte_headers()?.clone();
 
-  let mut wtr = new_writer(&headers, 0, path_parent, separator[0])?;
+  let mut wtr = new_writer(&headers, 0, path_parent, sep)?;
   let mut i = 0;
   let mut cnt = 1;
   let mut row = csv::ByteRecord::new();
   while rdr.read_byte_record(&mut row)? {
     if i > 0 && i % size == 0 {
       wtr.flush()?;
-      wtr = new_writer(&headers, cnt, path_parent, separator[0])?;
+      wtr = new_writer(&headers, cnt, path_parent, sep)?;
       cnt += 1;
     }
     wtr.write_byte_record(&row)?;

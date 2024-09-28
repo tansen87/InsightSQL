@@ -6,16 +6,14 @@ use std::path::Path;
 use std::time::Instant;
 
 fn get_header(path: String, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(path)?);
 
@@ -43,18 +41,16 @@ fn fill_values(
   fill_value: String,
   window: tauri::Window
 ) -> Result<(), Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(&input_file)?);
 
@@ -76,10 +72,10 @@ fn fill_values(
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap_or_else(|| "Default Path".to_string().into());
-  let output_file = format!("{}/fill{}.csv", parent_path, current_time);
+  let output_file = format!("{}/fill_{}.csv", parent_path, current_time);
 
   let mut wtr = csv::WriterBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .from_writer(BufWriter::new(File::create(output_file)?));
 
   wtr.write_record(headers)?;

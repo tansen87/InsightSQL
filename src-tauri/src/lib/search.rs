@@ -3,16 +3,14 @@ use std::{
 };
 
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(path)?);
 
@@ -34,18 +32,16 @@ fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, B
 }
 
 pub fn read_csv(path: String, sep: String) -> Result<csv::Reader<BufReader<File>>, Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let file = File::open(path)?;
 
   let rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .from_reader(BufReader::new(file));
 
   Ok(rdr)
@@ -56,13 +52,11 @@ pub fn write_csv(
   sep: String,
   mode: &str,
 ) -> Result<csv::Writer<BufWriter<File>>, Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let path = PathBuf::from(path);
   let file_name = path
@@ -81,7 +75,7 @@ pub fn write_csv(
   match mode {
     "equal" => {
       vec_output.push(format!(
-        "{}/{}_equal {}.csv",
+        "{}/{}_equal_{}.csv",
         path_parent.display(),
         file_name,
         current_time_str
@@ -89,7 +83,7 @@ pub fn write_csv(
     }
     "contains" => {
       vec_output.push(format!(
-        "{}/{}_contains {}.csv",
+        "{}/{}_contains_{}.csv",
         path_parent.display(),
         file_name,
         current_time_str
@@ -97,7 +91,7 @@ pub fn write_csv(
     }
     "startswith" => {
       vec_output.push(format!(
-        "{}/{}_startswith {}.csv",
+        "{}/{}_startswith_{}.csv",
         path_parent.display(),
         file_name,
         current_time_str
@@ -108,7 +102,7 @@ pub fn write_csv(
 
   let file = File::create(&vec_output[0])?;
   let wtr = csv::WriterBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .from_writer(BufWriter::new(file));
 
   Ok(wtr)

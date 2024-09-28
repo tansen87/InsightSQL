@@ -3,31 +3,26 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, TableColumnCtx } from "element-plus";
+import { ElNotification } from "element-plus";
 import {
+  Cpu,
   FolderOpened,
-  Connection,
   Loading,
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
 
-interface FileStatus {
-  filename: string;
-  status: string;
-}
-
-const selectedFiles = ref([]);
 const isLoading = ref(false);
 const runtime = ref(0.0);
 const progress = ref(0);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
+const selectedFiles = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["*"],
-  sep: "|"
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  sep: ","
 });
+const windowHeight = ref(window.innerHeight);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -35,17 +30,9 @@ const customColors = [
   { color: "#ADFF2F", percentage: 80 },
   { color: "#9ACD32", percentage: 100 }
 ];
-const filterFileStatus = (
-  value: string,
-  row: FileStatus,
-  column: TableColumnCtx<FileStatus>
-) => {
-  const property = column["property"];
-  return row[property] === value;
-};
 
 const formHeight = computed(() => {
-  const height = 205;
+  const height = 225;
   return windowHeight.value - height;
 });
 
@@ -72,23 +59,23 @@ listen("start_convert", (event: any) => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("dbf2csv_progress", (event: any) => {
+listen("drop_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
 });
-listen("dbf2csv_msg", (event: any) => {
-  const dbf2csvMsg: any = event.payload;
+listen("drop_msg", (event: any) => {
+  const dropMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === dbf2csvMsg) {
+    if (file.filename === dropMsg) {
       file.status = "completed";
     }
   });
 });
-listen("dbf2csv_err", (event: any) => {
-  const accessErr = event.payload;
+listen("behead_err", (event: any) => {
+  const fillErr = event.payload;
   ElNotification({
-    title: "Dbf Error",
-    message: accessErr,
+    title: "Behaed Error",
+    message: fillErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
@@ -106,7 +93,7 @@ async function selectFile() {
     multiple: true,
     filters: [
       {
-        name: "dbf",
+        name: "csv",
         extensions: data.fileFormats
       }
     ]
@@ -118,90 +105,85 @@ async function selectFile() {
       return { filename: file, status: "" };
     });
   } else if (selected === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
     return;
   } else {
     data.filePath = selected;
   }
 }
 
-// convert data
-async function convertData() {
+// drop data
+async function dropHeaders() {
   if (data.filePath == "") {
     ElNotification({
       title: "File not found",
-      message: "未选择文件",
+      message: "未选择csv文件",
       position: "bottom-right",
       type: "warning"
     });
     return;
   }
+
   if (data.filePath != "") {
     isLoading.value = true;
 
-    await invoke("dbf", {
+    await invoke("behead", {
       filePath: data.filePath,
       sep: data.sep
     });
 
-    isLoading.value = false;
     ElNotification({
-      message: "Convert done, elapsed time: " + runtime.value,
+      message: "Drop done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 5000
+      duration: 10000
     });
+    isLoading.value = false;
   }
 }
 </script>
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
-            Open File
-          </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
-          <el-button
-            type="success"
-            @click="convertData()"
-            :loading="isLoading"
-            :icon="Connection"
-            plain
-            style="margin-left: 16px"
-          >
-            Convert
-          </el-button>
-        </div>
-        <el-text type="primary" size="large">
-          <el-icon> <Connection /> </el-icon>
-          Convert dbf file to CSV
-        </el-text>
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: sticky;
+      "
+    >
+      <div style="display: flex; align-items: flex-start">
+        <el-button
+          type="primary"
+          @click="selectFile()"
+          :icon="FolderOpened"
+          plain
+        >
+          Open File
+        </el-button>
+        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
+          <el-option label="," value="," />
+          <el-option label="|" value="|" />
+          <el-option label="\t" value="\t" />
+          <el-option label=";" value=";" />
+        </el-select>
+        <el-button
+          type="success"
+          @click="dropHeaders()"
+          :loading="isLoading"
+          :icon="Cpu"
+          style="margin-left: 16px"
+          plain
+        >
+          Drop
+        </el-button>
       </div>
-    </el-form>
+      <el-text type="primary" size="large">
+        <el-icon> <Cpu /> </el-icon>
+        <span>Drop headers from CSV</span>
+      </el-text>
+    </div>
+
     <el-table
       ref="tableRef"
       :data="selectedFiles"
@@ -209,16 +191,7 @@ async function convertData() {
       style="width: 100%"
     >
       <el-table-column prop="filename" label="file" style="width: 80%" />
-      <el-table-column
-        prop="status"
-        label="status"
-        :filters="[
-          { text: 'x', value: 'error' },
-          { text: '√', value: 'completed' }
-        ]"
-        :filter-method="filterFileStatus"
-        width="100"
-      >
+      <el-table-column prop="status" label="status" width="100">
         <template #default="scope">
           <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
             <Loading />
@@ -232,6 +205,7 @@ async function convertData() {
         </template>
       </el-table-column>
     </el-table>
+
     <el-progress
       v-if="isLoading"
       :percentage="progress"

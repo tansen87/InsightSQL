@@ -7,16 +7,14 @@ use std::{
 };
 
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(path)?);
 
@@ -43,13 +41,12 @@ fn select_columns(
   cols: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let mut separator = Vec::new();
-  let sep_u8 = if sep == "\\t" {
+  let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep_u8);
+
   let cols_cleaned: String = cols.replace("\r", "").replace("\n", "");
   let cols_select: Vec<&str> = cols_cleaned.split('|').collect();
   let vec_path: Vec<&str> = path.split('|').collect();
@@ -69,14 +66,14 @@ fn select_columns(
       .map(|parent| parent.to_string_lossy())
       .unwrap_or_else(|| "Default Path".to_string().into());
     let output_path = format!(
-      "{}/{}_select {}.csv",
+      "{}/{}_select_{}.csv",
       parent_path,
       file_name[0],
       current_time
     );
 
     let mut rdr = csv::ReaderBuilder::new()
-      .delimiter(separator[0])
+      .delimiter(sep)
       .has_headers(true)
       .from_reader(File::open(f)?);
 
@@ -101,7 +98,7 @@ fn select_columns(
     }
 
     let mut wtr = csv::WriterBuilder::new()
-      .delimiter(separator[0])
+      .delimiter(sep)
       .from_writer(BufWriter::new(File::create(output_path)?));
 
     wtr.write_record(cols_select.iter())?;

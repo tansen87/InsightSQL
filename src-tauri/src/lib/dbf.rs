@@ -1,16 +1,11 @@
 use std::{error::Error, path::Path, time::Instant};
 
-use csv::WriterBuilder;
-use dbase::Reader;
-
 fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let vec_path: Vec<&str> = file_path.split('|').collect();
   let parent_path = Path::new(&vec_path[0])
@@ -22,10 +17,9 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
   let file_len = vec_path.len();
 
   for fp in vec_path.iter() {
-    let start_convert = format!("{}|start", fp);
-    window.emit("start_convert", start_convert)?;
+    window.emit("start_convert", fp)?;
 
-    let mut reader = Reader::from_path(fp)?;
+    let mut reader = dbase::Reader::from_path(fp)?;
 
     let headers: Vec<String> = reader
       .fields()
@@ -42,9 +36,7 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
     };
     let output = format!("{}/{}.csv", parent_path, file_name[0]);
 
-    let mut wtr = WriterBuilder::new()
-      .delimiter(separator[0])
-      .from_path(output)?;
+    let mut wtr = csv::WriterBuilder::new().delimiter(sep).from_path(output)?;
 
     wtr.write_record(&headers)?;
 
@@ -79,8 +71,7 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
     let progress_s = format!("{progress:.0}");
     window.emit("dbf2csv_progress", progress_s)?;
 
-    let dbf2csv_msg = format!("{}", fp);
-    window.emit("dbf2csv_msg", dbf2csv_msg)?;
+    window.emit("dbf2csv_msg", fp)?;
   }
 
   Ok(())

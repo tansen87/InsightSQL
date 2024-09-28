@@ -18,8 +18,7 @@ fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error
   let file_len = vec_path.len();
 
   for file in vec_path.iter() {
-    let start_convert = format!("{}|start", file);
-    window.emit("start_convert", start_convert)?;
+    window.emit("start_convert", file)?;
 
     let sce = PathBuf::from(file);
     let dest = sce.with_extension("csv");
@@ -150,8 +149,7 @@ fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error
 
     wtr.flush()?;
 
-    let e2c_msg = format!("{}|done", file);
-    window.emit("e2c_msg", e2c_msg)?;
+    window.emit("e2c_msg", file)?;
 
     count += 1;
     let progress = ((count as f32) / (file_len as f32)) * 100.0;
@@ -173,8 +171,7 @@ fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), B
   let file_len = vec_path.len();
 
   for file in vec_path.iter() {
-    let start_convert = format!("{}|start", file);
-    window.emit("start_convert", start_convert)?;
+    window.emit("start_convert", file)?;
 
     let file_name = match Path::new(&file).file_name() {
       Some(name) => match name.to_str() {

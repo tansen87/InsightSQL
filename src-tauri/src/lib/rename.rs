@@ -1,16 +1,14 @@
 use std::{error::Error, fs::File, path::Path, time::Instant};
 
 fn get_header(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(path)?);
 
@@ -26,16 +24,14 @@ fn rename_headers(
   r_header: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
 
   let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .has_headers(true)
     .from_reader(File::open(path)?);
 
@@ -57,14 +53,14 @@ fn rename_headers(
     .map(|parent| parent.to_string_lossy())
     .unwrap_or_else(|| "Default Path".to_string().into());
   let output_path = format!(
-    "{}/{}_rename {}.csv",
+    "{}/{}_rename_{}.csv",
     file_path_copy,
     file_name[0],
     current_time.format("%Y-%m-%d-%H%M%S")
   );
 
   let mut wtr = csv::WriterBuilder::new()
-    .delimiter(separator[0])
+    .delimiter(sep)
     .from_path(output_path)?;
 
   wtr.write_record(new_headers)?;

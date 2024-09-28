@@ -6,24 +6,22 @@ fn count_rows(
   window: tauri::Window,
 ) -> Result<Vec<String>, Box<dyn Error>> {
   /* count csv rows */
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
-  separator.push(sep);
+
   let vec_path: Vec<&str> = path.split('|').collect();
   let mut vec_file = Vec::new();
   let mut countf: usize = 0;
   let file_len = vec_path.len();
 
   for file in vec_path.iter() {
-    let start_convert = format!("{}|start", file);
-    window.emit("start_convert", start_convert)?;
+    window.emit("start_convert", file)?;
 
     let mut rdr = csv::ReaderBuilder::new()
-      .delimiter(separator[0])
+      .delimiter(sep)
       .has_headers(true)
       .from_reader(File::open(file)?);
 

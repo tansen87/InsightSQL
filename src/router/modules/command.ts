@@ -113,6 +113,15 @@ export default {
         title: "dbf to csv",
         showLink: false
       }
+    },
+    {
+      path: "/command/behead",
+      name: "behead",
+      component: () => import("@/views/command/behead.vue"),
+      meta: {
+        title: "drop headers",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

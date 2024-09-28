@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert.split("|")[0]) {
+    if (file.filename === startConvert) {
       file.status = "loading";
     }
   });
@@ -90,7 +90,7 @@ listen("row_count_err", (event: any) => {
 listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === e2cMsg.split("|")[0]) {
+    if (file.filename === e2cMsg) {
       file.status = "completed";
     }
   });

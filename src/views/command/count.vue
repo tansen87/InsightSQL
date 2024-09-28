@@ -45,7 +45,7 @@ onBeforeUnmount(() => {
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert.split("|")[0]) {
+    if (file.filename === startConvert) {
       file.status = "loading";
     }
   });

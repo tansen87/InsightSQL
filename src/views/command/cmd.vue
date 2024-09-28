@@ -58,6 +58,11 @@ const commands = ref([
     title: "Dbf to csv",
     description: "Convert dbf file to CSV.",
     route: "/command/dbf"
+  },
+  {
+    title: "Drop csv headers",
+    description: "Drop headers from CSV.",
+    route: "/command/behead"
   }
 ]);
 const searchText = ref("");

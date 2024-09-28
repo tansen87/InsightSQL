@@ -27,7 +27,7 @@ fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Err
   let mut lfs = Vec::new();
 
   for file in vec_path.iter() {
-    let fname = Path::new(file).file_name().unwrap().to_str().unwrap();
+    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
 
     let file_extension = match Path::new(file).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
@@ -54,14 +54,14 @@ fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Err
       }
     };
 
-    let lf = lf.with_column(lit(fname).alias("FileName"));
+    let lf = lf.with_column(lit(filename).alias("FileName"));
     lfs.push(lf);
   }
 
-  let file_path = Path::new(&vec_path[0])
+  let parent_path = Path::new(&vec_path[0])
     .parent()
     .map(|parent| parent.to_string_lossy())
-    .unwrap_or_else(|| "Default Path".to_string().into());
+    .unwrap();
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
 
   let cat_lf = concat_lf_diagonal(
@@ -79,16 +79,16 @@ fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Err
     let mut cat_df = cat_lf.collect()?;
     let row_len = cat_df.shape().0;
     if row_len < 104_0000 {
-      let save_path = format!("{}/cat_{}.xlsx", file_path, current_time);
+      let save_path = format!("{}/cat_{}.xlsx", parent_path, current_time);
       write_xlsx(cat_df, save_path.into())?;
     } else {
-      let save_path = format!("{}/cat_{}.csv", file_path, current_time);
+      let save_path = format!("{}/cat_{}.csv", parent_path, current_time);
       CsvWriter::new(File::create(save_path)?)
         .with_separator(sep)
         .finish(&mut cat_df)?;
     }
   } else {
-    let save_path = format!("{}/cat_{}.csv", file_path, current_time);
+    let save_path = format!("{}/cat_{}.csv", parent_path, current_time);
     cat_lf.sink_csv(
       save_path,
       CsvWriterOptions {
