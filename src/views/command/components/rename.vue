@@ -115,7 +115,7 @@ async function selectFile() {
 
 // rename csv headers
 async function renameData() {
-  if (data.filePath == "") {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -126,7 +126,7 @@ async function renameData() {
   }
 
   const headersStringArray = tableData.value.map((row: any) => row.col2);
-  const headersString = headersStringArray.join(",");
+  const headersString = headersStringArray.join("|");
   isLoading.value = true;
 
   await invoke("rename", {

@@ -101,7 +101,7 @@ listen("show", (event: any) => {
 async function queryData() {
   columns.value = [];
   tableData.value = [];
-  if (data.filePath == "") {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
       message: "未选择CSV, Excel or Parquet文件",
@@ -110,7 +110,7 @@ async function queryData() {
     });
     return;
   }
-  if (sqlsrc.value == "") {
+  if (sqlsrc.value === "") {
     ElNotification({
       title: "Warning",
       message: "SQL script is empty",
@@ -120,7 +120,7 @@ async function queryData() {
     return;
   }
 
-  if (data.filePath != "" && sqlsrc.value != "") {
+  if (data.filePath !== "" && sqlsrc.value !== "") {
     isLoading.value = true;
     try {
       await invoke("query", {
@@ -257,96 +257,104 @@ watch(
 </script>
 
 <template>
-  <el-form :style="formHeight">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+  <el-form class="page-container">
+    <el-form :style="formHeight">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        "
+      >
+        <div style="display: flex; align-items: flex-start">
+          <el-button
+            type="primary"
+            @click="selectFile()"
+            :icon="FolderOpened"
+            plain
+          >
+            Open File
+          </el-button>
+          <el-form-item style="margin-left: 10px; width: 80px">
+            <el-select v-model="data.sep">
+              <el-option label="," value="," />
+              <el-option label="|" value="|" />
+              <el-option label="\t" value="\t" />
+              <el-option label=";" value=";" />
+            </el-select>
+          </el-form-item>
+          <el-form-item style="margin-left: 10px; width: 100px">
+            <el-select v-model="data.lowMemory">
+              <el-option label="Memory" :value="false" />
+              <el-option label="Stream" :value="true" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <el-text type="primary" size="large" tag="ins">
+          <span v-if="isPath">{{ data.filePath }}</span>
+          <span v-else>View Excel, CSV and Parquet using SQL</span>
+        </el-text>
+      </div>
+      <el-form-item class="editor-container">
+        <textarea
+          :value="sqlsrc"
+          @input="textareaChange"
+          rows="1"
+          class="txt"
+          placeholder="select * from _t_1"
+        />
+        <div ref="highlightedCode" class="highlighted-code" />
+      </el-form-item>
+      <el-form-item>
         <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
+          type="success"
+          @click="queryData()"
+          :loading="isLoading"
+          :icon="Search"
           plain
         >
-          Open File
+          Execute
         </el-button>
-        <el-form-item style="margin-left: 10px; width: 80px">
-          <el-select v-model="data.sep">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
-        </el-form-item>
-        <el-form-item style="margin-left: 10px; width: 100px">
-          <el-select v-model="data.lowMemory">
-            <el-option label="Memory" :value="false" />
-            <el-option label="Stream" :value="true" />
-          </el-select>
-        </el-form-item>
-      </div>
-      <el-text type="primary" size="large" tag="ins">
-        <span v-if="isPath">{{ data.filePath }}</span>
-        <span v-else>View Excel, CSV and Parquet using SQL</span>
-      </el-text>
-    </div>
-    <el-form-item class="editor-container">
-      <textarea
-        :value="sqlsrc"
-        @input="textareaChange"
-        rows="1"
-        class="txt"
-        placeholder="select * from _t_1"
+        <el-switch
+          v-model="data.write"
+          :active-action-icon="Download"
+          :inactive-action-icon="View"
+          style="margin-left: 20px"
+        />
+        <el-select
+          v-model="data.writeFormat"
+          style="margin-left: 20px; width: 80px"
+        >
+          <el-option label="csv" value="csv" />
+          <el-option label="xlsx" value="xlsx" />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <el-table
+      ref="tableRef"
+      :data="tableData"
+      :height="formHeight"
+      border
+      style="width: 100%"
+    >
+      <el-table-column type="index" label="id" :index="indexMethod" />
+      <el-table-column
+        v-for="column in columns"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
       />
-      <div ref="highlightedCode" class="highlighted-code" />
-    </el-form-item>
-    <el-form-item>
-      <el-button
-        type="success"
-        @click="queryData()"
-        :loading="isLoading"
-        :icon="Search"
-        plain
-      >
-        Execute
-      </el-button>
-      <el-switch
-        v-model="data.write"
-        :active-action-icon="Download"
-        :inactive-action-icon="View"
-        style="margin-left: 20px"
-      />
-      <el-select
-        v-model="data.writeFormat"
-        style="margin-left: 20px; width: 80px"
-      >
-        <el-option label="csv" value="csv" />
-        <el-option label="xlsx" value="xlsx" />
-      </el-select>
-    </el-form-item>
+    </el-table>
   </el-form>
-  <el-table
-    ref="tableRef"
-    :data="tableData"
-    :height="formHeight"
-    border
-    style="width: 100%"
-  >
-    <el-table-column type="index" label="id" :index="indexMethod" />
-    <el-table-column
-      v-for="column in columns"
-      :prop="column.prop"
-      :label="column.label"
-      :key="column.prop"
-    />
-  </el-table>
 </template>
 
 <style scoped>
+.page-container {
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #fff;
+}
 .icon-group {
   display: flex;
   justify-content: flex-end;

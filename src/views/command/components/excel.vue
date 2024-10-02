@@ -3,24 +3,24 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon, TableColumnCtx } from "element-plus";
+import type { TableColumnCtx } from "element-plus";
+import { ElNotification, ElIcon } from "element-plus";
 import {
+  CloseBold,
+  Select,
   FolderOpened,
   SwitchFilled,
-  Loading,
-  Select,
-  CloseBold
+  Loading
 } from "@element-plus/icons-vue";
 
 interface FileStatus {
   filename: string;
   status: string;
 }
-
+const selectedFiles = ref([]);
 const isLoading = ref(false);
 const progress = ref(0);
 const runtime = ref(0.0);
-const selectedFiles = ref([]);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const customColors = [
@@ -40,12 +40,11 @@ const filterFileStatus = (
 };
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"]
 });
 
 const formHeight = computed(() => {
-  const height = 225;
+  const height = 240;
   return windowHeight.value - height;
 });
 
@@ -72,57 +71,57 @@ listen("start_convert", (event: any) => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("c2x_err", (event: any) => {
-  const writeExcelErr = event.payload;
+listen("row_count_err", (event: any) => {
+  const excelRowCountErr: any = event.payload;
   ElNotification({
-    title: "Switch csv Error",
-    message: writeExcelErr,
+    title: "Rows Count",
+    message: excelRowCountErr,
     position: "bottom-right",
-    type: "error",
+    type: "warning",
     duration: 10000
   });
-  isLoading.value = false;
-});
-listen("c2x_progress", (event: any) => {
-  const pgs: any = event.payload;
-  progress.value = pgs;
-});
-listen("rows_err", (event: any) => {
-  const csvRowsErr: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === csvRowsErr.split("|")[0]) {
+    if (file.filename === excelRowCountErr.split("|")[0]) {
       file.status = "error";
     }
   });
-  ElNotification({
-    title: "Write Error",
-    message: csvRowsErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
   isLoading.value = false;
 });
-listen("c2x_msg", (event: any) => {
-  const c2xMsg: any = event.payload;
+listen("e2c_msg", (event: any) => {
+  const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === c2xMsg) {
+    if (file.filename === e2cMsg) {
       file.status = "completed";
     }
   });
 });
+listen("e2c_progress", (event: any) => {
+  const pgs: any = event.payload;
+  progress.value = pgs;
+});
+listen("e2c_err", (event: any) => {
+  const writeCsvErr = event.payload;
+  ElNotification({
+    title: "Switch_excel Error",
+    message: writeCsvErr,
+    position: "bottom-right",
+    type: "error",
+    duration: 10000
+  });
+  isLoading.value = false;
+});
 
 // open file
 async function selectFile() {
-  selectedFiles.value = [];
   isLoading.value = false;
+  selectedFiles.value = [];
   progress.value = 0;
 
   const selected = await open({
     multiple: true,
     filters: [
       {
-        name: "csv",
+        name: "Excel",
         extensions: data.fileFormats
       }
     ]
@@ -136,7 +135,7 @@ async function selectFile() {
   } else if (selected === null) {
     ElNotification({
       title: "File not found",
-      message: "未选择csv文件",
+      message: "未选择Excel文件",
       position: "bottom-right",
       type: "warning"
     });
@@ -146,24 +145,23 @@ async function selectFile() {
   }
 }
 
-// convert csv to xlsx
-async function csvToxlsx() {
-  if (data.filePath == "") {
+// convert excel to csv
+async function excelToCsv() {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
-      message: "未选择csv文件",
+      message: "未选择Excel文件",
       position: "bottom-right",
       type: "warning"
     });
     return;
   }
 
-  if (data.filePath != "") {
+  if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("switch_csv", {
-      path: data.filePath,
-      sep: data.sep
+    await invoke("switch_excel", {
+      path: data.filePath
     });
 
     ElNotification({
@@ -185,9 +183,10 @@ async function csvToxlsx() {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
+          position: sticky;
         "
       >
-        <div style="display: flex; align-items: flex-start">
+        <el-form-item>
           <el-button
             type="primary"
             @click="selectFile()"
@@ -196,26 +195,19 @@ async function csvToxlsx() {
           >
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
           <el-button
             type="success"
-            @click="csvToxlsx()"
+            @click="excelToCsv()"
             :loading="isLoading"
             :icon="SwitchFilled"
             plain
-            style="margin-left: 16px"
           >
             Convert
           </el-button>
-        </div>
+        </el-form-item>
         <el-text type="primary" size="large">
           <el-icon> <SwitchFilled /> </el-icon>
-          Exports csv to a xlsx file
+          Exports Excel to a csv file
         </el-text>
       </div>
     </el-form>
@@ -249,7 +241,6 @@ async function csvToxlsx() {
         </template>
       </el-table-column>
     </el-table>
-
     <el-progress
       v-if="isLoading"
       :percentage="progress"

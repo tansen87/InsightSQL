@@ -12,3 +12,4 @@ pub mod split;
 pub mod access;
 pub mod dbf;
 pub mod behead;
+pub mod modify;

@@ -56,7 +56,7 @@ async function selectFile() {
 
 // split data
 async function splitData() {
-  if (data.filePath == "") {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -66,7 +66,7 @@ async function splitData() {
     return;
   }
 
-  if (data.filePath != "") {
+  if (data.filePath !== "") {
     isLoading.value = true;
 
     await invoke("split", {

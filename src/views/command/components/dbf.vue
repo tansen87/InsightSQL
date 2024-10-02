@@ -3,32 +3,46 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification } from "element-plus";
-import { FolderOpened, Connection } from "@element-plus/icons-vue";
+import { ElNotification, TableColumnCtx } from "element-plus";
+import {
+  FolderOpened,
+  Connection,
+  Loading,
+  Select,
+  CloseBold
+} from "@element-plus/icons-vue";
+
+interface FileStatus {
+  filename: string;
+  status: string;
+}
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
 const runtime = ref(0.0);
+const progress = ref(0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
-  fileFormats: [
-    "csv",
-    "txt",
-    "tsv",
-    "spext",
-    "dat",
-    "parquet",
-    "xls",
-    "xlsx",
-    "xlsm",
-    "xlsb",
-    "ods"
-  ],
-  sep: ",",
-  memory: true
+  fileFormats: ["*"],
+  sep: "|"
 });
+const customColors = [
+  { color: "#98FB98", percentage: 20 },
+  { color: "#7CFC00", percentage: 40 },
+  { color: "#7FFF00", percentage: 60 },
+  { color: "#ADFF2F", percentage: 80 },
+  { color: "#9ACD32", percentage: 100 }
+];
+const filterFileStatus = (
+  value: string,
+  row: FileStatus,
+  column: TableColumnCtx<FileStatus>
+) => {
+  const property = column["property"];
+  return row[property] === value;
+};
 
 const formHeight = computed(() => {
   const height = 205;
@@ -47,14 +61,34 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
 });
 
+listen("start_convert", (event: any) => {
+  const startConvert: any = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === startConvert) {
+      file.status = "loading";
+    }
+  });
+});
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("cat_err", (event: any) => {
-  const catErr = event.payload;
+listen("dbf2csv_progress", (event: any) => {
+  const pgs: any = event.payload;
+  progress.value = pgs;
+});
+listen("dbf2csv_msg", (event: any) => {
+  const dbf2csvMsg: any = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === dbf2csvMsg) {
+      file.status = "completed";
+    }
+  });
+});
+listen("dbf2csv_err", (event: any) => {
+  const accessErr = event.payload;
   ElNotification({
-    title: "Concat Error",
-    message: catErr,
+    title: "Dbf Error",
+    message: accessErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
@@ -65,11 +99,14 @@ listen("cat_err", (event: any) => {
 // open file
 async function selectFile() {
   selectedFiles.value = [];
+  isLoading.value = false;
+  progress.value = 0;
+
   const selected = await open({
     multiple: true,
     filters: [
       {
-        name: "",
+        name: "dbf",
         extensions: data.fileFormats
       }
     ]
@@ -78,7 +115,7 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file };
+      return { filename: file, status: "" };
     });
   } else if (selected === null) {
     ElNotification({
@@ -93,9 +130,9 @@ async function selectFile() {
   }
 }
 
-// data concat
-async function concatData() {
-  if (data.filePath == "") {
+// convert data
+async function convertData() {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
       message: "未选择文件",
@@ -104,21 +141,20 @@ async function concatData() {
     });
     return;
   }
-  if (data.filePath != "") {
+  if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("concat", {
+    await invoke("dbf", {
       filePath: data.filePath,
-      sep: data.sep,
-      memory: data.memory
+      sep: data.sep
     });
 
     isLoading.value = false;
     ElNotification({
-      message: "Cat done, elapsed time: " + runtime.value,
+      message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 5000
     });
   }
 }
@@ -149,27 +185,20 @@ async function concatData() {
             <el-option label="\t" value="\t" />
             <el-option label=";" value=";" />
           </el-select>
-          <el-select
-            v-model="data.memory"
-            style="margin-left: 16px; width: 100px"
-          >
-            <el-option label="Memory" :value="true" />
-            <el-option label="Stream" :value="false" />
-          </el-select>
           <el-button
             type="success"
-            @click="concatData()"
+            @click="convertData()"
             :loading="isLoading"
             :icon="Connection"
             plain
             style="margin-left: 16px"
           >
-            Concat
+            Convert
           </el-button>
         </div>
         <el-text type="primary" size="large">
           <el-icon> <Connection /> </el-icon>
-          Cat CSV and Excel files
+          Convert dbf file to CSV
         </el-text>
       </div>
     </el-form>
@@ -179,8 +208,35 @@ async function concatData() {
       :height="formHeight"
       style="width: 100%"
     >
-      <el-table-column prop="filename" />
+      <el-table-column prop="filename" label="file" style="width: 80%" />
+      <el-table-column
+        prop="status"
+        label="status"
+        :filters="[
+          { text: 'x', value: 'error' },
+          { text: '√', value: 'completed' }
+        ]"
+        :filter-method="filterFileStatus"
+        width="100"
+      >
+        <template #default="scope">
+          <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
+            <Loading />
+          </ElIcon>
+          <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
+            <Select />
+          </ElIcon>
+          <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
+            <CloseBold />
+          </ElIcon>
+        </template>
+      </el-table-column>
     </el-table>
+    <el-progress
+      v-if="isLoading"
+      :percentage="progress"
+      :color="customColors"
+    />
   </el-form>
 </template>
 

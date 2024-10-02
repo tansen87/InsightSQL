@@ -14,8 +14,8 @@ export default {
   children: [
     {
       path: "/queries",
-      name: "Welcome",
-      component: () => import("@/views/queries/index.vue"),
+      name: "sqlp",
+      component: () => import("@/views/queries/sqlp.vue"),
       meta: {
         title: "sqlp",
         showLink: VITE_HIDE_HOME === "true" ? false : true

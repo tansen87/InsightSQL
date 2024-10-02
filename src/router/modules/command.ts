@@ -1,6 +1,6 @@
 export default {
   path: "/command",
-  redirect: "/command/cmd",
+  redirect: "/command/index",
   meta: {
     icon: "command",
     title: "command",
@@ -8,116 +8,116 @@ export default {
   },
   children: [
     {
-      path: "/command/cmd",
+      path: "/command/index",
       name: "command",
-      component: () => import("@/views/command/cmd.vue"),
+      component: () => import("@/views/command/index.vue"),
       meta: {
         title: "command"
       }
     },
     {
-      path: "/command/cat",
+      path: "/command/components/cat",
       name: "cat",
-      component: () => import("@/views/command/cat.vue"),
+      component: () => import("@/views/command/components/cat.vue"),
       meta: {
         title: "cat",
         showLink: false
       }
     },
     {
-      path: "/command/excel",
+      path: "/command/components/excel",
       name: "excel",
-      component: () => import("@/views/command/excel.vue"),
+      component: () => import("@/views/command/components/excel.vue"),
       meta: {
         title: "Excel to csv",
         showLink: false
       }
     },
     {
-      path: "/command/csv",
+      path: "/command/components/csv",
       name: "csv",
-      component: () => import("@/views/command/csv.vue"),
+      component: () => import("@/views/command/components/csv.vue"),
       meta: {
         title: "csv to xlsx",
         showLink: false
       }
     },
     {
-      path: "/command/count",
+      path: "/command/components/count",
       name: "count",
-      component: () => import("@/views/command/count.vue"),
+      component: () => import("@/views/command/components/count.vue"),
       meta: {
         title: "count",
         showLink: false
       }
     },
     {
-      path: "/command/rename",
+      path: "/command/components/rename",
       name: "rename",
-      component: () => import("@/views/command/rename.vue"),
+      component: () => import("@/views/command/components/rename.vue"),
       meta: {
         title: "rename",
         showLink: false
       }
     },
     {
-      path: "/command/select",
+      path: "/command/components/select",
       name: "select",
-      component: () => import("@/views/command/select.vue"),
+      component: () => import("@/views/command/components/select.vue"),
       meta: {
         title: "select",
         showLink: false
       }
     },
     {
-      path: "/command/search",
+      path: "/command/components/search",
       name: "search",
-      component: () => import("@/views/command/search.vue"),
+      component: () => import("@/views/command/components/search.vue"),
       meta: {
         title: "search",
         showLink: false
       }
     },
     {
-      path: "/command/fill",
+      path: "/command/components/fill",
       name: "fill",
-      component: () => import("@/views/command/fill.vue"),
+      component: () => import("@/views/command/components/fill.vue"),
       meta: {
         title: "fill",
         showLink: false
       }
     },
     {
-      path: "/command/split",
+      path: "/command/components/split",
       name: "split",
-      component: () => import("@/views/command/split.vue"),
+      component: () => import("@/views/command/components/split.vue"),
       meta: {
         title: "split",
         showLink: false
       }
     },
     {
-      path: "/command/access",
+      path: "/command/components/access",
       name: "access",
-      component: () => import("@/views/command/access.vue"),
+      component: () => import("@/views/command/components/access.vue"),
       meta: {
         title: "access to csv",
         showLink: false
       }
     },
     {
-      path: "/command/dbf",
+      path: "/command/components/dbf",
       name: "dbf",
-      component: () => import("@/views/command/dbf.vue"),
+      component: () => import("@/views/command/components/dbf.vue"),
       meta: {
         title: "dbf to csv",
         showLink: false
       }
     },
     {
-      path: "/command/behead",
+      path: "/command/components/behead",
       name: "behead",
-      component: () => import("@/views/command/behead.vue"),
+      component: () => import("@/views/command/components/behead.vue"),
       meta: {
         title: "drop headers",
         showLink: false

@@ -4,8 +4,7 @@ export default {
   meta: {
     icon: "informationLine",
     title: "info",
-    // showLink: false,
-    rank: 2
+    rank: 3
   },
   children: [
     {

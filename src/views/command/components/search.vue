@@ -4,11 +4,11 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Cpu, FolderOpened } from "@element-plus/icons-vue";
+import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const fillRows = ref(0);
+const writeRows = ref(0);
 const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
@@ -16,21 +16,48 @@ const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   sep: ",",
-  value: "0"
+  mode: "equal",
+  condition: "银行存款|应收账款"
 });
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("fill_rows", (event: any) => {
-  const count: any = event.payload;
-  fillRows.value = count;
-});
-listen("fill_err", (event: any) => {
-  const fillErr = event.payload;
+listen("equal_err", (event: any) => {
+  const equalErr = event.payload;
   ElNotification({
-    title: "Fill Error",
-    message: fillErr,
+    title: "Equal Error",
+    message: equalErr,
+    position: "bottom-right",
+    type: "error",
+    duration: 10000
+  });
+  isLoading.value = false;
+});
+listen("equal_count", (event: any) => {
+  const count: any = event.payload;
+  writeRows.value = count;
+});
+listen("contains_err", (event: any) => {
+  const containsErr = event.payload;
+  ElNotification({
+    title: "Contains Error",
+    message: containsErr,
+    position: "bottom-right",
+    type: "error",
+    duration: 10000
+  });
+  isLoading.value = false;
+});
+listen("contains_count", (event: any) => {
+  const count: any = event.payload;
+  writeRows.value = count;
+});
+listen("startswith_err", (event: any) => {
+  const startswithErr = event.payload;
+  ElNotification({
+    title: "Startwith Error",
+    message: startswithErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
@@ -38,11 +65,9 @@ listen("fill_err", (event: any) => {
   isLoading.value = false;
 });
 
-// open file
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
-
   const selected = await open({
     multiple: false,
     filters: [
@@ -61,16 +86,16 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  const header: any = await invoke("get_fill_headers", {
+  const header: any = await invoke("get_search_headers", {
     path: data.filePath,
     sep: data.sep
   });
   originalColumns.value = header;
 }
 
-// fill data
-async function fillData() {
-  if (data.filePath == "") {
+// search data
+async function searchData() {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -89,24 +114,22 @@ async function fillData() {
     return;
   }
 
-  const cols = Object.values(columns.value).join("|");
-
-  if (data.filePath != "") {
+  if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("fill", {
+    await invoke("search", {
       path: data.filePath,
       sep: data.sep,
-      columns: cols,
-      values: data.value
+      column: columns.value,
+      mode: data.mode,
+      condition: data.condition
     });
 
     isLoading.value = false;
     ElNotification({
-      title: "",
       message:
-        "Fill done, fill rows: " +
-        fillRows.value +
+        "Search done, search rows: " +
+        writeRows.value +
         " lines, elapsed time: " +
         runtime.value,
       position: "bottom-right",
@@ -145,50 +168,50 @@ async function fillData() {
       </div>
 
       <el-text type="primary" size="large">
-        <el-icon> <Cpu /> </el-icon>
+        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
-        <span v-else>Fill empty fields in selected columns of a CSV</span>
+        <span v-else>Select fields matching rows</span>
       </el-text>
     </div>
     <p />
-    <el-select
-      v-model="columns"
-      multiple
-      filterable
-      style="margin-top: 15px; width: 100%"
-      placeholder="please choose column"
-    >
-      <el-option
-        v-for="item in originalColumns"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
-      />
-    </el-select>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="margin-top: 15px; display: flex; align-items: flex-start">
-        <el-input
-          v-model="data.value"
-          style="width: 120px; margin-right: 16px"
-          clearable
+    <div style="margin-top: 10px">
+      <el-select v-model="data.mode" style="width: 112px">
+        <el-option label="equal" value="equal" />
+        <el-option label="contains" value="contains" />
+        <el-option label="startswith" value="startswith" />
+      </el-select>
+      <el-select
+        v-model="columns"
+        filterable
+        style="margin-left: 16px; width: 200px"
+        placeholder="please choose column"
+      >
+        <el-option
+          v-for="item in originalColumns"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
         />
-        <el-button
-          type="success"
-          @click="fillData()"
-          :loading="isLoading"
-          :icon="Cpu"
-          plain
-        >
-          Fill
-        </el-button>
-      </div>
+      </el-select>
+      <el-button
+        type="success"
+        @click="searchData()"
+        :loading="isLoading"
+        :icon="IceCreamRound"
+        plain
+        style="margin-left: 16px"
+      >
+        Search
+      </el-button>
+    </div>
+    <div style="margin-top: 20px">
+      <el-text> conditions </el-text>
+      <el-input
+        v-model="data.condition"
+        autosize
+        type="textarea"
+        placeholder="Please input conditions"
+      />
     </div>
   </div>
 </template>

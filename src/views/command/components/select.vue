@@ -103,7 +103,7 @@ async function selectColumns() {
 
   isLoading.value = true;
   isPath.value = true;
-  if (data.filePath != "") {
+  if (data.filePath !== "") {
     await invoke("select", {
       path: data.filePath,
       sep: data.sep,

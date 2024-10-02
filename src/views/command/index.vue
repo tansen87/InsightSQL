@@ -7,62 +7,62 @@ const commands = ref([
   {
     title: "Cat",
     description: "Cat CSV and Excel files.",
-    route: "/command/cat"
+    route: "/command/components/cat"
   },
   {
     title: "Excel to csv",
     description: "Exports Excel to csv files.",
-    route: "/command/excel"
+    route: "/command/components/excel"
   },
   {
     title: "Count",
     description: "Count the rows of CSV files.",
-    route: "/command/count"
+    route: "/command/components/count"
   },
   {
     title: "Csv to xlsx",
     description: "Exports csv to xlsx files.",
-    route: "/command/csv"
+    route: "/command/components/csv"
   },
   {
     title: "Rename",
     description: "Rename the columns of a CSV.",
-    route: "/command/rename"
+    route: "/command/components/rename"
   },
   {
     title: "Select",
     description: "Select, re-order or drop columns.",
-    route: "/command/select"
+    route: "/command/components/select"
   },
   {
     title: "Search",
     description: "Select fields matching rows.",
-    route: "/command/search"
+    route: "/command/components/search"
   },
   {
     title: "Fill",
     description: "Fill empty fields in selected columns of a CSV.",
-    route: "/command/fill"
+    route: "/command/components/fill"
   },
   {
     title: "Split",
     description: "Split one CSV file into many CSV files.",
-    route: "/command/split"
+    route: "/command/components/split"
   },
   {
     title: "Access to csv",
     description: "Convert Access Database to CSV.",
-    route: "/command/access"
+    route: "/command/components/access"
   },
   {
     title: "Dbf to csv",
     description: "Convert dbf file to CSV.",
-    route: "/command/dbf"
+    route: "/command/components/dbf"
   },
   {
     title: "Drop csv headers",
     description: "Drop headers from CSV.",
-    route: "/command/behead"
+    route: "/command/components/behead"
   }
 ]);
 const searchText = ref("");

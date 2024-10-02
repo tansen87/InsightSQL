@@ -3,30 +3,22 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon } from "element-plus";
-import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
+import { ElNotification } from "element-plus";
+import { FolderOpened, Connection } from "@element-plus/icons-vue";
 
-const isLoading = ref(false);
-const progress = ref(0);
 const selectedFiles = ref([]);
+const isLoading = ref(false);
 const runtime = ref(0.0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
-const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["mdb", "accdb"],
+  sep: "|"
 });
 
 const formHeight = computed(() => {
-  const height = 220;
+  const height = 205;
   return windowHeight.value - height;
 });
 
@@ -42,51 +34,29 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
 });
 
-listen("start_convert", (event: any) => {
-  const startConvert: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
-      file.status = "loading";
-    }
-  });
-});
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("count_err", (event: any) => {
-  const countErr = event.payload;
+listen("access_err", (event: any) => {
+  const accessErr = event.payload;
   ElNotification({
-    title: "Count Error",
-    message: countErr,
+    title: "Access Error",
+    message: accessErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
   });
   isLoading.value = false;
 });
-listen("count_msg", (event: any) => {
-  const countMsg: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === countMsg.split("|")[0]) {
-      file.status = countMsg.split("|")[1];
-    }
-  });
-});
-listen("count_progress", (event: any) => {
-  const pgs: any = event.payload;
-  progress.value = pgs;
-});
 
 // open file
 async function selectFile() {
-  isLoading.value = false;
-  progress.value = 0;
-
+  selectedFiles.value = [];
   const selected = await open({
     multiple: true,
     filters: [
       {
-        name: "csv",
+        name: "Access",
         extensions: data.fileFormats
       }
     ]
@@ -95,41 +65,48 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file, status: "" };
+      return { filename: file };
     });
   } else if (selected === null) {
+    ElNotification({
+      title: "File not found",
+      message: "未选择文件",
+      position: "bottom-right",
+      type: "warning"
+    });
     return;
   } else {
     data.filePath = selected;
   }
 }
 
-// count csv rows
-async function countData() {
-  if (data.filePath == "") {
+// convert data
+async function accessData() {
+  if (data.filePath === "") {
     ElNotification({
       title: "File not found",
-      message: "未选择csv文件",
+      message: "未选择文件",
       position: "bottom-right",
       type: "warning"
     });
     return;
   }
+  if (data.filePath !== "") {
+    isLoading.value = true;
 
-  isLoading.value = true;
+    await invoke("access", {
+      filePath: data.filePath,
+      sep: data.sep
+    });
 
-  await invoke("count", {
-    path: data.filePath,
-    sep: data.sep
-  });
-
-  ElNotification({
-    message: "Count done, elapsed time: " + runtime.value,
-    position: "bottom-right",
-    type: "success",
-    duration: 5000
-  });
-  isLoading.value = false;
+    isLoading.value = false;
+    ElNotification({
+      message: "Convert done, elapsed time: " + runtime.value,
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
+  }
 }
 </script>
 
@@ -141,7 +118,6 @@ async function countData() {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          position: sticky;
         "
       >
         <div style="display: flex; align-items: flex-start">
@@ -161,43 +137,29 @@ async function countData() {
           </el-select>
           <el-button
             type="success"
-            @click="countData()"
+            @click="accessData()"
             :loading="isLoading"
-            :icon="Grape"
+            :icon="Connection"
             plain
             style="margin-left: 16px"
           >
-            Count
+            Convert
           </el-button>
         </div>
         <el-text type="primary" size="large">
-          <el-icon> <Grape /> </el-icon>
-          Count the rows of CSV files
+          <el-icon> <Connection /> </el-icon>
+          Convert Access Database to CSV
         </el-text>
       </div>
-
-      <el-table
-        ref="tableRef"
-        :data="selectedFiles"
-        :height="formHeight"
-        style="width: 100%"
-      >
-        <el-table-column prop="filename" label="file" style="width: 80%" />
-        <el-table-column label="rows" width="100">
-          <template #default="scope">
-            <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
-              <Loading />
-            </ElIcon>
-            <span>{{ scope.row.status }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
     </el-form>
-    <el-progress
-      v-if="isLoading"
-      :percentage="progress"
-      :color="customColors"
-    />
+    <el-table
+      ref="tableRef"
+      :data="selectedFiles"
+      :height="formHeight"
+      style="width: 100%"
+    >
+      <el-table-column prop="filename" />
+    </el-table>
   </el-form>
 </template>
 
