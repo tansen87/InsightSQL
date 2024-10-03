@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
@@ -114,6 +114,21 @@ async function searchData() {
     return;
   }
 
+  const outputPath = await save({
+    title: "Export",
+    defaultPath: `search_${new Date().getTime()}.csv`,
+    filters: [{ name: "CSV", extensions: ["csv"] }]
+  });
+  if (outputPath === "" || outputPath === null) {
+    ElNotification({
+      title: "File not found",
+      message: "未选择保存文件",
+      position: "bottom-right",
+      type: "warning"
+    });
+    return;
+  }
+
   if (data.filePath !== "") {
     isLoading.value = true;
 
@@ -122,7 +137,8 @@ async function searchData() {
       sep: data.sep,
       column: columns.value,
       mode: data.mode,
-      condition: data.condition
+      condition: data.condition,
+      outputPath: outputPath
     });
 
     isLoading.value = false;

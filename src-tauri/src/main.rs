@@ -13,6 +13,7 @@ use lib::access;
 use lib::dbf;
 use lib::behead;
 use lib::modify;
+use lib::traverse;
 
 fn main() {
   tauri::Builder
@@ -37,6 +38,7 @@ fn main() {
       dbf::dbf,
       behead::behead,
       modify::modify,
+      traverse::traverse,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

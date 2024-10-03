@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
-import { open } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
@@ -104,12 +104,32 @@ async function concatData() {
     });
     return;
   }
-  if (data.filePath !== "") {
+
+  const outputPath = await save({
+    title: "Export",
+    defaultPath: `cat_${new Date().getTime()}`,
+    filters: [
+      { name: "CSV", extensions: ["csv"] },
+      { name: "Excel", extensions: ["xlsx"] }
+    ]
+  });
+  if (outputPath === "" || outputPath === null) {
+    ElNotification({
+      title: "File not found",
+      message: "未选择保存文件",
+      position: "bottom-right",
+      type: "warning"
+    });
+    return;
+  }
+
+  if (data.filePath !== "" && outputPath !== null) {
     isLoading.value = true;
 
     await invoke("concat", {
       filePath: data.filePath,
       sep: data.sep,
+      outputPath: outputPath,
       memory: data.memory
     });
 

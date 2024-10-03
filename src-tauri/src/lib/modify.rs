@@ -1,19 +1,19 @@
 use std::{error::Error, fs, path::Path, time::Instant};
 
-
 fn modify_filenames(file_path: String, file_name: String) -> Result<(), Box<dyn Error>> {
-    let vec_path: Vec<&str> = file_path.split('|').collect();
-    let vec_name: Vec<&str> = file_name.split('|').collect();
-    let parent_path = Path::new(vec_path[0])
+  let vec_path: Vec<&str> = file_path.split('|').collect();
+  let vec_name: Vec<&str> = file_name.split('|').collect();
+  let parent_path = Path::new(vec_path[0])
     .parent()
-    .map(|parent| parent.to_string_lossy()).unwrap();
+    .map(|parent| parent.to_string_lossy())
+    .unwrap();
 
-    for (idx, fp) in vec_path.iter().enumerate() {
-        let modify_path = format!("{parent_path}/{}", vec_name[idx]);
-        fs::rename(fp, modify_path)?;
-    }
+  for (idx, fp) in vec_path.iter().enumerate() {
+    let modify_path = format!("{parent_path}/{}", vec_name[idx]);
+    fs::rename(fp, modify_path)?;
+  }
 
-    Ok(())
+  Ok(())
 }
 
 #[tauri::command]

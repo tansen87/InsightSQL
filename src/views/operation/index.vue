@@ -8,6 +8,11 @@ const commands = ref([
     title: "Modify",
     description: "Batch modify filenames.",
     route: "/operation/components/modify"
+  },
+  {
+    title: "Traverse",
+    description: "Traverse the directory to obtain filenames.",
+    route: "/operation/components/traverse"
   }
 ]);
 const searchText = ref("");

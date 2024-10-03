@@ -23,6 +23,15 @@ export default {
         title: "modify",
         showLink: false
       }
+    },
+    {
+      path: "/operation/components/traverse",
+      name: "traverse",
+      component: () => import("@/views/operation/components/traverse.vue"),
+      meta: {
+        title: "traverse directory",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

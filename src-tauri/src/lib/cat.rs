@@ -14,7 +14,12 @@ use crate::{
   xlsx_writer::write_xlsx,
 };
 
-fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Error>> {
+fn concat_all(
+  path: String,
+  sep: String,
+  output_path: String,
+  memory: bool,
+) -> Result<(), Box<dyn Error>> {
   /* concat csv and excel files into a xlsx or csv file */
   let sep = if sep == "\\t" {
     b'\t'
@@ -58,12 +63,6 @@ fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Err
     lfs.push(lf);
   }
 
-  let parent_path = Path::new(&vec_path[0])
-    .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap();
-  let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
-
   let cat_lf = concat_lf_diagonal(
     lfs,
     UnionArgs {
@@ -79,16 +78,16 @@ fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Err
     let mut cat_df = cat_lf.collect()?;
     let row_len = cat_df.shape().0;
     if row_len < 104_0000 {
-      let save_path = format!("{}/cat_{}.xlsx", parent_path, current_time);
+      let save_path = format!("{output_path}.xlsx");
       write_xlsx(cat_df, save_path.into())?;
     } else {
-      let save_path = format!("{}/cat_{}.csv", parent_path, current_time);
+      let save_path = format!("{output_path}.csv");
       CsvWriter::new(File::create(save_path)?)
         .with_separator(sep)
         .finish(&mut cat_df)?;
     }
   } else {
-    let save_path = format!("{}/cat_{}.csv", parent_path, current_time);
+    let save_path = format!("{output_path}.csv");
     cat_lf.sink_csv(
       save_path,
       CsvWriterOptions {
@@ -116,10 +115,16 @@ fn concat_all(path: String, sep: String, memory: bool) -> Result<(), Box<dyn Err
 }
 
 #[tauri::command]
-pub async fn concat(file_path: String, sep: String, memory: bool, window: tauri::Window) {
+pub async fn concat(
+  file_path: String,
+  sep: String,
+  output_path: String,
+  memory: bool,
+  window: tauri::Window,
+) {
   let start_time = Instant::now();
 
-  match (async { concat_all(file_path, sep, memory) }).await {
+  match (async { concat_all(file_path, sep, output_path, memory) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("concat error: {err}");

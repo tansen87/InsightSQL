@@ -1,6 +1,4 @@
-use std::{
-  collections::HashMap, error::Error, fs::File, io::{BufReader, BufWriter}, path::PathBuf, time::Instant
-};
+use std::{collections::HashMap, error::Error, fs::File, io::BufReader, time::Instant};
 
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
   let sep = if sep == "\\t" {
@@ -47,63 +45,16 @@ pub fn read_csv(path: String, sep: String) -> Result<csv::Reader<BufReader<File>
   Ok(rdr)
 }
 
-pub fn write_csv(
-  path: String,
-  sep: String,
-  mode: &str,
-) -> Result<csv::Writer<BufWriter<File>>, Box<dyn Error>> {
+pub fn write_csv(sep: String, output_path: String) -> Result<csv::Writer<File>, Box<dyn Error>> {
   let sep = if sep == "\\t" {
     b'\t'
   } else {
     sep.into_bytes()[0]
   };
 
-  let path = PathBuf::from(path);
-  let file_name = path
-    .file_stem()
-    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "File stem not found"))?
-    .to_str()
-    .map_or("", |s| s);
-
-  let path_parent = path
-    .parent()
-    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Parent path not found"))?;
-
-  let current_time = chrono::Local::now();
-  let current_time_str = current_time.format("%Y-%m-%d-%H%M%S").to_string();
-  let mut vec_output = Vec::new();
-  match mode {
-    "equal" => {
-      vec_output.push(format!(
-        "{}/{}_equal_{}.csv",
-        path_parent.display(),
-        file_name,
-        current_time_str
-      ));
-    }
-    "contains" => {
-      vec_output.push(format!(
-        "{}/{}_contains_{}.csv",
-        path_parent.display(),
-        file_name,
-        current_time_str
-      ));
-    }
-    "startswith" => {
-      vec_output.push(format!(
-        "{}/{}_startswith_{}.csv",
-        path_parent.display(),
-        file_name,
-        current_time_str
-      ));
-    }
-    _ => {}
-  }
-
-  let file = File::create(&vec_output[0])?;
   let wtr = csv::WriterBuilder::new()
     .delimiter(sep)
-    .from_writer(BufWriter::new(file));
+    .from_path(output_path)?;
 
   Ok(wtr)
 }
@@ -113,10 +64,11 @@ fn equal_search(
   sep: String,
   column: String,
   conditions: Vec<String>,
+  output_path: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut count: usize = 0;
-  let mut rdr = read_csv(path.clone(), sep.clone())?;
+  let mut rdr = read_csv(path, sep.clone())?;
 
   let headers = rdr.headers()?.clone();
 
@@ -127,7 +79,7 @@ fn equal_search(
     }
   };
 
-  let mut wtr = write_csv(path, sep, "equal")?;
+  let mut wtr = write_csv(sep, output_path)?;
 
   wtr.write_record(&headers)?;
 
@@ -150,10 +102,11 @@ fn contains_search(
   sep: String,
   column: String,
   conditions: Vec<String>,
+  output_path: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut count: usize = 0;
-  let mut rdr = read_csv(path.clone(), sep.clone())?;
+  let mut rdr = read_csv(path, sep.clone())?;
 
   let headers = rdr.headers()?.clone();
 
@@ -164,7 +117,7 @@ fn contains_search(
     }
   };
 
-  let mut wtr = write_csv(path, sep, "contains")?;
+  let mut wtr = write_csv(sep, output_path)?;
 
   wtr.write_record(&headers)?;
 
@@ -195,10 +148,11 @@ fn startswith_search(
   sep: String,
   column: String,
   conditions: Vec<String>,
+  output_path: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut count: usize = 0;
-  let mut rdr = read_csv(path.clone(), sep.clone())?;
+  let mut rdr = read_csv(path, sep.clone())?;
 
   let headers = rdr.headers()?.clone();
 
@@ -209,7 +163,7 @@ fn startswith_search(
     }
   };
 
-  let mut wtr = write_csv(path, sep, "startswith")?;
+  let mut wtr = write_csv(sep, output_path)?;
 
   wtr.write_record(&headers)?;
 
@@ -229,7 +183,11 @@ fn startswith_search(
 }
 
 #[tauri::command]
-pub async fn get_search_headers(path: String, sep: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
+pub async fn get_search_headers(
+  path: String,
+  sep: String,
+  window: tauri::Window,
+) -> Vec<HashMap<String, String>> {
   let headers = match (async { get_header(path.as_str(), sep) }).await {
     Ok(result) => result,
     Err(err) => {
@@ -249,6 +207,7 @@ pub async fn search(
   column: String,
   mode: String,
   condition: String,
+  output_path: String,
   window: tauri::Window,
 ) {
   let start_time = Instant::now();
@@ -266,7 +225,8 @@ pub async fn search(
     .collect();
 
   if mode == "equal" {
-    match (async { equal_search(path, sep, column, vec_strings, equal_window) }).await {
+    match (async { equal_search(path, sep, column, vec_strings, output_path, equal_window) }).await
+    {
       Ok(result) => result,
       Err(error) => {
         eprintln!("equal_search error: {error}");
@@ -275,7 +235,9 @@ pub async fn search(
       }
     };
   } else if mode == "contains" {
-    match (async { contains_search(path, sep, column, vec_strings, contains_window) }).await {
+    match (async { contains_search(path, sep, column, vec_strings, output_path, contains_window) })
+      .await
+    {
       Ok(result) => result,
       Err(error) => {
         eprintln!("contains_search error: {error}");
@@ -284,7 +246,18 @@ pub async fn search(
       }
     };
   } else if mode == "startswith" {
-    match (async { startswith_search(path, sep, column, vec_strings, startswith_window) }).await {
+    match (async {
+      startswith_search(
+        path,
+        sep,
+        column,
+        vec_strings,
+        output_path,
+        startswith_window,
+      )
+    })
+    .await
+    {
       Ok(result) => result,
       Err(error) => {
         eprintln!("startswith_search error: {error}");
