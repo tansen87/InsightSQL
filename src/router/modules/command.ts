@@ -122,6 +122,15 @@ export default {
         title: "drop headers",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/offset",
+      name: "offset",
+      component: () => import("@/views/command/components/offset.vue"),
+      meta: {
+        title: "offset",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

@@ -18,7 +18,8 @@
         "height": 640,
         "resizable": true,
         "title": "InsightSQL",
-        "fileDropEnabled": false
+        "fileDropEnabled": false,
+        "center": true
       }
     ],
     "bundle": {

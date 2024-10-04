@@ -14,3 +14,4 @@ pub mod dbf;
 pub mod behead;
 pub mod modify;
 pub mod traverse;
+pub mod offset;

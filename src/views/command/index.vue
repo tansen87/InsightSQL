@@ -63,6 +63,11 @@ const commands = ref([
     title: "Drop csv headers",
     description: "Drop headers from CSV.",
     route: "/command/components/behead"
+  },
+  {
+    title: "Offset",
+    description: "net amount.",
+    route: "/command/components/offset"
   }
 ]);
 const searchText = ref("");

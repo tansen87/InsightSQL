@@ -14,6 +14,7 @@ use lib::dbf;
 use lib::behead;
 use lib::modify;
 use lib::traverse;
+use lib::offset;
 
 fn main() {
   tauri::Builder
@@ -39,6 +40,8 @@ fn main() {
       behead::behead,
       modify::modify,
       traverse::traverse,
+      offset::get_offset_headers,
+      offset::offset,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
