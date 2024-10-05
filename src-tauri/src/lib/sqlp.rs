@@ -20,6 +20,7 @@ use polars::{
   },
   sql::SQLContext,
 };
+use tauri::Emitter;
 
 use crate::excel::{ExcelReader, ToPolarsDataFrame};
 use crate::xlsx_writer::write_xlsx;

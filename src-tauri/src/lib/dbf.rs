@@ -1,5 +1,7 @@
 use std::{error::Error, path::Path, time::Instant};
 
+use tauri::Emitter;
+
 fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   let sep = if sep == "\\t" {
     b'\t'

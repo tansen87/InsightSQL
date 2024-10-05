@@ -1,5 +1,7 @@
 use std::{error::Error, path::Path, time::Instant};
 
+use tauri::Emitter;
+
 fn drop_headers(
   file_path: String,
   sep: String,

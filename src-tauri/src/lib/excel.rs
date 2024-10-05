@@ -74,7 +74,10 @@ impl ExcelReader {
     match self.workbook.worksheet_range_at(n) {
       Some(Ok(sheet_range)) => Ok(sheet_range),
       Some(Err(e)) => Err(Box::new(e)),
-      None => Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Worksheet index out of bounds"))),
+      None => Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::InvalidInput,
+        "Worksheet index out of bounds",
+      ))),
     }
   }
 }

@@ -1,5 +1,7 @@
 use std::{error::Error, fs::File, path::Path, time::Instant};
 
+use tauri::Emitter;
+
 fn get_header(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
   let sep = if sep == "\\t" {
     b'\t'

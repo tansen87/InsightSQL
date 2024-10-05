@@ -1,5 +1,7 @@
 use std::{collections::HashMap, error::Error, fs::File, io::BufReader, time::Instant};
 
+use tauri::Emitter;
+
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
   let sep = if sep == "\\t" {
     b'\t'

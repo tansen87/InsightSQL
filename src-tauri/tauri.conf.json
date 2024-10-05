@@ -3,14 +3,54 @@
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
-    "devPath": "http://localhost:8080",
-    "distDir": "../dist"
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:8080"
   },
-  "package": {
-    "productName": "InsightSQL",
-    "version": "../package.json"
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg",
+      "deb",
+      "appimage",
+      "msi"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "copyright": "",
+    "category": "DeveloperTool",
+    "shortDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "resources": [],
+    "externalBin": [],
+    "longDescription": "",
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
   },
-  "tauri": {
+  "productName": "InsightSQL",
+  "mainBinaryName": "InsightSQL",
+  "version": "../package.json",
+  "identifier": "",
+  "plugins": {},
+  "app": {
     "windows": [
       {
         "fullscreen": false,
@@ -18,48 +58,12 @@
         "height": 640,
         "resizable": true,
         "title": "InsightSQL",
-        "fileDropEnabled": false,
+        "dragDropEnabled": false,
         "center": true
       }
     ],
-    "bundle": {
-      "active": true,
-      "targets": ["dmg", "deb", "appimage", "msi"],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "copyright": "",
-      "category": "DeveloperTool",
-      "identifier": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      },
-      "deb": {
-        "depends": []
-      },
-      "externalBin": [],
-      "longDescription": "",
-      "resources": [],
-      "shortDescription": ""
-    },
     "security": {
       "csp": null
-    },
-    "allowlist": {
-      "all": true
     }
   }
 }

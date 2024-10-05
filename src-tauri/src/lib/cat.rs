@@ -8,6 +8,7 @@ use polars::{
     UnionArgs,
   },
 };
+use tauri::Emitter;
 
 use crate::{
   excel::{ExcelReader, ToPolarsDataFrame},

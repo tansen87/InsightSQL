@@ -1,26 +1,37 @@
-#![cfg_attr(all(not(debug_assertions), target_os = "windows"), windows_subsystem = "windows")]
+#![cfg_attr(
+  all(not(debug_assertions), target_os = "windows"),
+  windows_subsystem = "windows"
+)]
 
-use lib::sqlp;
+use lib::access;
+use lib::behead;
 use lib::cat;
 use lib::convert;
 use lib::count;
-use lib::rename;
-use lib::select;
-use lib::search;
-use lib::fill;
-use lib::split;
-use lib::access;
 use lib::dbf;
-use lib::behead;
+use lib::fill;
 use lib::modify;
-use lib::traverse;
 use lib::offset;
+use lib::rename;
+use lib::search;
+use lib::select;
+use lib::split;
+use lib::sqlp;
+use lib::traverse;
 
 fn main() {
-  tauri::Builder
-    ::default()
+  tauri::Builder::default()
+    .plugin(tauri_plugin_os::init())
+    .plugin(tauri_plugin_http::init())
+    .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+    .plugin(tauri_plugin_clipboard_manager::init())
+    .plugin(tauri_plugin_notification::init())
+    .plugin(tauri_plugin_fs::init())
+    .plugin(tauri_plugin_process::init())
+    .plugin(tauri_plugin_shell::init())
+    .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
-      sqlp::get, 
+      sqlp::get,
       sqlp::query,
       cat::concat,
       convert::switch_excel,

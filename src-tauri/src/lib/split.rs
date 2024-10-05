@@ -2,8 +2,11 @@ use std::{
   error::Error,
   fs::File,
   io::BufWriter,
-  path::{Path, PathBuf}, time::Instant,
+  path::{Path, PathBuf},
+  time::Instant,
 };
+
+use tauri::Emitter;
 
 fn new_writer(
   headers: &csv::ByteRecord,

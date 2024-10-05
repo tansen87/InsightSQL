@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open, save } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { appConfigDir } from "@tauri-apps/api/path";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Cherry } from "@element-plus/icons-vue";

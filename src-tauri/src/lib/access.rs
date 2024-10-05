@@ -5,6 +5,7 @@ use std::{error::Error, time::Instant};
 use csv::StringRecord;
 use lazy_static::lazy_static;
 use odbc_api::{buffers::TextRowSet, ConnectionOptions, Cursor, Environment, ResultSetMetadata};
+use tauri::Emitter;
 
 #[derive(Debug)]
 struct CustomError(String);

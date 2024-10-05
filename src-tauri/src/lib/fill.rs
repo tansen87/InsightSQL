@@ -5,6 +5,8 @@ use std::io::BufWriter;
 use std::path::Path;
 use std::time::Instant;
 
+use tauri::Emitter;
+
 fn get_header(path: String, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
   let sep = if sep == "\\t" {
     b'\t'
@@ -39,7 +41,7 @@ fn fill_values(
   sep: String,
   fill_column: String,
   fill_value: String,
-  window: tauri::Window
+  window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let sep = if sep == "\\t" {
     b'\t'
@@ -100,7 +102,11 @@ fn fill_values(
 }
 
 #[tauri::command]
-pub async fn get_fill_headers(path: String, sep: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
+pub async fn get_fill_headers(
+  path: String,
+  sep: String,
+  window: tauri::Window,
+) -> Vec<HashMap<String, String>> {
   let headers = match (async { get_header(path, sep) }).await {
     Ok(result) => result,
     Err(err) => {

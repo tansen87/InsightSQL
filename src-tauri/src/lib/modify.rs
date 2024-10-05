@@ -1,5 +1,7 @@
 use std::{error::Error, fs, path::Path, time::Instant};
 
+use tauri::Emitter;
+
 fn modify_filenames(file_path: String, file_name: String) -> Result<(), Box<dyn Error>> {
   let vec_path: Vec<&str> = file_path.split('|').collect();
   let vec_name: Vec<&str> = file_name.split('|').collect();

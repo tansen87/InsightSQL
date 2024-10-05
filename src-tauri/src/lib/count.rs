@@ -1,5 +1,7 @@
 use std::{error::Error, fs::File, path::Path, time::Instant};
 
+use tauri::Emitter;
+
 fn count_rows(
   path: String,
   sep: String,
@@ -49,7 +51,7 @@ fn count_rows(
 #[tauri::command]
 pub async fn count(path: String, sep: String, window: tauri::Window) -> Vec<String> {
   let start_time = Instant::now();
-  
+
   let count_window = window.clone();
   let cnt = match (async { count_rows(path, sep, count_window) }).await {
     Ok(result) => result,

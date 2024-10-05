@@ -3,8 +3,11 @@ use std::{
   error::Error,
   fs::File,
   io::BufWriter,
-  path::Path, time::Instant,
+  path::Path,
+  time::Instant,
 };
+
+use tauri::Emitter;
 
 fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
   let sep = if sep == "\\t" {
@@ -67,9 +70,7 @@ fn select_columns(
       .unwrap_or_else(|| "Default Path".to_string().into());
     let output_path = format!(
       "{}/{}_select_{}.csv",
-      parent_path,
-      file_name[0],
-      current_time
+      parent_path, file_name[0], current_time
     );
 
     let mut rdr = csv::ReaderBuilder::new()
@@ -122,7 +123,11 @@ fn select_columns(
 }
 
 #[tauri::command]
-pub async fn get_select_headers(path: String, sep: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
+pub async fn get_select_headers(
+  path: String,
+  sep: String,
+  window: tauri::Window,
+) -> Vec<HashMap<String, String>> {
   let headers = match (async { get_header(path.as_str(), sep) }).await {
     Ok(result) => result,
     Err(err) => {

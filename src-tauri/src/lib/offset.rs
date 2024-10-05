@@ -2,6 +2,7 @@ use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
 use calamine::Reader;
 use polars::prelude::*;
+use tauri::Emitter;
 
 use crate::{
   excel::{ExcelReader, ToPolarsDataFrame},

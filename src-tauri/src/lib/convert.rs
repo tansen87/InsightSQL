@@ -4,9 +4,11 @@ use polars::{
   prelude::{CsvParseOptions, CsvReadOptions},
 };
 use rayon::prelude::*;
+use tauri::Emitter;
 use std::{
   error::Error,
-  path::{Path, PathBuf}, time::Instant,
+  path::{Path, PathBuf},
+  time::Instant,
 };
 
 use crate::xlsx_writer::write_xlsx;
@@ -164,7 +166,11 @@ fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), B
   /* csv to xlsx */
   let vec_path: Vec<&str> = path.split('|').collect();
   let mut separator = Vec::new();
-  let sep = if sep == "\\t" { b'\t' } else { sep.clone().into_bytes()[0] };
+  let sep = if sep == "\\t" {
+    b'\t'
+  } else {
+    sep.clone().into_bytes()[0]
+  };
   separator.push(sep);
 
   let mut count: usize = 0;
