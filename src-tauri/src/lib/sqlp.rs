@@ -206,6 +206,7 @@ fn prepare_query(
           .with_separator(separator[0])
           .with_infer_schema_length(Some(0))
           .with_low_memory(low_memory)
+          .with_truncate_ragged_lines(true)
           .finish()?;
 
         csv_reader

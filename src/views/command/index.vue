@@ -68,6 +68,11 @@ const commands = ref([
     title: "Offset",
     description: "net amount.",
     route: "/command/components/offset"
+  },
+  {
+    title: "Add index",
+    description: "Add an index for a CSV.",
+    route: "/command/components/addIndex"
   }
 ]);
 const searchText = ref("");

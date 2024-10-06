@@ -18,6 +18,7 @@ use lib::select;
 use lib::split;
 use lib::sqlp;
 use lib::traverse;
+use lib::index;
 
 fn main() {
   tauri::Builder::default()
@@ -53,6 +54,7 @@ fn main() {
       traverse::traverse,
       offset::get_offset_headers,
       offset::offset,
+      index::index,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

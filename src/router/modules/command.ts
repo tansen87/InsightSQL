@@ -131,6 +131,15 @@ export default {
         title: "offset",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/addIndex",
+      name: "addIndex",
+      component: () => import("@/views/command/components/addIndex.vue"),
+      meta: {
+        title: "addIndex",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

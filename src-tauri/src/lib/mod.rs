@@ -15,3 +15,4 @@ pub mod split;
 pub mod sqlp;
 pub mod traverse;
 pub mod xlsx_writer;
+pub mod index;
