@@ -7,19 +7,19 @@
 ### 截图
 * polars SQL for query
 
-  ![sqlp.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\sqlp.gif)
+  ![sqlp.gif](/demo/sqlp.gif)
 
 * Cat
 
-  ![cat.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\cat.gif)
+  ![cat.gif](/demo/cat.gif)
 
 * Rename
 
-  ![rename.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\rename.gif)
+  ![rename.gif](/demo/rename.gif)
 
 * select
 
-  ![select.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\select.gif)
+  ![select.gif](/demo/select.gif)
 
 
 ## ✨Features
