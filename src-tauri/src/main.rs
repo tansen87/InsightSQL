@@ -10,15 +10,16 @@ use lib::convert;
 use lib::count;
 use lib::dbf;
 use lib::fill;
+use lib::index;
 use lib::modify;
 use lib::offset;
+use lib::pinyin;
 use lib::rename;
 use lib::search;
 use lib::select;
 use lib::split;
 use lib::sqlp;
 use lib::traverse;
-use lib::index;
 
 fn main() {
   tauri::Builder::default()
@@ -55,6 +56,8 @@ fn main() {
       offset::get_offset_headers,
       offset::offset,
       index::index,
+      pinyin::get_pinyin_headers,
+      pinyin::pinyin,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

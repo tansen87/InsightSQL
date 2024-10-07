@@ -73,6 +73,11 @@ const commands = ref([
     title: "Add index",
     description: "Add an index for a CSV.",
     route: "/command/components/addIndex"
+  },
+  {
+    title: "Chinese to Pinyin",
+    description: "Convert Chinese to Pinyin for specific column in CSV.",
+    route: "/command/components/pinyin"
   }
 ]);
 const searchText = ref("");

@@ -140,6 +140,15 @@ export default {
         title: "addIndex",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/pinyin",
+      name: "pinyin",
+      component: () => import("@/views/command/components/pinyin.vue"),
+      meta: {
+        title: "chinese to pinyin",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

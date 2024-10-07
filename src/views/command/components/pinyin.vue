@@ -1,61 +1,30 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
+import { ref, reactive } from "vue";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
-const columns = ref([]);
 const isPath = ref(false);
 const runtime = ref(0.0);
-const tableData = ref([]);
-const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
+const columns = ref("");
+const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   sep: ","
 });
 
-const formHeight = computed(() => {
-  const height = 220;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
-
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("show", (event: any) => {
-  const df: any = event.payload;
-  const jsonData = JSON.parse(df);
-  const isJsonArray = Array.isArray(jsonData);
-  const data = isJsonArray ? jsonData : [jsonData];
-  columns.value = Object.keys(data[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = data;
-});
-listen("index_err", (event: any) => {
-  const indexErr = event.payload;
+listen("pinyin_err", (event: any) => {
+  const pinyinErr = event.payload;
   ElNotification({
-    title: "Index Error",
-    message: indexErr,
+    title: "Pinyin Error",
+    message: pinyinErr,
     position: "bottom-right",
     type: "error",
     duration: 10000
@@ -66,8 +35,6 @@ listen("index_err", (event: any) => {
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
-  columns.value = [];
-  tableData.value = [];
 
   const selected = await open({
     multiple: false,
@@ -87,18 +54,15 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  await invoke("query", {
-    path: data.filePath,
-    sqlsrc: "select * from _t_1 limit 5",
-    sep: data.sep,
-    write: false,
-    writeFormat: "csv",
-    lowMemory: false
+  const header: any = await invoke("get_pinyin_headers", {
+    filePath: data.filePath,
+    sep: data.sep
   });
+  originalColumns.value = header;
 }
 
 // add index
-async function addIndex() {
+async function chineseToPinyin() {
   if (data.filePath === "") {
     ElNotification({
       title: "File not found",
@@ -108,18 +72,46 @@ async function addIndex() {
     });
     return;
   }
+  if (columns.value.length === 0) {
+    ElNotification({
+      title: "Column not defined",
+      message: "未选择columns",
+      position: "bottom-right",
+      type: "warning"
+    });
+    return;
+  }
+
+  const cols = Object.values(columns.value).join("|");
+
+  const outputPath = await save({
+    title: "Export",
+    defaultPath: `pinyin_${new Date().getTime()}.csv`,
+    filters: [{ name: "CSV", extensions: ["csv"] }]
+  });
+  if (outputPath === "" || outputPath === null) {
+    ElNotification({
+      title: "File not found",
+      message: "未选择保存文件",
+      position: "bottom-right",
+      type: "warning"
+    });
+    return;
+  }
 
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("index", {
+    await invoke("pinyin", {
       filePath: data.filePath,
-      sep: data.sep
+      sep: data.sep,
+      columns: cols,
+      outputPath: outputPath
     });
 
     isLoading.value = false;
     ElNotification({
-      message: "Index done, elapsed time: " + runtime.value,
+      message: "Convert done, elapsed time: " + runtime.value,
       position: "bottom-right",
       type: "success",
       duration: 5000
@@ -147,7 +139,7 @@ async function addIndex() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 115px">
+        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
           <el-option label="," value="," />
           <el-option label="|" value="|" />
           <el-option label="\t" value="\t" />
@@ -155,19 +147,19 @@ async function addIndex() {
         </el-select>
         <el-button
           type="success"
-          @click="addIndex()"
+          @click="chineseToPinyin()"
           :loading="isLoading"
           :icon="IceCreamRound"
           plain
           style="margin-left: 16px"
         >
-          Index
+          Convert
         </el-button>
       </div>
       <el-text type="primary" size="large">
         <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
-        <span v-else>Add an index for a CSV</span>
+        <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>
     </div>
     <div
@@ -178,20 +170,20 @@ async function addIndex() {
         position: sticky;
       "
     >
-      <el-table
-        ref="tableRef"
-        :data="tableData"
-        :height="formHeight"
-        border
+      <el-select
+        v-model="columns"
+        multiple
+        filterable
         style="margin-top: 15px; width: 100%"
+        placeholder="please choose columns"
       >
-        <el-table-column
-          v-for="column in columns"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
+        <el-option
+          v-for="item in originalColumns"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
         />
-      </el-table>
+      </el-select>
     </div>
   </div>
 </template>
