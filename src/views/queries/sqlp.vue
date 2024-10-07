@@ -3,7 +3,6 @@ import {
   ref,
   reactive,
   onMounted,
-  watchEffect,
   watch,
   computed,
   onBeforeUnmount
@@ -14,16 +13,18 @@ import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { View, Download } from "@element-plus/icons-vue";
 import { FolderOpened, Search } from "@element-plus/icons-vue";
-import Prism from "prismjs";
-import "prismjs/components/prism-sql";
-import "prismjs/themes/prism.css";
+import { VAceEditor } from "vue3-ace-editor";
+import "./ace-config";
 
 const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
 const isPath = ref(false);
 const runtime = ref(0.0);
+const counter = ref(0);
 const tableRef = ref(null);
+const tables = ref([]);
+const sqlsrc = ref("select * from _t_1");
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
@@ -45,6 +46,35 @@ const data = reactive({
   writeFormat: "csv",
   lowMemory: false
 });
+
+const initializeEditor = editor => {
+  editor.completers.push({
+    getCompletions: (editor, session, pos, prefix, callback) => {
+      callback(
+        null,
+        tables.value.map(table => ({
+          caption: table.name,
+          value: table.name,
+          meta: "table"
+        }))
+      );
+    }
+  });
+  tables.value.forEach(item => {
+    editor.completers.push({
+      getCompletions: (editor, session, pos, prefix, callback) => {
+        callback(
+          null,
+          item.children.map(col => ({
+            caption: col.label,
+            value: col.label,
+            meta: "column"
+          }))
+        );
+      }
+    });
+  });
+};
 
 const formHeight = computed(() => {
   const height = 305;
@@ -101,6 +131,7 @@ listen("show", (event: any) => {
 async function queryData() {
   columns.value = [];
   tableData.value = [];
+
   if (data.filePath === "") {
     ElNotification({
       title: "File not found",
@@ -191,37 +222,6 @@ async function selectFile() {
   */
 }
 
-const sqlsrc = ref("select * from _t_1");
-const highlightedCode = ref(null);
-
-const textareaChange = event => {
-  sqlsrc.value = event.target.value;
-  adjustTextareaHeight(event.target);
-};
-
-const adjustTextareaHeight = textarea => {
-  textarea.style.height = "auto";
-  textarea.style.height = `${textarea.scrollHeight}px`;
-};
-
-const updateHighlightedCode = () => {
-  if (highlightedCode.value) {
-    highlightedCode.value.innerHTML = Prism.highlight(
-      sqlsrc.value,
-      Prism.languages.sql,
-      "sql"
-    );
-  }
-};
-
-watchEffect(() => {
-  updateHighlightedCode();
-});
-
-onMounted(() => {
-  updateHighlightedCode();
-});
-
 const indexMethod = (index: number) => {
   return (index + 1) * 1;
 };
@@ -235,7 +235,6 @@ watch(
     }
   }
 );
-
 watch(
   () => data.lowMemory,
   newVal => {
@@ -245,7 +244,6 @@ watch(
     }
   }
 );
-
 watch(
   () => data.write,
   newVal => {
@@ -290,44 +288,49 @@ watch(
             </el-select>
           </el-form-item>
         </div>
-        <el-text type="primary" size="large" tag="ins">
-          <span v-if="isPath">{{ data.filePath }}</span>
-          <span v-else>View Excel, CSV and Parquet using SQL</span>
-        </el-text>
+        <el-form-item>
+          <el-switch
+            v-model="data.write"
+            :active-action-icon="Download"
+            :inactive-action-icon="View"
+          />
+          <el-select
+            v-model="data.writeFormat"
+            style="margin-left: 10px; width: 80px"
+          >
+            <el-option label="csv" value="csv" />
+            <el-option label="xlsx" value="xlsx" />
+          </el-select>
+          <el-button
+            type="success"
+            @click="queryData()"
+            :loading="isLoading"
+            :icon="Search"
+            style="margin-left: 10px"
+            plain
+          >
+            Execute
+          </el-button>
+        </el-form-item>
       </div>
-      <el-form-item class="editor-container">
-        <textarea
-          :value="sqlsrc"
-          @input="textareaChange"
-          rows="1"
-          class="txt"
-          placeholder="select * from _t_1"
-        />
-        <div ref="highlightedCode" class="highlighted-code" />
-      </el-form-item>
       <el-form-item>
-        <el-button
-          type="success"
-          @click="queryData()"
-          :loading="isLoading"
-          :icon="Search"
-          plain
-        >
-          Execute
-        </el-button>
-        <el-switch
-          v-model="data.write"
-          :active-action-icon="Download"
-          :inactive-action-icon="View"
-          style="margin-left: 20px"
+        <VAceEditor
+          v-model:value="sqlsrc"
+          ref="editor"
+          lang="sql"
+          :options="{
+            useWorker: true,
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            customScrollbar: true,
+            fontSize: '1.1rem'
+          }"
+          :key="counter"
+          @init="initializeEditor"
+          theme="chrome"
+          style="flex: 1 1 0%; min-height: 8rem"
         />
-        <el-select
-          v-model="data.writeFormat"
-          style="margin-left: 20px; width: 80px"
-        >
-          <el-option label="csv" value="csv" />
-          <el-option label="xlsx" value="xlsx" />
-        </el-select>
       </el-form-item>
     </el-form>
     <el-table
@@ -350,8 +353,8 @@ watch(
 
 <style scoped>
 .page-container {
-  margin-bottom: 20px;
-  padding: 20px;
+  margin-bottom: 10px;
+  padding: 15px;
   border-radius: 10px;
   background-color: #fff;
 }
@@ -363,38 +366,5 @@ watch(
 }
 .el-icon {
   font-size: 25px;
-}
-.txt {
-  border: 1px solid #f0dddd;
-  outline: none;
-  font-size: 18px;
-  display: block;
-  width: 100%;
-  resize: none;
-  line-height: 1.5;
-  background: transparent;
-  color: inherit;
-  overflow: hidden;
-  font-family: "Consolas", monospace;
-}
-.highlighted-code {
-  border: 1px solid #f0dddd;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  pointer-events: none;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  background-color: transparent;
-  color: inherit;
-  font-family: inherit;
-  font-size: 18px;
-  padding: 0;
-  margin: 0;
-  line-height: 1.5;
-  font-family: "Consolas", monospace;
 }
 </style>
