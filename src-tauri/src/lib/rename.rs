@@ -42,22 +42,16 @@ fn rename_headers(
   let new_headers = new_rdr.byte_headers()?;
 
   let file_path = Path::new(&path);
-  let file_name = match file_path.file_name() {
-    Some(name) => match name.to_str() {
-      Some(name_str) => name_str.split('.').collect::<Vec<&str>>(),
-      None => vec![],
-    },
-    None => vec![],
-  };
+  let file_name = file_path.file_name().unwrap().to_str().unwrap();
   let current_time = chrono::Local::now();
-  let file_path_copy = file_path
+  let parent_path = file_path
     .parent()
     .map(|parent| parent.to_string_lossy())
-    .unwrap_or_else(|| "Default Path".to_string().into());
+    .unwrap();
   let output_path = format!(
     "{}/{}_rename_{}.csv",
-    file_path_copy,
-    file_name[0],
+    parent_path,
+    file_name,
     current_time.format("%Y-%m-%d-%H%M%S")
   );
 

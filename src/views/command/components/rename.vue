@@ -126,7 +126,7 @@ async function renameData() {
   }
 
   const headersStringArray = tableData.value.map((row: any) => row.col2);
-  const headersString = headersStringArray.join("|");
+  const headersString = headersStringArray.join(",");
   isLoading.value = true;
 
   await invoke("rename", {
@@ -204,7 +204,7 @@ async function headerEdit(row: any) {
         style="width: 100%"
       >
         <el-table-column prop="col1" label="headers" style="width: 50%" />
-        <el-table-column prop="col2" label="rename headers" width="300">
+        <el-table-column prop="col2" label="new headers" width="300">
           <template #default="{ row }">
             <el-input
               v-model="row.col2"

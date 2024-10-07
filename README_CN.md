@@ -5,22 +5,26 @@
 > 一个可以使用SQL快速查看Excel、CSV和Parquet的工具，基于tauri。
 
 ### 截图
-* Polars SQL 查询
-![sqlp](/demo/sqlp.png)
-* cat
-![cat](/demo/cat.png)
-* rename
-![rename](/demo/rename.png)
-* select
-![select](/demo/select.png)
+* polars SQL for query
 
+  ![sqlp.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\sqlp.gif)
+
+* Cat
+
+  ![cat.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\cat.gif)
+
+* Rename
+
+  ![rename.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\rename.gif)
+
+* select
+
+  ![select.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\select.gif)
 
 
 ## ✨Features
 
-- [x] 允许加载本地Excel、CSV和Parquet文件
-- [x] 支持导出为CSV或xlsx文件
-- [x] 使用Polars SQL进行查询
+- [x] 使用Polars SQL进行查询,支持Excel、CSV和parquet,支持导出为CSV或xlsx
 - [x] 合并多个CSV、Excel文件为1个CSV或xlsx文件
 - [x] 批量将Excel转为CSV
 - [x] 批量统计CSV文件的行数
@@ -30,30 +34,18 @@
 - [x] 找出与特定条件匹配的字段 (equal、contains、startswith)
 - [x] 填充CSV特定列中的空值
 - [x] 将一个CSV按指定行数拆分为多个CSV
+- [x] 为CSV添加索引
+- [x] 批量删除CSV的表头
 
 
 ### 🍖如何使用?
 
 * 下载[InsightSQL.7z](https://github.com/tansen87/sqlp/releases/)，提取并运行InsightSQL.exe
 
-### 🧀两种查询模式
-
-1. 直接输入SQL语句，例如:
-
-   ```sql
-   select * from `filename`
-   ```
-
-2. 编写一个SQL脚本(如下为SQL脚本)，然后选择它并运行它，例如:
-
-   ```sql
-   create table temp as select * from "filename" where code like '1%';
-   select * from temp limit 10;
-   ```
 
 ### 🏃‍运行环境
 
-* Node.js 20+
+* Node.js 18+
 * pnpm 9.9.0+
 * 🦀Rust 1.81.0+
 

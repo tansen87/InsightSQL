@@ -31,7 +31,7 @@ const commands = ref([
   },
   {
     title: "Select",
-    description: "Select, re-order or drop columns.",
+    description: "Select, re-order columns.",
     route: "/command/components/select"
   },
   {

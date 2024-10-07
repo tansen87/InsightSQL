@@ -164,7 +164,7 @@ async function selectColumns() {
         <el-text type="primary" size="large">
           <el-icon> <Cherry /> </el-icon>
           <span v-if="isPath">{{ data.filePath }}</span>
-          <span v-else>Select, re-order, duplicate or drop columns</span>
+          <span v-else>Select, re-order columns</span>
         </el-text>
       </div>
     </el-form>

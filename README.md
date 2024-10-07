@@ -6,21 +6,25 @@ English | [中文](./README_CN.md)
 
 ### screenshot
 * polars SQL for query
-![sqlp](/demo/sqlp.png)
-* cat
-![cat](/demo/cat.png)
-* rename
-![rename](/demo/rename.png)
-* select
-![select](/demo/select.png)
 
+  ![sqlp.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\sqlp.gif)
+
+* Cat
+
+  ![cat.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\cat.gif)
+
+* Rename
+
+  ![rename.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\rename.gif)
+
+* select
+
+  ![select.gif](E:\Desktop\vscodeWorkspace\tauri\InsightSQL\demo\select.gif)
 
 
 ## ✨Features
 
-- [x] Allows to load local Excel, CSV and Parquet files
-- [x] Support exporting as csv or xlsx files
-- [x] Use Polars SQL for querying
+- [x] Use Polars SQL for querying, allows to load Excel, CSV and Parquet files, support exporting as csv or xlsx files
 - [x] Concatenate CSV and Excel files
 - [x] Exports Excel to a csv file
 - [x] Count the rows of CSV files
@@ -30,30 +34,18 @@ English | [中文](./README_CN.md)
 - [x] Select fields matching rows
 - [x] Fill empty fields in selected columns of a CSV
 - [x] Split one CSV file into many CSV files
+- [x] Add an index for a CSV
+- [x] Drop headers from CSV
 
 
 ### 🍖How to use?
 
 * Download [InsightSQL.7z](https://github.com/tansen87/sqlp/releases/), extract and run InsightSQL.exe
 
-### 🧀Two query modes
-
-1. Directly enter SQL statements, such as:
-
-   ```sql
-   select * from `filename`
-   ```
-
-2. Write an SQL script, then select it and run it, for example:
-
-   ```sql
-   create table temp as select * from "filename" where code like '1%';
-   select * from temp limit 10;
-   ```
 
 ### 🏃‍Runtime Environment
 
-* Node.js 20+
+* Node.js 18+
 * pnpm 9.9.0+
 * 🦀Rust 1.81.0+
 
