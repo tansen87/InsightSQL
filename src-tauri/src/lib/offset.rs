@@ -375,7 +375,7 @@ fn offset_condition(
     .with_columns(vec![
       (col("count").cast(DataType::String)
         + lit("_")
-        + col("abs_amount").cast(DataType::String)
+        + col("abs_amount").cast(DataType::Decimal(Some(18), Some(2)))
         + lit("_")
         + cols(vec_cond))
       .alias("group"),
