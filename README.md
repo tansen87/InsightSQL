@@ -30,7 +30,7 @@ English | [中文](./README_CN.md)
 - [x] Count the rows of CSV files
 - [x] Exports csv to a xlsx file
 - [x] Rename the columns of a CSV
-- [x] Select, re-order, duplicate or drop columns
+- [x] Select, re-order columns
 - [x] Select fields matching rows
 - [x] Fill empty fields in selected columns of a CSV
 - [x] Split one CSV file into many CSV files

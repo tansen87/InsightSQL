@@ -113,13 +113,18 @@ fn offset_no_condition(
   let lf = lf.with_column(
     col(&amount)
       .cast(DataType::Float64)
+      .fill_null(0.0)
       .abs()
       .alias("abs_amount"),
   );
 
   let grouped = lf.clone().group_by([col("abs_amount")]).agg([
     col("abs_amount").count().alias("count"),
-    col(&amount).cast(DataType::Float64).sum().alias("total"),
+    col(&amount)
+      .cast(DataType::Float64)
+      .fill_null(0.0)
+      .sum()
+      .alias("total"),
   ]);
 
   let merge = lf.clone().join(
@@ -131,8 +136,11 @@ fn offset_no_condition(
 
   let merge = merge
     .with_columns(vec![
-      col("count").cast(DataType::String).alias("group") + col("abs_amount").cast(DataType::String),
-      when(col(&amount).cast(DataType::Float64).gt(0.0))
+      (col("count").cast(DataType::String)
+        + lit("_")
+        + col("abs_amount").cast(DataType::Decimal(Some(18), Some(2))))
+      .alias("group"),
+      when(col(&amount).cast(DataType::Float64).fill_null(0.0).gt(0.0))
         .then(lit("Y"))
         .otherwise(lit("N"))
         .alias("compare"),
@@ -158,8 +166,7 @@ fn offset_no_condition(
   let unique = merge
     .clone()
     .select([col("group").unique().alias("unique")])
-    .collect()
-    .unwrap();
+    .collect()?;
 
   let mut unique_string = Vec::new();
   for xx in unique.iter() {
@@ -239,7 +246,7 @@ fn offset_no_condition(
         lfs_surplus.push(y_surplus);
       }
       if y_num < n_num {
-        let n_surplus = q2.clone().filter(col("compare").eq(lit("Y"))).tail(diff);
+        let n_surplus = q2.clone().filter(col("compare").eq(lit("N"))).tail(diff);
         lfs_surplus.push(n_surplus);
       }
     }
@@ -343,13 +350,18 @@ fn offset_condition(
   let lf = lf.with_column(
     col(&amount)
       .cast(DataType::Float64)
+      .fill_null(0.0)
       .abs()
       .alias("abs_amount"),
   );
 
   let grouped = lf.clone().group_by([col("abs_amount")]).agg([
     col("abs_amount").count().alias("count"),
-    col(&amount).cast(DataType::Float64).sum().alias("total"),
+    col(&amount)
+      .cast(DataType::Float64)
+      .fill_null(0.0)
+      .sum()
+      .alias("total"),
   ]);
 
   let merge = lf.clone().join(
@@ -361,10 +373,13 @@ fn offset_condition(
 
   let merge = merge
     .with_columns(vec![
-      col("count").cast(DataType::String).alias("group")
+      (col("count").cast(DataType::String)
+        + lit("_")
         + col("abs_amount").cast(DataType::String)
-        + cols(vec_cond),
-      when(col(&amount).cast(DataType::Float64).gt(0.0))
+        + lit("_")
+        + cols(vec_cond))
+      .alias("group"),
+      when(col(&amount).cast(DataType::Float64).fill_null(0.0).gt(0.0))
         .then(lit("Y"))
         .otherwise(lit("N"))
         .alias("compare"),
@@ -390,8 +405,7 @@ fn offset_condition(
   let unique = merge
     .clone()
     .select([col("group").unique().alias("unique")])
-    .collect()
-    .unwrap();
+    .collect()?;
 
   let mut unique_string = Vec::new();
   for xx in unique.iter() {
@@ -471,7 +485,7 @@ fn offset_condition(
         lfs_surplus.push(y_surplus);
       }
       if y_num < n_num {
-        let n_surplus = q2.clone().filter(col("compare").eq(lit("Y"))).tail(diff);
+        let n_surplus = q2.clone().filter(col("compare").eq(lit("N"))).tail(diff);
         lfs_surplus.push(n_surplus);
       }
     }
