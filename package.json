@@ -63,6 +63,7 @@
     "nprogress": "^0.2.0",
     "path": "^0.12.7",
     "pinia": "^2.0.36",
+    "prismjs": "^1.29.0",
     "qs": "^6.11.1",
     "responsive-storage": "^2.2.0",
     "vue": "^3.3.1",
