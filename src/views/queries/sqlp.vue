@@ -41,7 +41,6 @@ const data = reactive({
     "xlsb",
     "ods"
   ],
-  sep: ",",
   write: false,
   writeFormat: "csv",
   lowMemory: false
@@ -157,7 +156,6 @@ async function queryData() {
       await invoke("query", {
         path: data.filePath,
         sqlsrc: sqlsrc.value,
-        sep: data.sep,
         write: data.write,
         writeFormat: data.writeFormat,
         lowMemory: data.lowMemory
@@ -209,7 +207,6 @@ async function selectFile() {
   await invoke("query", {
     path: data.filePath,
     sqlsrc: "select * from _t_1 limit 5",
-    sep: data.sep,
     write: false,
     writeFormat: "csv",
     lowMemory: false
@@ -273,14 +270,6 @@ watch(
           >
             Open File
           </el-button>
-          <el-form-item style="margin-left: 10px; width: 80px">
-            <el-select v-model="data.sep">
-              <el-option label="," value="," />
-              <el-option label="|" value="|" />
-              <el-option label="\t" value="\t" />
-              <el-option label=";" value=";" />
-            </el-select>
-          </el-form-item>
           <el-form-item style="margin-left: 10px; width: 100px">
             <el-select v-model="data.lowMemory">
               <el-option label="Memory" :value="false" />

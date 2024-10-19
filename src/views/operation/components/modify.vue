@@ -251,6 +251,10 @@ function splitFilename(filename) {
             <el-option label="_" value="_" />
             <el-option label=";" value=";" />
             <el-option label="." value="." />
+            <el-option label="(" value="(" />
+            <el-option label=")" value=")" />
+            <el-option label="[" value="[" />
+            <el-option label="]" value="]" />
           </el-select>
           <el-button
             type="success"

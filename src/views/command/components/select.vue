@@ -9,8 +9,7 @@ import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
 const originalList = ref([]);
 const selectList = ref([]);
@@ -70,8 +69,7 @@ async function selectFile() {
   isPath.value = true;
 
   const headers: any = await invoke("get_select_headers", {
-    path: data.filePath,
-    sep: data.sep
+    path: data.filePath
   });
   originalList.value = headers;
 }
@@ -106,7 +104,6 @@ async function selectColumns() {
   if (data.filePath !== "") {
     await invoke("select", {
       path: data.filePath,
-      sep: data.sep,
       cols: names.value
     });
 
@@ -142,12 +139,6 @@ async function selectColumns() {
           >
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
           <el-button
             type="success"
             @click="selectColumns()"

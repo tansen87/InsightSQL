@@ -21,8 +21,7 @@ const customColors = [
 ];
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
 
 const formHeight = computed(() => {
@@ -119,8 +118,7 @@ async function countData() {
   isLoading.value = true;
 
   await invoke("count", {
-    path: data.filePath,
-    sep: data.sep
+    path: data.filePath
   });
 
   ElNotification({
@@ -153,12 +151,6 @@ async function countData() {
           >
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
           <el-button
             type="success"
             @click="countData()"

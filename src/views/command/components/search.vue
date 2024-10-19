@@ -15,7 +15,6 @@ const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ",",
   mode: "equal",
   condition: "银行存款|应收账款"
 });
@@ -87,8 +86,7 @@ async function selectFile() {
   isPath.value = true;
 
   const header: any = await invoke("get_search_headers", {
-    path: data.filePath,
-    sep: data.sep
+    path: data.filePath
   });
   originalColumns.value = header;
 }
@@ -134,7 +132,6 @@ async function searchData() {
 
     await invoke("search", {
       path: data.filePath,
-      sep: data.sep,
       column: columns.value,
       mode: data.mode,
       condition: data.condition,
@@ -175,11 +172,10 @@ async function searchData() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
+        <el-select v-model="data.mode" style="margin-left: 16px; width: 112px">
+          <el-option label="equal" value="equal" />
+          <el-option label="contains" value="contains" />
+          <el-option label="startswith" value="startswith" />
         </el-select>
       </div>
 
@@ -191,15 +187,10 @@ async function searchData() {
     </div>
     <p />
     <div style="margin-top: 10px">
-      <el-select v-model="data.mode" style="width: 112px">
-        <el-option label="equal" value="equal" />
-        <el-option label="contains" value="contains" />
-        <el-option label="startswith" value="startswith" />
-      </el-select>
       <el-select
         v-model="columns"
         filterable
-        style="margin-left: 16px; width: 200px"
+        style="width: 200px"
         placeholder="please choose column"
       >
         <el-option

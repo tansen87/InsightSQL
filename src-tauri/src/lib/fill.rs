@@ -7,11 +7,15 @@ use std::time::Instant;
 
 use tauri::Emitter;
 
-fn get_header(path: String, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+use crate::detect::detect_separator;
+
+fn get_header(path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+  let sep = match detect_separator(path.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
@@ -38,15 +42,16 @@ fn get_header(path: String, sep: String) -> Result<Vec<HashMap<String, String>>,
 
 fn fill_values(
   input_file: String,
-  sep: String,
   fill_column: String,
   fill_value: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+  let sep = match detect_separator(input_file.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
@@ -102,12 +107,8 @@ fn fill_values(
 }
 
 #[tauri::command]
-pub async fn get_fill_headers(
-  path: String,
-  sep: String,
-  window: tauri::Window,
-) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(path, sep) }).await {
+pub async fn get_fill_headers(path: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
+  let headers = match (async { get_header(path) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("get headers error: {err}");
@@ -120,17 +121,11 @@ pub async fn get_fill_headers(
 }
 
 #[tauri::command]
-pub async fn fill(
-  path: String,
-  sep: String,
-  columns: String,
-  values: String,
-  window: tauri::Window,
-) {
+pub async fn fill(path: String, columns: String, values: String, window: tauri::Window) {
   let start_time = Instant::now();
   let cnt_window = window.clone();
 
-  match (async { fill_values(path, sep, columns, values, cnt_window) }).await {
+  match (async { fill_values(path, columns, values, cnt_window) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("fill value error: {err}");

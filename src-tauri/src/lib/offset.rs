@@ -5,24 +5,35 @@ use polars::prelude::*;
 use tauri::Emitter;
 
 use crate::{
+  detect::detect_separator,
   excel::{ExcelReader, ToPolarsDataFrame},
   xlsx_writer,
 };
 
 fn get_header(
   file_path: String,
-  sep: String,
 ) -> Result<Vec<HashMap<String, String>>, Box<dyn std::error::Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
-
   let file_extension = match Path::new(&file_path).extension() {
     Some(ext) => ext.to_string_lossy().to_lowercase(),
-    None => return Err(("File extension not found").into()),
+    None => return Err(("").into()),
   };
+
+  let mut vec_sep = Vec::new();
+  match file_extension.as_str() {
+    "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" | "parquet" => {
+      vec_sep.push(b'|');
+    }
+    _ => {
+      let sep = match detect_separator(file_path.as_str()) {
+        Some(separator) => {
+          let separator_u8: u8 = separator as u8;
+          separator_u8
+        }
+        None => b',',
+      };
+      vec_sep.push(sep);
+    }
+  }
 
   let mut tmp = Vec::new();
   match file_extension.as_str() {
@@ -50,7 +61,7 @@ fn get_header(
     }
     _ => {
       let mut rdr = csv::ReaderBuilder::new()
-        .delimiter(sep)
+        .delimiter(vec_sep[0])
         .has_headers(true)
         .from_reader(File::open(file_path)?);
 
@@ -77,19 +88,29 @@ fn get_header(
 fn offset_no_condition(
   file_path: String,
   amount: String,
-  sep: String,
   output_path: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
-
   let file_extension = match Path::new(&file_path).extension() {
     Some(ext) => ext.to_string_lossy().to_lowercase(),
     None => return Err(("File extension not found").into()),
   };
+
+  let mut vec_sep = Vec::new();
+  match file_extension.as_str() {
+    "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" | "parquet" => {
+      vec_sep.push(b'|');
+    }
+    _ => {
+      let sep = match detect_separator(file_path.as_str()) {
+        Some(separator) => {
+          let separator_u8: u8 = separator as u8;
+          separator_u8
+        }
+        None => b',',
+      };
+      vec_sep.push(sep);
+    }
+  }
 
   let lf = match file_extension.as_str() {
     "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
@@ -101,7 +122,7 @@ fn offset_no_condition(
       let csv_reader = LazyCsvReader::new(file_path)
         .with_has_header(true)
         .with_missing_is_null(true)
-        .with_separator(sep)
+        .with_separator(vec_sep[0])
         .with_infer_schema_length(Some(0))
         .with_low_memory(false)
         .finish()?;
@@ -292,7 +313,7 @@ fn offset_no_condition(
   } else {
     let save_path = format!("{output_path}_net.csv");
     CsvWriter::new(File::create(save_path)?)
-      .with_separator(sep)
+      .with_separator(vec_sep[0])
       .finish(&mut cat)?;
   }
 
@@ -302,7 +323,7 @@ fn offset_no_condition(
   } else {
     let save_path = format!("{output_path}_surplus.csv");
     CsvWriter::new(File::create(save_path)?)
-      .with_separator(sep)
+      .with_separator(vec_sep[0])
       .finish(&mut cat_surplus)?;
   }
   Ok(())
@@ -312,20 +333,31 @@ fn offset_condition(
   file_path: String,
   amount: String,
   cond: String,
-  sep: String,
   output_path: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
   let vec_cond: Vec<&str> = cond.split('|').collect();
 
   let file_extension = match Path::new(&file_path).extension() {
     Some(ext) => ext.to_string_lossy().to_lowercase(),
-    None => return Err(("File extension not found").into()),
+    None => return Err(("").into()),
   };
+
+  let mut vec_sep = Vec::new();
+  match file_extension.as_str() {
+    "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" | "parquet" => {
+      vec_sep.push(b'|');
+    }
+    _ => {
+      let sep = match detect_separator(file_path.as_str()) {
+        Some(separator) => {
+          let separator_u8: u8 = separator as u8;
+          separator_u8
+        }
+        None => b',',
+      };
+      vec_sep.push(sep);
+    }
+  }
 
   let lf = match file_extension.as_str() {
     "parquet" => LazyFrame::scan_parquet(file_path, Default::default())?,
@@ -338,7 +370,7 @@ fn offset_condition(
       let csv_reader = LazyCsvReader::new(file_path)
         .with_has_header(true)
         .with_missing_is_null(true)
-        .with_separator(sep)
+        .with_separator(vec_sep[0])
         .with_infer_schema_length(Some(0))
         .with_low_memory(false)
         .finish()?;
@@ -531,7 +563,7 @@ fn offset_condition(
   } else {
     let save_path = format!("{output_path}_net.csv");
     CsvWriter::new(File::create(save_path)?)
-      .with_separator(sep)
+      .with_separator(vec_sep[0])
       .finish(&mut cat)?;
   }
 
@@ -541,7 +573,7 @@ fn offset_condition(
   } else {
     let save_path = format!("{output_path}_surplus.csv");
     CsvWriter::new(File::create(save_path)?)
-      .with_separator(sep)
+      .with_separator(vec_sep[0])
       .finish(&mut cat_surplus)?;
   }
   Ok(())
@@ -550,10 +582,9 @@ fn offset_condition(
 #[tauri::command]
 pub async fn get_offset_headers(
   file_path: String,
-  sep: String,
   window: tauri::Window,
 ) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(file_path, sep) }).await {
+  let headers = match (async { get_header(file_path) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("get headers error: {err}");
@@ -568,7 +599,6 @@ pub async fn get_offset_headers(
 #[tauri::command]
 pub async fn offset(
   file_path: String,
-  sep: String,
   amount: String,
   cond: String,
   has_cond: bool,
@@ -578,7 +608,7 @@ pub async fn offset(
   let start_time = Instant::now();
 
   if has_cond {
-    match (async { offset_condition(file_path, amount, cond, sep, output_path) }).await {
+    match (async { offset_condition(file_path, amount, cond, output_path) }).await {
       Ok(result) => result,
       Err(error) => {
         eprintln!("offset error:: {error}");
@@ -587,7 +617,7 @@ pub async fn offset(
       }
     };
   } else {
-    match (async { offset_no_condition(file_path, amount, sep, output_path) }).await {
+    match (async { offset_no_condition(file_path, amount, output_path) }).await {
       Ok(result) => result,
       Err(error) => {
         eprintln!("offset error:: {error}");

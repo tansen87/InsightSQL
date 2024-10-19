@@ -23,8 +23,7 @@ const filterTableData = computed(() =>
 );
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
 
 const formHeight = computed(() => {
@@ -100,8 +99,7 @@ async function selectFile() {
   isPath.value = true;
 
   const headers: any = await invoke("get_rename_headers", {
-    path: data.filePath,
-    sep: data.sep
+    path: data.filePath
   });
 
   for (let i = 0; i < headers.length; i++) {
@@ -131,7 +129,6 @@ async function renameData() {
 
   await invoke("rename", {
     path: data.filePath,
-    sep: data.sep,
     headers: headersString
   });
 
@@ -173,12 +170,6 @@ async function headerEdit(row: any) {
           >
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
           <el-button
             type="success"
             @click="renameData()"

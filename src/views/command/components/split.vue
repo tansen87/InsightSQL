@@ -12,7 +12,6 @@ const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ",",
   size: 1000000
 });
 
@@ -71,7 +70,6 @@ async function splitData() {
 
     await invoke("split", {
       filePath: data.filePath,
-      sep: data.sep,
       size: data.size
     });
 
@@ -105,12 +103,6 @@ async function splitData() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 115px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
       </div>
       <el-text type="primary" size="large">
         <el-icon> <IceCreamRound /> </el-icon>

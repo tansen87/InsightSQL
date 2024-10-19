@@ -2,11 +2,15 @@ use std::{error::Error, fs::File, path::Path, time::Instant};
 
 use tauri::Emitter;
 
-fn get_header(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+use crate::detect::detect_separator;
+
+fn get_header(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
+  let sep = match detect_separator(path) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
@@ -22,14 +26,15 @@ fn get_header(path: &str, sep: String) -> Result<Vec<String>, Box<dyn Error>> {
 
 fn rename_headers(
   path: &str,
-  sep: String,
   r_header: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+  let sep = match detect_separator(path) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
@@ -77,8 +82,8 @@ fn rename_headers(
 }
 
 #[tauri::command]
-pub async fn get_rename_headers(path: String, sep: String, window: tauri::Window) -> Vec<String> {
-  let headers = match (async { get_header(path.as_str(), sep) }).await {
+pub async fn get_rename_headers(path: String, window: tauri::Window) -> Vec<String> {
+  let headers = match (async { get_header(path.as_str()) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("get headers error: {err}");
@@ -91,11 +96,11 @@ pub async fn get_rename_headers(path: String, sep: String, window: tauri::Window
 }
 
 #[tauri::command]
-pub async fn rename(path: String, sep: String, headers: String, window: tauri::Window) {
+pub async fn rename(path: String, headers: String, window: tauri::Window) {
   let start_time = Instant::now();
   let rename_window = window.clone();
 
-  match (async { rename_headers(path.as_str(), sep, headers, rename_window) }).await {
+  match (async { rename_headers(path.as_str(), headers, rename_window) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("rename headers error: {err}");

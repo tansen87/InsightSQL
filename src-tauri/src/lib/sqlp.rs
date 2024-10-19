@@ -22,6 +22,7 @@ use polars::{
 };
 use tauri::Emitter;
 
+use crate::detect::detect_separator;
 use crate::excel::{ExcelReader, ToPolarsDataFrame};
 use crate::xlsx_writer::write_xlsx;
 
@@ -128,20 +129,12 @@ impl OutputMode {
 fn prepare_query(
   filepath: Vec<&str>,
   sqlsrc: &str,
-  sep: String,
   write: bool,
   write_format: &str,
   low_memory: bool,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut ctx = SQLContext::new();
-  let mut separator = Vec::new();
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.clone().into_bytes()[0]
-  };
-  separator.push(sep);
 
   let mut output: Vec<Option<String>> = Vec::new();
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
@@ -174,6 +167,7 @@ fn prepare_query(
   let mut table_aliases = HashMap::with_capacity(filepath.len());
   let mut lossy_table_name = Cow::default();
   let mut table_name;
+  let mut vec_sep = Vec::new();
 
   for (idx, table) in filepath.iter().enumerate() {
     // as we are using the table name as alias, we need to make sure that the table name is a
@@ -189,8 +183,24 @@ fn prepare_query(
 
     let file_extension = match Path::new(table).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
-      None => return Err(("File extension not found").into()),
+      None => return Err(("").into()),
     };
+
+    match file_extension.as_str() {
+      "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" | "parquet" => {
+        vec_sep.push(b'|');
+      }
+      _ => {
+        let sep = match detect_separator(table) {
+          Some(separator) => {
+            let separator_u8: u8 = separator as u8;
+            separator_u8
+          }
+          None => b',',
+        };
+        vec_sep.push(sep);
+      }
+    }
 
     let lf = match file_extension.as_str() {
       "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
@@ -203,7 +213,7 @@ fn prepare_query(
         let csv_reader = LazyCsvReader::new(table)
           .with_has_header(true)
           .with_missing_is_null(true)
-          .with_separator(separator[0])
+          .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
           .with_low_memory(low_memory)
           .with_truncate_ragged_lines(true)
@@ -259,7 +269,7 @@ fn prepare_query(
       let res = output_mode.execute_query(
         &current_query,
         &mut ctx,
-        sep.clone(),
+        vec_sep[idx],
         output[0].clone(),
         write,
         write_format,
@@ -272,7 +282,7 @@ fn prepare_query(
       no_output.execute_query(
         &current_query,
         &mut ctx,
-        sep.clone(),
+        vec_sep[idx],
         output[0].clone(),
         write,
         write_format,
@@ -363,7 +373,6 @@ pub async fn get(window: tauri::Window) {
 pub async fn query(
   path: String,
   sqlsrc: String,
-  sep: String,
   write: bool,
   write_format: String,
   low_memory: bool,
@@ -378,7 +387,6 @@ pub async fn query(
     prepare_query(
       filepath,
       sqlsrc.as_str(),
-      sep,
       write,
       write_format.as_str(),
       low_memory,

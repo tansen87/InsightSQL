@@ -15,7 +15,6 @@ const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ",",
   value: "0"
 });
 
@@ -62,8 +61,7 @@ async function selectFile() {
   isPath.value = true;
 
   const header: any = await invoke("get_fill_headers", {
-    path: data.filePath,
-    sep: data.sep
+    path: data.filePath
   });
   originalColumns.value = header;
 }
@@ -96,7 +94,6 @@ async function fillData() {
 
     await invoke("fill", {
       path: data.filePath,
-      sep: data.sep,
       columns: cols,
       values: data.value
     });
@@ -135,12 +132,6 @@ async function fillData() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
       </div>
 
       <el-text type="primary" size="large">

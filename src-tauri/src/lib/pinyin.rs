@@ -9,14 +9,15 @@ use csv::{ReaderBuilder, WriterBuilder};
 use pinyin::ToPinyin;
 use tauri::Emitter;
 
-fn get_header(
-  file_path: String,
-  sep: String,
-) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+use crate::detect::detect_separator;
+
+fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+  let sep = match detect_separator(file_path.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
@@ -43,17 +44,18 @@ fn get_header(
 
 fn chinese_to_pinyin(
   file_path: String,
-  sep: String,
   columns: String,
   output_path: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let cols: Vec<&str> = columns.split('|').collect();
   let cols_set: HashSet<&str> = cols.into_iter().collect();
 
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+  let sep = match detect_separator(file_path.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let mut rdr = ReaderBuilder::new()
@@ -103,10 +105,9 @@ fn chinese_to_pinyin(
 #[tauri::command]
 pub async fn get_pinyin_headers(
   file_path: String,
-  sep: String,
   window: tauri::Window,
 ) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(file_path, sep) }).await {
+  let headers = match (async { get_header(file_path) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("get headers error: {err}");
@@ -121,14 +122,13 @@ pub async fn get_pinyin_headers(
 #[tauri::command]
 pub async fn pinyin(
   file_path: String,
-  sep: String,
   columns: String,
   output_path: String,
   window: tauri::Window,
 ) {
   let start_time = Instant::now();
 
-  match (async { chinese_to_pinyin(file_path, sep, columns, output_path) }).await {
+  match (async { chinese_to_pinyin(file_path, columns, output_path) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("pinyin error: {err}");

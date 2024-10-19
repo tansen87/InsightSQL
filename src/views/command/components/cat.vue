@@ -26,7 +26,6 @@ const data = reactive({
     "xlsb",
     "ods"
   ],
-  sep: ",",
   memory: true
 });
 
@@ -128,7 +127,6 @@ async function concatData() {
 
     await invoke("concat", {
       filePath: data.filePath,
-      sep: data.sep,
       outputPath: outputPath,
       memory: data.memory
     });
@@ -163,12 +161,6 @@ async function concatData() {
           >
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
           <el-select
             v-model="data.memory"
             style="margin-left: 16px; width: 100px"

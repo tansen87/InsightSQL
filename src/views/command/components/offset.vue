@@ -15,7 +15,6 @@ const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
-  sep: ",",
   hasCond: false
 });
 
@@ -56,8 +55,7 @@ async function selectFile() {
   isPath.value = true;
 
   const header: any = await invoke("get_offset_headers", {
-    filePath: data.filePath,
-    sep: data.sep
+    filePath: data.filePath
   });
   originalColumns.value = header;
 }
@@ -105,7 +103,6 @@ async function netAmount() {
 
     await invoke("offset", {
       filePath: data.filePath,
-      sep: data.sep,
       amount: columns.value,
       cond: cols,
       hasCond: data.hasCond,
@@ -142,12 +139,6 @@ async function netAmount() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
         <el-select
           v-model="data.hasCond"
           style="margin-left: 16px; width: 120px"

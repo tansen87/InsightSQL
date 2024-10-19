@@ -4,6 +4,7 @@ pub mod cat;
 pub mod convert;
 pub mod count;
 pub mod dbf;
+pub mod detect;
 pub mod excel;
 pub mod fill;
 pub mod index;

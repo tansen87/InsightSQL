@@ -4,14 +4,14 @@ use polars::{
   prelude::{CsvParseOptions, CsvReadOptions},
 };
 use rayon::prelude::*;
-use tauri::Emitter;
 use std::{
   error::Error,
   path::{Path, PathBuf},
   time::Instant,
 };
+use tauri::Emitter;
 
-use crate::xlsx_writer::write_xlsx;
+use crate::{detect::detect_separator, xlsx_writer::write_xlsx};
 
 fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   /* convert excel to csv */
@@ -162,22 +162,23 @@ fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error
   Ok(())
 }
 
-fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
+fn csv_to_xlsx(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
   /* csv to xlsx */
   let vec_path: Vec<&str> = path.split('|').collect();
-  let mut separator = Vec::new();
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.clone().into_bytes()[0]
-  };
-  separator.push(sep);
 
   let mut count: usize = 0;
   let file_len = vec_path.len();
 
   for file in vec_path.iter() {
     window.emit("start_convert", file)?;
+
+    let sep = match detect_separator(file) {
+      Some(separator) => {
+        let separator_u8: u8 = separator as u8;
+        separator_u8
+      }
+      None => b',',
+    };
 
     let file_name = match Path::new(&file).file_name() {
       Some(name) => match name.to_str() {
@@ -192,7 +193,7 @@ fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), B
     let df = CsvReadOptions::default()
       .with_parse_options(
         CsvParseOptions::default()
-          .with_separator(separator[0])
+          .with_separator(sep)
           .with_missing_is_null(false),
       )
       .with_infer_schema_length(Some(0))
@@ -221,11 +222,11 @@ fn csv_to_xlsx(path: String, sep: String, window: tauri::Window) -> Result<(), B
 }
 
 #[tauri::command]
-pub async fn switch_csv(path: String, sep: String, window: tauri::Window) {
+pub async fn switch_csv(path: String, window: tauri::Window) {
   let start_time = Instant::now();
   let copy_window = window.clone();
 
-  match (async { csv_to_xlsx(path, sep, copy_window) }).await {
+  match (async { csv_to_xlsx(path, copy_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("write_range error: {error}");

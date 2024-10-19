@@ -2,11 +2,15 @@ use std::{collections::HashMap, error::Error, fs::File, io::BufReader, time::Ins
 
 use tauri::Emitter;
 
-fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+use crate::detect::detect_separator;
+
+fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+  let sep = match detect_separator(path) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
@@ -31,13 +35,7 @@ fn get_header(path: &str, sep: String) -> Result<Vec<HashMap<String, String>>, B
   Ok(hs)
 }
 
-pub fn read_csv(path: String, sep: String) -> Result<csv::Reader<BufReader<File>>, Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
-
+pub fn read_csv(path: String, sep: u8) -> Result<csv::Reader<BufReader<File>>, Box<dyn Error>> {
   let file = File::open(path)?;
 
   let rdr = csv::ReaderBuilder::new()
@@ -47,13 +45,7 @@ pub fn read_csv(path: String, sep: String) -> Result<csv::Reader<BufReader<File>
   Ok(rdr)
 }
 
-pub fn write_csv(sep: String, output_path: String) -> Result<csv::Writer<File>, Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
-
+pub fn write_csv(sep: u8, output_path: String) -> Result<csv::Writer<File>, Box<dyn Error>> {
   let wtr = csv::WriterBuilder::new()
     .delimiter(sep)
     .from_path(output_path)?;
@@ -63,14 +55,14 @@ pub fn write_csv(sep: String, output_path: String) -> Result<csv::Writer<File>, 
 
 fn equal_search(
   path: String,
-  sep: String,
+  sep: u8,
   column: String,
   conditions: Vec<String>,
   output_path: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut count: usize = 0;
-  let mut rdr = read_csv(path, sep.clone())?;
+  let mut rdr = read_csv(path, sep)?;
 
   let headers = rdr.headers()?.clone();
 
@@ -101,14 +93,14 @@ fn equal_search(
 
 fn contains_search(
   path: String,
-  sep: String,
+  sep: u8,
   column: String,
   conditions: Vec<String>,
   output_path: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut count: usize = 0;
-  let mut rdr = read_csv(path, sep.clone())?;
+  let mut rdr = read_csv(path, sep)?;
 
   let headers = rdr.headers()?.clone();
 
@@ -147,14 +139,14 @@ fn contains_search(
 
 fn startswith_search(
   path: String,
-  sep: String,
+  sep: u8,
   column: String,
   conditions: Vec<String>,
   output_path: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
   let mut count: usize = 0;
-  let mut rdr = read_csv(path, sep.clone())?;
+  let mut rdr = read_csv(path, sep)?;
 
   let headers = rdr.headers()?.clone();
 
@@ -187,10 +179,9 @@ fn startswith_search(
 #[tauri::command]
 pub async fn get_search_headers(
   path: String,
-  sep: String,
   window: tauri::Window,
 ) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(path.as_str(), sep) }).await {
+  let headers = match (async { get_header(path.as_str()) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("get headers error: {err}");
@@ -205,7 +196,6 @@ pub async fn get_search_headers(
 #[tauri::command]
 pub async fn search(
   path: String,
-  sep: String,
   column: String,
   mode: String,
   condition: String,
@@ -225,6 +215,13 @@ pub async fn search(
     .into_iter()
     .map(|condition| condition)
     .collect();
+  let sep = match detect_separator(path.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
+  };
 
   if mode == "equal" {
     match (async { equal_search(path, sep, column, vec_strings, output_path, equal_window) }).await

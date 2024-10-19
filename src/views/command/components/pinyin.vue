@@ -13,8 +13,7 @@ const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
 
 listen("runtime", (event: any) => {
@@ -55,8 +54,7 @@ async function selectFile() {
   isPath.value = true;
 
   const header: any = await invoke("get_pinyin_headers", {
-    filePath: data.filePath,
-    sep: data.sep
+    filePath: data.filePath
   });
   originalColumns.value = header;
 }
@@ -104,7 +102,6 @@ async function chineseToPinyin() {
 
     await invoke("pinyin", {
       filePath: data.filePath,
-      sep: data.sep,
       columns: cols,
       outputPath: outputPath
     });
@@ -139,12 +136,6 @@ async function chineseToPinyin() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
         <el-button
           type="success"
           @click="chineseToPinyin()"

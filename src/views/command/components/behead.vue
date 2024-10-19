@@ -19,8 +19,7 @@ const tableRef = ref(null);
 const selectedFiles = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
 const windowHeight = ref(window.innerHeight);
 const customColors = [
@@ -127,8 +126,7 @@ async function dropHeaders() {
     isLoading.value = true;
 
     await invoke("behead", {
-      filePath: data.filePath,
-      sep: data.sep
+      filePath: data.filePath
     });
 
     ElNotification({
@@ -161,12 +159,6 @@ async function dropHeaders() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
         <el-button
           type="success"
           @click="dropHeaders()"

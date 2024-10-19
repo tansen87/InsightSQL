@@ -2,17 +2,12 @@ use std::{error::Error, path::Path, time::Instant};
 
 use tauri::Emitter;
 
+use crate::detect::detect_separator;
+
 fn drop_headers(
   file_path: String,
-  sep: String,
   window: tauri::Window,
 ) -> Result<(), Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
-
   let vec_path: Vec<&str> = file_path.split('|').collect();
   let parent_path = Path::new(&vec_path[0])
     .parent()
@@ -24,6 +19,14 @@ fn drop_headers(
 
   for fp in vec_path.iter() {
     window.emit("start_convert", fp)?;
+
+    let sep = match detect_separator(fp) {
+      Some(separator) => {
+        let separator_u8: u8 = separator as u8;
+        separator_u8
+      }
+      None => b',',
+    };
 
     let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
     let output_path = format!("{}/{}_behead.csv", parent_path, filename);
@@ -58,11 +61,11 @@ fn drop_headers(
 }
 
 #[tauri::command]
-pub async fn behead(file_path: String, sep: String, window: tauri::Window) {
+pub async fn behead(file_path: String, window: tauri::Window) {
   let start_time = Instant::now();
   let drop_window = window.clone();
 
-  match (async { drop_headers(file_path, sep, drop_window) }).await {
+  match (async { drop_headers(file_path, drop_window) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("behead error: {err}");

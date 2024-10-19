@@ -2,11 +2,15 @@ use std::{error::Error, fs::File, io::BufWriter, path::Path, time::Instant};
 
 use tauri::Emitter;
 
-fn add_index(file_path: String, sep: String) -> Result<(), Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+use crate::detect::detect_separator;
+
+fn add_index(file_path: String) -> Result<(), Box<dyn Error>> {
+  let sep = match detect_separator(file_path.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
@@ -43,10 +47,10 @@ fn add_index(file_path: String, sep: String) -> Result<(), Box<dyn Error>> {
 }
 
 #[tauri::command]
-pub async fn index(file_path: String, sep: String, window: tauri::Window) {
+pub async fn index(file_path: String, window: tauri::Window) {
   let start_time = Instant::now();
 
-  match (async { add_index(file_path, sep) }).await {
+  match (async { add_index(file_path) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("index error: {err}");

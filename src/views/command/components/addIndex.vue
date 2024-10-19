@@ -15,8 +15,7 @@ const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
-  sep: ","
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
 
 const formHeight = computed(() => {
@@ -90,7 +89,6 @@ async function selectFile() {
   await invoke("query", {
     path: data.filePath,
     sqlsrc: "select * from _t_1 limit 5",
-    sep: data.sep,
     write: false,
     writeFormat: "csv",
     lowMemory: false
@@ -113,8 +111,7 @@ async function addIndex() {
     isLoading.value = true;
 
     await invoke("index", {
-      filePath: data.filePath,
-      sep: data.sep
+      filePath: data.filePath
     });
 
     isLoading.value = false;
@@ -147,12 +144,6 @@ async function addIndex() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.sep" style="margin-left: 16px; width: 115px">
-          <el-option label="," value="," />
-          <el-option label="|" value="|" />
-          <el-option label="\t" value="\t" />
-          <el-option label=";" value=";" />
-        </el-select>
         <el-button
           type="success"
           @click="addIndex()"

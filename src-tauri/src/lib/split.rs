@@ -8,6 +8,8 @@ use std::{
 
 use tauri::Emitter;
 
+use crate::detect::detect_separator;
+
 fn new_writer(
   headers: &csv::ByteRecord,
   start: i32,
@@ -26,11 +28,13 @@ fn new_writer(
   Ok(wtr)
 }
 
-fn split_csv(input_csv: String, sep: String, size: i32) -> Result<(), Box<dyn Error>> {
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
+fn split_csv(input_csv: String, size: i32) -> Result<(), Box<dyn Error>> {
+  let sep = match detect_separator(&input_csv.as_str()) {
+    Some(separator) => {
+      let separator_u8: u8 = separator as u8;
+      separator_u8
+    }
+    None => b',',
   };
 
   let binding = PathBuf::from(input_csv.clone());
@@ -62,10 +66,10 @@ fn split_csv(input_csv: String, sep: String, size: i32) -> Result<(), Box<dyn Er
 }
 
 #[tauri::command]
-pub async fn split(file_path: String, sep: String, size: i32, window: tauri::Window) {
+pub async fn split(file_path: String, size: i32, window: tauri::Window) {
   let start_time = Instant::now();
 
-  match (async { split_csv(file_path, sep, size) }).await {
+  match (async { split_csv(file_path, size) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("split error: {err}");
