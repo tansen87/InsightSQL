@@ -19,7 +19,6 @@ import "./ace-config";
 const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
-const isPath = ref(false);
 const runtime = ref(0.0);
 const counter = ref(0);
 const tableRef = ref(null);
@@ -183,7 +182,6 @@ async function selectFile() {
   columns.value = [];
   tableData.value = [];
   isLoading.value = false;
-  isPath.value = false;
 
   const selected = await open({
     multiple: true,
@@ -201,8 +199,6 @@ async function selectFile() {
   } else {
     data.filePath = selected;
   }
-
-  isPath.value = true;
 
   await invoke("query", {
     path: data.filePath,
@@ -262,44 +258,66 @@ watch(
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
+          <el-tooltip
+            content="Open local Excel, CSV or Parquet file"
+            placement="top"
+            effect="light"
           >
-            Open File
-          </el-button>
+            <el-button
+              type="primary"
+              @click="selectFile()"
+              :icon="FolderOpened"
+              plain
+            >
+              Open File
+            </el-button>
+          </el-tooltip>
           <el-form-item style="margin-left: 10px; width: 100px">
-            <el-select v-model="data.lowMemory">
-              <el-option label="Memory" :value="false" />
-              <el-option label="Stream" :value="true" />
-            </el-select>
+            <el-tooltip
+              content="Memory or stream query"
+              placement="top"
+              effect="light"
+            >
+              <el-select v-model="data.lowMemory">
+                <el-option label="Memory" :value="false" />
+                <el-option label="Stream" :value="true" />
+              </el-select>
+            </el-tooltip>
           </el-form-item>
         </div>
         <el-form-item>
-          <el-switch
-            v-model="data.write"
-            :active-action-icon="Download"
-            :inactive-action-icon="View"
-          />
-          <el-select
-            v-model="data.writeFormat"
-            style="margin-left: 10px; width: 80px"
+          <el-tooltip
+            content="Export data or not"
+            placement="top"
+            effect="light"
           >
-            <el-option label="csv" value="csv" />
-            <el-option label="xlsx" value="xlsx" />
-          </el-select>
-          <el-button
-            type="success"
-            @click="queryData()"
-            :loading="isLoading"
-            :icon="Search"
-            style="margin-left: 10px"
-            plain
-          >
-            Execute
-          </el-button>
+            <el-switch
+              v-model="data.write"
+              :active-action-icon="Download"
+              :inactive-action-icon="View"
+            />
+          </el-tooltip>
+          <el-tooltip content="Export datatype" placement="top" effect="light">
+            <el-select
+              v-model="data.writeFormat"
+              style="margin-left: 10px; width: 80px"
+            >
+              <el-option label="csv" value="csv" />
+              <el-option label="xlsx" value="xlsx" />
+            </el-select>
+          </el-tooltip>
+          <el-tooltip content="Execute query" placement="top" effect="light">
+            <el-button
+              type="success"
+              @click="queryData()"
+              :loading="isLoading"
+              :icon="Search"
+              style="margin-left: 10px"
+              plain
+            >
+              Execute
+            </el-button>
+          </el-tooltip>
         </el-form-item>
       </div>
       <el-form-item>

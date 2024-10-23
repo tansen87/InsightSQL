@@ -146,7 +146,7 @@ async function fillData() {
       multiple
       filterable
       style="margin-top: 15px; width: 100%"
-      placeholder="please choose column"
+      placeholder="please choose columns"
     >
       <el-option
         v-for="item in originalColumns"
@@ -164,21 +164,28 @@ async function fillData() {
       "
     >
       <div style="margin-top: 15px; display: flex; align-items: flex-start">
-        <el-input
-          v-model="data.value"
-          style="width: 120px; margin-right: 16px"
-          clearable
-        />
-        <el-button
-          type="success"
-          @click="fillData()"
-          :loading="isLoading"
-          :icon="Cpu"
-          plain
+        <el-tooltip
+          content="The value of fill"
+          placement="bottom"
+          effect="light"
         >
-          Fill
-        </el-button>
+          <el-input
+            v-model="data.value"
+            style="width: 120px; margin-right: 16px"
+            clearable
+          />
+        </el-tooltip>
       </div>
+      <el-button
+        style="margin-top: 15px"
+        type="success"
+        @click="fillData()"
+        :loading="isLoading"
+        :icon="Cpu"
+        plain
+      >
+        Fill
+      </el-button>
     </div>
   </div>
 </template>

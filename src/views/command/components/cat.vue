@@ -161,13 +161,19 @@ async function concatData() {
           >
             Open File
           </el-button>
-          <el-select
-            v-model="data.memory"
-            style="margin-left: 16px; width: 100px"
+          <el-tooltip
+            content="Memory or stream Cat"
+            placement="bottom"
+            effect="light"
           >
-            <el-option label="Memory" :value="true" />
-            <el-option label="Stream" :value="false" />
-          </el-select>
+            <el-select
+              v-model="data.memory"
+              style="margin-left: 16px; width: 100px"
+            >
+              <el-option label="Memory" :value="true" />
+              <el-option label="Stream" :value="false" />
+            </el-select>
+          </el-tooltip>
           <el-button
             type="success"
             @click="concatData()"
@@ -176,7 +182,7 @@ async function concatData() {
             plain
             style="margin-left: 16px"
           >
-            Concat
+            Cat
           </el-button>
         </div>
         <el-text type="primary" size="large">

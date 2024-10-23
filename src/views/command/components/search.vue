@@ -172,11 +172,6 @@ async function searchData() {
         >
           Open File
         </el-button>
-        <el-select v-model="data.mode" style="margin-left: 16px; width: 112px">
-          <el-option label="equal" value="equal" />
-          <el-option label="contains" value="contains" />
-          <el-option label="startswith" value="startswith" />
-        </el-select>
       </div>
 
       <el-text type="primary" size="large">
@@ -185,21 +180,37 @@ async function searchData() {
         <span v-else>Select fields matching rows</span>
       </el-text>
     </div>
-    <p />
-    <div style="margin-top: 10px">
-      <el-select
-        v-model="columns"
-        filterable
-        style="width: 200px"
-        placeholder="please choose column"
-      >
-        <el-option
-          v-for="item in originalColumns"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
-        />
-      </el-select>
+
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: sticky;
+      "
+    >
+      <div style="margin-top: 10px; display: flex; align-items: flex-start">
+        <el-tooltip content="Search mode" placement="bottom" effect="light">
+          <el-select v-model="data.mode" style="width: 112px">
+            <el-option label="equal" value="equal" />
+            <el-option label="contains" value="contains" />
+            <el-option label="startswith" value="startswith" />
+          </el-select>
+        </el-tooltip>
+        <el-select
+          v-model="columns"
+          filterable
+          style="margin-left: 12px; width: 200px"
+          placeholder="select a column"
+        >
+          <el-option
+            v-for="item in originalColumns"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </div>
       <el-button
         type="success"
         @click="searchData()"

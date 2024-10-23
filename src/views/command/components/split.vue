@@ -119,22 +119,24 @@ async function splitData() {
       "
     >
       <div style="display: flex; align-items: flex-start; margin-top: 10px">
-        <el-input-number
-          v-model="data.size"
-          controls-position="right"
-          style="width: 150px"
-        />
-        <el-button
-          type="success"
-          @click="splitData()"
-          :loading="isLoading"
-          :icon="IceCreamRound"
-          plain
-          style="margin-left: 16px"
-        >
-          Split
-        </el-button>
+        <el-tooltip content="Split rows" placement="bottom" effect="light">
+          <el-input-number
+            v-model="data.size"
+            controls-position="right"
+            style="width: 150px"
+          />
+        </el-tooltip>
       </div>
+      <el-button
+        style="margin-top: 10px"
+        type="success"
+        @click="splitData()"
+        :loading="isLoading"
+        :icon="IceCreamRound"
+        plain
+      >
+        Split
+      </el-button>
     </div>
   </div>
 </template>
