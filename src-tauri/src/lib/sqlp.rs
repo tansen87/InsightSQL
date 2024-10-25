@@ -9,7 +9,7 @@ use std::{
   time::Instant,
 };
 
-use chrono::TimeZone;
+// use chrono::TimeZone;
 use indexmap::IndexMap;
 use polars::{
   datatypes::AnyValue,
@@ -26,108 +26,95 @@ use crate::detect::detect_separator;
 use crate::excel::{ExcelReader, ToPolarsDataFrame};
 use crate::xlsx_writer::write_xlsx;
 
-#[derive(Default, Clone, PartialEq)]
-enum OutputMode {
-  #[default]
-  Csv,
-  None,
-}
+fn execute_query(
+  query: &str,
+  ctx: &mut SQLContext,
+  sep: u8,
+  output: Option<String>,
+  write: bool,
+  write_format: &str,
+  low_memory: bool,
+  window: tauri::Window,
+) -> Result<String, Box<PolarsError>> {
+  let mut df = DataFrame::default();
 
-impl OutputMode {
-  fn execute_query(
-    &self,
-    query: &str,
-    ctx: &mut SQLContext,
-    sep: u8,
-    output: Option<String>,
-    write: bool,
-    write_format: &str,
-    low_memory: bool,
-    window: tauri::Window,
-  ) -> Result<String, Box<PolarsError>> {
-    let mut df = DataFrame::default();
-
-    let execute_inner = || -> Result<(), PolarsError> {
-      if low_memory {
-        let lf = ctx.execute(query)?;
-        lf.sink_csv(
-          output.unwrap(),
-          CsvWriterOptions {
-            include_bom: false,
-            include_header: true,
-            batch_size: NonZeroUsize::new(1024).unwrap(),
-            maintain_order: false,
-            serialize_options: polars::prelude::SerializeOptions {
-              date_format: None,
-              time_format: None,
-              datetime_format: None,
-              float_scientific: None,
-              float_precision: None,
-              separator: sep,
-              quote_char: b'"',
-              null: String::new(),
-              line_terminator: "\n".into(),
-              quote_style: Default::default(),
-            },
+  let execute_inner = || -> Result<(), PolarsError> {
+    if low_memory {
+      let lf = ctx.execute(query)?;
+      let output_path = format!("{}.csv", output.unwrap());
+      lf.sink_csv(
+        output_path,
+        CsvWriterOptions {
+          include_bom: false,
+          include_header: true,
+          batch_size: NonZeroUsize::new(1024).unwrap(),
+          maintain_order: false,
+          serialize_options: polars::prelude::SerializeOptions {
+            date_format: None,
+            time_format: None,
+            datetime_format: None,
+            float_scientific: None,
+            float_precision: None,
+            separator: sep,
+            quote_char: b'"',
+            null: String::new(),
+            line_terminator: "\n".into(),
+            quote_style: Default::default(),
           },
-        )?;
-        let re = regex::Regex::new(r"(?m)limit.*")?;
-        let cleaned_sql = re.replace_all(query, "");
-        let q = format!("{cleaned_sql} limit 100");
-        df = ctx.execute(&q).and_then(LazyFrame::collect)?;
-        Ok(())
-      } else {
-        df = ctx.execute(query).and_then(LazyFrame::collect)?;
-        if write {
-          // we don't want to write anything if the output mode is None
-          if matches!(self, OutputMode::None) {
-            return Ok(());
-          }
-
-          if (df.shape().0 < 104_0000) && (write_format == "xlsx") {
-            let output: Option<PathBuf> = output.map(|s| PathBuf::from(s));
-            let output_path = match output {
-              Some(path) => path,
-              None => PathBuf::new(),
-            };
-            write_xlsx(df.clone(), output_path).expect("Writing to xlsx failed.");
-            Ok(())
-          } else {
-            let w = match output {
-              Some(path) => Box::new(File::create(path)?) as Box<dyn Write>,
-              None => Box::new(std::io::stdout()) as Box<dyn Write>,
-            };
-            let mut w = BufWriter::with_capacity(256_000, w);
-            let out_result = match self {
-              OutputMode::Csv => CsvWriter::new(&mut w)
-                .with_separator(sep)
-                .n_threads(4)
-                .finish(&mut df),
-              OutputMode::None => Ok(()),
-            };
-            w.flush()?;
-            out_result
-          }
-        } else {
+        },
+      )?;
+      let re = regex::Regex::new(r"(?m)limit.*")?;
+      let cleaned_sql = re.replace_all(query, "");
+      let q = format!("{cleaned_sql} limit 100");
+      df = ctx.execute(&q).and_then(LazyFrame::collect)?;
+      Ok(())
+    } else {
+      df = ctx.execute(query).and_then(LazyFrame::collect)?;
+      match (write, df.shape().0 < 104_0000, &write_format) {
+        (false, _, _) => Ok(()),
+        (true, true, &"xlsx") => {
+          // rows less than 104w and write_format is xlsx
+          let output_path = output.map_or_else(
+            || PathBuf::from("default_output.xlsx"),
+            |s| PathBuf::from(format!("{}.xlsx", s)),
+          );
+          write_xlsx(df.clone(), output_path).expect("Writing to xlsx failed");
           Ok(())
         }
+        (true, _, _) => {
+          // others
+          let output_path = Some(format!("{}.csv", output.unwrap()));
+          let w = match output_path {
+            Some(path) => Box::new(std::fs::File::create(path)?) as Box<dyn std::io::Write>,
+            None => Box::new(std::io::stdout()) as Box<dyn std::io::Write>,
+          };
+          let mut w = BufWriter::with_capacity(256_000, w);
+          let out_result = {
+            CsvWriter::new(&mut w)
+              .with_separator(sep)
+              .n_threads(4)
+              .finish(&mut df)
+          };
+          w.flush()?;
+          out_result
+        }
       }
-    };
+    }
+  };
 
-    match execute_inner() {
-      Ok(()) => Ok(query_df_to_json(df.head(Some(100)))?),
-      Err(e) => {
-        eprintln!("Failed to execute query: {query}\n{e}");
-        let errmsg = format!("{e}");
-        window.emit("exec_err", &errmsg).unwrap();
-        return Ok(errmsg);
-      }
+  match execute_inner() {
+    Ok(()) => Ok(query_df_to_json(df.head(Some(100)))?),
+    Err(e) => {
+      eprintln!("Failed to execute query: {query}\n{e}");
+      let errmsg = format!("{e}");
+      window.emit("exec_err", &errmsg).unwrap();
+      return Ok(errmsg);
     }
   }
 }
 
 fn prepare_query(
-  filepath: Vec<&str>,
+  file_path: Vec<&str>,
   sqlsrc: &str,
   write: bool,
   write_format: &str,
@@ -140,11 +127,11 @@ fn prepare_query(
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
 
   let output_suffix = match write_format {
-    "xlsx" => format!("sqlp {}.xlsx", current_time),
-    _ => format!("sqlp {}.csv", current_time),
+    "xlsx" => format!("sqlp_{}", current_time),
+    _ => format!("sqlp_{}", current_time),
   };
 
-  for path in filepath.clone() {
+  for path in file_path.clone() {
     let mut output_path = PathBuf::from(path);
     output_path.set_extension(&output_suffix);
     let output_str = if let Some(output_path_str) = output_path.to_str() {
@@ -164,12 +151,12 @@ fn prepare_query(
     OptFlags::default()
   };
 
-  let mut table_aliases = HashMap::with_capacity(filepath.len());
+  let mut table_aliases = HashMap::with_capacity(file_path.len());
   let mut lossy_table_name = Cow::default();
   let mut table_name;
   let mut vec_sep = Vec::new();
 
-  for (idx, table) in filepath.iter().enumerate() {
+  for (idx, table) in file_path.iter().enumerate() {
     // as we are using the table name as alias, we need to make sure that the table name is a
     // valid identifier. if its not utf8, we use the lossy version
     table_name = Path::new(table)
@@ -226,9 +213,6 @@ fn prepare_query(
     ctx.register(table_name, lf.with_optimizations(optimization_state));
   }
 
-  let output_mode: OutputMode = OutputMode::Csv;
-  let no_output: OutputMode = OutputMode::None;
-
   // check if the query is a SQL script
   let queries = if Path::new(&sqlsrc)
     .extension()
@@ -247,15 +231,9 @@ fn prepare_query(
     vec![sqlsrc.to_string().clone()]
   };
 
-  let num_queries = queries.len();
-  let last_query: usize = num_queries.saturating_sub(1);
-  let mut is_last_query;
   let mut current_query = String::new();
 
   for (idx, query) in queries.iter().enumerate() {
-    // check if this is the last query in the script
-    is_last_query = idx == last_query;
-
     // replace aliases in query
     current_query.clone_from(query);
     for (table_name, table_alias) in &table_aliases {
@@ -264,32 +242,18 @@ fn prepare_query(
       current_query = current_query.replace(table_alias, &format!(r#""{table_name}""#));
     }
 
-    if is_last_query {
-      // if this is the last query, we use the output mode specified by the user
-      let res = output_mode.execute_query(
-        &current_query,
-        &mut ctx,
-        vec_sep[idx],
-        output[0].clone(),
-        write,
-        write_format,
-        low_memory,
-        window.clone(),
-      )?;
-      window.emit("show", res)?;
-    } else {
-      // this is not the last query, we only execute the query, but don't write the output
-      no_output.execute_query(
-        &current_query,
-        &mut ctx,
-        vec_sep[idx],
-        output[0].clone(),
-        write,
-        write_format,
-        low_memory,
-        window.clone(),
-      )?;
-    }
+    let output_path = Some(format!("{}_{idx}", output[0].clone().unwrap()));
+    let res = execute_query(
+      &current_query,
+      &mut ctx,
+      vec_sep[0],
+      output_path,
+      write,
+      write_format,
+      low_memory,
+      window.clone(),
+    )?;
+    window.emit("show", res)?;
   }
 
   Ok(())
@@ -298,10 +262,10 @@ fn prepare_query(
 fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsError> {
   let column_names = df.get_column_names();
   let mut height = Vec::new();
-  if df.height() <= 100 {
-    height.push(df.height());
+  if df.height() > 100 {
+    height.push(100);
   } else {
-    height.push(5);
+    height.push(df.height());
   }
 
   let buffer = (0..height[0])
@@ -349,25 +313,25 @@ fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsErro
   Ok(result)
 }
 
-pub fn expired() -> bool {
-  let current_date = chrono::Local::now().time();
-  let expiration_date = chrono::Local
-    .with_ymd_and_hms(2024, 8, 11, 23, 59, 0)
-    .unwrap()
-    .time();
+// pub fn expired() -> bool {
+//   let current_date = chrono::Local::now().time();
+//   let expiration_date = chrono::Local
+//     .with_ymd_and_hms(2024, 8, 11, 23, 59, 0)
+//     .unwrap()
+//     .time();
 
-  current_date > expiration_date
-}
+//   current_date > expiration_date
+// }
 
-#[tauri::command]
-pub async fn get(window: tauri::Window) {
-  if !expired() {
-    "hi there".to_string();
-  } else {
-    let expired_msg = "Your application has expired. Please renew your subscription.".to_string();
-    window.emit("expired", expired_msg).unwrap();
-  }
-}
+// #[tauri::command]
+// pub async fn get(window: tauri::Window) {
+//   if !expired() {
+//     "hi there".to_string();
+//   } else {
+//     let expired_msg = "Your application has expired. Please renew your subscription.".to_string();
+//     window.emit("expired", expired_msg).unwrap();
+//   }
+// }
 
 #[tauri::command]
 pub async fn query(
@@ -380,12 +344,12 @@ pub async fn query(
 ) {
   let start_time = Instant::now();
 
-  let filepath: Vec<&str> = path.split('|').collect();
+  let file_path: Vec<&str> = path.split('|').collect();
 
   let prep_window = window.clone();
   match (async {
     prepare_query(
-      filepath,
+      file_path,
       sqlsrc.as_str(),
       write,
       write_format.as_str(),
@@ -398,7 +362,6 @@ pub async fn query(
     Ok(result) => result,
     Err(err) => {
       eprintln!("sql query error: {err}");
-      // window.emit("query_err", &error.to_string()).unwrap();
       return ();
     }
   };
