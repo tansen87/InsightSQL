@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { Search, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -16,11 +16,40 @@ const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   mode: "equal",
-  condition: "银行存款|应收账款"
+  condition: ""
+});
+const tableColumn = ref([]);
+const tableData = ref([]);
+const tableRef = ref(null);
+const windowHeight = ref(window.innerHeight);
+const formHeight = computed(() => {
+  const height = 278;
+  return windowHeight.value - height;
+});
+const updateWindowHeight = () => {
+  windowHeight.value = window.innerHeight;
+};
+onMounted(() => {
+  window.addEventListener("resize", updateWindowHeight);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateWindowHeight);
 });
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
+});
+listen("show", (event: any) => {
+  const df: any = event.payload;
+  const jsonData = JSON.parse(df);
+  const isJsonArray = Array.isArray(jsonData);
+  const data = isJsonArray ? jsonData : [jsonData];
+  tableColumn.value = Object.keys(data[0]).map(key => ({
+    name: key,
+    label: key,
+    prop: key
+  }));
+  tableData.value = data;
 });
 listen("equal_err", (event: any) => {
   const equalErr = event.payload;
@@ -67,6 +96,9 @@ listen("startswith_err", (event: any) => {
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
+  originalColumns.value = [];
+  columns.value = "";
+
   const selected = await open({
     multiple: false,
     filters: [
@@ -89,6 +121,14 @@ async function selectFile() {
     path: data.filePath
   });
   originalColumns.value = header;
+
+  await invoke("query", {
+    path: data.filePath,
+    sqlsrc: "select * from _t_1 limit 10",
+    write: false,
+    writeFormat: "csv",
+    lowMemory: false
+  });
 }
 
 // search data
@@ -104,8 +144,8 @@ async function searchData() {
   }
   if (columns.value.length === 0) {
     ElNotification({
-      title: "Column not defined",
-      message: "未选择columns",
+      title: "Column not found",
+      message: "未选择column",
       position: "bottom-right",
       type: "warning"
     });
@@ -175,7 +215,6 @@ async function searchData() {
       </div>
 
       <el-text type="primary" size="large">
-        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Select fields matching rows</span>
       </el-text>
@@ -189,7 +228,7 @@ async function searchData() {
         position: sticky;
       "
     >
-      <div style="margin-top: 10px; display: flex; align-items: flex-start">
+      <div style="margin-top: 15px; display: flex; align-items: flex-start">
         <el-tooltip content="Search mode" placement="bottom" effect="light">
           <el-select v-model="data.mode" style="width: 112px">
             <el-option label="equal" value="equal" />
@@ -201,7 +240,7 @@ async function searchData() {
           v-model="columns"
           filterable
           style="margin-left: 12px; width: 200px"
-          placeholder="select a column"
+          placeholder="Search by column"
         >
           <el-option
             v-for="item in originalColumns"
@@ -215,21 +254,43 @@ async function searchData() {
         type="success"
         @click="searchData()"
         :loading="isLoading"
-        :icon="IceCreamRound"
+        :icon="Search"
         plain
-        style="margin-left: 16px"
+        style="margin-top: 10px"
       >
         Search
       </el-button>
     </div>
-    <div style="margin-top: 20px">
-      <el-text> conditions </el-text>
+    <div style="margin-top: 15px">
       <el-input
         v-model="data.condition"
         autosize
         type="textarea"
-        placeholder="Please input conditions"
+        placeholder="Search rows with text...Example: tom|jack|world"
       />
+    </div>
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: sticky;
+      "
+    >
+      <el-table
+        ref="tableRef"
+        :data="tableData"
+        :height="formHeight"
+        border
+        style="margin-top: 15px; width: 100%"
+      >
+        <el-table-column
+          v-for="column in tableColumn"
+          :prop="column.prop"
+          :label="column.label"
+          :key="column.prop"
+        />
+      </el-table>
     </div>
   </div>
 </template>
