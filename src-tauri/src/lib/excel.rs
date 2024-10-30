@@ -2,7 +2,7 @@ use std::{error::Error, fmt::Display, fs::File, io::BufReader, path::Path};
 
 use calamine::{CellType, Data, DataType, Range, Reader};
 use polars::prelude::*;
-use polars::{frame::DataFrame, series::Series};
+use polars::frame::DataFrame;
 
 pub struct ExcelReader {
   workbook: calamine::Sheets<BufReader<File>>,
@@ -41,10 +41,10 @@ where
     }
 
     // list of `Series`s
-    let series: Vec<Series> = columns
+    let series: Vec<Column> = columns
       .into_iter()
       .zip(headers)
-      .map(|(col, name)| Series::new((&name).into(), col))
+      .map(|(col, name)| Column::new((&name).into(), col))
       .collect();
 
     // constructing DataFrame
