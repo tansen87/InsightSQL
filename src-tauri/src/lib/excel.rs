@@ -1,8 +1,7 @@
 use std::{error::Error, fmt::Display, fs::File, io::BufReader, path::Path};
 
 use calamine::{CellType, Data, DataType, Range, Reader};
-use polars::prelude::*;
-use polars::frame::DataFrame;
+use polars::{frame::DataFrame, prelude::Column};
 
 pub struct ExcelReader {
   workbook: calamine::Sheets<BufReader<File>>,

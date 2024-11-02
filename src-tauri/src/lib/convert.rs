@@ -1,14 +1,15 @@
-use calamine::{Data, Range, Reader};
-use polars::{
-  io::SerReader,
-  prelude::{CsvParseOptions, CsvReadOptions},
-};
-use rayon::prelude::*;
 use std::{
   error::Error,
   path::{Path, PathBuf},
   time::Instant,
 };
+
+use calamine::{Data, Range, Reader};
+use polars::{
+  io::SerReader,
+  prelude::{CsvParseOptions, CsvReadOptions},
+};
+use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::Emitter;
 
 use crate::{detect::detect_separator, xlsx_writer::write_xlsx};

@@ -1,7 +1,14 @@
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
 use calamine::Reader;
-use polars::prelude::*;
+use polars::{
+  frame::DataFrame,
+  io::SerWriter,
+  prelude::{
+    col, cols, concat_lf_diagonal, lit, when, CsvWriter, DataType, IntoLazy, JoinArgs, JoinType,
+    LazyCsvReader, LazyFileListReader, LazyFrame, SortMultipleOptions, UnionArgs,
+  },
+};
 use tauri::Emitter;
 
 use crate::{
