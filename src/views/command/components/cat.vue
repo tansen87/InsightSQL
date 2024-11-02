@@ -26,7 +26,8 @@ const data = reactive({
     "xlsb",
     "ods"
   ],
-  memory: true
+  memory: true,
+  skipRows: 0
 });
 
 const formHeight = computed(() => {
@@ -128,7 +129,8 @@ async function concatData() {
     await invoke("concat", {
       filePath: data.filePath,
       outputPath: outputPath,
-      memory: data.memory
+      memory: data.memory,
+      skipRows: data.skipRows
     });
 
     isLoading.value = false;
@@ -163,7 +165,7 @@ async function concatData() {
           </el-button>
           <el-tooltip
             content="Memory or stream Cat"
-            placement="bottom"
+            placement="top"
             effect="light"
           >
             <el-select
@@ -173,6 +175,13 @@ async function concatData() {
               <el-option label="Memory" :value="true" />
               <el-option label="Stream" :value="false" />
             </el-select>
+          </el-tooltip>
+          <el-tooltip content="with header row" placement="top" effect="light">
+            <el-input
+              v-model="data.skipRows"
+              style="margin-left: 16px; width: 80px"
+              placeholder="skip rows"
+            />
           </el-tooltip>
           <el-button
             type="success"
@@ -185,10 +194,7 @@ async function concatData() {
             Cat
           </el-button>
         </div>
-        <el-text type="primary" size="large">
-          <el-icon> <Connection /> </el-icon>
-          Cat CSV and Excel files
-        </el-text>
+        <el-text type="primary" size="large"> Cat CSV and Excel files </el-text>
       </div>
     </el-form>
     <el-table

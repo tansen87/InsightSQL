@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, fs::File, io::BufReader, path::Path};
 
-use calamine::{CellType, Data, DataType, Range, Reader};
+use calamine::{CellType, Data, DataType, HeaderRow, Range, Reader};
 use polars::{frame::DataFrame, prelude::Column};
 
 pub struct ExcelReader {
@@ -69,8 +69,8 @@ impl ExcelReader {
 
   /// Get the nth worksheet. Shortcut for getting the nth
   /// sheet_name, then the corresponding worksheet.
-  pub fn worksheet_range_at(&mut self, n: usize) -> Result<Range<Data>, Box<dyn Error>> {
-    match self.workbook.worksheet_range_at(n) {
+  pub fn worksheet_range_at(&mut self, n: usize, skip_rows: u32) -> Result<Range<Data>, Box<dyn Error>> {
+    match self.workbook.with_header_row(HeaderRow::Row(skip_rows)).worksheet_range_at(n) {
       Some(Ok(sheet_range)) => Ok(sheet_range),
       Some(Err(e)) => Err(Box::new(e)),
       None => Err(Box::new(std::io::Error::new(

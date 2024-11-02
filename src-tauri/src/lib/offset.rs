@@ -122,7 +122,7 @@ fn offset_no_condition(
   let lf = match file_extension.as_str() {
     "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
       let mut excel_reader = ExcelReader::new(file_path);
-      let df: DataFrame = excel_reader.worksheet_range_at(0)?.to_df()?;
+      let df: DataFrame = excel_reader.worksheet_range_at(0, 0)?.to_df()?;
       df.lazy()
     }
     _ => {
@@ -370,7 +370,7 @@ fn offset_condition(
     "parquet" => LazyFrame::scan_parquet(file_path, Default::default())?,
     "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
       let mut excel_reader = ExcelReader::new(file_path);
-      let df: DataFrame = excel_reader.worksheet_range_at(0)?.to_df()?;
+      let df: DataFrame = excel_reader.worksheet_range_at(0, 0)?.to_df()?;
       df.lazy()
     }
     _ => {

@@ -16,7 +16,7 @@ use crate::{
   xlsx_writer::write_xlsx,
 };
 
-fn concat_all(path: String, output_path: String, memory: bool) -> Result<(), Box<dyn Error>> {
+fn concat_all(path: String, output_path: String, memory: bool, skip_rows: String) -> Result<(), Box<dyn Error>> {
   /* concat csv and excel files into a xlsx or csv file */
   let vec_path: Vec<&str> = path.split('|').collect();
 
@@ -51,7 +51,7 @@ fn concat_all(path: String, output_path: String, memory: bool) -> Result<(), Box
       "parquet" => LazyFrame::scan_parquet(file, Default::default())?,
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let mut excel_reader = ExcelReader::new(file);
-        let df: DataFrame = excel_reader.worksheet_range_at(0)?.to_df()?;
+        let df: DataFrame = excel_reader.worksheet_range_at(0, skip_rows.parse::<u32>()?)?.to_df()?;
         df.lazy()
       }
       _ => {
@@ -60,6 +60,7 @@ fn concat_all(path: String, output_path: String, memory: bool) -> Result<(), Box
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
+          .with_skip_rows(skip_rows.parse::<usize>()?)
           .with_low_memory(false)
           .finish()?;
 
@@ -123,10 +124,10 @@ fn concat_all(path: String, output_path: String, memory: bool) -> Result<(), Box
 }
 
 #[tauri::command]
-pub async fn concat(file_path: String, output_path: String, memory: bool, window: tauri::Window) {
+pub async fn concat(file_path: String, output_path: String, memory: bool, skip_rows: String, window: tauri::Window) {
   let start_time = Instant::now();
 
-  match (async { concat_all(file_path, output_path, memory) }).await {
+  match (async { concat_all(file_path, output_path, memory, skip_rows) }).await {
     Ok(result) => result,
     Err(err) => {
       eprintln!("concat error: {err}");
