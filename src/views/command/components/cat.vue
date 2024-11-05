@@ -27,7 +27,7 @@ const data = reactive({
     "ods"
   ],
   memory: true,
-  skipRows: 0
+  skipRows: "0"
 });
 
 const formHeight = computed(() => {
