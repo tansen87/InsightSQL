@@ -40,7 +40,8 @@ const filterFileStatus = (
 };
 const data = reactive({
   filePath: "",
-  fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"]
+  fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
+  skipRows: "0"
 });
 
 const formHeight = computed(() => {
@@ -161,7 +162,8 @@ async function excelToCsv() {
     isLoading.value = true;
 
     await invoke("switch_excel", {
-      path: data.filePath
+      path: data.filePath,
+      skipRows: data.skipRows
     });
 
     ElNotification({
@@ -195,6 +197,13 @@ async function excelToCsv() {
           >
             Open File
           </el-button>
+          <el-tooltip content="with header row" placement="top" effect="light">
+            <el-input
+              v-model="data.skipRows"
+              style="margin-left: 16px; margin-right: 16px; width: 80px"
+              placeholder="skip rows"
+            />
+          </el-tooltip>
           <el-button
             type="success"
             @click="excelToCsv()"

@@ -4,7 +4,7 @@ use std::{
   time::Instant,
 };
 
-use calamine::{Data, Range, Reader};
+use calamine::{Data, HeaderRow, Range, Reader};
 use polars::{
   io::SerReader,
   prelude::{CsvParseOptions, CsvReadOptions},
@@ -14,7 +14,11 @@ use tauri::Emitter;
 
 use crate::{detect::detect_separator, xlsx_writer::write_xlsx};
 
-fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
+fn excel_to_csv(
+  path: String,
+  skip_rows: String,
+  window: tauri::Window,
+) -> Result<(), Box<dyn Error>> {
   /* convert excel to csv */
   let vec_path: Vec<&str> = path.split('|').collect();
   let mut count: usize = 0;
@@ -28,7 +32,10 @@ fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error
     let mut wtr = csv::WriterBuilder::new().delimiter(b'|').from_path(dest)?;
 
     let mut workbook = calamine::open_workbook_auto(&sce)?;
-    let range = if let Some(result) = workbook.worksheet_range_at(0) {
+    let range = if let Some(result) = workbook
+      .with_header_row(HeaderRow::Row(skip_rows.parse::<u32>()?))
+      .worksheet_range_at(0)
+    {
       result?
     } else {
       Range::empty()
@@ -163,7 +170,11 @@ fn excel_to_csv(path: String, window: tauri::Window) -> Result<(), Box<dyn Error
   Ok(())
 }
 
-fn csv_to_xlsx(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
+fn csv_to_xlsx(
+  path: String,
+  skip_rows: String,
+  window: tauri::Window,
+) -> Result<(), Box<dyn Error>> {
   /* csv to xlsx */
   let vec_path: Vec<&str> = path.split('|').collect();
 
@@ -197,6 +208,7 @@ fn csv_to_xlsx(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>
           .with_separator(sep)
           .with_missing_is_null(false),
       )
+      .with_skip_rows(skip_rows.parse::<usize>()?)
       .with_infer_schema_length(Some(0))
       .try_into_reader_with_file_path(Some(file.into()))?
       .finish()?;
@@ -223,11 +235,11 @@ fn csv_to_xlsx(path: String, window: tauri::Window) -> Result<(), Box<dyn Error>
 }
 
 #[tauri::command]
-pub async fn switch_csv(path: String, window: tauri::Window) {
+pub async fn switch_csv(path: String, skip_rows: String, window: tauri::Window) {
   let start_time = Instant::now();
-  let copy_window = window.clone();
+  let switch_csv_window = window.clone();
 
-  match (async { csv_to_xlsx(path, copy_window) }).await {
+  match (async { csv_to_xlsx(path, skip_rows, switch_csv_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("write_range error: {error}");
@@ -243,11 +255,11 @@ pub async fn switch_csv(path: String, window: tauri::Window) {
 }
 
 #[tauri::command]
-pub async fn switch_excel(path: String, window: tauri::Window) {
+pub async fn switch_excel(path: String, skip_rows: String, window: tauri::Window) {
   let start_time = Instant::now();
-  let file_window = window.clone();
+  let switch_excel_window = window.clone();
 
-  match (async { excel_to_csv(path, file_window) }).await {
+  match (async { excel_to_csv(path, skip_rows, switch_excel_window) }).await {
     Ok(result) => result,
     Err(error) => {
       eprintln!("write_range error: {error}");

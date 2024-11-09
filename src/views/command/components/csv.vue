@@ -40,7 +40,8 @@ const filterFileStatus = (
 };
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  skipRows: "0"
 });
 
 const formHeight = computed(() => {
@@ -161,7 +162,8 @@ async function csvToxlsx() {
     isLoading.value = true;
 
     await invoke("switch_csv", {
-      path: data.filePath
+      path: data.filePath,
+      skipRows: data.skipRows
     });
 
     ElNotification({
@@ -194,6 +196,13 @@ async function csvToxlsx() {
           >
             Open File
           </el-button>
+          <el-tooltip content="with header row" placement="top" effect="light">
+            <el-input
+              v-model="data.skipRows"
+              style="margin-left: 16px; width: 80px"
+              placeholder="skip rows"
+            />
+          </el-tooltip>
           <el-button
             type="success"
             @click="csvToxlsx()"
