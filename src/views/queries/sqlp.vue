@@ -11,14 +11,14 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { View, Download } from "@element-plus/icons-vue";
-import { FolderOpened, Search } from "@element-plus/icons-vue";
+import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
 import "./ace-config";
 
 const columns = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
+const viewTable = ref(false);
 const runtime = ref(0.0);
 const counter = ref(0);
 const tableRef = ref(null);
@@ -125,6 +125,13 @@ listen("show", (event: any) => {
   tableData.value = data;
 });
 
+const queryViewData = async () => {
+  const queryResult = await queryData();
+  if (queryResult) {
+    viewTable.value = true;
+  }
+};
+
 // query data
 async function queryData() {
   columns.value = [];
@@ -137,7 +144,7 @@ async function queryData() {
       position: "bottom-right",
       type: "warning"
     });
-    return;
+    return false;
   }
   if (sqlsrc.value === "") {
     ElNotification({
@@ -146,7 +153,7 @@ async function queryData() {
       position: "bottom-right",
       type: "warning"
     });
-    return;
+    return false;
   }
 
   if (data.filePath !== "" && sqlsrc.value !== "") {
@@ -175,13 +182,24 @@ async function queryData() {
       duration: 5000
     });
     isLoading.value = false;
+    return true;
   }
+
+  return false;
 }
+
+const selectViewFile = async () => {
+  const selectedFile = await selectFile();
+  if (selectedFile) {
+    viewTable.value = true;
+  }
+};
 
 async function selectFile() {
   columns.value = [];
   tableData.value = [];
   isLoading.value = false;
+  viewTable.value = false;
 
   const selected = await open({
     multiple: true,
@@ -201,12 +219,14 @@ async function selectFile() {
   }
 
   await invoke("query", {
-    path: data.filePath,
+    path: data.filePath.split("|")[0],
     sqlsrc: "select * from _t_1 limit 5",
     write: false,
     writeFormat: "csv",
     lowMemory: false
   });
+
+  return true;
   /*
   const results: any = await invoke("get", {
     path: data.filePath,
@@ -215,9 +235,13 @@ async function selectFile() {
   */
 }
 
-const indexMethod = (index: number) => {
-  return (index + 1) * 1;
-};
+// const viewFileName = computed(() => {
+//   const paths = data.filePath.split("|");
+//   return paths.map(path => {
+//     const pathParts = path.split(/[/\\]/); // use regular expression matching / or \
+//     return pathParts[pathParts.length - 1]; // return filename
+//   });
+// });
 
 watch(
   () => data.lowMemory,
@@ -258,20 +282,14 @@ watch(
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-tooltip
-            content="Open local Excel, CSV or Parquet file"
-            placement="top"
-            effect="light"
+          <el-button
+            type="primary"
+            @click="selectViewFile()"
+            :icon="FolderOpened"
+            plain
           >
-            <el-button
-              type="primary"
-              @click="selectFile()"
-              :icon="FolderOpened"
-              plain
-            >
-              Open File
-            </el-button>
-          </el-tooltip>
+            Open File
+          </el-button>
           <el-form-item style="margin-left: 10px; width: 100px">
             <el-tooltip
               content="Memory or stream query"
@@ -285,6 +303,7 @@ watch(
             </el-tooltip>
           </el-form-item>
         </div>
+        <el-button @click="viewTable = true" :icon="View"> View </el-button>
         <el-form-item>
           <el-tooltip
             content="Export data or not"
@@ -293,11 +312,18 @@ watch(
           >
             <el-switch
               v-model="data.write"
+              inline-prompt
+              style="
+                --el-switch-on-color: #43cd80;
+                --el-switch-off-color: #b0c4de;
+              "
+              active-text="Y"
+              inactive-text="N"
               :active-action-icon="Download"
               :inactive-action-icon="View"
             />
           </el-tooltip>
-          <el-tooltip content="Export datatype" placement="top" effect="light">
+          <el-tooltip content="Export type" placement="top" effect="light">
             <el-select
               v-model="data.writeFormat"
               style="margin-left: 10px; width: 80px"
@@ -306,18 +332,16 @@ watch(
               <el-option label="xlsx" value="xlsx" />
             </el-select>
           </el-tooltip>
-          <el-tooltip content="Execute query" placement="top" effect="light">
-            <el-button
-              type="success"
-              @click="queryData()"
-              :loading="isLoading"
-              :icon="Search"
-              style="margin-left: 10px"
-              plain
-            >
-              Execute
-            </el-button>
-          </el-tooltip>
+          <el-button
+            type="success"
+            @click="queryViewData"
+            :loading="isLoading"
+            :icon="Search"
+            style="margin-left: 10px"
+            plain
+          >
+            Execute
+          </el-button>
         </el-form-item>
       </div>
       <el-form-item>
@@ -336,25 +360,31 @@ watch(
           :key="counter"
           @init="initializeEditor"
           theme="chrome"
-          style="flex: 1 1 0%; min-height: 8rem"
+          style="flex: 1 1 0%; min-height: 48rem"
         />
       </el-form-item>
     </el-form>
-    <el-table
-      ref="tableRef"
-      :data="tableData"
-      :height="formHeight"
-      border
-      style="width: 100%"
+    <el-drawer
+      v-model="viewTable"
+      :with-header="false"
+      :direction="'btt'"
+      size="75%"
     >
-      <el-table-column type="index" label="id" :index="indexMethod" />
-      <el-table-column
-        v-for="column in columns"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
+      <el-table
+        ref="tableRef"
+        :data="tableData"
+        :height="formHeight"
+        border
+        style="width: 100%"
+      >
+        <el-table-column
+          v-for="column in columns"
+          :prop="column.prop"
+          :label="column.label"
+          :key="column.prop"
+        />
+      </el-table>
+    </el-drawer>
   </el-form>
 </template>
 
