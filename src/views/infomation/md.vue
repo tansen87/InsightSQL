@@ -44,6 +44,14 @@ FROM _t_1
 GROUP BY idx
 ORDER BY idx DESC
 \`\`\`
+
+### 5.Fill null value (COALESCE)
+
+\`\`\`sql
+select
+sum(cast(coalesce(age, 0) as double)) age
+from _t_1
+\`\`\`
 `);
 
 const compiledMarkdown = ref(marked.parse(markdownContent.value));

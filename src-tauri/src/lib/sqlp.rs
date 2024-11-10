@@ -136,7 +136,7 @@ fn prepare_query(
   write_format: &str,
   low_memory: bool,
   window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<Vec<String>, Box<dyn Error>> {
   let mut ctx = SQLContext::new();
 
   let mut output: Vec<Option<String>> = Vec::new();
@@ -226,6 +226,8 @@ fn prepare_query(
     ctx.register(table_name, lf.with_optimizations(optimization_state));
   }
 
+  let mut vec_result = Vec::new();
+
   // check if the query is a SQL script
   let queries = if Path::new(&sql_query)
     .extension()
@@ -266,10 +268,11 @@ fn prepare_query(
       low_memory,
       window.clone(),
     )?;
-    window.emit("show", res)?;
+    window.emit("show", &res)?;
+    vec_result.push(res);
   }
 
-  Ok(())
+  Ok(vec_result)
 }
 
 fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsError> {
@@ -342,13 +345,13 @@ pub async fn query(
   write_format: String,
   low_memory: bool,
   window: tauri::Window,
-) {
+) -> Vec<String> {
   let start_time = Instant::now();
 
   let file_path: Vec<&str> = path.split('|').collect();
 
   let prep_window = window.clone();
-  match (async {
+  let result = match (async {
     prepare_query(
       file_path,
       sql_query.as_str(),
@@ -363,7 +366,7 @@ pub async fn query(
     Ok(result) => result,
     Err(err) => {
       eprintln!("sql query error: {err}");
-      return ();
+      return Vec::new();
     }
   };
 
@@ -371,4 +374,6 @@ pub async fn query(
   let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
   let runtime = format!("{elapsed_time:.2} s");
   window.emit("runtime", runtime).unwrap();
+
+  result
 }

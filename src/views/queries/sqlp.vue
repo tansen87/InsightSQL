@@ -16,6 +16,7 @@ import { VAceEditor } from "vue3-ace-editor";
 import "./ace-config";
 
 const columns = ref([]);
+const treeHeaders = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
 const viewTable = ref(false);
@@ -23,6 +24,8 @@ const runtime = ref(0.0);
 const counter = ref(0);
 const tableRef = ref(null);
 const tables = ref([]);
+const isDataLoaded = ref(false);
+const headersByFile = ref({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
@@ -197,7 +200,9 @@ const selectViewFile = async () => {
 
 async function selectFile() {
   columns.value = [];
+  treeHeaders.value = [];
   tableData.value = [];
+  data.filePath = "";
   isLoading.value = false;
   viewTable.value = false;
 
@@ -226,6 +231,34 @@ async function selectFile() {
     lowMemory: false
   });
 
+  // 使用 Promise.all 并行处理每个文件
+  await Promise.all(
+    data.filePath.split("|").map(async (path, index) => {
+      const basename = viewFileName.value[index].replace(/\.[^/.]+$/, "");
+      try {
+        const result: any = await invoke("query", {
+          path: path,
+          sqlQuery: `select * from "${basename}" limit 1`,
+          write: false,
+          writeFormat: "csv",
+          lowMemory: false
+        });
+        const jsonData = JSON.parse(result);
+        const isJsonArray = Array.isArray(jsonData);
+        const data = isJsonArray ? jsonData : [jsonData];
+        headersByFile[basename] = Object.keys(data[0]);
+        treeHeaders.value = {
+          ...treeHeaders.value,
+          [basename]: headersByFile[basename]
+        };
+      } catch (error) {
+        console.error(`Error querying table ${basename}:`, error);
+      }
+    })
+  );
+
+  isDataLoaded.value = true; // 所有文件处理完成后设置加载完成标志
+
   return true;
   /*
   const results: any = await invoke("get", {
@@ -235,13 +268,57 @@ async function selectFile() {
   */
 }
 
-// const viewFileName = computed(() => {
-//   const paths = data.filePath.split("|");
-//   return paths.map(path => {
-//     const pathParts = path.split(/[/\\]/); // use regular expression matching / or \
-//     return pathParts[pathParts.length - 1]; // return filename
-//   });
-// });
+// 处理文件路径，提取文件名
+const viewFileName = computed(() => {
+  const paths = data.filePath.split("|");
+  return paths.map(path => {
+    const pathParts = path.split(/[/\\]/); // use regular expression matching / or \
+    return pathParts[pathParts.length - 1]; // return filename
+  });
+});
+
+// 更新计算属性以检查加载状态
+const fileTreeData = computed(() => {
+  if (!isDataLoaded.value) return []; // 如果数据未加载完成，则返回空数组
+
+  return viewFileName.value.map((fileName, index) => {
+    const basename = fileName.replace(/\.[^/.]+$/, "");
+    return {
+      label: fileName, // 文件名作为节点标签
+      children: (headersByFile[basename] || []).map(header => ({
+        // 表头作为子节点
+        label: header,
+        key: `${basename}-${header}`
+      })),
+      key: index
+    };
+  });
+});
+
+// 树形组件的配置
+const defaultProps = {
+  children: "children",
+  label: "label"
+};
+
+// 节点点击事件处理
+const handleNodeClick = async data => {
+  try {
+    const textToCopy = JSON.stringify(data.label);
+
+    // 检查是否支持剪贴板API
+    if (navigator.clipboard) {
+      // 复制文本到剪贴板
+      await navigator.clipboard.writeText(textToCopy);
+      console.log(data);
+    } else {
+      // 如果不支持，则提供一个备用方案
+      console.log("Your browser does not support the Clipboard API");
+    }
+  } catch (err) {
+    console.error("Failed to copy to clipboard: ", err);
+  }
+};
 
 watch(
   () => data.lowMemory,
@@ -345,25 +422,38 @@ watch(
           </el-button>
         </el-form-item>
       </div>
-      <el-form-item>
-        <VAceEditor
-          v-model:value="sqlQuery"
-          ref="editor"
-          lang="sql"
-          :options="{
-            useWorker: true,
-            enableBasicAutocompletion: true,
-            enableSnippets: true,
-            enableLiveAutocompletion: true,
-            customScrollbar: true,
-            fontSize: '1.1rem'
-          }"
-          :key="counter"
-          @init="initializeEditor"
-          theme="chrome"
-          style="flex: 1 1 0%; min-height: 48rem"
-        />
-      </el-form-item>
+
+      <div style="display: flex; height: 100%">
+        <div style="flex: 1 1 0%; padding: 10px; box-sizing: border-box">
+          <el-form-item style="width: 100%">
+            <VAceEditor
+              v-model:value="sqlQuery"
+              ref="editor"
+              lang="sql"
+              :options="{
+                useWorker: true,
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true,
+                customScrollbar: true,
+                fontSize: '1.1rem'
+              }"
+              :key="counter"
+              @init="initializeEditor"
+              theme="chrome"
+              style="flex: 1 1 0%; min-height: 48rem"
+            />
+          </el-form-item>
+        </div>
+        <div style="flex: 1 1 0%; padding: 10px; box-sizing: border-box">
+          <el-tree
+            :data="fileTreeData"
+            :props="defaultProps"
+            @node-click="handleNodeClick"
+            style="height: 100%"
+          />
+        </div>
+      </div>
     </el-form>
     <el-drawer
       v-model="viewTable"
