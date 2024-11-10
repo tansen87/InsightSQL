@@ -113,20 +113,6 @@ listen("exec_err", (event: any) => {
   });
   isLoading.value = false;
 });
-listen("show", (event: any) => {
-  const df: any = event.payload;
-  const jsonData = JSON.parse(df);
-
-  // 检查 jsonData 是否是数组，如果不是，则将其转换为数组
-  const isJsonArray = Array.isArray(jsonData);
-  const data = isJsonArray ? jsonData : [jsonData];
-  columns.value = Object.keys(data[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = data;
-});
 
 const queryViewData = async () => {
   const queryResult = await queryData();
@@ -162,13 +148,23 @@ async function queryData() {
   if (data.filePath !== "" && sqlQuery.value !== "") {
     isLoading.value = true;
     try {
-      await invoke("query", {
+      const df: any = await invoke("query", {
         path: data.filePath,
         sqlQuery: sqlQuery.value,
         write: data.write,
         writeFormat: data.writeFormat,
         lowMemory: data.lowMemory
       });
+
+      const jsonData = JSON.parse(df);
+      const isJsonArray = Array.isArray(jsonData);
+      const arrayData = isJsonArray ? jsonData : [jsonData];
+      columns.value = Object.keys(arrayData[0]).map(key => ({
+        name: key,
+        label: key,
+        prop: key
+      }));
+      tableData.value = arrayData;
     } catch (err) {
       ElNotification({
         title: "invoke query error",
@@ -223,14 +219,6 @@ async function selectFile() {
     data.filePath = selected;
   }
 
-  await invoke("query", {
-    path: data.filePath.split("|")[0],
-    sqlQuery: "select * from _t_1 limit 10",
-    write: false,
-    writeFormat: "csv",
-    lowMemory: false
-  });
-
   // 使用 Promise.all 并行处理每个文件
   await Promise.all(
     data.filePath.split("|").map(async (path, index) => {
@@ -238,7 +226,7 @@ async function selectFile() {
       try {
         const result: any = await invoke("query", {
           path: path,
-          sqlQuery: `select * from "${basename}" limit 1`,
+          sqlQuery: `select * from "${basename}" limit 10`,
           write: false,
           writeFormat: "csv",
           lowMemory: false
@@ -251,6 +239,13 @@ async function selectFile() {
           ...treeHeaders.value,
           [basename]: headersByFile[basename]
         };
+
+        columns.value = Object.keys(data[0]).map(key => ({
+          name: key,
+          label: key,
+          prop: key
+        }));
+        tableData.value = data;
       } catch (error) {
         console.error(`Error querying table ${basename}:`, error);
       }
@@ -477,8 +472,14 @@ watch(
       :direction="'btt'"
       size="75%"
     >
-      <el-scrollbar>
-        <el-table ref="tableRef" :data="tableData" border style="width: 100%">
+      <el-scrollbar :height="formHeight">
+        <el-table
+          ref="tableRef"
+          :data="tableData"
+          border
+          style="width: 100%"
+          :height="formHeight"
+        >
           <el-table-column
             v-for="column in columns"
             :prop="column.prop"

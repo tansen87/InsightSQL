@@ -268,14 +268,22 @@ fn prepare_query(
       low_memory,
       window.clone(),
     )?;
-    window.emit("show", &res)?;
     vec_result.push(res);
   }
 
   Ok(vec_result)
 }
 
-fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsError> {
+fn query_df_to_json(df: DataFrame) -> Result<String, PolarsError> {
+  if df.is_empty() {
+    let column_names = df.get_column_names();
+    let empty_row = column_names
+      .iter()
+      .map(|column_name| (column_name.to_string(), serde_json::Value::Null))
+      .collect::<IndexMap<_, _>>();
+    return serde_json::to_string(&empty_row).map_err(|e| PolarsError::ComputeError(e.to_string().into()));
+  }
+
   let column_names = df.get_column_names();
   let max_height = if df.height() > 500 { 500 } else { df.height() };
 
@@ -304,15 +312,13 @@ fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsErro
     })
     .collect::<Result<Vec<_>, PolarsError>>()?;
 
-  let json_rows = if max_height > 1 {
-    serde_json::to_string(&rows).expect("Unable to get value from rows")
+  let json_rows = if max_height > 1 || rows.len() > 1 {
+    serde_json::to_string(&rows).map_err(|e| PolarsError::ComputeError(e.to_string().into()))
+  } else if let Some(single_row) = rows.into_iter().next() {
+    serde_json::to_string(&single_row).map_err(|e| PolarsError::ComputeError(e.to_string().into()))
   } else {
-    let single_row = rows
-      .into_iter()
-      .next()
-      .expect("Unable to get value from rows");
-    serde_json::to_string(&single_row).expect("Unable to get value from rows")
-  };
+    unreachable!("This branch should not be reached because the empty DataFrame case is handled earlier.")
+  }?;
 
   Ok(json_rows)
 }
