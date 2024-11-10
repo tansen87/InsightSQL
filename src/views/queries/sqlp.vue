@@ -78,7 +78,7 @@ const initializeEditor = editor => {
 };
 
 const formHeight = computed(() => {
-  const height = 305;
+  const height = 150;
   return windowHeight.value - height;
 });
 
@@ -310,9 +310,8 @@ const handleNodeClick = async data => {
     if (navigator.clipboard) {
       // 复制文本到剪贴板
       await navigator.clipboard.writeText(textToCopy);
-      console.log(data);
     } else {
-      // 如果不支持，则提供一个备用方案
+      // TODO: 如果不支持,则提供一个备用方案
       console.log("Your browser does not support the Clipboard API");
     }
   } catch (err) {
@@ -350,7 +349,7 @@ watch(
 
 <template>
   <el-form class="page-container">
-    <el-form :style="formHeight">
+    <el-form :style="{ height: formHeight + 'px' }">
       <div
         style="
           display: flex;
@@ -423,9 +422,16 @@ watch(
         </el-form-item>
       </div>
 
-      <div style="display: flex; height: 100%">
-        <div style="flex: 1 1 0%; padding: 10px; box-sizing: border-box">
-          <el-form-item style="width: 100%">
+      <div style="display: flex; height: calc(100% - 60px)">
+        <div
+          style="
+            flex: 1 1 0%;
+            padding: 10px;
+            box-sizing: border-box;
+            height: 100%;
+          "
+        >
+          <el-form-item style="width: 100%; height: 100%">
             <VAceEditor
               v-model:value="sqlQuery"
               ref="editor"
@@ -441,40 +447,46 @@ watch(
               :key="counter"
               @init="initializeEditor"
               theme="chrome"
-              style="flex: 1 1 0%; min-height: 48rem"
+              style="flex: 1 1 0%; height: 100%"
             />
           </el-form-item>
         </div>
-        <div style="flex: 1 1 0%; padding: 10px; box-sizing: border-box">
-          <el-tree
-            :data="fileTreeData"
-            :props="defaultProps"
-            @node-click="handleNodeClick"
-            style="height: 100%"
-          />
+        <div
+          style="
+            flex: 1 1 0%;
+            padding: 10px;
+            box-sizing: border-box;
+            height: 100%;
+          "
+        >
+          <el-scrollbar style="height: 100%">
+            <el-tree
+              :data="fileTreeData"
+              :props="defaultProps"
+              @node-click="handleNodeClick"
+              style="height: 100%; overflow-y: auto"
+            />
+          </el-scrollbar>
         </div>
       </div>
     </el-form>
+
     <el-drawer
       v-model="viewTable"
       :with-header="false"
       :direction="'btt'"
       size="75%"
     >
-      <el-table
-        ref="tableRef"
-        :data="tableData"
-        :height="formHeight"
-        border
-        style="width: 100%"
-      >
-        <el-table-column
-          v-for="column in columns"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
-        />
-      </el-table>
+      <el-scrollbar>
+        <el-table ref="tableRef" :data="tableData" border style="width: 100%">
+          <el-table-column
+            v-for="column in columns"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+      </el-scrollbar>
     </el-drawer>
   </el-form>
 </template>
