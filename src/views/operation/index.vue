@@ -58,11 +58,11 @@ function toCommands(route) {
 </template>
 
 <style lang="scss" scoped>
-.page-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+// .page-container {
+//   display: flex;
+//   flex-direction: column;
+//   height: 100%;
+// }
 .search-input {
   position: sticky;
   top: 0;

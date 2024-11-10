@@ -23,7 +23,7 @@ const runtime = ref(0.0);
 const counter = ref(0);
 const tableRef = ref(null);
 const tables = ref([]);
-const sqlsrc = ref("select * from _t_1");
+const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
@@ -146,7 +146,7 @@ async function queryData() {
     });
     return false;
   }
-  if (sqlsrc.value === "") {
+  if (sqlQuery.value === "") {
     ElNotification({
       title: "Warning",
       message: "SQL script is empty",
@@ -156,12 +156,12 @@ async function queryData() {
     return false;
   }
 
-  if (data.filePath !== "" && sqlsrc.value !== "") {
+  if (data.filePath !== "" && sqlQuery.value !== "") {
     isLoading.value = true;
     try {
       await invoke("query", {
         path: data.filePath,
-        sqlsrc: sqlsrc.value,
+        sqlQuery: sqlQuery.value,
         write: data.write,
         writeFormat: data.writeFormat,
         lowMemory: data.lowMemory
@@ -220,7 +220,7 @@ async function selectFile() {
 
   await invoke("query", {
     path: data.filePath.split("|")[0],
-    sqlsrc: "select * from _t_1 limit 5",
+    sqlQuery: "select * from _t_1 limit 10",
     write: false,
     writeFormat: "csv",
     lowMemory: false
@@ -326,10 +326,11 @@ watch(
           <el-tooltip content="Export type" placement="top" effect="light">
             <el-select
               v-model="data.writeFormat"
-              style="margin-left: 10px; width: 80px"
+              style="margin-left: 10px; width: 95px"
             >
               <el-option label="csv" value="csv" />
               <el-option label="xlsx" value="xlsx" />
+              <el-option label="parquet" value="parquet" />
             </el-select>
           </el-tooltip>
           <el-button
@@ -346,7 +347,7 @@ watch(
       </div>
       <el-form-item>
         <VAceEditor
-          v-model:value="sqlsrc"
+          v-model:value="sqlQuery"
           ref="editor"
           lang="sql"
           :options="{

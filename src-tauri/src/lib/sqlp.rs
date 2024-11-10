@@ -15,8 +15,7 @@ use polars::{
   datatypes::AnyValue,
   error::PolarsError,
   prelude::{
-    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame,
-    OptFlags, SerWriter,
+    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, SerWriter
   },
   sql::SQLContext,
 };
@@ -81,6 +80,23 @@ fn execute_query(
           write_xlsx(df.clone(), output_path).expect("Writing to xlsx failed");
           Ok(())
         }
+        (true, true, &"parquet") => {
+          // write to parquet
+          let output_path = Some(format!("{}.parquet", output.unwrap()));
+          let w = match output_path {
+            Some(path) => Box::new(std::fs::File::create(path)?) as Box<dyn std::io::Write>,
+            None => Box::new(std::io::stdout()) as Box<dyn std::io::Write>,
+          };
+          let mut w = BufWriter::with_capacity(256_000, w);
+          let out_result = {
+            ParquetWriter::new(&mut w)
+              .with_row_group_size(Some(768 ^ 2))
+              .finish(&mut df)
+              .map(|_| ())
+          };
+          w.flush()?;
+          out_result
+        }
         (true, _, _) => {
           // others
           let output_path = Some(format!("{}.csv", output.unwrap()));
@@ -103,7 +119,7 @@ fn execute_query(
   };
 
   match execute_inner() {
-    Ok(()) => Ok(query_df_to_json(df.head(Some(100)))?),
+    Ok(()) => Ok(query_df_to_json(df.head(Some(500)))?),
     Err(e) => {
       eprintln!("Failed to execute query: {query}\n{e}");
       let errmsg = format!("{e}");
@@ -115,7 +131,7 @@ fn execute_query(
 
 fn prepare_query(
   file_path: Vec<&str>,
-  sqlsrc: &str,
+  sql_query: &str,
   write: bool,
   write_format: &str,
   low_memory: bool,
@@ -126,10 +142,7 @@ fn prepare_query(
   let mut output: Vec<Option<String>> = Vec::new();
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
 
-  let output_suffix = match write_format {
-    "xlsx" => format!("sqlp_{}", current_time),
-    _ => format!("sqlp_{}", current_time),
-  };
+  let output_suffix = format!("sqlp_{}", current_time);
 
   for path in file_path.clone() {
     let mut output_path = PathBuf::from(path);
@@ -214,11 +227,11 @@ fn prepare_query(
   }
 
   // check if the query is a SQL script
-  let queries = if Path::new(&sqlsrc)
+  let queries = if Path::new(&sql_query)
     .extension()
     .map_or(false, |ext| ext.eq_ignore_ascii_case("sql"))
   {
-    let mut file = File::open(&sqlsrc)?;
+    let mut file = File::open(&sql_query)?;
     let mut sql_script = String::new();
     file.read_to_string(&mut sql_script)?;
     sql_script
@@ -228,7 +241,7 @@ fn prepare_query(
       .collect()
   } else {
     // its not a sql script, just a single query
-    vec![sqlsrc.to_string().clone()]
+    vec![sql_query.to_string().clone()]
   };
 
   let mut current_query = String::new();
@@ -261,56 +274,44 @@ fn prepare_query(
 
 fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsError> {
   let column_names = df.get_column_names();
-  let mut height = Vec::new();
-  if df.height() > 100 {
-    height.push(100);
-  } else {
-    height.push(df.height());
-  }
+  let max_height = if df.height() > 500 { 500 } else { df.height() };
 
-  let buffer = (0..height[0])
-    .into_iter()
+  let rows = (0..max_height)
     .map(|i| {
-      let row = df
-        .get_row(i)
-        .expect(&*format!(
-          "Could not access row {}, please try again.",
-          i + 2
-        ))
-        .0;
-
+      let row = df.get_row(i)?;
       let object = column_names
         .iter()
-        .zip(row.iter())
+        .zip(row.0.iter())
         .map(|(column_name, data)| {
           let formatted_value = match data {
             AnyValue::Float64(f) => format!("{:.2}", f),
             AnyValue::Float32(f) => format!("{:.2}", f),
-            AnyValue::Int64(i) => i.to_string(),
-            AnyValue::Int32(i) => i.to_string(),
-            AnyValue::Int16(i) => i.to_string(),
-            AnyValue::UInt64(u) => u.to_string(),
-            AnyValue::UInt32(u) => u.to_string(),
-            AnyValue::Boolean(b) => b.to_string(),
-            _ => data.to_string(),
+            AnyValue::Int64(i) => i.to_string().trim_matches('"').to_string(),
+            AnyValue::Int32(i) => i.to_string().trim_matches('"').to_string(),
+            AnyValue::Int16(i) => i.to_string().trim_matches('"').to_string(),
+            AnyValue::UInt64(u) => u.to_string().trim_matches('"').to_string(),
+            AnyValue::UInt32(u) => u.to_string().trim_matches('"').to_string(),
+            AnyValue::Boolean(b) => b.to_string().trim_matches('"').to_string(),
+            _ => data.to_string().trim_matches('"').to_string(),
           };
           (column_name.to_string(), formatted_value)
         })
-        .collect::<IndexMap<String, String>>();
-      serde_json::to_string(&object).expect("Unable to serialize the result.")
+        .collect::<IndexMap<_, _>>();
+      Ok(object)
     })
-    .collect::<Vec<String>>();
+    .collect::<Result<Vec<_>, PolarsError>>()?;
 
-  let result = if height[0] > 1 {
-    format!("[{}]", buffer.join(","))
+  let json_rows = if max_height > 1 {
+    serde_json::to_string(&rows).expect("Unable to get value from rows")
   } else {
-    buffer
-      .get(0)
-      .expect("Unable to get value from buffer.")
-      .clone()
+    let single_row = rows
+      .into_iter()
+      .next()
+      .expect("Unable to get value from rows");
+    serde_json::to_string(&single_row).expect("Unable to get value from rows")
   };
 
-  Ok(result)
+  Ok(json_rows)
 }
 
 // pub fn expired() -> bool {
@@ -336,7 +337,7 @@ fn query_df_to_json(df: DataFrame) -> Result<String, polars::prelude::PolarsErro
 #[tauri::command]
 pub async fn query(
   path: String,
-  sqlsrc: String,
+  sql_query: String,
   write: bool,
   write_format: String,
   low_memory: bool,
@@ -350,7 +351,7 @@ pub async fn query(
   match (async {
     prepare_query(
       file_path,
-      sqlsrc.as_str(),
+      sql_query.as_str(),
       write,
       write_format.as_str(),
       low_memory,
