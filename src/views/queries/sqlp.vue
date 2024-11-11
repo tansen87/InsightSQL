@@ -97,22 +97,6 @@ onBeforeUnmount(() => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-// listen("expired", (event: any) => {
-//   const expired: any = event.payload;
-//   ElMessageBox.alert(expired, "Tips", {
-//     confirmButtonText: "OK"
-//   });
-// });
-listen("exec_err", (event: any) => {
-  ElNotification({
-    title: "Execute Error",
-    message: event.payload,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
 
 const queryViewData = async () => {
   const queryResult = await queryData();
@@ -147,14 +131,20 @@ async function queryData() {
 
   if (data.filePath !== "" && sqlQuery.value !== "") {
     isLoading.value = true;
+
     try {
-      const df: any = await invoke("query", {
+      const df: string = await invoke("query", {
         path: data.filePath,
         sqlQuery: sqlQuery.value,
         write: data.write,
         writeFormat: data.writeFormat,
         lowMemory: data.lowMemory
       });
+
+      // check if df is an error message
+      if (typeof df[0] === "string" && df[0].startsWith("Error:")) {
+        throw new Error(df[0]);
+      }
 
       const jsonData = JSON.parse(df);
       const isJsonArray = Array.isArray(jsonData);
@@ -165,23 +155,26 @@ async function queryData() {
         prop: key
       }));
       tableData.value = arrayData;
+
+      ElNotification({
+        message: "Query done, elapsed time: " + runtime.value,
+        position: "bottom-right",
+        type: "success",
+        duration: 5000
+      });
+
+      return true;
     } catch (err) {
       ElNotification({
-        title: "invoke query error",
-        message: err,
+        title: "Invoke query error",
+        message: err.message,
         position: "bottom-right",
         type: "error",
         duration: 10000
       });
     }
-    ElNotification({
-      message: "Query done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+
     isLoading.value = false;
-    return true;
   }
 
   return false;
@@ -255,12 +248,6 @@ async function selectFile() {
   isDataLoaded.value = true; // 所有文件处理完成后设置加载完成标志
 
   return true;
-  /*
-  const results: any = await invoke("get", {
-    path: data.filePath,
-    sep: data.sep
-  });
-  */
 }
 
 // 处理文件路径，提取文件名

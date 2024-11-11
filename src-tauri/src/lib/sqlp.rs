@@ -15,7 +15,8 @@ use polars::{
   datatypes::AnyValue,
   error::PolarsError,
   prelude::{
-    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, SerWriter
+    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame,
+    OptFlags, ParquetWriter, SerWriter,
   },
   sql::SQLContext,
 };
@@ -33,7 +34,6 @@ fn execute_query(
   write: bool,
   write_format: &str,
   low_memory: bool,
-  window: tauri::Window,
 ) -> Result<String, Box<PolarsError>> {
   let mut df = DataFrame::default();
 
@@ -122,20 +122,18 @@ fn execute_query(
     Ok(()) => Ok(query_df_to_json(df.head(Some(500)))?),
     Err(e) => {
       eprintln!("Failed to execute query: {query}\n{e}");
-      let errmsg = format!("{e}");
-      window.emit("exec_err", &errmsg).unwrap();
+      let errmsg = format!("Error: {e}");
       return Ok(errmsg);
     }
   }
 }
 
-fn prepare_query(
+async fn prepare_query(
   file_path: Vec<&str>,
   sql_query: &str,
   write: bool,
   write_format: &str,
   low_memory: bool,
-  window: tauri::Window,
 ) -> Result<Vec<String>, Box<dyn Error>> {
   let mut ctx = SQLContext::new();
 
@@ -266,7 +264,6 @@ fn prepare_query(
       write,
       write_format,
       low_memory,
-      window.clone(),
     )?;
     vec_result.push(res);
   }
@@ -281,7 +278,8 @@ fn query_df_to_json(df: DataFrame) -> Result<String, PolarsError> {
       .iter()
       .map(|column_name| (column_name.to_string(), serde_json::Value::Null))
       .collect::<IndexMap<_, _>>();
-    return serde_json::to_string(&empty_row).map_err(|e| PolarsError::ComputeError(e.to_string().into()));
+    return serde_json::to_string(&empty_row)
+      .map_err(|e| PolarsError::ComputeError(e.to_string().into()));
   }
 
   let column_names = df.get_column_names();
@@ -317,31 +315,13 @@ fn query_df_to_json(df: DataFrame) -> Result<String, PolarsError> {
   } else if let Some(single_row) = rows.into_iter().next() {
     serde_json::to_string(&single_row).map_err(|e| PolarsError::ComputeError(e.to_string().into()))
   } else {
-    unreachable!("This branch should not be reached because the empty DataFrame case is handled earlier.")
+    unreachable!(
+      "This branch should not be reached because the empty DataFrame case is handled earlier."
+    )
   }?;
 
   Ok(json_rows)
 }
-
-// pub fn expired() -> bool {
-//   let current_date = chrono::Local::now().time();
-//   let expiration_date = chrono::Local
-//     .with_ymd_and_hms(2024, 8, 11, 23, 59, 0)
-//     .unwrap()
-//     .time();
-
-//   current_date > expiration_date
-// }
-
-// #[tauri::command]
-// pub async fn get(window: tauri::Window) {
-//   if !expired() {
-//     "hi there".to_string();
-//   } else {
-//     let expired_msg = "Your application has expired. Please renew your subscription.".to_string();
-//     window.emit("expired", expired_msg).unwrap();
-//   }
-// }
 
 #[tauri::command]
 pub async fn query(
@@ -351,35 +331,19 @@ pub async fn query(
   write_format: String,
   low_memory: bool,
   window: tauri::Window,
-) -> Vec<String> {
+) -> Result<Vec<String>, String> {
   let start_time = Instant::now();
 
   let file_path: Vec<&str> = path.split('|').collect();
 
-  let prep_window = window.clone();
-  let result = match (async {
-    prepare_query(
-      file_path,
-      sql_query.as_str(),
-      write,
-      write_format.as_str(),
-      low_memory,
-      prep_window,
-    )
-  })
-  .await
-  {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("sql query error: {err}");
-      return Vec::new();
+  match prepare_query(file_path, &sql_query, write, &write_format, low_memory).await {
+    Ok(result) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2} s");
+      window.emit("runtime", runtime).unwrap();
+      Ok(result)
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
-
-  result
+    Err(e) => Err(format!("{e}")),
+  }
 }

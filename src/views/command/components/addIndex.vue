@@ -38,18 +38,6 @@ onBeforeUnmount(() => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("show", (event: any) => {
-  const df: any = event.payload;
-  const jsonData = JSON.parse(df);
-  const isJsonArray = Array.isArray(jsonData);
-  const data = isJsonArray ? jsonData : [jsonData];
-  columns.value = Object.keys(data[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = data;
-});
 listen("index_err", (event: any) => {
   const indexErr = event.payload;
   ElNotification({
@@ -86,13 +74,23 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  await invoke("query", {
+  const df: string = await invoke("query", {
     path: data.filePath,
-    sqlsrc: "select * from _t_1 limit 5",
+    sqlQuery: "select * from _t_1 limit 5",
     write: false,
     writeFormat: "csv",
     lowMemory: false
   });
+
+  const jsonData = JSON.parse(df);
+  const isJsonArray = Array.isArray(jsonData);
+  const arrayData = isJsonArray ? jsonData : [jsonData];
+  columns.value = Object.keys(arrayData[0]).map(key => ({
+    name: key,
+    label: key,
+    prop: key
+  }));
+  tableData.value = arrayData;
 }
 
 // add index

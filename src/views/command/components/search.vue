@@ -39,18 +39,6 @@ onBeforeUnmount(() => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("show", (event: any) => {
-  const df: any = event.payload;
-  const jsonData = JSON.parse(df);
-  const isJsonArray = Array.isArray(jsonData);
-  const data = isJsonArray ? jsonData : [jsonData];
-  tableColumn.value = Object.keys(data[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = data;
-});
 listen("equal_err", (event: any) => {
   const equalErr = event.payload;
   ElNotification({
@@ -122,13 +110,23 @@ async function selectFile() {
   });
   originalColumns.value = header;
 
-  await invoke("query", {
+  const df: string = await invoke("query", {
     path: data.filePath,
-    sqlsrc: "select * from _t_1 limit 10",
+    sqlQuery: "select * from _t_1 limit 10",
     write: false,
     writeFormat: "csv",
     lowMemory: false
   });
+
+  const jsonData = JSON.parse(df);
+  const isJsonArray = Array.isArray(jsonData);
+  const arrayData = isJsonArray ? jsonData : [jsonData];
+  tableColumn.value = Object.keys(arrayData[0]).map(key => ({
+    name: key,
+    label: key,
+    prop: key
+  }));
+  tableData.value = arrayData;
 }
 
 // search data
