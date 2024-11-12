@@ -7,7 +7,6 @@ import { ElNotification } from "element-plus";
 import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
 
 const tableData: any = ref([]);
-const writeRows = ref(0);
 const runtime = ref(0.0);
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -46,32 +45,6 @@ onBeforeUnmount(() => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("get_err", (event: any) => {
-  const getRenameHeadersError = event.payload;
-  ElNotification({
-    title: "Get Rename Headers Error",
-    message: getRenameHeadersError,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-listen("rename_err", (event: any) => {
-  const renameError = event.payload;
-  ElNotification({
-    title: "Rename Error",
-    message: renameError,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-listen("count_rows", (event: any) => {
-  const count: any = event.payload;
-  writeRows.value = count;
-});
 
 // open file
 async function selectFile() {
@@ -98,16 +71,26 @@ async function selectFile() {
 
   isPath.value = true;
 
-  const headers: any = await invoke("get_rename_headers", {
-    path: data.filePath
-  });
+  try {
+    const headers: string = await invoke("get_rename_headers", {
+      filePath: data.filePath
+    });
 
-  for (let i = 0; i < headers.length; i++) {
-    const colData = {
-      col1: headers[i],
-      col2: headers[i % headers.length]
-    };
-    tableData.value.push(colData);
+    for (let i = 0; i < headers.length; i++) {
+      const colData = {
+        col1: headers[i],
+        col2: headers[i % headers.length]
+      };
+      tableData.value.push(colData);
+    }
+  } catch (err) {
+    ElNotification({
+      title: "Invoke header error",
+      message: JSON.stringify(err),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
 }
 
@@ -122,27 +105,44 @@ async function renameData() {
     });
     return;
   }
-
-  const headersStringArray = tableData.value.map((row: any) => row.col2);
-  const headersString = headersStringArray.join(",");
   isLoading.value = true;
 
-  await invoke("rename", {
-    path: data.filePath,
-    headers: headersString
-  });
+  try {
+    const headersStringArray = tableData.value.map((row: any) => row.col2);
+    const headersString = headersStringArray.join(",");
+
+    const countRows: number = await invoke("rename", {
+      filePath: data.filePath,
+      headers: headersString
+    });
+
+    if (typeof countRows === "string") {
+      throw new Error(countRows);
+    }
+
+    ElNotification({
+      message:
+        "Rename done, write rows: " +
+        countRows.toString() +
+        " lines, elapsed time: " +
+        runtime.value,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+
+    isLoading.value = false;
+  } catch (err) {
+    ElNotification({
+      title: "Invoke rename error",
+      message: JSON.stringify(err),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 
   isLoading.value = false;
-  ElNotification({
-    message:
-      "Rename done, write rows: " +
-      writeRows.value +
-      " lines, elapsed time: " +
-      runtime.value,
-    position: "bottom-right",
-    type: "success",
-    duration: 10000
-  });
 }
 
 async function headerEdit(row: any) {
@@ -183,7 +183,6 @@ async function headerEdit(row: any) {
         </div>
 
         <el-text type="primary" size="large">
-          <el-icon> <Watermelon /> </el-icon>
           <span v-if="isPath">{{ data.filePath }}</span>
           <span v-else>Rename the columns of a CSV</span>
         </el-text>

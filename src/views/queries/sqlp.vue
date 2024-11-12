@@ -163,6 +163,7 @@ async function queryData() {
         duration: 5000
       });
 
+      isLoading.value = false;
       return true;
     } catch (err) {
       ElNotification({
@@ -173,10 +174,9 @@ async function queryData() {
         duration: 10000
       });
     }
-
-    isLoading.value = false;
   }
 
+  isLoading.value = false;
   return false;
 }
 

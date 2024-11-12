@@ -4,8 +4,8 @@ use tauri::Emitter;
 
 use crate::detect::detect_separator;
 
-fn get_header(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
-  let sep = match detect_separator(path) {
+async fn get_header(file_path: &str) -> Result<Vec<String>, Box<dyn Error>> {
+  let sep = match detect_separator(file_path) {
     Some(separator) => {
       let separator_u8: u8 = separator as u8;
       separator_u8
@@ -16,7 +16,7 @@ fn get_header(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(path)?);
+    .from_reader(File::open(file_path)?);
 
   let headers = rdr.headers()?.clone();
   let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
@@ -24,12 +24,8 @@ fn get_header(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
   Ok(vec_headers)
 }
 
-fn rename_headers(
-  path: &str,
-  r_header: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
-  let sep = match detect_separator(path) {
+async fn rename_headers(file_path: &str, r_header: String) -> Result<u64, Box<dyn Error>> {
+  let sep = match detect_separator(file_path) {
     Some(separator) => {
       let separator_u8: u8 = separator as u8;
       separator_u8
@@ -40,13 +36,13 @@ fn rename_headers(
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(path)?);
+    .from_reader(File::open(file_path)?);
 
   let mut new_rdr = csv::Reader::from_reader(r_header.as_bytes());
 
   let new_headers = new_rdr.byte_headers()?;
 
-  let file_path = Path::new(&path);
+  let file_path = Path::new(&file_path);
   let file_name = file_path.file_name().unwrap().to_str().unwrap();
   let current_time = chrono::Local::now();
   let parent_path = file_path
@@ -76,40 +72,37 @@ fn rename_headers(
   }
 
   wtr.flush()?;
-  window.emit("count_rows", count)?;
 
-  Ok(())
+  Ok(count)
 }
 
 #[tauri::command]
-pub async fn get_rename_headers(path: String, window: tauri::Window) -> Vec<String> {
-  let headers = match (async { get_header(path.as_str()) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("get headers error: {err}");
-      window.emit("get_err", &err.to_string()).unwrap();
-      return Vec::new();
-    }
-  };
-
-  headers
-}
-
-#[tauri::command]
-pub async fn rename(path: String, headers: String, window: tauri::Window) {
-  let start_time = Instant::now();
-  let rename_window = window.clone();
-
-  match (async { rename_headers(path.as_str(), headers, rename_window) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("rename headers error: {err}");
-      window.emit("rename_err", &err.to_string()).unwrap();
-    }
+pub async fn get_rename_headers(file_path: String) -> Result<Vec<String>, String> {
+  match get_header(file_path.as_str()).await {
+    Ok(headers) => Ok(headers),
+    Err(e) => {
+      eprintln!("Error occurred: {}", e); // 打印错误信息到控制台
+      Err(e.to_string()) // 将错误转换为字符串并返回
+    },
   }
+}
 
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+#[tauri::command]
+pub async fn rename(
+  file_path: String,
+  headers: String,
+  window: tauri::Window,
+) -> Result<u64, String> {
+  let start_time = Instant::now();
+
+  match rename_headers(file_path.as_str(), headers).await {
+    Ok(result) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2} s");
+      window.emit("runtime", runtime).unwrap();
+      Ok(result)
+    }
+    Err(e) => Err(format!("{e}")),
+  }
 }
