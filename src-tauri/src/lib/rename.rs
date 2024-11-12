@@ -80,10 +80,7 @@ async fn rename_headers(file_path: &str, r_header: String) -> Result<u64, Box<dy
 pub async fn get_rename_headers(file_path: String) -> Result<Vec<String>, String> {
   match get_header(file_path.as_str()).await {
     Ok(headers) => Ok(headers),
-    Err(e) => {
-      eprintln!("Error occurred: {}", e); // 打印错误信息到控制台
-      Err(e.to_string()) // 将错误转换为字符串并返回
-    },
+    Err(e) => Err(e.to_string()),
   }
 }
 

@@ -2,7 +2,7 @@
 
 [English](./README.md) | 中文
 
-> 一个可以使用SQL快速查看Excel、CSV和Parquet的工具，基于tauri。
+> 一个可以使用polars SQL快速查看Excel、CSV和Parquet的工具，基于tauri。
 
 ### 截图
 * polars SQL for query
@@ -24,18 +24,19 @@
 
 ## ✨Features
 
-- [x] 使用Polars SQL进行查询,支持Excel、CSV和parquet,支持导出为CSV或xlsx
+- [x] 使用Polars SQL进行查询,支持Excel、CSV和parquet,可以保存为CSV, xlsx或parquet文件
 - [x] 合并多个CSV、Excel文件为1个CSV或xlsx文件
 - [x] 批量将Excel转为CSV
 - [x] 批量统计CSV文件的行数
 - [x] 批量将CSV转为xlsx
 - [x] 重命名CSV的表头
-- [x] 选择、重新排序、复制或删除CSV列
+- [x] 选择、重新排序CSV列
 - [x] 找出与特定条件匹配的字段 (equal、contains、startswith)
 - [x] 填充CSV特定列中的空值
 - [x] 将一个CSV按指定行数拆分为多个CSV
 - [x] 为CSV添加索引
 - [x] 批量删除CSV的表头
+- [x] 将CSV中特定列的中文转为拼音
 
 
 ### 🍖如何使用?
@@ -47,7 +48,7 @@
 
 * Node.js 18+
 * pnpm 9.9.0+
-* 🦀Rust 1.81.0+
+* 🦀Rust 1.82.0+
 
 ## 🚀开发
 

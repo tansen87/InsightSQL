@@ -2,7 +2,7 @@
 
 English | [中文](./README_CN.md)
 
-> A tool that can quickly view Excel, CSV and Parquet using SQL, base on Tauri.
+> A tool that can quickly view Excel, CSV and Parquet using polars SQL, base on Tauri.
 
 ### screenshot
 * polars SQL for query
@@ -24,7 +24,7 @@ English | [中文](./README_CN.md)
 
 ## ✨Features
 
-- [x] Use Polars SQL for querying, allows to load Excel, CSV and Parquet files, support exporting as csv or xlsx files
+- [x] Use Polars SQL for querying, allows to load Excel, CSV and Parquet files, support saving as csv, xlsx or paquet files
 - [x] Concatenate CSV and Excel files
 - [x] Exports Excel to a csv file
 - [x] Count the rows of CSV files
@@ -36,6 +36,7 @@ English | [中文](./README_CN.md)
 - [x] Split one CSV file into many CSV files
 - [x] Add an index for a CSV
 - [x] Drop headers from CSV
+- [x] Convert Chinese to Pinyin for specific column in CSV
 
 
 ### 🍖How to use?
@@ -47,7 +48,7 @@ English | [中文](./README_CN.md)
 
 * Node.js 18+
 * pnpm 9.9.0+
-* 🦀Rust 1.81.0+
+* 🦀Rust 1.82.0+
 
 ## 🚀Development
 
