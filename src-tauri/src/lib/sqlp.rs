@@ -62,10 +62,10 @@ fn execute_query(
           },
         },
       )?;
-      let re = regex::Regex::new(r"(?m)limit.*")?;
-      let cleaned_sql = re.replace_all(query, "");
-      let q = format!("{cleaned_sql} limit 100");
-      df = ctx.execute(&q).and_then(LazyFrame::collect)?;
+      // let re = regex::Regex::new(r"(?m)limit.*")?;
+      // let cleaned_sql = re.replace_all(query, "");
+      // let q = format!("{cleaned_sql} limit 100");
+      // df = ctx.execute(&q).and_then(LazyFrame::collect)?;
       Ok(())
     } else {
       df = ctx.execute(query).and_then(LazyFrame::collect)?;
@@ -122,8 +122,7 @@ fn execute_query(
     Ok(()) => Ok(query_df_to_json(df.head(Some(500)))?),
     Err(e) => {
       eprintln!("Failed to execute query: {query}\n{e}");
-      let errmsg = format!("Error: {e}");
-      return Ok(errmsg);
+      return Ok(format!("execute_query => {e}"));
     }
   }
 }
@@ -344,6 +343,6 @@ pub async fn query(
       window.emit("runtime", runtime).unwrap();
       Ok(result)
     }
-    Err(e) => Err(format!("{e}")),
+    Err(e) => Err(format!("prepare_query => {e}")),
   }
 }

@@ -25,7 +25,7 @@ const counter = ref(0);
 const tableRef = ref(null);
 const tables = ref([]);
 const isDataLoaded = ref(false);
-const headersByFile = ref({});
+const headersByFile = reactive({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
@@ -142,8 +142,11 @@ async function queryData() {
       });
 
       // check if df is an error message
-      if (typeof df[0] === "string" && df[0].startsWith("Error:")) {
-        throw new Error(df[0]);
+      if (
+        (typeof df[0] === "string" && df[0].startsWith("execute_query")) ||
+        df[0].startsWith("prepare_query")
+      ) {
+        throw df[0].toString();
       }
 
       const jsonData = JSON.parse(df);
@@ -168,7 +171,7 @@ async function queryData() {
     } catch (err) {
       ElNotification({
         title: "Invoke query error",
-        message: err.message,
+        message: err.toString(),
         position: "bottom-right",
         type: "error",
         duration: 10000
@@ -215,7 +218,8 @@ async function selectFile() {
   // 使用 Promise.all 并行处理每个文件
   await Promise.all(
     data.filePath.split("|").map(async (path, index) => {
-      const basename = viewFileName.value[index].replace(/\.[^/.]+$/, "");
+      // const basename = viewFileName.value[index].replace(/\.[^/.]+$/, "");
+      const basename = viewFileName.value[index];
       try {
         const result: any = await invoke("query", {
           path: path,
@@ -224,38 +228,63 @@ async function selectFile() {
           writeFormat: "csv",
           lowMemory: false
         });
+
+        if (
+          (typeof result[0] === "string" &&
+            result[0].startsWith("execute_query")) ||
+          result[0].startsWith("prepare_query")
+        ) {
+          throw result[0].toString();
+        }
+
         const jsonData = JSON.parse(result);
         const isJsonArray = Array.isArray(jsonData);
-        const data = isJsonArray ? jsonData : [jsonData];
-        headersByFile[basename] = Object.keys(data[0]);
-        treeHeaders.value = {
-          ...treeHeaders.value,
-          [basename]: headersByFile[basename]
-        };
+        const arrayData = isJsonArray ? jsonData : [jsonData];
 
-        columns.value = Object.keys(data[0]).map(key => ({
+        columns.value = Object.keys(arrayData[0]).map(key => ({
           name: key,
           label: key,
           prop: key
         }));
-        tableData.value = data;
-      } catch (error) {
-        console.error(`Error querying table ${basename}:`, error);
+        tableData.value = arrayData;
+
+        headersByFile[basename] = Object.keys(arrayData[0]);
+        treeHeaders.value = {
+          ...treeHeaders.value,
+          [basename]: headersByFile[basename]
+        };
+      } catch (err) {
+        ElNotification({
+          title: "Open file error",
+          message: err.toString(),
+          position: "bottom-right",
+          type: "error",
+          duration: 10000
+        });
       }
     })
   );
 
   isDataLoaded.value = true; // 所有文件处理完成后设置加载完成标志
 
-  return true;
+  return false;
 }
 
 // 处理文件路径，提取文件名
 const viewFileName = computed(() => {
   const paths = data.filePath.split("|");
   return paths.map(path => {
-    const pathParts = path.split(/[/\\]/); // use regular expression matching / or \
-    return pathParts[pathParts.length - 1]; // return filename
+    const pathParts = path.split(/[/\\]/); // 使用正则表达式匹配 / 或 \
+    let fileName = pathParts[pathParts.length - 1]; // 获取文件名
+
+    // 去除文件后缀
+    const dotIndex = fileName.lastIndexOf(".");
+    if (dotIndex !== -1 && dotIndex < fileName.length - 1) {
+      // 确保 . 不是文件名的最后一个字符
+      fileName = fileName.substring(0, dotIndex);
+    }
+
+    return fileName; // 返回不带后缀的文件名
   });
 });
 
@@ -264,14 +293,17 @@ const fileTreeData = computed(() => {
   if (!isDataLoaded.value) return []; // 如果数据未加载完成，则返回空数组
 
   return viewFileName.value.map((fileName, index) => {
-    const basename = fileName.replace(/\.[^/.]+$/, "");
+    // const basename = fileName.replace(/\.[^/.]+$/, "");
+    const basename = fileName;
+    const headers = headersByFile[basename] || [];
+    const children = headers.map(header => ({
+      label: header,
+      key: `${basename}-${header}`
+    }));
+
     return {
       label: fileName, // 文件名作为节点标签
-      children: (headersByFile[basename] || []).map(header => ({
-        // 表头作为子节点
-        label: header,
-        key: `${basename}-${header}`
-      })),
+      children: children,
       key: index
     };
   });
