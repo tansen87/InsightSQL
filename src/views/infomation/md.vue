@@ -6,46 +6,48 @@ import "prismjs/components/prism-sql";
 import "prismjs/themes/prism.css";
 
 const markdownContent = ref(`
+# <u><a href="https://docs.pola.rs/py-polars/html/reference/sql/index.html" target="_blank">Polars SQL Interface</a></u>
+
 ### 1.Union
 \`\`\`sql
-SELECT * FROM _t_1
-UNION ALL BY NAME
-SELECT * FROM _t_2;
+select * from _t_1
+union all by name
+select * from _t_2;
 \`\`\`
 
 ### 2.Select
 
 \`\`\`sql
-SELECT
+select
 idx
 ,name
-,SUM(CAST(amount AS FLOAT)) amount
-FROM _t_1
-WHERE col1 = '0'
-OR col2 LIKE 'query%'
-LIMIT 10;
+,sum(cast(amount as double)) amount
+from _t_1
+where col1 = '0'
+or col2 like 'query%'
+limit 10;
 \`\`\`
 
 ### 3.Join
 
 \`\`\`sql
-SELECT * FROM \`file name1\` t1
-LEFT JOIN \`file name2\` t2
-ON t1.name = t2.name
+select * from \`file name1\` t1
+left join \`file name2\` t2
+on t1.name = t2.name
 \`\`\`
 
 ### 4.Group by
 
 \`\`\`sql
-SELECT 
+select 
 idx
-,SUM(CAST(amount as float)) amount
-FROM _t_1
-GROUP BY idx
-ORDER BY idx DESC
+,sum(cast(amount as double)) amount
+from _t_1
+group by idx
+order by idx desc
 \`\`\`
 
-### 5.Fill null value (COALESCE)
+### 5.Fill null value (coalesce)
 
 \`\`\`sql
 select

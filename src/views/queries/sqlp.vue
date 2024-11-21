@@ -491,13 +491,13 @@ watch(
       :direction="'btt'"
       size="75%"
     >
-      <el-scrollbar :height="formHeight">
+      <el-scrollbar :height="formHeight * 0.8">
         <el-table
           ref="tableRef"
           :data="tableData"
           border
           style="width: 100%"
-          :height="formHeight"
+          :height="formHeight * 0.8"
         >
           <el-table-column
             v-for="column in columns"

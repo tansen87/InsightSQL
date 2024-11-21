@@ -61,7 +61,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
 });
 
-listen("start_convert", (event: any) => {
+listen("start_convert", event => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert) {
@@ -72,15 +72,8 @@ listen("start_convert", (event: any) => {
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
 });
-listen("row_count_err", (event: any) => {
+listen("row_count_err", event => {
   const excelRowCountErr: any = event.payload;
-  ElNotification({
-    title: "Rows Count",
-    message: excelRowCountErr,
-    position: "bottom-right",
-    type: "warning",
-    duration: 10000
-  });
   selectedFiles.value.forEach(file => {
     if (file.filename === excelRowCountErr.split("|")[0]) {
       file.status = "error";
@@ -97,7 +90,7 @@ listen("e2c_msg", (event: any) => {
   });
 });
 listen("e2c_progress", (event: any) => {
-  const pgs: any = event.payload;
+  const pgs: number = event.payload;
   progress.value = pgs;
 });
 listen("e2c_err", (event: any) => {
