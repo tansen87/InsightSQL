@@ -294,51 +294,56 @@ fn offset_no_condition(
     }
   }
 
-  let mut cat = concat_lf_diagonal(
-    lfs,
-    UnionArgs {
-      parallel: true,
-      rechunk: true,
-      to_supertypes: true,
-      diagonal: true,
-      from_partitioned_ds: false,
-    },
-  )?
-  .collect()?;
+  if !lfs.is_empty() {
+    let mut cat = concat_lf_diagonal(
+      lfs,
+      UnionArgs {
+        parallel: true,
+        rechunk: true,
+        to_supertypes: true,
+        diagonal: true,
+        from_partitioned_ds: false,
+      },
+    )?
+    .collect()?;
 
-  let mut cat_surplus = concat_lf_diagonal(
-    lfs_surplus,
-    UnionArgs {
-      parallel: true,
-      rechunk: true,
-      to_supertypes: true,
-      diagonal: true,
-      from_partitioned_ds: false,
-    },
-  )?
-  .collect()?;
-
-  let cat_row = cat.shape().0;
-  let cat_surplus_row = cat_surplus.shape().0;
-  if cat_row < 104_0000 {
-    let save_path = format!("{output_path}_net.xlsx");
-    xlsx_writer::write_xlsx(cat, save_path.into())?;
-  } else {
-    let save_path = format!("{output_path}_net.csv");
-    CsvWriter::new(File::create(save_path)?)
-      .with_separator(vec_sep[0])
-      .finish(&mut cat)?;
+    let cat_row = cat.shape().0;
+    if cat_row < 104_0000 {
+      let save_path = format!("{output_path}_net.xlsx");
+      xlsx_writer::write_xlsx(cat, save_path.into())?;
+    } else {
+      let save_path = format!("{output_path}_net.csv");
+      CsvWriter::new(File::create(save_path)?)
+        .with_separator(vec_sep[0])
+        .finish(&mut cat)?;
+    }
   }
 
-  if cat_surplus_row < 104_0000 {
-    let save_path = format!("{output_path}_surplus.xlsx");
-    xlsx_writer::write_xlsx(cat_surplus, save_path.into())?;
-  } else {
-    let save_path = format!("{output_path}_surplus.csv");
-    CsvWriter::new(File::create(save_path)?)
-      .with_separator(vec_sep[0])
-      .finish(&mut cat_surplus)?;
+  if !lfs_surplus.is_empty() {
+    let mut cat_surplus = concat_lf_diagonal(
+      lfs_surplus,
+      UnionArgs {
+        parallel: true,
+        rechunk: true,
+        to_supertypes: true,
+        diagonal: true,
+        from_partitioned_ds: false,
+      },
+    )?
+    .collect()?;
+
+    let cat_surplus_row = cat_surplus.shape().0;
+    if cat_surplus_row < 104_0000 {
+      let save_path = format!("{output_path}_surplus.xlsx");
+      xlsx_writer::write_xlsx(cat_surplus, save_path.into())?;
+    } else {
+      let save_path = format!("{output_path}_surplus.csv");
+      CsvWriter::new(File::create(save_path)?)
+        .with_separator(vec_sep[0])
+        .finish(&mut cat_surplus)?;
+    }
   }
+
   Ok(())
 }
 
