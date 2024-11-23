@@ -55,15 +55,15 @@ where
 
 impl ExcelReader {
   /// Opens a workbook and define the file type at runtime.
-  pub fn open_workbook_auto<P: AsRef<Path>>(file_name: P) -> calamine::Sheets<BufReader<File>> {
-    let workbook = calamine::open_workbook_auto(file_name).expect("Could not open workbook");
+  pub fn open_workbook_auto<P: AsRef<Path>>(path: P) -> calamine::Sheets<BufReader<File>> {
+    let workbook = calamine::open_workbook_auto(path).expect("Could not open workbook");
 
     workbook
   }
 
-  pub fn new<P: AsRef<Path>>(file_name: P) -> Self {
+  pub fn new<P: AsRef<Path>>(path: P) -> Self {
     Self {
-      workbook: ExcelReader::open_workbook_auto(file_name),
+      workbook: ExcelReader::open_workbook_auto(path),
     }
   }
 

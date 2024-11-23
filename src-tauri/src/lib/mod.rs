@@ -5,7 +5,7 @@ pub mod convert;
 pub mod count;
 pub mod dbf;
 pub mod detect;
-pub mod excel;
+pub mod excel_reader;
 pub mod fill;
 pub mod index;
 pub mod modify;

@@ -13,7 +13,7 @@ use tauri::Emitter;
 
 use crate::{
   detect::detect_separator,
-  excel::{ExcelReader, ToPolarsDataFrame},
+  excel_reader::{ExcelReader, ToPolarsDataFrame},
   xlsx_writer,
 };
 
