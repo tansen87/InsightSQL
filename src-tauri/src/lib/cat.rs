@@ -8,7 +8,6 @@ use polars::{
     UnionArgs,
   },
 };
-use tauri::Emitter;
 
 use crate::{
   detect::detect_separator,
@@ -16,7 +15,13 @@ use crate::{
   xlsx_writer::write_xlsx,
 };
 
-fn concat_all(path: String, output_path: String, memory: bool, skip_rows: String) -> Result<(), Box<dyn Error>> {
+async fn concat_all(
+  path: String,
+  output_path: String,
+  file_type: String,
+  memory: bool,
+  skip_rows: String,
+) -> Result<(), Box<dyn Error>> {
   /* concat csv and excel files into a xlsx or csv file */
   let vec_path: Vec<&str> = path.split('|').collect();
 
@@ -51,7 +56,9 @@ fn concat_all(path: String, output_path: String, memory: bool, skip_rows: String
       "parquet" => LazyFrame::scan_parquet(file, Default::default())?,
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let mut excel_reader = ExcelReader::new(file);
-        let df: DataFrame = excel_reader.worksheet_range_at(0, skip_rows.parse::<u32>()?)?.to_df()?;
+        let df: DataFrame = excel_reader
+          .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+          .to_df()?;
         df.lazy()
       }
       _ => {
@@ -61,7 +68,7 @@ fn concat_all(path: String, output_path: String, memory: bool, skip_rows: String
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
           .with_skip_rows(skip_rows.parse::<usize>()?)
-          .with_low_memory(false)
+          .with_low_memory(!memory)
           .finish()?;
 
         csv_reader
@@ -86,19 +93,16 @@ fn concat_all(path: String, output_path: String, memory: bool, skip_rows: String
   if memory {
     let mut cat_df = cat_lf.collect()?;
     let row_len = cat_df.shape().0;
-    if row_len < 104_0000 {
-      let save_path = format!("{output_path}.xlsx");
-      write_xlsx(cat_df, save_path.into())?;
+    if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
+      write_xlsx(cat_df, output_path.into())?;
     } else {
-      let save_path = format!("{output_path}.csv");
-      CsvWriter::new(File::create(save_path)?)
+      CsvWriter::new(File::create(output_path)?)
         .with_separator(vec_sep[0])
         .finish(&mut cat_df)?;
     }
   } else {
-    let save_path = format!("{output_path}.csv");
     cat_lf.sink_csv(
-      save_path,
+      output_path,
       CsvWriterOptions {
         include_bom: false,
         include_header: true,
@@ -124,20 +128,22 @@ fn concat_all(path: String, output_path: String, memory: bool, skip_rows: String
 }
 
 #[tauri::command]
-pub async fn concat(file_path: String, output_path: String, memory: bool, skip_rows: String, window: tauri::Window) {
+pub async fn concat(
+  file_path: String,
+  output_path: String,
+  file_type: String,
+  memory: bool,
+  skip_rows: String,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match (async { concat_all(file_path, output_path, memory, skip_rows) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("concat error: {err}");
-      window.emit("cat_err", &err.to_string()).unwrap();
-      err.to_string();
+  match concat_all(file_path, output_path, file_type, memory, skip_rows).await {
+    Ok(()) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2} s");
+      Ok(runtime)
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+    Err(e) => Err(format!("concat_all => {e}")),
+  }
 }

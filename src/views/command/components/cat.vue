@@ -2,13 +2,11 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
-const runtime = ref(0.0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
@@ -45,21 +43,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("cat_err", (event: any) => {
-  const catErr = event.payload;
-  ElNotification({
-    title: "Concat Error",
-    message: catErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 // open file
@@ -113,6 +96,8 @@ async function concatData() {
       { name: "Excel", extensions: ["xlsx"] }
     ]
   });
+  const saveFileType = outputPath.split(".").pop();
+
   if (outputPath === "" || outputPath === null) {
     ElNotification({
       title: "File not found",
@@ -126,20 +111,35 @@ async function concatData() {
   if (data.filePath !== "" && outputPath !== null) {
     isLoading.value = true;
 
-    await invoke("concat", {
-      filePath: data.filePath,
-      outputPath: outputPath,
-      memory: data.memory,
-      skipRows: data.skipRows
-    });
+    try {
+      const runtime: string = await invoke("concat", {
+        filePath: data.filePath,
+        outputPath: outputPath,
+        fileType: saveFileType,
+        memory: data.memory,
+        skipRows: data.skipRows
+      });
 
-    isLoading.value = false;
-    ElNotification({
-      message: "Cat done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 0
-    });
+      if (runtime.startsWith("concat_all")) {
+        runtime.toString();
+      }
+
+      isLoading.value = false;
+      ElNotification({
+        message: "Cat done, elapsed time: " + runtime,
+        position: "bottom-right",
+        type: "success",
+        duration: 0
+      });
+    } catch (err) {
+      ElNotification({
+        title: "Invoke concat error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
   }
 }
 </script>
