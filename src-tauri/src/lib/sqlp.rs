@@ -119,7 +119,7 @@ fn execute_query(
   };
 
   match execute_inner() {
-    Ok(()) => Ok(query_df_to_json(df.head(Some(500)))?),
+    Ok(()) => Ok(query_df_to_json(df)?),
     Err(e) => {
       eprintln!("Failed to execute query: {query}\n{e}");
       return Ok(format!("execute_query => {e}"));
