@@ -9,7 +9,6 @@ use std::{
   time::Instant,
 };
 
-// use chrono::TimeZone;
 use indexmap::IndexMap;
 use polars::{
   datatypes::AnyValue,
@@ -72,7 +71,7 @@ fn execute_query(
       match (write, df.shape().0 < 104_0000, &write_format) {
         (false, _, _) => Ok(()),
         (true, true, &"xlsx") => {
-          // rows less than 104w and write_format is xlsx
+          // write to xlsx
           let output_path = output.map_or_else(
             || PathBuf::from("default_output.xlsx"),
             |s| PathBuf::from(format!("{}.xlsx", s)),
@@ -80,12 +79,12 @@ fn execute_query(
           write_xlsx(df.clone(), output_path).expect("Writing to xlsx failed");
           Ok(())
         }
-        (true, true, &"parquet") => {
+        (true, _, &"parquet") => {
           // write to parquet
           let output_path = Some(format!("{}.parquet", output.unwrap()));
           let w = match output_path {
-            Some(path) => Box::new(std::fs::File::create(path)?) as Box<dyn std::io::Write>,
-            None => Box::new(std::io::stdout()) as Box<dyn std::io::Write>,
+            Some(path) => Box::new(File::create(path)?) as Box<dyn Write>,
+            None => Box::new(std::io::stdout()) as Box<dyn Write>,
           };
           let mut w = BufWriter::with_capacity(256_000, w);
           let out_result = {
@@ -98,11 +97,11 @@ fn execute_query(
           out_result
         }
         (true, _, _) => {
-          // others
+          // write to csv
           let output_path = Some(format!("{}.csv", output.unwrap()));
           let w = match output_path {
-            Some(path) => Box::new(std::fs::File::create(path)?) as Box<dyn std::io::Write>,
-            None => Box::new(std::io::stdout()) as Box<dyn std::io::Write>,
+            Some(path) => Box::new(File::create(path)?) as Box<dyn Write>,
+            None => Box::new(std::io::stdout()) as Box<dyn Write>,
           };
           let mut w = BufWriter::with_capacity(256_000, w);
           let out_result = {
