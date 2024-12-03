@@ -1,15 +1,32 @@
 use std::{collections::HashMap, error::Error, fs::File, io::BufReader, time::Instant};
 
+use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
 use crate::detect::detect_separator;
 
+#[derive(Debug)]
+enum SearchMode {
+  Equal,
+  Contains,
+  StartsWith,
+  Regex,
+}
+
+impl From<&str> for SearchMode {
+  fn from(mode: &str) -> Self {
+    match mode {
+      "equal" => SearchMode::Equal,
+      "contains" => SearchMode::Contains,
+      "startswith" => SearchMode::StartsWith,
+      _ => SearchMode::Regex,
+    }
+  }
+}
+
 fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
   let sep = match detect_separator(path) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -18,16 +35,15 @@ fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>
     .has_headers(true)
     .from_reader(File::open(path)?);
 
-  let headers = rdr.headers()?.clone();
-  let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
+  let headers = rdr.headers()?;
 
-  let hs = vec_headers
-    .into_iter()
-    .enumerate()
-    .map(|(_index, name)| {
+  let hs: Vec<HashMap<String, String>> = headers
+    .iter()
+    .map(|header| {
       let mut map = HashMap::new();
-      map.insert("value".to_string(), name.clone());
-      map.insert("label".to_string(), name);
+      let header_str = header.to_string();
+      map.insert("value".to_string(), header_str.clone());
+      map.insert("label".to_string(), header_str);
       map
     })
     .collect();
@@ -35,145 +51,131 @@ fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>
   Ok(hs)
 }
 
-pub fn read_csv(path: String, sep: u8) -> Result<csv::Reader<BufReader<File>>, Box<dyn Error>> {
-  let file = File::open(path)?;
-
-  let rdr = csv::ReaderBuilder::new()
+async fn generic_search<F>(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+  match_fn: F,
+) -> Result<String, Box<dyn Error>>
+where
+  F: Fn(&str, &[String]) -> bool + Send + Sync,
+{
+  let mut match_rows: usize = 0;
+  let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(BufReader::new(file));
+    .from_reader(BufReader::new(File::open(path)?));
+  let headers = rdr.headers()?.clone();
 
-  Ok(rdr)
-}
+  let name_idx = match headers.iter().position(|field| field == select_column) {
+    Some(idx) => idx,
+    None => {
+      return Err(
+        format!(
+          "The column '{}' was not found in the headers.",
+          select_column
+        )
+        .into(),
+      );
+    }
+  };
 
-pub fn write_csv(sep: u8, output_path: String) -> Result<csv::Writer<File>, Box<dyn Error>> {
-  let wtr = csv::WriterBuilder::new()
+  let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
     .from_path(output_path)?;
 
-  Ok(wtr)
-}
-
-fn equal_search(
-  path: String,
-  sep: u8,
-  column: String,
-  conditions: Vec<String>,
-  output_path: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
-  let mut count: usize = 0;
-  let mut rdr = read_csv(path, sep)?;
-
-  let headers = rdr.headers()?.clone();
-
-  let name_idx = match headers.iter().position(|field| field == column) {
-    Some(idx) => idx,
-    None => {
-      return Err(format!("The column '{}' was not found in the headers.", column).into());
-    }
-  };
-
-  let mut wtr = write_csv(sep, output_path)?;
-
   wtr.write_record(&headers)?;
 
   for result in rdr.records() {
     let record = result?;
-    let value = record.get(name_idx).unwrap();
-    if conditions.contains(&value.to_string()) {
-      wtr.write_record(&record)?;
-      count += 1;
-    }
-  }
-
-  window.emit("equal_count", count)?;
-
-  Ok(())
-}
-
-fn contains_search(
-  path: String,
-  sep: u8,
-  column: String,
-  conditions: Vec<String>,
-  output_path: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
-  let mut count: usize = 0;
-  let mut rdr = read_csv(path, sep)?;
-
-  let headers = rdr.headers()?.clone();
-
-  let name_idx = match headers.iter().position(|field| field == column) {
-    Some(idx) => idx,
-    None => {
-      return Err(format!("The column '{}' was not found in the headers.", column).into());
-    }
-  };
-
-  let mut wtr = write_csv(sep, output_path)?;
-
-  wtr.write_record(&headers)?;
-
-  for result in rdr.records() {
-    let record = result?;
-    let value = record.get(name_idx).unwrap().to_string();
-    let mut found = false;
-    for condition in &conditions {
-      if value.to_lowercase().contains(&condition.to_lowercase()) {
-        found = true;
-        break;
+    if let Some(value) = record.get(name_idx) {
+      if match_fn(value, &conditions) {
+        wtr.write_record(&record)?;
+        match_rows += 1;
       }
     }
-
-    if found {
-      wtr.write_record(&record)?;
-      count += 1;
-    }
   }
 
-  window.emit("contains_count", count)?;
-
-  Ok(())
+  Ok(match_rows.to_string())
 }
 
-fn startswith_search(
+async fn equal_search(
   path: String,
   sep: u8,
-  column: String,
+  select_column: String,
   conditions: Vec<String>,
   output_path: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
-  let mut count: usize = 0;
-  let mut rdr = read_csv(path, sep)?;
+) -> Result<String, Box<dyn Error>> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions.clone(),
+    output_path,
+    |value, conditions| conditions.contains(&value.to_string()),
+  )
+  .await
+}
 
-  let headers = rdr.headers()?.clone();
+async fn contains_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+) -> Result<String, Box<dyn Error>> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions.clone(),
+    output_path,
+    |value, conditions| {
+      conditions
+        .iter()
+        .any(|cond| value.to_lowercase().contains(&cond.to_lowercase()))
+    },
+  )
+  .await
+}
 
-  let name_idx = match headers.iter().position(|field| field == column) {
-    Some(idx) => idx,
-    None => {
-      return Err(format!("The column '{}' was not found in the headers.", column).into());
-    }
-  };
+async fn startswith_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+) -> Result<String, Box<dyn Error>> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions.clone(),
+    output_path,
+    |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
+  )
+  .await
+}
 
-  let mut wtr = write_csv(sep, output_path)?;
+async fn regex_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  regex_char: String,
+  output_path: String,
+) -> Result<String, Box<dyn Error>> {
+  let pattern = RegexBuilder::new(&regex_char).build()?;
 
-  wtr.write_record(&headers)?;
-
-  for result in rdr.records() {
-    let record = result?;
-    let value = record.get(name_idx).unwrap();
-    // Check if any condition matches
-    if conditions.iter().any(|cond| value.starts_with(cond)) {
-      wtr.write_record(&record)?;
-      count += 1;
-    }
-  }
-
-  window.emit("startswith_count", count)?;
-
-  Ok(())
+  generic_search(
+    path,
+    sep,
+    select_column,
+    vec![regex_char],
+    output_path,
+    move |value, _| pattern.is_match(value.as_bytes()),
+  )
+  .await
 }
 
 #[tauri::command]
@@ -193,81 +195,66 @@ pub async fn get_search_headers(
   headers
 }
 
+async fn perform_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: String,
+  output_path: String,
+  mode: SearchMode,
+) -> Result<String, Box<dyn Error>> {
+  let vec_conditions: Vec<String> = conditions
+    .split('|')
+    .map(|s| s.trim().to_string())
+    .collect();
+
+  match mode {
+    SearchMode::Equal => equal_search(path, sep, select_column, vec_conditions, output_path).await,
+    SearchMode::Contains => {
+      contains_search(path, sep, select_column, vec_conditions, output_path).await
+    }
+    SearchMode::StartsWith => {
+      startswith_search(path, sep, select_column, vec_conditions, output_path).await
+    }
+    SearchMode::Regex => regex_search(path, sep, select_column, conditions, output_path).await,
+  }
+}
+
 #[tauri::command]
 pub async fn search(
   path: String,
-  column: String,
+  select_column: String,
   mode: String,
   condition: String,
   output_path: String,
   window: tauri::Window,
-) {
+) -> Result<String, String> {
   let start_time = Instant::now();
-  let equal_window = window.clone();
-  let contains_window = window.clone();
-  let startswith_window = window.clone();
 
-  let vec_conditions: Vec<String> = condition
-    .split('|')
-    .map(|s| s.replace("\r", "").replace("\n", ""))
-    .collect();
-  let vec_strings: Vec<String> = vec_conditions
-    .into_iter()
-    .map(|condition| condition)
-    .collect();
   let sep = match detect_separator(path.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
-  if mode == "equal" {
-    match (async { equal_search(path, sep, column, vec_strings, output_path, equal_window) }).await
-    {
-      Ok(result) => result,
-      Err(error) => {
-        eprintln!("equal_search error: {error}");
-        window.emit("equal_err", &error.to_string()).unwrap();
-        return ();
-      }
-    };
-  } else if mode == "contains" {
-    match (async { contains_search(path, sep, column, vec_strings, output_path, contains_window) })
-      .await
-    {
-      Ok(result) => result,
-      Err(error) => {
-        eprintln!("contains_search error: {error}");
-        window.emit("contains_err", &error.to_string()).unwrap();
-        return ();
-      }
-    };
-  } else if mode == "startswith" {
-    match (async {
-      startswith_search(
-        path,
-        sep,
-        column,
-        vec_strings,
-        output_path,
-        startswith_window,
-      )
-    })
-    .await
-    {
-      Ok(result) => result,
-      Err(error) => {
-        eprintln!("startswith_search error: {error}");
-        window.emit("startswith_err", &error.to_string()).unwrap();
-        return ();
-      }
-    }
-  }
+  let search_mode: SearchMode = mode.as_str().into();
 
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+  match perform_search(
+    path,
+    sep,
+    select_column,
+    condition,
+    output_path,
+    search_mode,
+  )
+  .await
+  {
+    Ok(result) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2} s");
+      window.emit("runtime", runtime).unwrap();
+      Ok(result)
+    }
+    Err(err) => Err(format!("Search failed: {err}")),
+  }
 }

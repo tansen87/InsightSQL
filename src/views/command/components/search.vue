@@ -8,7 +8,6 @@ import { Search, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const writeRows = ref(0);
 const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
@@ -38,47 +37,6 @@ onBeforeUnmount(() => {
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
-});
-listen("equal_err", (event: any) => {
-  const equalErr = event.payload;
-  ElNotification({
-    title: "Equal Error",
-    message: equalErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-listen("equal_count", (event: any) => {
-  const count: any = event.payload;
-  writeRows.value = count;
-});
-listen("contains_err", (event: any) => {
-  const containsErr = event.payload;
-  ElNotification({
-    title: "Contains Error",
-    message: containsErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-listen("contains_count", (event: any) => {
-  const count: any = event.payload;
-  writeRows.value = count;
-});
-listen("startswith_err", (event: any) => {
-  const startswithErr = event.payload;
-  ElNotification({
-    title: "Startwith Error",
-    message: startswithErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 async function selectFile() {
@@ -110,23 +68,40 @@ async function selectFile() {
   });
   originalColumns.value = header;
 
-  const df: string = await invoke("query", {
-    path: data.filePath,
-    sqlQuery: "select * from _t_1 limit 10",
-    write: false,
-    writeFormat: "csv",
-    lowMemory: false
-  });
+  try {
+    const result: string = await invoke("query", {
+      path: data.filePath,
+      sqlQuery: "select * from _t_1 limit 10",
+      write: false,
+      writeFormat: "csv",
+      lowMemory: false
+    });
 
-  const jsonData = JSON.parse(df);
-  const isJsonArray = Array.isArray(jsonData);
-  const arrayData = isJsonArray ? jsonData : [jsonData];
-  tableColumn.value = Object.keys(arrayData[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = arrayData;
+    if (
+      result[0].startsWith("execute_query") ||
+      result[0].startsWith("prepare_query")
+    ) {
+      throw result[0].toString();
+    }
+
+    const jsonData = JSON.parse(result);
+    const isJsonArray = Array.isArray(jsonData);
+    const arrayData = isJsonArray ? jsonData : [jsonData];
+    tableColumn.value = Object.keys(arrayData[0]).map(key => ({
+      name: key,
+      label: key,
+      prop: key
+    }));
+    tableData.value = arrayData;
+  } catch (err) {
+    ElNotification({
+      title: "Open file error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 }
 
 // search data
@@ -168,25 +143,41 @@ async function searchData() {
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("search", {
-      path: data.filePath,
-      column: columns.value,
-      mode: data.mode,
-      condition: data.condition,
-      outputPath: outputPath
-    });
+    try {
+      const matchRows: string = await invoke("search", {
+        path: data.filePath,
+        selectColumn: columns.value,
+        mode: data.mode,
+        condition: data.condition,
+        outputPath: outputPath
+      });
+
+      if (matchRows.startsWith("Search failed")) {
+        throw matchRows.toString();
+      }
+
+      isLoading.value = false;
+      ElNotification({
+        message:
+          "Search done, match rows: " +
+          matchRows +
+          " lines, elapsed time: " +
+          runtime.value,
+        position: "bottom-right",
+        type: "success",
+        duration: 10000
+      });
+    } catch (err) {
+      ElNotification({
+        title: "Invoke Search Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
 
     isLoading.value = false;
-    ElNotification({
-      message:
-        "Search done, search rows: " +
-        writeRows.value +
-        " lines, elapsed time: " +
-        runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
   }
 }
 </script>
@@ -232,6 +223,7 @@ async function searchData() {
             <el-option label="equal" value="equal" />
             <el-option label="contains" value="contains" />
             <el-option label="startswith" value="startswith" />
+            <el-option label="regex" value="regex" />
           </el-select>
         </el-tooltip>
         <el-select
