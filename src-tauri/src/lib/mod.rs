@@ -12,6 +12,7 @@ pub mod modify;
 pub mod offset;
 pub mod pinyin;
 pub mod rename;
+pub mod replace;
 pub mod search;
 pub mod select;
 pub mod split;

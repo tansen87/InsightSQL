@@ -149,6 +149,15 @@ export default {
         title: "chinese to pinyin",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/replace",
+      name: "replace",
+      component: () => import("@/views/command/components/replace.vue"),
+      meta: {
+        title: "replace",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

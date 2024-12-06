@@ -15,6 +15,7 @@ use lib::modify;
 use lib::offset;
 use lib::pinyin;
 use lib::rename;
+use lib::replace;
 use lib::search;
 use lib::select;
 use lib::split;
@@ -57,6 +58,8 @@ fn main() {
       index::index,
       pinyin::get_pinyin_headers,
       pinyin::pinyin,
+      replace::get_replace_headers,
+      replace::replace,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

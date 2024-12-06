@@ -78,6 +78,11 @@ const commands = ref([
     title: "Chinese to Pinyin",
     description: "Convert Chinese to Pinyin for specific column in CSV.",
     route: "/command/components/pinyin"
+  },
+  {
+    title: "Replace",
+    description: "Replace occurrences of a pattern across a CSV file.",
+    route: "/command/components/replace"
   }
 ]);
 const searchText = ref("");
@@ -123,11 +128,6 @@ function toCommands(route) {
 </template>
 
 <style lang="scss" scoped>
-// .page-container {
-//   display: flex;
-//   flex-direction: column;
-//   height: 100%;
-// }
 .search-input {
   position: sticky;
   top: 0;
