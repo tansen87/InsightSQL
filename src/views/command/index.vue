@@ -5,6 +5,12 @@ import { ref, computed } from "vue";
 const router = useRouter();
 const commands = ref([
   {
+    title: "Apply",
+    description:
+      "Apply a series of transformation functions to given CSV column/s.",
+    route: "/command/components/apply"
+  },
+  {
     title: "Cat",
     description: "Cat CSV and Excel files.",
     route: "/command/components/cat"

@@ -4,6 +4,7 @@
 )]
 
 use lib::access;
+use lib::apply;
 use lib::behead;
 use lib::cat;
 use lib::convert;
@@ -60,6 +61,8 @@ fn main() {
       pinyin::pinyin,
       replace::get_replace_headers,
       replace::replace,
+      apply::get_apply_headers,
+      apply::apply,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

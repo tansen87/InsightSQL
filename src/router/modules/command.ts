@@ -16,6 +16,15 @@ export default {
       }
     },
     {
+      path: "/command/components/apply",
+      name: "apply",
+      component: () => import("@/views/command/components/apply.vue"),
+      meta: {
+        title: "apply",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/cat",
       name: "cat",
       component: () => import("@/views/command/components/cat.vue"),
