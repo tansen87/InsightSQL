@@ -33,6 +33,7 @@ enum Operations {
   Rtrim,
   Replace,
   Round,
+  Squeeze,
 }
 
 impl Operations {
@@ -47,6 +48,7 @@ impl Operations {
       "rtrim" => Ok(Operations::Rtrim),
       "replace" => Ok(Operations::Replace),
       "round" => Ok(Operations::Round),
+      "squeeze" => Ok(Operations::Squeeze),
       _ => Err(Box::<dyn Error>::from(format!("Unknown '{op}' operation"))),
     }
   }
@@ -179,31 +181,35 @@ fn apply_operations(
     match op {
       Operations::Len => {
         itoa::Buffer::new().format(cell.len()).clone_into(cell);
-      }
+      },
       Operations::Lower => {
         *cell = cell.to_lowercase();
-      }
+      },
       Operations::Upper => {
         *cell = cell.to_uppercase();
-      }
+      },
       Operations::Trim => {
         *cell = String::from(cell.trim());
-      }
+      },
       Operations::Ltrim => {
         *cell = String::from(cell.trim_start());
-      }
+      },
       Operations::Rtrim => {
         *cell = String::from(cell.trim_end());
-      }
+      },
       Operations::Replace => {
         *cell = cell.replace(comparand, replacement);
-      }
+      },
       Operations::Round => {
         if let Ok(num) = cell.parse::<f64>() {
           // safety: we set ROUND_PLACES in validate_operations()
           *cell = round_num(num, *ROUND_PLACES.get().unwrap());
         }
-      }
+      },
+      Operations::Squeeze => {
+        let squeezer: &'static Regex = regex_oncelock!(r"\s+");
+        *cell = squeezer.replace_all(cell, " ").into_owned();
+      },
       Operations::Copy => {} // copy is a noop
     }
   }

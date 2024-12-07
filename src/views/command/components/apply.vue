@@ -238,6 +238,7 @@ async function applyData() {
       <el-option label="Rtrim" value="rtrim" />
       <el-option label="Replace" value="replace" />
       <el-option label="Round" value="round" />
+      <el-option label="Squeeze" value="squeeze" />
     </el-select>
     <div
       style="
