@@ -37,6 +37,8 @@ English | [中文](./README_CN.md)
 - [x] Add an index for a CSV
 - [x] Drop headers from CSV
 - [x] Convert Chinese to Pinyin for specific column in CSV
+- [x] Replace CSV data using a regex
+- [x] Apply series of string, math transformations to given CSV column/s
 
 
 ### 🍖How to use?
