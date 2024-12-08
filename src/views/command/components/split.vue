@@ -2,32 +2,15 @@
 import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const runtime = ref(0.0);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   size: 1000000
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("split_err", (event: any) => {
-  const splitErr = event.payload;
-  ElNotification({
-    title: "Split Error",
-    message: splitErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 async function selectFile() {
@@ -65,22 +48,35 @@ async function splitData() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    await invoke("split", {
+  try {
+    const result: string = await invoke("split", {
       filePath: data.filePath,
       size: data.size
     });
 
-    isLoading.value = false;
+    if (result.startsWith("split failed:")) {
+      throw result.toString();
+    }
+
     ElNotification({
-      message: "Split done, elapsed time: " + runtime.value,
+      message: "Split done, elapsed time: " + result + " s",
       position: "bottom-right",
       type: "success",
       duration: 5000
     });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Split Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+
+  isLoading.value = false;
 }
 </script>
 
@@ -105,7 +101,6 @@ async function splitData() {
         </el-button>
       </div>
       <el-text type="primary" size="large">
-        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Split one CSV file into many CSV files</span>
       </el-text>
@@ -147,8 +142,5 @@ async function splitData() {
   padding: 20px;
   border-radius: 10px;
   background-color: #fff;
-}
-.is-loading {
-  font-size: 20px;
 }
 </style>

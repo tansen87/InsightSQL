@@ -6,8 +6,6 @@ use std::{
   time::Instant,
 };
 
-use tauri::Emitter;
-
 use crate::detect::detect_separator;
 
 fn new_writer(
@@ -28,22 +26,19 @@ fn new_writer(
   Ok(wtr)
 }
 
-fn split_csv(input_csv: String, size: i32) -> Result<(), Box<dyn Error>> {
-  let sep = match detect_separator(&input_csv.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+async fn split_csv(file_path: String, size: u32) -> Result<(), Box<dyn Error>> {
+  let sep = match detect_separator(&file_path.as_str()) {
+    Some(separator) => separator as u8,
     None => b',',
   };
 
-  let binding = PathBuf::from(input_csv.clone());
+  let binding = PathBuf::from(&file_path);
   let path_parent = binding.parent().unwrap();
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(input_csv)?);
+    .from_reader(File::open(&file_path)?);
 
   let headers = rdr.byte_headers()?.clone();
 
@@ -66,20 +61,21 @@ fn split_csv(input_csv: String, size: i32) -> Result<(), Box<dyn Error>> {
 }
 
 #[tauri::command]
-pub async fn split(file_path: String, size: i32, window: tauri::Window) {
+pub async fn split(file_path: String, size: u32) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match (async { split_csv(file_path, size) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("split error: {err}");
-      window.emit("split_err", &err.to_string()).unwrap();
-      err.to_string();
+  match split_csv(file_path, size).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2}");
+      Ok(runtime)
     }
-  };
+    Err(err) => Err(format!("split failed: {err}")),
+  }
+}
 
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+/// for integration test
+pub async fn public_split_csv(file_path: String, size: u32) -> Result<(), Box<dyn Error>> {
+  split_csv(file_path, size).await
 }
