@@ -42,10 +42,7 @@ async fn concat_all(
       }
       _ => {
         let sep = match detect_separator(file) {
-          Some(separator) => {
-            let separator_u8: u8 = separator as u8;
-            separator_u8
-          }
+          Some(separator) => separator as u8,
           None => b',',
         };
         vec_sep.push(sep);
@@ -121,6 +118,7 @@ async fn concat_all(
           quote_style: Default::default(),
         },
       },
+      Default::default(),
     )?;
   }
 

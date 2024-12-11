@@ -29,14 +29,6 @@ async fn test_split() -> Result<(), Box<dyn Error>> {
 
   let size: usize = 2;
 
-//   tokio::runtime::Builder::new_current_thread()
-//         .enable_all()
-//         .build()
-//         .unwrap()
-//         .block_on(async {
-//             public_split_csv(file_path.to_str().unwrap().to_string(), size.try_into().unwrap()).await?;
-//         });
-
   public_split_csv(file_path.to_str().unwrap().to_string(), size.try_into()?).await?;
 
   // 验证结果

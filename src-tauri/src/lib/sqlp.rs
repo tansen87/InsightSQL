@@ -60,6 +60,7 @@ fn execute_query(
             quote_style: Default::default(),
           },
         },
+        Default::default(),
       )?;
       // let re = regex::Regex::new(r"(?m)limit.*")?;
       // let cleaned_sql = re.replace_all(query, "");
@@ -188,10 +189,7 @@ async fn prepare_query(
       }
       _ => {
         let sep = match detect_separator(table) {
-          Some(separator) => {
-            let separator_u8: u8 = separator as u8;
-            separator_u8
-          }
+          Some(separator) => separator as u8,
           None => b',',
         };
         vec_sep.push(sep);
