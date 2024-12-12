@@ -21,9 +21,8 @@ use polars::{
 };
 use tauri::Emitter;
 
-use crate::detect::detect_separator;
 use crate::excel_reader::{ExcelReader, ToPolarsDataFrame};
-use crate::xlsx_writer::write_xlsx;
+use crate::{detect::detect_separator, xlsx_writer::XlsxWriter};
 
 fn execute_query(
   query: &str,
@@ -77,7 +76,10 @@ fn execute_query(
             || PathBuf::from("default_output.xlsx"),
             |s| PathBuf::from(format!("{}.xlsx", s)),
           );
-          write_xlsx(df.clone(), output_path).expect("Writing to xlsx failed");
+          let mut xlsx_writer = XlsxWriter::new();
+          xlsx_writer
+            .write_xlsx(&df, output_path)
+            .expect("Writing to xlsx failed");
           Ok(())
         }
         (true, _, &"parquet") => {

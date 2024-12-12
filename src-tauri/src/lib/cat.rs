@@ -1,5 +1,6 @@
-use std::{error::Error, fs::File, num::NonZeroUsize, path::Path, time::Instant};
+use std::{fs::File, num::NonZeroUsize, path::Path, time::Instant};
 
+use anyhow::{anyhow, Result};
 use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
@@ -12,7 +13,7 @@ use polars::{
 use crate::{
   detect::detect_separator,
   excel_reader::{ExcelReader, ToPolarsDataFrame},
-  xlsx_writer::write_xlsx,
+  xlsx_writer::XlsxWriter,
 };
 
 async fn concat_all(
@@ -21,7 +22,7 @@ async fn concat_all(
   file_type: String,
   memory: bool,
   skip_rows: String,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
   /* concat csv and excel files into a xlsx or csv file */
   let vec_path: Vec<&str> = path.split('|').collect();
 
@@ -33,7 +34,7 @@ async fn concat_all(
 
     let file_extension = match Path::new(file).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
-      None => return Err(("File extension not found").into()),
+      None => return Err(anyhow!("File extension not found")),
     };
 
     match file_extension.as_str() {
@@ -91,7 +92,8 @@ async fn concat_all(
     let mut cat_df = cat_lf.collect()?;
     let row_len = cat_df.shape().0;
     if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
-      write_xlsx(cat_df, output_path.into())?;
+      let mut xlsx_writer =  XlsxWriter::new();
+      xlsx_writer.write_xlsx(&cat_df, output_path.into())?;
     } else {
       CsvWriter::new(File::create(output_path)?)
         .with_separator(vec_sep[0])

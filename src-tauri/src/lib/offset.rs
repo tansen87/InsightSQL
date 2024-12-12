@@ -14,7 +14,7 @@ use tauri::Emitter;
 use crate::{
   detect::detect_separator,
   excel_reader::{ExcelReader, ToPolarsDataFrame},
-  xlsx_writer,
+  xlsx_writer::XlsxWriter,
 };
 
 fn get_header(
@@ -310,7 +310,8 @@ fn offset_no_condition(
     let cat_row = cat.shape().0;
     if cat_row < 104_0000 {
       let save_path = format!("{output_path}_net.xlsx");
-      xlsx_writer::write_xlsx(cat, save_path.into())?;
+      let mut xlsx_writer = XlsxWriter::new();
+      xlsx_writer.write_xlsx(&cat, save_path.into())?;
     } else {
       let save_path = format!("{output_path}_net.csv");
       CsvWriter::new(File::create(save_path)?)
@@ -335,7 +336,8 @@ fn offset_no_condition(
     let cat_surplus_row = cat_surplus.shape().0;
     if cat_surplus_row < 104_0000 {
       let save_path = format!("{output_path}_surplus.xlsx");
-      xlsx_writer::write_xlsx(cat_surplus, save_path.into())?;
+      let mut xlsx_writer = XlsxWriter::new();
+      xlsx_writer.write_xlsx(&cat_surplus, save_path.into())?;
     } else {
       let save_path = format!("{output_path}_surplus.csv");
       CsvWriter::new(File::create(save_path)?)
@@ -575,7 +577,8 @@ fn offset_condition(
     let cat_row = cat.shape().0;
     if cat_row < 104_0000 {
       let save_path = format!("{output_path}_net.xlsx");
-      xlsx_writer::write_xlsx(cat, save_path.into())?;
+      let mut xlsx_writer = XlsxWriter::new();
+      xlsx_writer.write_xlsx(&cat, save_path.into())?;
     } else {
       let save_path = format!("{output_path}_net.csv");
       CsvWriter::new(File::create(save_path)?)
@@ -600,7 +603,8 @@ fn offset_condition(
     let cat_surplus_row = cat_surplus.shape().0;
     if cat_surplus_row < 104_0000 {
       let save_path = format!("{output_path}_surplus.xlsx");
-      xlsx_writer::write_xlsx(cat_surplus, save_path.into())?;
+      let mut xlsx_writer = XlsxWriter::new();
+      xlsx_writer.write_xlsx(&cat_surplus, save_path.into())?;
     } else {
       let save_path = format!("{output_path}_surplus.csv");
       CsvWriter::new(File::create(save_path)?)

@@ -12,7 +12,7 @@ use polars::{
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::Emitter;
 
-use crate::{detect::detect_separator, xlsx_writer::write_xlsx};
+use crate::{detect::detect_separator, xlsx_writer::XlsxWriter};
 
 fn excel_to_csv(
   path: String,
@@ -214,7 +214,8 @@ fn csv_to_xlsx(
       .finish()?;
     let rows = df.shape().0;
     if rows < 104_0000 {
-      write_xlsx(df, dest)?;
+      let mut xlsx_writer = XlsxWriter::new();
+      xlsx_writer.write_xlsx(&df, dest)?;
       let c2x_msg = format!("{}", file);
       window.emit("c2x_msg", c2x_msg)?;
     } else {
