@@ -3,7 +3,6 @@ import { ref, reactive, computed } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 
@@ -15,32 +14,6 @@ const originalList = ref([]);
 const selectList = ref([]);
 const isLoading = ref(false);
 const isPath = ref(false);
-const runtime = ref(0.0);
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("select_err", (event: any) => {
-  const selectErr = event.payload;
-  ElNotification({
-    title: "Select Error",
-    message: selectErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-});
-listen("wtr_err", (event: any) => {
-  const writeSelectErr = event.payload;
-  ElNotification({
-    title: "Write Error",
-    message: writeSelectErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
 
 // open file
 async function selectFile() {
@@ -68,10 +41,24 @@ async function selectFile() {
 
   isPath.value = true;
 
-  const headers: any = await invoke("get_select_headers", {
-    path: data.filePath
-  });
-  originalList.value = headers;
+  try {
+    const headers: any = await invoke("get_select_headers", {
+      path: data.filePath
+    });
+    originalList.value = headers;
+
+    if (JSON.stringify(headers).startsWith("get header error:")) {
+      throw JSON.stringify(headers).toString();
+    }
+  } catch (err) {
+    ElNotification({
+      title: "Open file error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 }
 
 // select data
@@ -102,18 +89,33 @@ async function selectColumns() {
   isLoading.value = true;
   isPath.value = true;
   if (data.filePath !== "") {
-    await invoke("select", {
-      path: data.filePath,
-      cols: names.value
-    });
+    try {
+      const result: string = await invoke("select", {
+        path: data.filePath,
+        cols: names.value
+      });
 
+      if (result.startsWith("Select failed:")) {
+        throw result.toString();
+      }
+
+      isLoading.value = false;
+      ElNotification({
+        message: "Select done, elapsed time: " + result + " s",
+        position: "bottom-right",
+        type: "success",
+        duration: 10000
+      });
+    } catch (err) {
+      ElNotification({
+        title: "Invoke Select Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
     isLoading.value = false;
-    ElNotification({
-      message: "Select done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
   }
 }
 </script>
@@ -153,7 +155,6 @@ async function selectColumns() {
 
         <!-- Title -->
         <el-text type="primary" size="large">
-          <el-icon> <Cherry /> </el-icon>
           <span v-if="isPath">{{ data.filePath }}</span>
           <span v-else>Select, re-order columns</span>
         </el-text>

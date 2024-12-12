@@ -20,6 +20,7 @@ crate-type = ["lib", "staticlib", "cdylib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+anyhow = "1"
 calamine = { version = "0.26.1", features = ["dates"] }
 cpc = "1.9.3"
 chrono = "0.4.38"

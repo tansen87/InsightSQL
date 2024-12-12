@@ -1,22 +1,18 @@
 use std::{
   collections::{BTreeMap, HashMap},
-  error::Error,
   fs::File,
   io::BufWriter,
   path::Path,
   time::Instant,
 };
 
-use tauri::Emitter;
+use anyhow::{anyhow, Result};
 
 use crate::detect::detect_separator;
 
-fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
-  let sep = match detect_separator(path) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(path.as_str()) {
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -42,16 +38,9 @@ fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>
   Ok(hs)
 }
 
-fn select_columns(
-  path: String,
-  cols: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn select_columns(path: String, cols: String) -> Result<()> {
   let sep = match detect_separator(path.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -59,13 +48,13 @@ fn select_columns(
   let cols_select: Vec<&str> = cols_cleaned.split('|').collect();
 
   let file_path = Path::new(&path);
-  let file_name = file_path.file_name().unwrap().to_str().unwrap();
+  let file_name = file_path.file_stem().unwrap().to_str().unwrap();
   let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
   let parent_path = file_path
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap();
-  let output_path = format!("{}/{}_select_{}.csv", parent_path, file_name, current_time);
+  let output_path = format!("{}/{}.select_{}.csv", parent_path, file_name, current_time);
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
@@ -102,50 +91,34 @@ fn select_columns(
   while rdr.read_byte_record(&mut record)? {
     match wtr.write_record(vec_indices.iter().map(|&i| &record[i])) {
       Ok(()) => (),
-      Err(e) => {
-        window.emit("wtr_err", e.to_string())?;
-        break;
+      Err(err) => {
+        return Err(anyhow!("write to csv error: {err}"));
       }
     }
   }
 
-  wtr.flush()?;
-
-  Ok(())
+  Ok(wtr.flush()?)
 }
 
 #[tauri::command]
-pub async fn get_select_headers(
-  path: String,
-  window: tauri::Window,
-) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(path.as_str()) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("get headers error: {err}");
-      window.emit("get_err", &err.to_string()).unwrap();
-      return Vec::new();
-    }
-  };
-
-  headers
-}
-
-#[tauri::command]
-pub async fn select(path: String, cols: String, window: tauri::Window) {
-  let start_time = Instant::now();
-  let sel_window = window.clone();
-
-  match (async { select_columns(path, cols, sel_window) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("select columns error: {err}");
-      window.emit("select_err", &err.to_string()).unwrap();
-    }
+pub async fn get_select_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(path).await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
   }
+}
 
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+#[tauri::command]
+pub async fn select(path: String, cols: String) -> Result<String, String> {
+  let start_time = Instant::now();
+
+  match select_columns(path, cols).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2}");
+      Ok(runtime)
+    }
+    Err(err) => Err(format!("Select failed: {err}")),
+  }
 }
