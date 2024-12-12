@@ -1,5 +1,6 @@
-use std::{error::Error, fmt::Display, fs::File, io::BufReader, path::Path};
+use std::{fmt::Display, fs::File, io::BufReader, path::Path};
 
+use anyhow::{anyhow, Result};
 use calamine::{CellType, Data, DataType, HeaderRow, Range, Reader};
 use polars::{frame::DataFrame, prelude::Column};
 
@@ -8,21 +9,21 @@ pub struct ExcelReader {
 }
 
 pub trait ToPolarsDataFrame {
-  fn to_df(&mut self) -> Result<DataFrame, Box<dyn Error>>;
+  fn to_df(&mut self) -> Result<DataFrame>;
 }
 
 impl<T> ToPolarsDataFrame for Range<T>
 where
   T: DataType + CellType + Display,
 {
-  fn to_df(&mut self) -> Result<DataFrame, Box<dyn Error>> {
+  fn to_df(&mut self) -> Result<DataFrame> {
     let mut columns = Vec::new();
 
     // Headers
     let headers: Vec<String> = self
       .rows()
       .next()
-      .ok_or("No data")?
+      .ok_or(anyhow!("No data"))?
       .iter()
       .map(|cell| cell.to_string())
       .collect();
@@ -69,14 +70,11 @@ impl ExcelReader {
 
   /// Get the nth worksheet. Shortcut for getting the nth
   /// sheet_name, then the corresponding worksheet.
-  pub fn worksheet_range_at(&mut self, n: usize, skip_rows: u32) -> Result<Range<Data>, Box<dyn Error>> {
+  pub fn worksheet_range_at(&mut self, n: usize, skip_rows: u32) -> Result<Range<Data>> {
     match self.workbook.with_header_row(HeaderRow::Row(skip_rows)).worksheet_range_at(n) {
       Some(Ok(sheet_range)) => Ok(sheet_range),
-      Some(Err(e)) => Err(Box::new(e)),
-      None => Err(Box::new(std::io::Error::new(
-        std::io::ErrorKind::InvalidInput,
-        "Worksheet index out of bounds",
-      ))),
+      Some(Err(e)) => Err(e.into()),
+      None => Err(anyhow!("Worksheet index out of bounds")),
     }
   }
 }
