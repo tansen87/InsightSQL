@@ -13,7 +13,6 @@ import {
 } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
-const runtime = ref(0.0);
 const progress = ref(0);
 const tableRef = ref(null);
 const selectedFiles = ref([]);
@@ -55,9 +54,6 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
 listen("drop_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
@@ -69,17 +65,6 @@ listen("drop_msg", (event: any) => {
       file.status = "completed";
     }
   });
-});
-listen("behead_err", (event: any) => {
-  const fillErr = event.payload;
-  ElNotification({
-    title: "Behaed Error",
-    message: fillErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 // open file
@@ -125,16 +110,31 @@ async function dropHeaders() {
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("behead", {
-      filePath: data.filePath
-    });
+    try {
+      const result: string = await invoke("behead", {
+        filePath: data.filePath
+      });
 
-    ElNotification({
-      message: "Drop done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+      if (result.startsWith("behead failed:")) {
+        throw result.toString();
+      }
+
+      isLoading.value = false;
+      ElNotification({
+        message: "Drop done, elapsed time: " + result + " s",
+        position: "bottom-right",
+        type: "success",
+        duration: 10000
+      });
+    } catch (err) {
+      ElNotification({
+        title: "Invoke Behead Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
     isLoading.value = false;
   }
 }
@@ -171,7 +171,6 @@ async function dropHeaders() {
         </el-button>
       </div>
       <el-text type="primary" size="large">
-        <el-icon> <Cpu /> </el-icon>
         <span>Drop headers from CSV</span>
       </el-text>
     </div>

@@ -1,13 +1,11 @@
-use std::{error::Error, path::Path, time::Instant};
+use std::{path::Path, time::Instant};
 
+use anyhow::Result;
 use tauri::Emitter;
 
 use crate::detect::detect_separator;
 
-fn drop_headers(
-  file_path: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
+async fn drop_headers(file_path: String, window: tauri::Window) -> Result<()> {
   let vec_path: Vec<&str> = file_path.split('|').collect();
   let parent_path = Path::new(&vec_path[0])
     .parent()
@@ -21,15 +19,12 @@ fn drop_headers(
     window.emit("start_convert", fp)?;
 
     let sep = match detect_separator(fp) {
-      Some(separator) => {
-        let separator_u8: u8 = separator as u8;
-        separator_u8
-      }
+      Some(separator) => separator as u8,
       None => b',',
     };
 
-    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
-    let output_path = format!("{}/{}_behead.csv", parent_path, filename);
+    let filename = Path::new(fp).file_stem().unwrap().to_str().unwrap();
+    let output_path = format!("{}/{}.behead.csv", parent_path, filename);
 
     let mut rdr = csv::ReaderBuilder::new()
       .delimiter(sep)
@@ -61,21 +56,17 @@ fn drop_headers(
 }
 
 #[tauri::command]
-pub async fn behead(file_path: String, window: tauri::Window) {
+pub async fn behead(file_path: String, window: tauri::Window) -> Result<String, String> {
   let start_time = Instant::now();
   let drop_window = window.clone();
 
-  match (async { drop_headers(file_path, drop_window) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("behead error: {err}");
-      window.emit("behead_err", &err.to_string()).unwrap();
-      err.to_string();
+  match drop_headers(file_path, drop_window).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2}");
+      Ok(runtime)
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+    Err(err) => Err(format!("behead failed: {err}")),
+  }
 }
