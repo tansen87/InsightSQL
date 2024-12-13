@@ -20,7 +20,6 @@ interface FileStatus {
 const selectedFiles = ref([]);
 const isLoading = ref(false);
 const progress = ref(0);
-const runtime = ref(0.0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const customColors = [
@@ -69,9 +68,6 @@ listen("start_convert", event => {
     }
   });
 });
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
 listen("row_count_err", event => {
   const excelRowCountErr: any = event.payload;
   selectedFiles.value.forEach(file => {
@@ -92,17 +88,6 @@ listen("e2c_msg", (event: any) => {
 listen("e2c_progress", (event: any) => {
   const pgs: number = event.payload;
   progress.value = pgs;
-});
-listen("e2c_err", (event: any) => {
-  const writeCsvErr = event.payload;
-  ElNotification({
-    title: "Switch_excel Error",
-    message: writeCsvErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 // open file
@@ -154,17 +139,32 @@ async function excelToCsv() {
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("switch_excel", {
-      path: data.filePath,
-      skipRows: data.skipRows
-    });
+    try {
+      const result: string = await invoke("switch_excel", {
+        path: data.filePath,
+        skipRows: data.skipRows
+      });
 
-    ElNotification({
-      message: "Convert done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+      if (result.startsWith("excel to csv failed:")) {
+        throw result.toString();
+      }
+
+      ElNotification({
+        message: "Convert done, elapsed time: " + result + " s",
+        position: "bottom-right",
+        type: "success",
+        duration: 5000
+      });
+      isLoading.value = false;
+    } catch (err) {
+      ElNotification({
+        title: "Invoke switch_excel Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
     isLoading.value = false;
   }
 }
@@ -208,7 +208,6 @@ async function excelToCsv() {
           </el-button>
         </el-form-item>
         <el-text type="primary" size="large">
-          <el-icon> <SwitchFilled /> </el-icon>
           Exports Excel to a csv file
         </el-text>
       </div>

@@ -1,9 +1,9 @@
 use std::{
-  error::Error,
   path::{Path, PathBuf},
   time::Instant,
 };
 
+use anyhow::Result;
 use calamine::{Data, HeaderRow, Range, Reader};
 use polars::{
   io::SerReader,
@@ -14,11 +14,7 @@ use tauri::Emitter;
 
 use crate::{detect::detect_separator, xlsx_writer::XlsxWriter};
 
-fn excel_to_csv(
-  path: String,
-  skip_rows: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
+async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* convert excel to csv */
   let vec_path: Vec<&str> = path.split('|').collect();
   let mut count: usize = 0;
@@ -170,11 +166,7 @@ fn excel_to_csv(
   Ok(())
 }
 
-fn csv_to_xlsx(
-  path: String,
-  skip_rows: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
+async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* csv to xlsx */
   let vec_path: Vec<&str> = path.split('|').collect();
 
@@ -185,20 +177,11 @@ fn csv_to_xlsx(
     window.emit("start_convert", file)?;
 
     let sep = match detect_separator(file) {
-      Some(separator) => {
-        let separator_u8: u8 = separator as u8;
-        separator_u8
-      }
+      Some(separator) => separator as u8,
       None => b',',
     };
 
-    let file_name = match Path::new(&file).file_name() {
-      Some(name) => match name.to_str() {
-        Some(name_str) => name_str.split('|').collect::<Vec<&str>>(),
-        None => vec![],
-      },
-      None => vec![],
-    };
+    let file_name = Path::new(&file).file_stem().unwrap().to_str().unwrap();
 
     let sce = PathBuf::from(file);
     let dest = sce.with_extension("xlsx");
@@ -219,10 +202,7 @@ fn csv_to_xlsx(
       let c2x_msg = format!("{}", file);
       window.emit("c2x_msg", c2x_msg)?;
     } else {
-      let rows_msg = format!(
-        "{}.{}|rows:{}, cannot converted.",
-        file_name[0], file_name[1], rows
-      );
+      let rows_msg = format!("{}|rows:{}, cannot converted.", file_name, rows);
       window.emit("rows_err", rows_msg)?;
     }
 
@@ -236,41 +216,41 @@ fn csv_to_xlsx(
 }
 
 #[tauri::command]
-pub async fn switch_csv(path: String, skip_rows: String, window: tauri::Window) {
+pub async fn switch_csv(
+  path: String,
+  skip_rows: String,
+  window: tauri::Window,
+) -> Result<String, String> {
   let start_time = Instant::now();
   let switch_csv_window = window.clone();
 
-  match (async { csv_to_xlsx(path, skip_rows, switch_csv_window) }).await {
-    Ok(result) => result,
-    Err(error) => {
-      eprintln!("write_range error: {error}");
-      window.emit("c2x_err", &error.to_string()).unwrap();
-      error.to_string();
+  match csv_to_xlsx(path, skip_rows, switch_csv_window).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2}");
+      Ok(runtime)
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+    Err(err) => Err(format!("csv to xlsx failed: {err}")),
+  }
 }
 
 #[tauri::command]
-pub async fn switch_excel(path: String, skip_rows: String, window: tauri::Window) {
+pub async fn switch_excel(
+  path: String,
+  skip_rows: String,
+  window: tauri::Window,
+) -> Result<String, String> {
   let start_time = Instant::now();
   let switch_excel_window = window.clone();
 
-  match (async { excel_to_csv(path, skip_rows, switch_excel_window) }).await {
-    Ok(result) => result,
-    Err(error) => {
-      eprintln!("write_range error: {error}");
-      window.emit("e2c_err", &error.to_string()).unwrap();
-      error.to_string();
+  match excel_to_csv(path, skip_rows, switch_excel_window).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      let runtime = format!("{elapsed_time:.2}");
+      Ok(runtime)
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+    Err(err) => Err(format!("excel to csv failed: {err}")),
+  }
 }

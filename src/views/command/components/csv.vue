@@ -19,7 +19,6 @@ interface FileStatus {
 
 const isLoading = ref(false);
 const progress = ref(0);
-const runtime = ref(0.0);
 const selectedFiles = ref([]);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
@@ -68,20 +67,6 @@ listen("start_convert", (event: any) => {
       file.status = "loading";
     }
   });
-});
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("c2x_err", (event: any) => {
-  const writeExcelErr = event.payload;
-  ElNotification({
-    title: "Switch csv Error",
-    message: writeExcelErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 listen("c2x_progress", (event: any) => {
   const pgs: any = event.payload;
@@ -161,17 +146,31 @@ async function csvToxlsx() {
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("switch_csv", {
-      path: data.filePath,
-      skipRows: data.skipRows
-    });
+    try {
+      const result: string = await invoke("switch_csv", {
+        path: data.filePath,
+        skipRows: data.skipRows
+      });
 
-    ElNotification({
-      message: "Convert done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+      if (result.startsWith("csv to xlsx failed:")) {
+        throw result.toString();
+      }
+      ElNotification({
+        message: "Convert done, elapsed time: " + result + " s",
+        position: "bottom-right",
+        type: "success",
+        duration: 5000
+      });
+      isLoading.value = false;
+    } catch (err) {
+      ElNotification({
+        title: "Invoke switch_csv Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
     isLoading.value = false;
   }
 }
@@ -215,7 +214,6 @@ async function csvToxlsx() {
           </el-button>
         </div>
         <el-text type="primary" size="large">
-          <el-icon> <SwitchFilled /> </el-icon>
           Exports csv to a xlsx file
         </el-text>
       </div>
