@@ -1,34 +1,17 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("pinyin_err", (event: any) => {
-  const pinyinErr = event.payload;
-  ElNotification({
-    title: "Pinyin Error",
-    message: pinyinErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 async function selectFile() {
@@ -53,13 +36,26 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  const header: any = await invoke("get_pinyin_headers", {
-    filePath: data.filePath
-  });
-  originalColumns.value = header;
+  try {
+    const headers: any = await invoke("get_pinyin_headers", {
+      filePath: data.filePath
+    });
+    if (JSON.stringify(headers).startsWith("get header error:")) {
+      throw JSON.stringify(headers).toString();
+    }
+    originalColumns.value = headers;
+  } catch (err) {
+    ElNotification({
+      title: "Open file error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 }
 
-// add index
+// invoke pinyin
 async function chineseToPinyin() {
   if (data.filePath === "") {
     ElNotification({
@@ -82,37 +78,36 @@ async function chineseToPinyin() {
 
   const cols = Object.values(columns.value).join("|");
 
-  const outputPath = await save({
-    title: "Export",
-    defaultPath: `pinyin_${new Date().getTime()}.csv`,
-    filters: [{ name: "CSV", extensions: ["csv"] }]
-  });
-  if (outputPath === "" || outputPath === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择保存文件",
-      position: "bottom-right",
-      type: "warning"
-    });
-    return;
-  }
-
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("pinyin", {
-      filePath: data.filePath,
-      columns: cols,
-      outputPath: outputPath
-    });
+    try {
+      const result: string = await invoke("pinyin", {
+        filePath: data.filePath,
+        columns: cols
+      });
 
+      if (JSON.stringify(result).startsWith("pinyin failed:")) {
+        throw JSON.stringify(result).toString();
+      }
+
+      isLoading.value = false;
+      ElNotification({
+        message: "Convert done, elapsed time: " + result + " s",
+        position: "bottom-right",
+        type: "success",
+        duration: 5000
+      });
+    } catch (err) {
+      ElNotification({
+        title: "Invoke Pinyin Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
     isLoading.value = false;
-    ElNotification({
-      message: "Convert done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
   }
 }
 </script>
@@ -148,7 +143,6 @@ async function chineseToPinyin() {
         </el-button>
       </div>
       <el-text type="primary" size="large">
-        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>

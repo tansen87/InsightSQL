@@ -1,22 +1,18 @@
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 use std::time::Instant;
 
+use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 use pinyin::ToPinyin;
-use tauri::Emitter;
 
 use crate::detect::detect_separator;
 
-fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(file_path.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -42,19 +38,12 @@ fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn
   Ok(hs)
 }
 
-fn chinese_to_pinyin(
-  file_path: String,
-  columns: String,
-  output_path: String,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn chinese_to_pinyin(file_path: String, columns: String) -> Result<()> {
   let cols: Vec<&str> = columns.split('|').collect();
   let cols_set: HashSet<&str> = cols.into_iter().collect();
 
   let sep = match detect_separator(file_path.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -67,6 +56,12 @@ fn chinese_to_pinyin(
     .delimiter(sep)
     .from_path(Path::new(&file_path))?;
 
+  let parent_path = Path::new(&file_path)
+    .parent()
+    .map(|path| path.to_string_lossy())
+    .unwrap();
+  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{}/{}.pinyin.csv", parent_path, file_name);
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
@@ -103,41 +98,23 @@ fn chinese_to_pinyin(
 }
 
 #[tauri::command]
-pub async fn get_pinyin_headers(
-  file_path: String,
-  window: tauri::Window,
-) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(file_path) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("get headers error: {err}");
-      window.emit("get_err", &err.to_string()).unwrap();
-      return Vec::new();
-    }
-  };
-
-  headers
+pub async fn get_pinyin_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(file_path).await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
+  }
 }
 
 #[tauri::command]
-pub async fn pinyin(
-  file_path: String,
-  columns: String,
-  output_path: String,
-  window: tauri::Window,
-) {
+pub async fn pinyin(file_path: String, columns: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match (async { chinese_to_pinyin(file_path, columns, output_path) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("pinyin error: {err}");
-      window.emit("pinyin_err", &err.to_string()).unwrap();
+  match chinese_to_pinyin(file_path, columns).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok(format!("{elapsed_time:.2}"))
     }
+    Err(err) => Err(format!("pinyin failed: {err}")),
   }
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
 }
