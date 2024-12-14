@@ -2,12 +2,10 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
 
 const tableData: any = ref([]);
-const runtime = ref(0.0);
 const isLoading = ref(false);
 const isPath = ref(false);
 const search = ref("");
@@ -42,10 +40,6 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
 });
 
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-
 // open file
 async function selectFile() {
   tableData.value = [];
@@ -76,6 +70,10 @@ async function selectFile() {
       filePath: data.filePath
     });
 
+    if (JSON.stringify(headers).startsWith("get header error:")) {
+      throw JSON.stringify(headers).toString();
+    }
+
     for (let i = 0; i < headers.length; i++) {
       const colData = {
         col1: headers[i],
@@ -85,8 +83,8 @@ async function selectFile() {
     }
   } catch (err) {
     ElNotification({
-      title: "Invoke header error",
-      message: JSON.stringify(err),
+      title: "Open file error",
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -111,21 +109,17 @@ async function renameData() {
     const headersStringArray = tableData.value.map((row: any) => row.col2);
     const headersString = headersStringArray.join(",");
 
-    const countRows: number = await invoke("rename", {
+    const result: string = await invoke("rename", {
       filePath: data.filePath,
       headers: headersString
     });
 
-    if (typeof countRows === "string") {
-      throw new Error(countRows);
+    if (JSON.stringify(result).startsWith("rename failed:")) {
+      throw JSON.stringify(result).toString();
     }
 
     ElNotification({
-      message:
-        "Rename done, write rows: " +
-        countRows.toString() +
-        " lines, elapsed time: " +
-        runtime.value,
+      message: "Rename done, elapsed time: " + result + " s",
       position: "bottom-right",
       type: "success",
       duration: 10000
@@ -135,13 +129,12 @@ async function renameData() {
   } catch (err) {
     ElNotification({
       title: "Invoke rename error",
-      message: JSON.stringify(err),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
     });
   }
-
   isLoading.value = false;
 }
 
