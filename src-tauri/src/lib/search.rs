@@ -1,5 +1,6 @@
-use std::{collections::HashMap, error::Error, fs::File, io::BufReader, time::Instant};
+use std::{collections::HashMap, fs::File, io::BufReader, path::Path, time::Instant};
 
+use anyhow::{anyhow, Result};
 use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
@@ -24,7 +25,7 @@ impl From<&str> for SearchMode {
   }
 }
 
-fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+async fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(path) {
     Some(separator) => separator as u8,
     None => b',',
@@ -58,7 +59,7 @@ async fn generic_search<F>(
   conditions: Vec<String>,
   output_path: String,
   match_fn: F,
-) -> Result<String, Box<dyn Error>>
+) -> Result<String>
 where
   F: Fn(&str, &[String]) -> bool + Send + Sync,
 {
@@ -71,13 +72,9 @@ where
   let name_idx = match headers.iter().position(|field| field == select_column) {
     Some(idx) => idx,
     None => {
-      return Err(
-        format!(
-          "The column '{}' was not found in the headers.",
-          select_column
-        )
-        .into(),
-      );
+      return Err(anyhow!(
+        "The column '{select_column}' was not found in the headers."
+      ));
     }
   };
 
@@ -106,7 +103,7 @@ async fn equal_search(
   select_column: String,
   conditions: Vec<String>,
   output_path: String,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -124,7 +121,7 @@ async fn contains_search(
   select_column: String,
   conditions: Vec<String>,
   output_path: String,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -146,7 +143,7 @@ async fn startswith_search(
   select_column: String,
   conditions: Vec<String>,
   output_path: String,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -164,7 +161,7 @@ async fn regex_search(
   select_column: String,
   regex_char: String,
   output_path: String,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String> {
   let pattern = RegexBuilder::new(&regex_char).build()?;
 
   generic_search(
@@ -179,20 +176,11 @@ async fn regex_search(
 }
 
 #[tauri::command]
-pub async fn get_search_headers(
-  path: String,
-  window: tauri::Window,
-) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(path.as_str()) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("get headers error: {err}");
-      window.emit("get_err", &err.to_string()).unwrap();
-      return Vec::new();
-    }
-  };
-
-  headers
+pub async fn get_search_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(path.as_str()).await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
+  }
 }
 
 async fn perform_search(
@@ -200,13 +188,19 @@ async fn perform_search(
   sep: u8,
   select_column: String,
   conditions: String,
-  output_path: String,
   mode: SearchMode,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String> {
   let vec_conditions: Vec<String> = conditions
     .split('|')
     .map(|s| s.trim().to_string())
     .collect();
+
+  let parent_path = Path::new(&path)
+    .parent()
+    .map(|path| path.to_string_lossy())
+    .unwrap();
+  let file_name = Path::new(&path).file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{}/{}.search.csv", parent_path, file_name);
 
   match mode {
     SearchMode::Equal => equal_search(path, sep, select_column, vec_conditions, output_path).await,
@@ -226,7 +220,6 @@ pub async fn search(
   select_column: String,
   mode: String,
   condition: String,
-  output_path: String,
   window: tauri::Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -238,23 +231,15 @@ pub async fn search(
 
   let search_mode: SearchMode = mode.as_str().into();
 
-  match perform_search(
-    path,
-    sep,
-    select_column,
-    condition,
-    output_path,
-    search_mode,
-  )
-  .await
-  {
+  match perform_search(path, sep, select_column, condition, search_mode).await {
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2} s");
-      window.emit("runtime", runtime).unwrap();
+      window
+        .emit("runtime", format!("{elapsed_time:.2}"))
+        .unwrap();
       Ok(result)
     }
-    Err(err) => Err(format!("Search failed: {err}")),
+    Err(err) => Err(format!("search failed: {err}")),
   }
 }
