@@ -1,20 +1,16 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 use std::time::Instant;
 
-use tauri::Emitter;
+use anyhow::{anyhow, Result};
 
 use crate::detect::detect_separator;
 
-fn get_header(path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(path.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -40,17 +36,9 @@ fn get_header(path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Erro
   Ok(hs)
 }
 
-fn fill_values(
-  input_file: String,
-  fill_column: String,
-  fill_value: String,
-  window: tauri::Window,
-) -> Result<(), Box<dyn Error>> {
+async fn fill_values(input_file: String, fill_column: String, fill_value: String) -> Result<()> {
   let sep = match detect_separator(input_file.as_str()) {
-    Some(separator) => {
-      let separator_u8: u8 = separator as u8;
-      separator_u8
-    }
+    Some(separator) => separator as u8,
     None => b',',
   };
 
@@ -68,7 +56,10 @@ fn fill_values(
     let index = match headers.iter().position(|field| &field == column) {
       Some(idx) => idx,
       None => {
-        return Err(format!("The column '{}' was not found in the headers.", column).into());
+        return Err(anyhow!(
+          "The column '{}' was not found in the headers.",
+          column
+        ));
       }
     };
     header_indices.push(index);
@@ -78,8 +69,13 @@ fn fill_values(
   let parent_path = Path::new(&input_file)
     .parent()
     .map(|parent| parent.to_string_lossy())
-    .unwrap_or_else(|| "Default Path".to_string().into());
-  let output_file = format!("{}/fill_{}.csv", parent_path, current_time);
+    .unwrap();
+  let file_name = Path::new(&input_file)
+    .file_stem()
+    .unwrap()
+    .to_str()
+    .unwrap();
+  let output_file = format!("{}/{}.fill_{}.csv", parent_path, file_name, current_time);
 
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
@@ -87,54 +83,38 @@ fn fill_values(
 
   wtr.write_record(headers)?;
 
-  let mut count_rows: u64 = 0;
-
   for result in rdr.deserialize() {
     let mut record: Vec<String> = result?;
     for &index in &header_indices {
       if record.get(index).map_or(true, |s| s.is_empty()) {
         record[index] = fill_value.clone();
-        count_rows += 1;
       }
     }
     wtr.write_record(&record)?;
   }
   wtr.flush()?;
 
-  window.emit("fill_rows", count_rows)?;
-
   Ok(())
 }
 
 #[tauri::command]
-pub async fn get_fill_headers(path: String, window: tauri::Window) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(path) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("get headers error: {err}");
-      window.emit("get_err", &err.to_string()).unwrap();
-      return Vec::new();
-    }
-  };
-
-  headers
+pub async fn get_fill_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(path).await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
+  }
 }
 
 #[tauri::command]
-pub async fn fill(path: String, columns: String, values: String, window: tauri::Window) {
+pub async fn fill(path: String, columns: String, values: String) -> Result<String, String> {
   let start_time = Instant::now();
-  let cnt_window = window.clone();
 
-  match (async { fill_values(path, columns, values, cnt_window) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("fill value error: {err}");
-      window.emit("fill_err", &err.to_string()).unwrap();
+  match fill_values(path, columns, values).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok(format!("{elapsed_time:.2}"))
     }
+    Err(err) => Err(format!("fill failed: {err}")),
   }
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
 }

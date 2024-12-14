@@ -2,39 +2,17 @@
 import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { Cpu, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const fillRows = ref(0);
-const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
   value: "0"
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("fill_rows", (event: any) => {
-  const count: any = event.payload;
-  fillRows.value = count;
-});
-listen("fill_err", (event: any) => {
-  const fillErr = event.payload;
-  ElNotification({
-    title: "Fill Error",
-    message: fillErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 // open file
@@ -60,10 +38,23 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  const header: any = await invoke("get_fill_headers", {
-    path: data.filePath
-  });
-  originalColumns.value = header;
+  try {
+    const headers: any = await invoke("get_fill_headers", {
+      path: data.filePath
+    });
+    if (JSON.stringify(headers).startsWith("get header error:")) {
+      throw JSON.stringify(headers).toString();
+    }
+    originalColumns.value = headers;
+  } catch (err) {
+    ElNotification({
+      title: "Open file error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 }
 
 // fill data
@@ -92,23 +83,34 @@ async function fillData() {
   if (data.filePath !== "") {
     isLoading.value = true;
 
-    await invoke("fill", {
-      path: data.filePath,
-      columns: cols,
-      values: data.value
-    });
+    try {
+      const result: string = await invoke("fill", {
+        path: data.filePath,
+        columns: cols,
+        values: data.value
+      });
 
+      if (JSON.stringify(result).startsWith("fill failed:")) {
+        throw JSON.stringify(result).toString();
+      }
+
+      isLoading.value = false;
+      ElNotification({
+        message: "Fill done, elapsed time: " + result + " s",
+        position: "bottom-right",
+        type: "success",
+        duration: 10000
+      });
+    } catch (err) {
+      ElNotification({
+        title: "Invoke Fill Error",
+        message: err.toString(),
+        position: "bottom-right",
+        type: "error",
+        duration: 10000
+      });
+    }
     isLoading.value = false;
-    ElNotification({
-      message:
-        "Fill done, fill rows: " +
-        fillRows.value +
-        " lines, elapsed time: " +
-        runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
   }
 }
 </script>
@@ -135,7 +137,6 @@ async function fillData() {
       </div>
 
       <el-text type="primary" size="large">
-        <el-icon> <Cpu /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Fill empty fields in selected columns of a CSV</span>
       </el-text>
