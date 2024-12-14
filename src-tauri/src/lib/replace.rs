@@ -1,10 +1,11 @@
-use std::{borrow::Cow, collections::HashMap, error::Error, fs::File, time::Instant};
+use std::{borrow::Cow, collections::HashMap, fs::File, path::Path, time::Instant};
 
+use anyhow::{anyhow, Result};
 use regex::bytes::RegexBuilder;
 
 use crate::detect::detect_separator;
 
-async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(file_path.as_str()) {
     Some(separator) => separator as u8,
     None => b',',
@@ -36,18 +37,24 @@ async fn regex_replace(
   select_column: String,
   regex_pattern: String,
   replacement: String,
-  output_path: String,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
 
-  let sep = match detect_separator(file_path.as_str()) {
+  let sep = match detect_separator(&file_path.as_str()) {
     Some(separator) => separator as u8,
     None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(file_path)?);
+    .from_reader(File::open(&file_path)?);
+
+  let parent_path = Path::new(&file_path)
+    .parent()
+    .map(|path| path.to_string_lossy())
+    .unwrap();
+  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{}/{}.replace.csv", parent_path, file_name);
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
     .from_path(output_path)?;
@@ -56,7 +63,9 @@ async fn regex_replace(
   let header_idx = match headers.iter().position(|field| field == select_column) {
     Some(idx) => idx,
     None => {
-      return Err(format!("The column '{select_column}' was not found in the headers.").into())
+      return Err(anyhow!(
+        "The column '{select_column}' was not found in the headers."
+      ))
     }
   };
 
@@ -82,13 +91,13 @@ async fn regex_replace(
     wtr.write_byte_record(&record)?;
   }
 
-  wtr.flush()?;
-
-  Ok(())
+  Ok(wtr.flush()?)
 }
 
 #[tauri::command]
-pub async fn get_replace_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
+pub async fn get_replace_headers(
+  file_path: String,
+) -> Result<Vec<HashMap<String, String>>, String> {
   match get_header(file_path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
@@ -101,17 +110,15 @@ pub async fn replace(
   select_column: String,
   regex_pattern: String,
   replacement: String,
-  output_path: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match regex_replace(file_path, select_column, regex_pattern, replacement, output_path).await {
+  match regex_replace(file_path, select_column, regex_pattern, replacement).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2}");
-      Ok(runtime)
+      Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("Replace failed: {err}")),
+    Err(err) => Err(format!("replace failed: {err}")),
   }
 }

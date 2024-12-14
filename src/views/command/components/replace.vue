@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
@@ -98,7 +98,7 @@ async function selectFile() {
   }
 }
 
-// replace function
+// invoke replace
 async function replaceData() {
   if (data.filePath === "") {
     ElNotification({
@@ -119,21 +119,6 @@ async function replaceData() {
     return;
   }
 
-  const outputPath = await save({
-    title: "Export",
-    defaultPath: `replace_${new Date().getTime()}.csv`,
-    filters: [{ name: "CSV", extensions: ["csv"] }]
-  });
-  if (outputPath === "" || outputPath === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择保存文件",
-      position: "bottom-right",
-      type: "warning"
-    });
-    return;
-  }
-
   if (data.filePath !== "") {
     isLoading.value = true;
 
@@ -142,12 +127,11 @@ async function replaceData() {
         filePath: data.filePath,
         selectColumn: selectColumn.value,
         regexPattern: data.regexPattern,
-        replacement: data.replacement,
-        outputPath: outputPath
+        replacement: data.replacement
       });
 
-      if (result.startsWith("Replace failed:")) {
-        throw result.toString();
+      if (JSON.stringify(result).startsWith("Replace failed:")) {
+        throw JSON.stringify(result).toString();
       }
 
       isLoading.value = false;
