@@ -56,8 +56,8 @@ async function splitData() {
       size: data.size
     });
 
-    if (result.startsWith("split failed:")) {
-      throw result.toString();
+    if (JSON.stringify(result).startsWith("split failed:")) {
+      throw JSON.stringify(result).toString();
     }
 
     ElNotification({
