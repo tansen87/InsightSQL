@@ -129,54 +129,52 @@ async function queryData() {
     return false;
   }
 
-  if (data.filePath !== "" && sqlQuery.value !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const df: string = await invoke("query", {
-        path: data.filePath,
-        sqlQuery: sqlQuery.value,
-        write: data.write,
-        writeFormat: data.writeFormat,
-        lowMemory: data.lowMemory
-      });
+  try {
+    const df: string = await invoke("query", {
+      path: data.filePath,
+      sqlQuery: sqlQuery.value,
+      write: data.write,
+      writeFormat: data.writeFormat,
+      lowMemory: data.lowMemory
+    });
 
-      // check if df is an error message
-      if (
-        (typeof df[0] === "string" && df[0].startsWith("execute_query")) ||
-        df[0].startsWith("prepare_query")
-      ) {
-        throw df[0].toString();
-      }
-
-      const jsonData = JSON.parse(df);
-      const isJsonArray = Array.isArray(jsonData);
-      const arrayData = isJsonArray ? jsonData : [jsonData];
-      columns.value = Object.keys(arrayData[0]).map(key => ({
-        name: key,
-        label: key,
-        prop: key
-      }));
-      tableData.value = arrayData;
-
-      ElNotification({
-        message: "Query done, elapsed time: " + runtime.value,
-        position: "bottom-right",
-        type: "success",
-        duration: 5000
-      });
-
-      isLoading.value = false;
-      return true;
-    } catch (err) {
-      ElNotification({
-        title: "Invoke query error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    // check if df is an error message
+    if (
+      (typeof df[0] === "string" && df[0].startsWith("execute_query")) ||
+      df[0].startsWith("prepare_query")
+    ) {
+      throw df[0].toString();
     }
+
+    const jsonData = JSON.parse(df);
+    const isJsonArray = Array.isArray(jsonData);
+    const arrayData = isJsonArray ? jsonData : [jsonData];
+    columns.value = Object.keys(arrayData[0]).map(key => ({
+      name: key,
+      label: key,
+      prop: key
+    }));
+    tableData.value = arrayData;
+
+    ElNotification({
+      message: "Query done, elapsed time: " + runtime.value + " s",
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
+
+    isLoading.value = false;
+    return true;
+  } catch (err) {
+    ElNotification({
+      title: "Invoke query error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
 
   isLoading.value = false;

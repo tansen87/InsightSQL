@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   collections::HashMap,
-  error::Error,
   fs::File,
   io::{BufWriter, Read, Write},
   num::NonZeroUsize,
@@ -9,6 +8,7 @@ use std::{
   time::Instant,
 };
 
+use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
 use polars::{
   datatypes::AnyValue,
@@ -135,7 +135,7 @@ async fn prepare_query(
   write: bool,
   write_format: &str,
   low_memory: bool,
-) -> Result<Vec<String>, Box<dyn Error>> {
+) -> Result<Vec<String>> {
   let mut ctx = SQLContext::new();
 
   let mut output: Vec<Option<String>> = Vec::new();
@@ -182,7 +182,7 @@ async fn prepare_query(
 
     let file_extension = match Path::new(table).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
-      None => return Err(("").into()),
+      None => return Err(anyhow!("")),
     };
 
     match file_extension.as_str() {
@@ -338,10 +338,11 @@ pub async fn query(
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2} s");
-      window.emit("runtime", runtime).unwrap();
+      window
+        .emit("runtime", format!("{elapsed_time:.2}"))
+        .unwrap();
       Ok(result)
     }
-    Err(e) => Err(format!("prepare_query => {e}")),
+    Err(err) => Err(format!("prepare_query => {err}")),
   }
 }
