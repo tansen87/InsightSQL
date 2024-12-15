@@ -76,9 +76,9 @@ const commands = ref([
     route: "/command/components/offset"
   },
   {
-    title: "Add index",
-    description: "Add an index for a CSV.",
-    route: "/command/components/addIndex"
+    title: "Enumerate",
+    description: "Add a new column enumerating the lines of a CSV file.",
+    route: "/command/components/enumerate"
   },
   {
     title: "Chinese to Pinyin",

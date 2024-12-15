@@ -2,14 +2,12 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const columns = ref([]);
 const isPath = ref(false);
-const runtime = ref(0.0);
 const tableData = ref([]);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
@@ -33,21 +31,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("index_err", (event: any) => {
-  const indexErr = event.payload;
-  ElNotification({
-    title: "Index Error",
-    message: indexErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 async function selectFile() {
@@ -93,8 +76,8 @@ async function selectFile() {
   tableData.value = arrayData;
 }
 
-// add index
-async function addIndex() {
+// invoke enumer function
+async function enumerate() {
   if (data.filePath === "") {
     ElNotification({
       title: "File not found",
@@ -105,21 +88,34 @@ async function addIndex() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    await invoke("index", {
+  try {
+    const result: string = await invoke("enumer", {
       filePath: data.filePath
     });
 
+    if (JSON.stringify(result).startsWith("enumerate failed:")) {
+      throw JSON.stringify(result).toString();
+    }
+
     isLoading.value = false;
     ElNotification({
-      message: "Index done, elapsed time: " + runtime.value,
+      message: "Enumerate done, elapsed time: " + result + " s",
       position: "bottom-right",
       type: "success",
       duration: 5000
     });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Enumerate Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 
@@ -144,17 +140,16 @@ async function addIndex() {
         </el-button>
         <el-button
           type="success"
-          @click="addIndex()"
+          @click="enumerate()"
           :loading="isLoading"
           :icon="IceCreamRound"
           plain
           style="margin-left: 16px"
         >
-          Index
+          Enumerate
         </el-button>
       </div>
       <el-text type="primary" size="large">
-        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Add an index for a CSV</span>
       </el-text>

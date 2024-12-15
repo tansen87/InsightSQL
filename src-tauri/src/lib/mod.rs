@@ -8,7 +8,7 @@ pub mod dbf;
 pub mod detect;
 pub mod excel_reader;
 pub mod fill;
-pub mod index;
+pub mod enumerate;
 pub mod modify;
 pub mod offset;
 pub mod pinyin;

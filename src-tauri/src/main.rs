@@ -11,7 +11,7 @@ use lib::convert;
 use lib::count;
 use lib::dbf;
 use lib::fill;
-use lib::index;
+use lib::enumerate;
 use lib::modify;
 use lib::offset;
 use lib::pinyin;
@@ -56,7 +56,7 @@ fn main() {
       traverse::traverse,
       offset::get_offset_headers,
       offset::offset,
-      index::index,
+      enumerate::enumer,
       pinyin::get_pinyin_headers,
       pinyin::pinyin,
       replace::get_replace_headers,

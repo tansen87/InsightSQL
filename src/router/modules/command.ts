@@ -142,11 +142,11 @@ export default {
       }
     },
     {
-      path: "/command/components/addIndex",
-      name: "addIndex",
-      component: () => import("@/views/command/components/addIndex.vue"),
+      path: "/command/components/enumerate",
+      name: "enumerate",
+      component: () => import("@/views/command/components/enumerate.vue"),
       meta: {
-        title: "addIndex",
+        title: "enumerate",
         showLink: false
       }
     },
