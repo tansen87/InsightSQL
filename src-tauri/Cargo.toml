@@ -23,11 +23,11 @@ tauri-build = { version = "2", features = [] }
 anyhow = "1"
 calamine = { version = "0.26.1", features = ["dates"] }
 cpc = "1.9.3"
-chrono = "0.4.38"
+chrono = "0.4.39"
 csv = "1.3.1"
 dbase = "0.5.0"
 dynfmt = { version = "0.1.5", default-features = false, features = ["curly"] }
-indexmap = { version = "2.6.0", features = ["serde"] }
+indexmap = { version = "2.7.0", features = ["serde"] }
 itoa = "1"
 lazy_static = "1.5.0"
 odbc-api = "9.0.0"
@@ -48,22 +48,22 @@ polars = { version = "0.45.1", features = [
 rayon = "1.10.0"
 regex = "1.11.1"
 rust_decimal = "1.36.0"
-rust_xlsxwriter = "0.79.4"
+rust_xlsxwriter = "0.80.0"
 ryu = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 smallvec = "1.13.2"
-tempfile = "3"
-tokio = { version = "1", features = ["test-util"] }
-tauri = { version = "2", features = [] }
-tauri-plugin-dialog = "2"
-tauri-plugin-shell = "2"
-tauri-plugin-process = "2"
-tauri-plugin-fs = "2"
-tauri-plugin-notification = "2"
-tauri-plugin-clipboard-manager = "2.0.1"
-tauri-plugin-http = "2"
-tauri-plugin-os = "2"
+tempfile = "3.14.0"
+tokio = { version = "1.42.0", features = ["test-util"] }
+tauri = { version = "2.1.1", features = [] }
+tauri-plugin-dialog = "2.2.0"
+tauri-plugin-shell = "2.2.0"
+tauri-plugin-process = "2.2.0"
+tauri-plugin-fs = "2.2.0"
+tauri-plugin-notification = "2.2.0"
+tauri-plugin-clipboard-manager = "2.2.0"
+tauri-plugin-http = "2.2.0"
+tauri-plugin-os = "2.2.0"
 
 [features]
 # by default Tauri runs in production mode
@@ -74,4 +74,4 @@ default = [ "custom-protocol" ]
 custom-protocol = [ "tauri/custom-protocol" ]
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-global-shortcut = "2"
+tauri-plugin-global-shortcut = "2.2.0"
