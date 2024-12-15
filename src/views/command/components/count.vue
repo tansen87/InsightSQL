@@ -9,7 +9,6 @@ import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
 const isLoading = ref(false);
 const progress = ref(0);
 const selectedFiles = ref([]);
-const runtime = ref(0.0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const customColors = [
@@ -45,23 +44,9 @@ listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert) {
-      file.status = "loading";
+      file.status = "...";
     }
   });
-});
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("count_err", (event: any) => {
-  const countErr = event.payload;
-  ElNotification({
-    title: "Count Error",
-    message: countErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 listen("count_msg", (event: any) => {
   const countMsg: any = event.payload;
@@ -117,16 +102,31 @@ async function countData() {
 
   isLoading.value = true;
 
-  await invoke("count", {
-    path: data.filePath
-  });
+  try {
+    const result: string = await invoke("count", {
+      path: data.filePath
+    });
 
-  ElNotification({
-    message: "Count done, elapsed time: " + runtime.value,
-    position: "bottom-right",
-    type: "success",
-    duration: 5000
-  });
+    if (JSON.stringify(result).startsWith("count failed:")) {
+      throw JSON.stringify(result).toString();
+    }
+
+    ElNotification({
+      message: "Count done, elapsed time: " + result + " s",
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
+    isLoading.value = false;
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Count Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
   isLoading.value = false;
 }
 </script>
@@ -163,7 +163,6 @@ async function countData() {
           </el-button>
         </div>
         <el-text type="primary" size="large">
-          <el-icon> <Grape /> </el-icon>
           Count the rows of CSV files
         </el-text>
       </div>
@@ -177,7 +176,7 @@ async function countData() {
         <el-table-column prop="filename" label="file" style="width: 80%" />
         <el-table-column label="rows" width="100">
           <template #default="scope">
-            <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
+            <ElIcon v-if="scope.row.status === '...'" class="is-loading">
               <Loading />
             </ElIcon>
             <span>{{ scope.row.status }}</span>

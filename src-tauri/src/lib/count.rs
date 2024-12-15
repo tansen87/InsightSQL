@@ -1,13 +1,13 @@
-use std::{error::Error, fs::File, path::Path, time::Instant};
+use std::{fs::File, path::Path, time::Instant};
 
+use anyhow::Result;
 use tauri::Emitter;
 
 use crate::detect::detect_separator;
 
-fn count_rows(path: String, window: tauri::Window) -> Result<Vec<String>, Box<dyn Error>> {
+async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
   /* count csv rows */
   let vec_path: Vec<&str> = path.split('|').collect();
-  let mut vec_file = Vec::new();
   let mut countf: usize = 0;
   let file_len = vec_path.len();
 
@@ -15,10 +15,7 @@ fn count_rows(path: String, window: tauri::Window) -> Result<Vec<String>, Box<dy
     window.emit("start_convert", file)?;
 
     let sep = match detect_separator(file) {
-      Some(separator) => {
-        let separator_u8: u8 = separator as u8;
-        separator_u8
-      }
+      Some(separator) => separator as u8,
       None => b',',
     };
 
@@ -35,9 +32,7 @@ fn count_rows(path: String, window: tauri::Window) -> Result<Vec<String>, Box<dy
     }
 
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
-    let count_msg = format!("{}|{}", filename, count);
-    window.emit("count_msg", count_msg.clone())?;
-    vec_file.push(count_msg);
+    window.emit("count_msg", format!("{}|{}", filename, count))?;
 
     countf += 1;
     let progress = ((countf as f32) / (file_len as f32)) * 100.0;
@@ -45,27 +40,19 @@ fn count_rows(path: String, window: tauri::Window) -> Result<Vec<String>, Box<dy
     window.emit("count_progress", progress_s)?;
   }
 
-  Ok(vec_file)
+  Ok(())
 }
 
 #[tauri::command]
-pub async fn count(path: String, window: tauri::Window) -> Vec<String> {
+pub async fn count(path: String, window: tauri::Window) -> Result<String, String> {
   let start_time = Instant::now();
 
-  let count_window = window.clone();
-  let cnt = match (async { count_rows(path, count_window) }).await {
-    Ok(result) => result,
-    Err(error) => {
-      eprintln!("count_rows error:: {error}");
-      window.emit("count_err", &error.to_string()).unwrap();
-      return Vec::new();
+  match count_rows(path, window).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok(format!("{elapsed_time:.2}"))
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
-
-  cnt
+    Err(err) => Err(format!("count failed: {err}")),
+  }
 }
