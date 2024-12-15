@@ -1,5 +1,6 @@
-use std::{collections::HashMap, error::Error, fs::File, sync::OnceLock, time::Instant};
+use std::{collections::HashMap, fs::File, path::Path, sync::OnceLock, time::Instant};
 
+use anyhow::{anyhow, Result};
 use cpc::{eval, units::Unit};
 use dynfmt::Format;
 use rayon::{
@@ -37,7 +38,7 @@ enum Operations {
 }
 
 impl Operations {
-  fn from_str(op: &str) -> Result<Self, Box<dyn Error>> {
+  fn from_str(op: &str) -> Result<Self> {
     match op.to_lowercase().as_str() {
       "copy" => Ok(Operations::Copy),
       "len" => Ok(Operations::Len),
@@ -49,7 +50,7 @@ impl Operations {
       "replace" => Ok(Operations::Replace),
       "round" => Ok(Operations::Round),
       "squeeze" => Ok(Operations::Squeeze),
-      _ => Err(Box::<dyn Error>::from(format!("Unknown '{op}' operation"))),
+      _ => Err(anyhow!("Unknown '{op}' operation")),
     }
   }
 }
@@ -61,7 +62,7 @@ enum ApplyCmd {
   DynFmt,
 }
 
-async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(&file_path) {
     Some(separator) => separator as u8,
     None => b',',
@@ -129,7 +130,7 @@ fn validate_operations(
   replacement: &str,
   new_column: Option<&String>,
   formatstr: &str,
-) -> Result<SmallVec<[Operations; 4]>, Box<dyn Error>> {
+) -> Result<SmallVec<[Operations; 4]>> {
   let mut copy_invokes = 0_u8;
   let mut replace_invokes = 0_u8;
 
@@ -140,13 +141,15 @@ fn validate_operations(
     match operation {
       Operations::Copy => {
         if new_column.is_none() {
-          return Err("new_column is required for copy operation.".into());
+          return Err(anyhow!("new_column is required for copy operation."));
         }
         copy_invokes = copy_invokes.saturating_add(1);
       }
       Operations::Replace => {
         if comparand.is_empty() || replacement.is_empty() {
-          return Err("comparand and replacement are required for replace operation.".into());
+          return Err(anyhow!(
+            "comparand and replacement are required for replace operation."
+          ));
         }
         replace_invokes = replace_invokes.saturating_add(1);
       }
@@ -155,7 +158,7 @@ fn validate_operations(
           .set(formatstr.parse::<u32>().unwrap_or(2))
           .is_err()
         {
-          return Err("Cannot initialize Round precision.".into());
+          return Err(anyhow!("Cannot initialize Round precision."));
         };
       }
       _ => {}
@@ -164,7 +167,7 @@ fn validate_operations(
   }
   if copy_invokes > 1 || replace_invokes > 1 {
     return Err(
-            "you can only use copy({copy_invokes}), replace({replace_invokes}), ONCE per operation series.".into()
+            anyhow!("you can only use copy({copy_invokes}), replace({replace_invokes}), ONCE per operation series.")
         );
   };
 
@@ -181,35 +184,35 @@ fn apply_operations(
     match op {
       Operations::Len => {
         itoa::Buffer::new().format(cell.len()).clone_into(cell);
-      },
+      }
       Operations::Lower => {
         *cell = cell.to_lowercase();
-      },
+      }
       Operations::Upper => {
         *cell = cell.to_uppercase();
-      },
+      }
       Operations::Trim => {
         *cell = String::from(cell.trim());
-      },
+      }
       Operations::Ltrim => {
         *cell = String::from(cell.trim_start());
-      },
+      }
       Operations::Rtrim => {
         *cell = String::from(cell.trim_end());
-      },
+      }
       Operations::Replace => {
         *cell = cell.replace(comparand, replacement);
-      },
+      }
       Operations::Round => {
         if let Ok(num) = cell.parse::<f64>() {
           // safety: we set ROUND_PLACES in validate_operations()
           *cell = round_num(num, *ROUND_PLACES.get().unwrap());
         }
-      },
+      }
       Operations::Squeeze => {
         let squeezer: &'static Regex = regex_oncelock!(r"\s+");
         *cell = squeezer.replace_all(cell, " ").into_owned();
-      },
+      }
       Operations::Copy => {} // copy is a noop
     }
   }
@@ -224,8 +227,7 @@ async fn apply_perform(
   replacement: String,
   formatstr: String,
   new_column: bool,
-  output_path: String,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
   let select_columns: Vec<&str> = select_columns.split('|').collect();
   let sep = match detect_separator(&file_path) {
     Some(separator) => separator as u8,
@@ -245,7 +247,13 @@ async fn apply_perform(
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(file_path)?);
+    .from_reader(File::open(file_path.clone())?);
+  let parent_path = Path::new(&file_path)
+    .parent()
+    .map(|path| path.to_string_lossy())
+    .unwrap();
+  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{}/{}.apply.csv", parent_path, file_name);
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
     .from_path(output_path)?;
@@ -261,7 +269,7 @@ async fn apply_perform(
     .iter()
     .map(|&col| col.as_bytes().to_vec())
     .collect();
-  let column_index_res: Result<Vec<usize>, String> = select_column_bytes
+  let column_index = select_column_bytes
     .iter()
     .map(|col_bytes| {
       header_map
@@ -274,9 +282,8 @@ async fn apply_perform(
         })
         .map(|&idx| idx)
     })
-    .collect();
-
-  let column_index = column_index_res?;
+    .collect::<Result<Vec<usize>, _>>()
+    .map_err(|err| anyhow!(err))?;
   let column_index_next = *column_index.iter().next().unwrap();
 
   let mut headers = rdr.headers()?.clone();
@@ -350,8 +357,8 @@ async fn apply_perform(
       match rdr.read_record(&mut batch_record) {
         Ok(true) => batch.push(std::mem::take(&mut batch_record)),
         Ok(false) => break, // nothing else to add to batch
-        Err(e) => {
-          return Err(format!("Error reading file: {e}").into());
+        Err(err) => {
+          return Err(anyhow!("Error reading file: {err}"));
         }
       }
     }
@@ -474,7 +481,6 @@ pub async fn apply(
   replacement: String,
   formatstr: String,
   new_column: bool,
-  output_path: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -487,15 +493,13 @@ pub async fn apply(
     replacement,
     formatstr,
     new_column,
-    output_path,
   )
   .await
   {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2}");
-      Ok(runtime)
+      Ok(format!("{elapsed_time:.2}"))
     }
     Err(err) => Err(format!("apply failed: {err}")),
   }

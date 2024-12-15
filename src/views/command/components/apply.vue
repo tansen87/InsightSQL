@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
@@ -123,21 +123,6 @@ async function applyData() {
     return;
   }
 
-  const outputPath = await save({
-    title: "Export",
-    defaultPath: `apply_${new Date().getTime()}.csv`,
-    filters: [{ name: "CSV", extensions: ["csv"] }]
-  });
-  if (outputPath === "" || outputPath === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择保存文件",
-      position: "bottom-right",
-      type: "warning"
-    });
-    return;
-  }
-
   if (data.filePath !== "") {
     isLoading.value = true;
 
@@ -150,12 +135,11 @@ async function applyData() {
         comparand: data.comparand,
         replacement: data.replacement,
         formatstr: data.formatstr,
-        newColumn: data.newColumn,
-        outputPath: outputPath
+        newColumn: data.newColumn
       });
 
-      if (result.startsWith("apply failed:")) {
-        throw result.toString();
+      if (JSON.stringify(result).startsWith("apply failed:")) {
+        throw JSON.stringify(result).toString();
       }
 
       isLoading.value = false;
@@ -174,7 +158,6 @@ async function applyData() {
         duration: 10000
       });
     }
-
     isLoading.value = false;
   }
 }
