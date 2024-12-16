@@ -243,3 +243,44 @@ pub async fn search(
     Err(err) => Err(format!("search failed: {err}")),
   }
 }
+
+/// for integration test
+pub async fn public_equal_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+) -> Result<String> {
+  equal_search(path, sep, select_column, conditions, output_path).await
+}
+
+pub async fn public_contains_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+) -> Result<String> {
+  contains_search(path, sep, select_column, conditions, output_path).await
+}
+
+pub async fn public_startswith_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+) -> Result<String> {
+  startswith_search(path, sep, select_column, conditions, output_path).await
+}
+
+pub async fn public_regex_search(
+  path: String,
+  sep: u8,
+  select_column: String,
+  regex_char: String,
+  output_path: String,
+) -> Result<String> {
+  regex_search(path, sep, select_column, regex_char, output_path).await
+}
