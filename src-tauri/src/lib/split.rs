@@ -72,6 +72,6 @@ pub async fn split(file_path: String, size: u32) -> Result<String, String> {
 }
 
 /// for integration test
-pub async fn public_split_csv(file_path: String, size: u32) -> Result<()> {
+pub async fn public_split(file_path: String, size: u32) -> Result<()> {
   split_csv(file_path, size).await
 }

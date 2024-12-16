@@ -122,3 +122,8 @@ pub async fn select(path: String, cols: String) -> Result<String, String> {
     Err(err) => Err(format!("Select failed: {err}")),
   }
 }
+
+/// for integration test
+pub async fn public_select(file_path: String, cols: String) -> Result<()> {
+  select_columns(file_path, cols).await
+}

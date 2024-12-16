@@ -1,18 +1,17 @@
 use std::{
-  error::Error,
   fs::{self, File},
   io::{BufRead, BufReader},
 };
 
+use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::split::public_split_csv;
+use lib::split::public_split;
 
 #[tokio::test]
-async fn test_split() -> Result<(), Box<dyn Error>> {
+async fn test_split() -> Result<()> {
   let temp_dir = TempDir::new()?;
 
-  // 创建假数据
   let data = vec![
     "name,age,gender",
     "Tom,18,male",
@@ -20,6 +19,7 @@ async fn test_split() -> Result<(), Box<dyn Error>> {
     "Patrick,4,male",
     "Sandy,24,female",
   ];
+
   let file_path = temp_dir.path().join("input.csv");
   let mut wtr = csv::Writer::from_path(&file_path)?;
   for line in &data {
@@ -29,10 +29,9 @@ async fn test_split() -> Result<(), Box<dyn Error>> {
 
   let size: usize = 2;
 
-  public_split_csv(file_path.to_str().unwrap().to_string(), size.try_into()?).await?;
+  public_split(file_path.to_str().unwrap().to_string(), size.try_into()?).await?;
 
   // 验证结果
-  let split_prefix = "split_";
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
     .filter(|entry| entry.path().is_file())
@@ -40,7 +39,7 @@ async fn test_split() -> Result<(), Box<dyn Error>> {
       entry
         .file_name()
         .to_string_lossy()
-        .starts_with(split_prefix)
+        .starts_with("input.split")
     })
     .collect();
 
@@ -65,6 +64,10 @@ async fn test_split() -> Result<(), Box<dyn Error>> {
       }
     }
   }
+
+  // 清理临时目录
+  drop(file_path);
+  temp_dir.close()?;
 
   Ok(())
 }
