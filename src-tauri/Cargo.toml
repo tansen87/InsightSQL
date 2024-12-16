@@ -1,6 +1,6 @@
 [package]
 name = "InsightSQL"
-version = "1.0.7"
+version = "0.5.0"
 description = "InsightSQL"
 authors = ["tansen"]
 license = "MIT"
