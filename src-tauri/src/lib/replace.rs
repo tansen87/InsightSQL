@@ -122,3 +122,13 @@ pub async fn replace(
     Err(err) => Err(format!("replace failed: {err}")),
   }
 }
+
+/// for integration test
+pub async fn public_replace(
+  file_path: String,
+  select_column: String,
+  regex_pattern: String,
+  replacement: String,
+) -> Result<()> {
+  regex_replace(file_path, select_column, regex_pattern, replacement).await
+}
