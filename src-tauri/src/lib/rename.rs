@@ -80,3 +80,8 @@ pub async fn rename(file_path: String, headers: String) -> Result<String, String
     Err(err) => Err(format!("rename failed: {err}")),
   }
 }
+
+/// for integration test
+pub async fn public_rename(file_path: &str, r_header: String) -> Result<()> {
+  rename_headers(file_path, r_header).await
+}
