@@ -118,3 +118,8 @@ pub async fn pinyin(file_path: String, columns: String) -> Result<String, String
     Err(err) => Err(format!("pinyin failed: {err}")),
   }
 }
+
+/// for integration test
+pub async fn public_pinyin(file_path: String, columns: String) -> Result<()> {
+  chinese_to_pinyin(file_path, columns).await
+}
