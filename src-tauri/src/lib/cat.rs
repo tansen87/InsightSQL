@@ -5,7 +5,7 @@ use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame, SerWriter,
+    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter,
     UnionArgs,
   },
 };
@@ -42,7 +42,7 @@ async fn concat_all(
         vec_sep.push(b'|');
       }
       _ => {
-        let sep = match detect_separator(file) {
+        let sep = match detect_separator(file, skip_rows.parse::<usize>()?) {
           Some(separator) => separator as u8,
           None => b',',
         };
@@ -51,7 +51,6 @@ async fn concat_all(
     }
 
     let lf = match file_extension.as_str() {
-      "parquet" => LazyFrame::scan_parquet(file, Default::default())?,
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let mut excel_reader = ExcelReader::new(file);
         let df: DataFrame = excel_reader
@@ -92,7 +91,7 @@ async fn concat_all(
     let mut cat_df = cat_lf.collect()?;
     let row_len = cat_df.shape().0;
     if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
-      let mut xlsx_writer =  XlsxWriter::new();
+      let mut xlsx_writer = XlsxWriter::new();
       xlsx_writer.write_xlsx(&cat_df, output_path.into())?;
     } else {
       CsvWriter::new(File::create(output_path)?)
@@ -141,9 +140,8 @@ pub async fn concat(
     Ok(()) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2} s");
-      Ok(runtime)
+      Ok(format!("{elapsed_time:.2}"))
     }
-    Err(e) => Err(format!("concat_all => {e}")),
+    Err(err) => Err(format!("cat failed: {err}")),
   }
 }

@@ -21,7 +21,7 @@ fn new_writer(
 }
 
 async fn split_csv(file_path: String, size: u32) -> Result<()> {
-  let sep = match detect_separator(&file_path.as_str()) {
+  let sep = match detect_separator(&file_path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

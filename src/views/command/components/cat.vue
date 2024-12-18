@@ -96,7 +96,6 @@ async function concatData() {
       { name: "Excel", extensions: ["xlsx"] }
     ]
   });
-  const saveFileType = outputPath.split(".").pop();
 
   if (outputPath === "" || outputPath === null) {
     ElNotification({
@@ -108,39 +107,39 @@ async function concatData() {
     return;
   }
 
-  if (data.filePath !== "" && outputPath !== null) {
-    isLoading.value = true;
+  isLoading.value = true;
+  const saveFileType = outputPath.split(".").pop();
 
-    try {
-      const runtime: string = await invoke("concat", {
-        filePath: data.filePath,
-        outputPath: outputPath,
-        fileType: saveFileType,
-        memory: data.memory,
-        skipRows: data.skipRows
-      });
+  try {
+    const result: string = await invoke("concat", {
+      filePath: data.filePath,
+      outputPath: outputPath,
+      fileType: saveFileType,
+      memory: data.memory,
+      skipRows: data.skipRows
+    });
 
-      if (runtime.startsWith("concat_all")) {
-        runtime.toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message: "Cat done, elapsed time: " + runtime,
-        position: "bottom-right",
-        type: "success",
-        duration: 0
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke concat error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("cat failed:")) {
+      throw JSON.stringify(result).toString();
     }
+
+    isLoading.value = false;
+    ElNotification({
+      message: "Cat done, elapsed time: " + result + " s",
+      position: "bottom-right",
+      type: "success",
+      duration: 0
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke cat error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

@@ -14,7 +14,7 @@ async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
   for file in vec_path.iter() {
     window.emit("start_convert", file)?;
 
-    let sep = match detect_separator(file) {
+    let sep = match detect_separator(file, 0) {
       Some(separator) => separator as u8,
       None => b',',
     };

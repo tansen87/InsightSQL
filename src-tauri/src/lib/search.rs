@@ -26,7 +26,7 @@ impl From<&str> for SearchMode {
 }
 
 async fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(path) {
+  let sep = match detect_separator(path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -224,7 +224,7 @@ pub async fn search(
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  let sep = match detect_separator(path.as_str()) {
+  let sep = match detect_separator(path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

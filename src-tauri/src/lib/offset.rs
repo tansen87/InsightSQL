@@ -31,7 +31,7 @@ fn get_header(
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path.as_str()) {
+      let sep = match detect_separator(file_path.as_str(), 0) {
         Some(separator) => {
           let separator_u8: u8 = separator as u8;
           separator_u8
@@ -108,7 +108,7 @@ fn offset_no_condition(
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path.as_str()) {
+      let sep = match detect_separator(file_path.as_str(), 0) {
         Some(separator) => {
           let separator_u8: u8 = separator as u8;
           separator_u8
@@ -368,7 +368,7 @@ fn offset_condition(
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path.as_str()) {
+      let sep = match detect_separator(file_path.as_str(), 0) {
         Some(separator) => {
           let separator_u8: u8 = separator as u8;
           separator_u8

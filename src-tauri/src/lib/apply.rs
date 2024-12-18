@@ -63,7 +63,7 @@ enum ApplyCmd {
 }
 
 async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&file_path) {
+  let sep = match detect_separator(&file_path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -229,7 +229,7 @@ async fn apply_perform(
   new_column: bool,
 ) -> Result<()> {
   let select_columns: Vec<&str> = select_columns.split('|').collect();
-  let sep = match detect_separator(&file_path) {
+  let sep = match detect_separator(&file_path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

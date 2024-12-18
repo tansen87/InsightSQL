@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::detect::detect_separator;
 
 async fn get_header(file_path: &str) -> Result<Vec<String>> {
-  let sep = match detect_separator(file_path) {
+  let sep = match detect_separator(file_path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -22,7 +22,7 @@ async fn get_header(file_path: &str) -> Result<Vec<String>> {
 }
 
 async fn rename_headers(file_path: &str, r_header: String) -> Result<()> {
-  let sep = match detect_separator(file_path) {
+  let sep = match detect_separator(file_path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

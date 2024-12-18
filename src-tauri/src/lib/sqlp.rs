@@ -190,7 +190,7 @@ async fn prepare_query(
         vec_sep.push(b'|');
       }
       _ => {
-        let sep = match detect_separator(table) {
+        let sep = match detect_separator(table, 0) {
           Some(separator) => separator as u8,
           None => b',',
         };

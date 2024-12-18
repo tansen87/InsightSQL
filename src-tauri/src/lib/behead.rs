@@ -18,7 +18,7 @@ async fn drop_headers(file_path: String, window: tauri::Window) -> Result<()> {
   for fp in vec_path.iter() {
     window.emit("start_convert", fp)?;
 
-    let sep = match detect_separator(fp) {
+    let sep = match detect_separator(fp, 0) {
       Some(separator) => separator as u8,
       None => b',',
     };

@@ -6,7 +6,7 @@ use regex::bytes::RegexBuilder;
 use crate::detect::detect_separator;
 
 async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(file_path.as_str()) {
+  let sep = match detect_separator(file_path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -40,7 +40,7 @@ async fn regex_replace(
 ) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
 
-  let sep = match detect_separator(&file_path.as_str()) {
+  let sep = match detect_separator(&file_path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

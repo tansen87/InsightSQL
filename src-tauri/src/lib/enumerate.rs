@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::detect::detect_separator;
 
 async fn add_index(file_path: String) -> Result<()> {
-  let sep = match detect_separator(file_path.as_str()) {
+  let sep = match detect_separator(file_path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

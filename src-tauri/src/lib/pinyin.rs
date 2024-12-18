@@ -11,7 +11,7 @@ use pinyin::ToPinyin;
 use crate::detect::detect_separator;
 
 async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(file_path.as_str()) {
+  let sep = match detect_separator(file_path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -42,7 +42,7 @@ async fn chinese_to_pinyin(file_path: String, columns: String) -> Result<()> {
   let cols: Vec<&str> = columns.split('|').collect();
   let cols_set: HashSet<&str> = cols.into_iter().collect();
 
-  let sep = match detect_separator(file_path.as_str()) {
+  let sep = match detect_separator(file_path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };

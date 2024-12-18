@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use crate::detect::detect_separator;
 
 async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(path.as_str()) {
+  let sep = match detect_separator(path.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -37,7 +37,7 @@ async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
 }
 
 async fn fill_values(input_file: String, fill_column: String, fill_value: String) -> Result<()> {
-  let sep = match detect_separator(input_file.as_str()) {
+  let sep = match detect_separator(input_file.as_str(), 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
