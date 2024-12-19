@@ -95,8 +95,8 @@ async function selectColumns() {
         cols: names.value
       });
 
-      if (result.startsWith("Select failed:")) {
-        throw result.toString();
+      if (JSON.stringify(result).startsWith("Select failed:")) {
+        throw JSON.stringify(result).toString();
       }
 
       isLoading.value = false;

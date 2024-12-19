@@ -65,7 +65,6 @@ async fn fill_values(input_file: String, fill_column: String, fill_value: String
     header_indices.push(index);
   }
 
-  let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
   let parent_path = Path::new(&input_file)
     .parent()
     .map(|parent| parent.to_string_lossy())
@@ -75,7 +74,7 @@ async fn fill_values(input_file: String, fill_column: String, fill_value: String
     .unwrap()
     .to_str()
     .unwrap();
-  let output_file = format!("{}/{}.fill_{}.csv", parent_path, file_name, current_time);
+  let output_file = format!("{}/{}.fill.csv", parent_path, file_name);
 
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
@@ -92,9 +91,8 @@ async fn fill_values(input_file: String, fill_column: String, fill_value: String
     }
     wtr.write_record(&record)?;
   }
-  wtr.flush()?;
 
-  Ok(())
+  Ok(wtr.flush()?)
 }
 
 #[tauri::command]
@@ -117,4 +115,13 @@ pub async fn fill(path: String, columns: String, values: String) -> Result<Strin
     }
     Err(err) => Err(format!("fill failed: {err}")),
   }
+}
+
+/// for integration test
+pub async fn public_fill(
+  input_file: String,
+  fill_column: String,
+  fill_value: String,
+) -> Result<()> {
+  fill_values(input_file, fill_column, fill_value).await
 }
