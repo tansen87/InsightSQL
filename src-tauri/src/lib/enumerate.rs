@@ -54,3 +54,8 @@ pub async fn enumer(file_path: String) -> Result<String, String> {
     Err(err) => Err(format!("enumerate failed: {err}")),
   }
 }
+
+/// for integration test
+pub async fn public_enumerate(file_path: String) -> Result<()> {
+  add_index(file_path).await
+}
