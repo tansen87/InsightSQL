@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
+use anyhow::{anyhow, Result};
 use calamine::Reader;
 use polars::{
   frame::DataFrame,
@@ -9,7 +10,6 @@ use polars::{
     JoinType, LazyCsvReader, LazyFileListReader, LazyFrame, SortMultipleOptions, UnionArgs,
   },
 };
-use tauri::Emitter;
 
 use crate::{
   detect::detect_separator,
@@ -17,12 +17,10 @@ use crate::{
   xlsx_writer::XlsxWriter,
 };
 
-fn get_header(
-  file_path: String,
-) -> Result<Vec<HashMap<String, String>>, Box<dyn std::error::Error>> {
+async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let file_extension = match Path::new(&file_path).extension() {
     Some(ext) => ext.to_string_lossy().to_lowercase(),
-    None => return Err(("").into()),
+    None => return Err(anyhow!("File extension not found")),
   };
 
   let mut vec_sep = Vec::new();
@@ -32,10 +30,7 @@ fn get_header(
     }
     _ => {
       let sep = match detect_separator(file_path.as_str(), 0) {
-        Some(separator) => {
-          let separator_u8: u8 = separator as u8;
-          separator_u8
-        }
+        Some(separator) => separator as u8,
         None => b',',
       };
       vec_sep.push(sep);
@@ -50,7 +45,7 @@ fn get_header(
       let vec_headers: Vec<String> = range
         .rows()
         .next()
-        .ok_or("No data")?
+        .ok_or(anyhow!("No data"))?
         .iter()
         .map(|cell| cell.to_string())
         .collect();
@@ -92,14 +87,10 @@ fn get_header(
   Ok(tmp[0].clone())
 }
 
-fn offset_no_condition(
-  file_path: String,
-  amount: String,
-  output_path: String,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
   let file_extension = match Path::new(&file_path).extension() {
     Some(ext) => ext.to_string_lossy().to_lowercase(),
-    None => return Err(("File extension not found").into()),
+    None => return Err(anyhow!("File extension not found")),
   };
 
   let mut vec_sep = Vec::new();
@@ -108,11 +99,8 @@ fn offset_no_condition(
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path.as_str(), 0) {
-        Some(separator) => {
-          let separator_u8: u8 = separator as u8;
-          separator_u8
-        }
+      let sep = match detect_separator(file_path, 0) {
+        Some(separator) => separator as u8,
         None => b',',
       };
       vec_sep.push(sep);
@@ -294,6 +282,12 @@ fn offset_no_condition(
     }
   }
 
+  let parent_path = Path::new(&file_path)
+    .parent()
+    .map(|path| path.to_string_lossy())
+    .unwrap();
+  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+
   if !lfs.is_empty() {
     let mut cat = concat_lf_diagonal(
       lfs,
@@ -309,11 +303,11 @@ fn offset_no_condition(
 
     let cat_row = cat.shape().0;
     if cat_row < 104_0000 {
-      let save_path = format!("{output_path}_net.xlsx");
+      let save_path = format!("{parent_path}/{file_name}.net.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
       xlsx_writer.write_xlsx(&cat, save_path.into())?;
     } else {
-      let save_path = format!("{output_path}_net.csv");
+      let save_path = format!("{parent_path}/{file_name}.net.csv");
       CsvWriter::new(File::create(save_path)?)
         .with_separator(vec_sep[0])
         .finish(&mut cat)?;
@@ -335,11 +329,11 @@ fn offset_no_condition(
 
     let cat_surplus_row = cat_surplus.shape().0;
     if cat_surplus_row < 104_0000 {
-      let save_path = format!("{output_path}_surplus.xlsx");
+      let save_path = format!("{parent_path}/{file_name}.surplus.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
       xlsx_writer.write_xlsx(&cat_surplus, save_path.into())?;
     } else {
-      let save_path = format!("{output_path}_surplus.csv");
+      let save_path = format!("{parent_path}/{file_name}.surplus.csv");
       CsvWriter::new(File::create(save_path)?)
         .with_separator(vec_sep[0])
         .finish(&mut cat_surplus)?;
@@ -349,17 +343,12 @@ fn offset_no_condition(
   Ok(())
 }
 
-fn offset_condition(
-  file_path: String,
-  amount: String,
-  cond: String,
-  output_path: String,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn offset_condition(file_path: &str, amount: String, cond: String) -> Result<()> {
   let vec_cond: Vec<&str> = cond.split('|').collect();
 
   let file_extension = match Path::new(&file_path).extension() {
     Some(ext) => ext.to_string_lossy().to_lowercase(),
-    None => return Err(("").into()),
+    None => return Err(anyhow!("File extension not found")),
   };
 
   let mut vec_sep = Vec::new();
@@ -368,11 +357,8 @@ fn offset_condition(
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path.as_str(), 0) {
-        Some(separator) => {
-          let separator_u8: u8 = separator as u8;
-          separator_u8
-        }
+      let sep = match detect_separator(file_path, 0) {
+        Some(separator) => separator as u8,
         None => b',',
       };
       vec_sep.push(sep);
@@ -561,6 +547,12 @@ fn offset_condition(
     }
   }
 
+  let parent_path = Path::new(&file_path)
+    .parent()
+    .map(|path| path.to_string_lossy())
+    .unwrap();
+  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+
   if !lfs.is_empty() {
     let mut cat = concat_lf_diagonal(
       lfs,
@@ -576,11 +568,11 @@ fn offset_condition(
 
     let cat_row = cat.shape().0;
     if cat_row < 104_0000 {
-      let save_path = format!("{output_path}_net.xlsx");
+      let save_path = format!("{parent_path}/{file_name}.net.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
       xlsx_writer.write_xlsx(&cat, save_path.into())?;
     } else {
-      let save_path = format!("{output_path}_net.csv");
+      let save_path = format!("{parent_path}/{file_name}.net.csv");
       CsvWriter::new(File::create(save_path)?)
         .with_separator(vec_sep[0])
         .finish(&mut cat)?;
@@ -602,11 +594,11 @@ fn offset_condition(
 
     let cat_surplus_row = cat_surplus.shape().0;
     if cat_surplus_row < 104_0000 {
-      let save_path = format!("{output_path}_surplus.xlsx");
+      let save_path = format!("{parent_path}/{file_name}.surplus.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
       xlsx_writer.write_xlsx(&cat_surplus, save_path.into())?;
     } else {
-      let save_path = format!("{output_path}_surplus.csv");
+      let save_path = format!("{parent_path}/{file_name}.surplus.csv");
       CsvWriter::new(File::create(save_path)?)
         .with_separator(vec_sep[0])
         .finish(&mut cat_surplus)?;
@@ -617,20 +609,11 @@ fn offset_condition(
 }
 
 #[tauri::command]
-pub async fn get_offset_headers(
-  file_path: String,
-  window: tauri::Window,
-) -> Vec<HashMap<String, String>> {
-  let headers = match (async { get_header(file_path) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("get headers error: {err}");
-      window.emit("get_err", &err.to_string()).unwrap();
-      return Vec::new();
-    }
-  };
-
-  headers
+pub async fn get_offset_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(file_path).await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
+  }
 }
 
 #[tauri::command]
@@ -639,33 +622,26 @@ pub async fn offset(
   amount: String,
   cond: String,
   has_cond: bool,
-  output_path: String,
-  window: tauri::Window,
-) {
+) -> Result<String, String> {
   let start_time = Instant::now();
 
   if has_cond {
-    match (async { offset_condition(file_path, amount, cond, output_path) }).await {
-      Ok(result) => result,
-      Err(error) => {
-        eprintln!("offset error:: {error}");
-        window.emit("offset_err", &error.to_string()).unwrap();
-        return ();
+    match offset_condition(file_path.as_str(), amount, cond).await {
+      Ok(_) => {
+        let end_time = Instant::now();
+        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+        Ok(format!("{elapsed_time:.2}"))
       }
-    };
+      Err(err) => Err(format!("offset failed: {err}")),
+    }
   } else {
-    match (async { offset_no_condition(file_path, amount, output_path) }).await {
-      Ok(result) => result,
-      Err(error) => {
-        eprintln!("offset error:: {error}");
-        window.emit("offset_err", &error.to_string()).unwrap();
-        return ();
+    match offset_no_condition(file_path.as_str(), amount).await {
+      Ok(_) => {
+        let end_time = Instant::now();
+        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+        Ok(format!("{elapsed_time:.2}"))
       }
-    };
+      Err(err) => Err(format!("offset failed: {err}")),
+    }
   }
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
 }

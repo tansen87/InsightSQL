@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const runtime = ref(0.0);
 const columns = ref("");
 const conditonColumns = ref("");
 const originalColumns = ref([]);
@@ -16,21 +14,6 @@ const data = reactive({
   filePath: "",
   fileFormats: ["*"],
   hasCond: false
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("offset_err", (event: any) => {
-  const equalErr = event.payload;
-  ElNotification({
-    title: "Offset Error",
-    message: equalErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 async function selectFile() {
@@ -54,10 +37,25 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  const header: any = await invoke("get_offset_headers", {
-    filePath: data.filePath
-  });
-  originalColumns.value = header;
+  try {
+    const header: any = await invoke("get_offset_headers", {
+      filePath: data.filePath
+    });
+
+    if (JSON.stringify(header).startsWith("get header error:")) {
+      throw JSON.stringify(header).toString();
+    }
+
+    originalColumns.value = header;
+  } catch (err) {
+    ElNotification({
+      title: "Open File error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 }
 
 // net amount
@@ -81,42 +79,39 @@ async function netAmount() {
     return;
   }
 
-  const outputPath = await save({
-    title: "Export",
-    defaultPath: `offset_${new Date().getTime()}`,
-    filters: [{ name: "CSV", extensions: ["csv"] }]
-  });
-  if (outputPath === "" || outputPath === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择保存文件",
-      position: "bottom-right",
-      type: "warning"
-    });
-    return;
-  }
+  isLoading.value = true;
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
-
+  try {
     const cols = Object.values(conditonColumns.value).join("|");
 
-    await invoke("offset", {
+    const result: string = await invoke("offset", {
       filePath: data.filePath,
       amount: columns.value,
       cond: cols,
-      hasCond: data.hasCond,
-      outputPath: outputPath
+      hasCond: data.hasCond
     });
+
+    if (JSON.stringify(result).startsWith("offset failed:")) {
+      throw JSON.stringify(result).toString();
+    }
 
     isLoading.value = false;
     ElNotification({
-      message: "Offset done, elapsed time: " + runtime.value,
+      message: "Offset done, elapsed time: " + result + " s",
       position: "bottom-right",
       type: "success",
       duration: 10000
     });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke offset error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 
@@ -149,7 +144,6 @@ async function netAmount() {
       </div>
 
       <el-text type="primary" size="large">
-        <el-icon> <IceCreamRound /> </el-icon>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Net amount</span>
       </el-text>
