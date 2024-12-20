@@ -15,7 +15,7 @@ use polars::{
   error::PolarsError,
   prelude::{
     CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame,
-    OptFlags, ParquetWriter, SerWriter,
+    OptFlags, ParquetWriter, SerWriter, SerializeOptions,
   },
   sql::SQLContext,
 };
@@ -46,7 +46,7 @@ fn execute_query(
           include_header: true,
           batch_size: NonZeroUsize::new(1024).unwrap(),
           maintain_order: false,
-          serialize_options: polars::prelude::SerializeOptions {
+          serialize_options: SerializeOptions {
             date_format: None,
             time_format: None,
             datetime_format: None,
@@ -110,6 +110,7 @@ fn execute_query(
           let out_result = {
             CsvWriter::new(&mut w)
               .with_separator(sep)
+              .with_float_precision(Some(2))
               .n_threads(4)
               .finish(&mut df)
           };

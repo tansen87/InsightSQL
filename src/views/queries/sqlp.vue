@@ -437,7 +437,7 @@ watch(
       <div style="display: flex; height: calc(100% - 60px)">
         <div
           style="
-            flex: 1 1 0%;
+            flex: 7.5 0 0%;
             padding: 10px;
             box-sizing: border-box;
             height: 100%;
@@ -454,6 +454,7 @@ watch(
                 enableSnippets: true,
                 enableLiveAutocompletion: true,
                 customScrollbar: true,
+                showPrintMargin: false,
                 fontSize: '1.1rem'
               }"
               :key="counter"
@@ -465,7 +466,7 @@ watch(
         </div>
         <div
           style="
-            flex: 1 1 0%;
+            flex: 2.5 0 0%;
             padding: 10px;
             box-sizing: border-box;
             height: 100%;

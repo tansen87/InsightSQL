@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
-use rust_xlsxwriter::Workbook;
+use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
+use rust_decimal::Decimal;
+use rust_xlsxwriter::{Format, Workbook};
 
 pub struct XlsxWriter {
   workbook: Workbook,
@@ -33,15 +35,37 @@ impl XlsxWriter {
       worksheet.write_string(0, col.try_into()?, col_name.to_string())?;
     }
 
+    let format = Format::new().set_num_format("0.00");
+
     // write data to xlsx
     for (row, row_data) in rechunk_df.iter().enumerate() {
       for (col, col_data) in row_data.iter().enumerate() {
         match col_data {
           AnyValue::Float64(values) => {
-            worksheet.write_number((col + 1).try_into()?, row.try_into()?, values)?;
+            let decimal_values = Decimal::from_f64(values)
+              .unwrap_or(Decimal::new(0, 0))
+              .round_dp(2)
+              .to_f64()
+              .unwrap_or(0.0);
+            worksheet.write_number_with_format(
+              (col + 1).try_into()?,
+              row.try_into()?,
+              decimal_values,
+              &format,
+            )?;
           }
           AnyValue::Float32(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+            let decimal_values = Decimal::from_f32(values)
+              .unwrap_or(Decimal::new(0, 0))
+              .round_dp(2)
+              .to_f32()
+              .unwrap_or(0.0);
+            worksheet.write_number_with_format(
+              (col + 1).try_into()?,
+              row.try_into()?,
+              decimal_values,
+              &format,
+            )?;
           }
           AnyValue::String(values) => {
             worksheet.write_string((col + 1).try_into()?, row.try_into()?, values)?;
