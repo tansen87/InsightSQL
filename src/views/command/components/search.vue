@@ -74,7 +74,8 @@ async function selectFile() {
       sqlQuery: "select * from _t_1 limit 10",
       write: false,
       writeFormat: "csv",
-      lowMemory: false
+      lowMemory: false,
+      skipRows: "0"
     });
 
     if (

@@ -45,7 +45,8 @@ const data = reactive({
   ],
   write: false,
   writeFormat: "csv",
-  lowMemory: false
+  lowMemory: false,
+  skipRows: "0"
 });
 
 const initializeEditor = editor => {
@@ -137,7 +138,8 @@ async function queryData() {
       sqlQuery: sqlQuery.value,
       write: data.write,
       writeFormat: data.writeFormat,
-      lowMemory: data.lowMemory
+      lowMemory: data.lowMemory,
+      skipRows: data.skipRows
     });
 
     // check if df is an error message
@@ -224,7 +226,8 @@ async function selectFile() {
           sqlQuery: `select * from "${basename}" limit 10`,
           write: false,
           writeFormat: "csv",
-          lowMemory: false
+          lowMemory: false,
+          skipRows: data.skipRows
         });
 
         if (
@@ -378,6 +381,13 @@ watch(
           >
             Open File
           </el-button>
+          <el-tooltip content="with header row" placement="top" effect="light">
+            <el-input
+              v-model="data.skipRows"
+              style="margin-left: 10px; width: 80px"
+              placeholder="skip rows"
+            />
+          </el-tooltip>
           <el-form-item style="margin-left: 10px; width: 100px">
             <el-tooltip
               content="Memory or stream query"

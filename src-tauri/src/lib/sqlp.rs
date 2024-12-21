@@ -136,6 +136,7 @@ async fn prepare_query(
   write: bool,
   write_format: &str,
   low_memory: bool,
+  skip_rows: String,
 ) -> Result<Vec<String>> {
   let mut ctx = SQLContext::new();
 
@@ -183,7 +184,7 @@ async fn prepare_query(
 
     let file_extension = match Path::new(table).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
-      None => return Err(anyhow!("")),
+      None => return Err(anyhow!("File extension not found")),
     };
 
     match file_extension.as_str() {
@@ -191,7 +192,7 @@ async fn prepare_query(
         vec_sep.push(b'|');
       }
       _ => {
-        let sep = match detect_separator(table, 0) {
+        let sep = match detect_separator(table, skip_rows.parse::<usize>()?) {
           Some(separator) => separator as u8,
           None => b',',
         };
@@ -203,7 +204,9 @@ async fn prepare_query(
       "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let mut excel_reader: ExcelReader = ExcelReader::new(table);
-        let df: DataFrame = excel_reader.worksheet_range_at(0, 0)?.to_df()?;
+        let df: DataFrame = excel_reader
+          .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+          .to_df()?;
         df.lazy()
       }
       _ => {
@@ -213,7 +216,7 @@ async fn prepare_query(
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
           .with_low_memory(low_memory)
-          .with_truncate_ragged_lines(true)
+          .with_skip_rows(skip_rows.parse::<usize>()?)
           .finish()?;
 
         csv_reader
@@ -329,13 +332,23 @@ pub async fn query(
   write: bool,
   write_format: String,
   low_memory: bool,
+  skip_rows: String,
   window: tauri::Window,
 ) -> Result<Vec<String>, String> {
   let start_time = Instant::now();
 
   let file_path: Vec<&str> = path.split('|').collect();
 
-  match prepare_query(file_path, &sql_query, write, &write_format, low_memory).await {
+  match prepare_query(
+    file_path,
+    &sql_query,
+    write,
+    &write_format,
+    low_memory,
+    skip_rows,
+  )
+  .await
+  {
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

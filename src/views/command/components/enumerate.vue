@@ -62,7 +62,8 @@ async function selectFile() {
     sqlQuery: "select * from _t_1 limit 5",
     write: false,
     writeFormat: "csv",
-    lowMemory: false
+    lowMemory: false,
+    skipRows: "0"
   });
 
   const jsonData = JSON.parse(df);
