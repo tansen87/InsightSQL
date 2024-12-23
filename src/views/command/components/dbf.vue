@@ -19,7 +19,6 @@ interface FileStatus {
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
-const runtime = ref(0.0);
 const progress = ref(0);
 const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
@@ -69,9 +68,6 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
 listen("dbf2csv_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
@@ -83,17 +79,6 @@ listen("dbf2csv_msg", (event: any) => {
       file.status = "completed";
     }
   });
-});
-listen("dbf2csv_err", (event: any) => {
-  const accessErr = event.payload;
-  ElNotification({
-    title: "Dbf Error",
-    message: accessErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
 });
 
 // open file
@@ -118,12 +103,6 @@ async function selectFile() {
       return { filename: file, status: "" };
     });
   } else if (selected === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
     return;
   } else {
     data.filePath = selected;
@@ -141,22 +120,36 @@ async function convertData() {
     });
     return;
   }
-  if (data.filePath !== "") {
-    isLoading.value = true;
 
-    await invoke("dbf", {
+  isLoading.value = true;
+
+  try {
+    const result: string = await invoke("dbf", {
       filePath: data.filePath,
       sep: data.sep
     });
 
+    if (JSON.stringify(result).startsWith("dbf failed:")) {
+      throw JSON.stringify(result).toString();
+    }
+
     isLoading.value = false;
     ElNotification({
-      message: "Convert done, elapsed time: " + runtime.value,
+      message: "Convert done, elapsed time: " + result + " s",
       position: "bottom-right",
       type: "success",
       duration: 5000
     });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke DBF Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 
@@ -179,12 +172,21 @@ async function convertData() {
           >
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
+          <el-tooltip
+            content="Write the delimiter for CSV"
+            placement="top"
+            effect="light"
+          >
+            <el-select
+              v-model="data.sep"
+              style="margin-left: 16px; width: 100px"
+            >
+              <el-option label="," value="," />
+              <el-option label="|" value="|" />
+              <el-option label="\t" value="\t" />
+              <el-option label=";" value=";" />
+            </el-select>
+          </el-tooltip>
           <el-button
             type="success"
             @click="convertData()"
@@ -196,10 +198,7 @@ async function convertData() {
             Convert
           </el-button>
         </div>
-        <el-text type="primary" size="large">
-          <el-icon> <Connection /> </el-icon>
-          Convert dbf file to CSV
-        </el-text>
+        <el-text type="primary" size="large"> Convert dbf file to CSV </el-text>
       </div>
     </el-form>
     <el-table

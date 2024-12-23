@@ -1,8 +1,9 @@
-use std::{error::Error, path::Path, time::Instant};
+use std::{path::Path, time::Instant};
 
+use anyhow::Result;
 use tauri::Emitter;
 
-fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(), Box<dyn Error>> {
+async fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<()> {
   let sep = if sep == "\\t" {
     b'\t'
   } else {
@@ -12,8 +13,8 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
   let vec_path: Vec<&str> = file_path.split('|').collect();
   let parent_path = Path::new(&vec_path[0])
     .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap_or_else(|| "Default Path".to_string().into());
+    .map(|path| path.to_string_lossy())
+    .unwrap();
 
   let mut count: usize = 0;
   let file_len = vec_path.len();
@@ -29,14 +30,8 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
       .map(|field| field.name().to_string())
       .collect();
 
-    let file_name = match Path::new(&fp).file_name() {
-      Some(name) => match name.to_str() {
-        Some(name_str) => name_str.split('|').collect::<Vec<&str>>(),
-        None => vec![],
-      },
-      None => vec![],
-    };
-    let output = format!("{}/{}.csv", parent_path, file_name[0]);
+    let file_name = Path::new(&fp).file_stem().unwrap().to_str().unwrap();
+    let output = format!("{parent_path}/{file_name}.dbf.csv");
 
     let mut wtr = csv::WriterBuilder::new().delimiter(sep).from_path(output)?;
 
@@ -70,8 +65,7 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
 
     count += 1;
     let progress = ((count as f32) / (file_len as f32)) * 100.0;
-    let progress_s = format!("{progress:.0}");
-    window.emit("dbf2csv_progress", progress_s)?;
+    window.emit("dbf2csv_progress", format!("{progress:.0}"))?;
 
     window.emit("dbf2csv_msg", fp)?;
   }
@@ -80,21 +74,15 @@ fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Result<(
 }
 
 #[tauri::command]
-pub async fn dbf(file_path: String, sep: String, window: tauri::Window) {
+pub async fn dbf(file_path: String, sep: String, window: tauri::Window) -> Result<String, String> {
   let start_time = Instant::now();
-  let dbf_window = window.clone();
 
-  match (async { dbf_to_csv(file_path, sep, dbf_window) }).await {
-    Ok(result) => result,
-    Err(error) => {
-      eprintln!("dbf2csv error: {error}");
-      window.emit("dbf2csv_err", &error.to_string()).unwrap();
-      error.to_string();
+  match dbf_to_csv(file_path, sep, window).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok(format!("{elapsed_time:.2}"))
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+    Err(err) => Err(format!("dbf failed: {err}")),
+  }
 }
