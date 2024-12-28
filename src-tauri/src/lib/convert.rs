@@ -1,5 +1,7 @@
 use std::{
-  path::{Path, PathBuf},
+  fs::File,
+  io::{BufRead, BufReader},
+  path::PathBuf,
   time::Instant,
 };
 
@@ -166,6 +168,13 @@ async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) ->
   Ok(())
 }
 
+fn count_csv_rows(file_path: &str) -> Result<usize> {
+  let file = File::open(file_path)?;
+  let reader = BufReader::new(file);
+
+  Ok(reader.lines().count())
+}
+
 async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* csv to xlsx */
   let vec_path: Vec<&str> = path.split('|').collect();
@@ -181,35 +190,44 @@ async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> 
       None => b',',
     };
 
-    let file_name = Path::new(&file).file_stem().unwrap().to_str().unwrap();
-
     let sce = PathBuf::from(file);
     let dest = sce.with_extension("xlsx");
-    let df = CsvReadOptions::default()
-      .with_parse_options(
-        CsvParseOptions::default()
-          .with_separator(sep)
-          .with_missing_is_null(false),
-      )
-      .with_skip_rows(skip_rows.parse::<usize>()?)
-      .with_infer_schema_length(Some(0))
-      .try_into_reader_with_file_path(Some(file.into()))?
-      .finish()?;
-    let rows = df.shape().0;
-    if rows < 104_0000 {
-      let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_xlsx(&df, dest)?;
-      let c2x_msg = format!("{}", file);
-      window.emit("c2x_msg", c2x_msg)?;
+    let row_count = count_csv_rows(file)?;
+
+    if row_count < 104_0000 {
+      let dfs = CsvReadOptions::default()
+        .with_parse_options(
+          CsvParseOptions::default()
+            .with_separator(sep)
+            .with_missing_is_null(false),
+        )
+        .with_skip_rows(skip_rows.parse::<usize>()?)
+        .with_infer_schema_length(Some(0))
+        .try_into_reader_with_file_path(Some(file.into()))
+        .and_then(|reader| reader.finish());
+
+      match dfs {
+        Ok(df) => {
+          if let Err(err) = XlsxWriter::new().write_xlsx(&df, dest) {
+            window.emit("rows_err", format!("{file}|{err}"))?;
+            return Ok(());
+          }
+          window.emit("c2x_msg", file)?;
+        }
+        Err(err) => {
+          window.emit("rows_err", format!("{file}|{err}"))?;
+        }
+      }
     } else {
-      let rows_msg = format!("{}|rows:{}, cannot converted.", file_name, rows);
-      window.emit("rows_err", rows_msg)?;
+      window.emit(
+        "rows_err",
+        format!("{file}|{row_count} rows exceed the maximum row in Excel"),
+      )?;
     }
 
     count += 1;
     let progress = ((count as f32) / (file_len as f32)) * 100.0;
-    let progress_s = format!("{progress:.0}");
-    window.emit("c2x_progress", progress_s)?;
+    window.emit("c2x_progress", format!("{progress:.0}"))?;
   }
 
   Ok(())

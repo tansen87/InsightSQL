@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
+    if (getFileName(file.filename) === getFileName(startConvert)) {
       file.status = "loading";
     }
   });
@@ -74,28 +74,28 @@ listen("c2x_progress", (event: any) => {
 });
 listen("rows_err", (event: any) => {
   const csvRowsErr: any = event.payload;
+  const basename = getFileName(csvRowsErr.split("|")[0]);
+  const errorDetails = csvRowsErr.split("|")[1];
   selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === csvRowsErr.split("|")[0]) {
+    if (getFileName(file.filename) === basename) {
       file.status = "error";
+      file.errorMessage = errorDetails;
     }
-  });
-  ElNotification({
-    title: "Write Error",
-    message: csvRowsErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
   });
   isLoading.value = false;
 });
 listen("c2x_msg", (event: any) => {
   const c2xMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === c2xMsg) {
+    if (getFileName(file.filename) === getFileName(c2xMsg)) {
       file.status = "completed";
     }
   });
 });
+
+function getFileName(path) {
+  return path.split("\\").pop().split("/").pop();
+}
 
 // open file
 async function selectFile() {
@@ -116,15 +116,9 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file, status: "" };
+      return { filename: getFileName(file), status: "" };
     });
   } else if (selected === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
     return;
   } else {
     data.filePath = selected;
@@ -195,7 +189,7 @@ async function csvToxlsx() {
           >
             Open File
           </el-button>
-          <el-tooltip content="with header row" placement="top" effect="light">
+          <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 16px; width: 80px"
@@ -223,17 +217,27 @@ async function csvToxlsx() {
       :data="selectedFiles"
       :height="formHeight"
       style="width: 100%"
+      show-overflow-tooltip
     >
-      <el-table-column prop="filename" label="file" style="width: 80%" />
+      <el-table-column type="index" width="50" />
+      <el-table-column
+        prop="filename"
+        label="File"
+        class-name="file-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 30%"
+      />
       <el-table-column
         prop="status"
-        label="status"
+        label="Status"
         :filters="[
           { text: 'x', value: 'error' },
           { text: '√', value: 'completed' }
         ]"
         :filter-method="filterFileStatus"
-        width="100"
+        class-name="status-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 10%"
       >
         <template #default="scope">
           <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
@@ -245,6 +249,19 @@ async function csvToxlsx() {
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
             <CloseBold />
           </ElIcon>
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="errorMessage"
+        label="Info"
+        class-name="info-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 60%"
+      >
+        <template #default="scope">
+          <span v-if="scope.row.status === 'error'">{{
+            scope.row.errorMessage
+          }}</span>
         </template>
       </el-table-column>
     </el-table>
