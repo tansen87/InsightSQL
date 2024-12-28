@@ -63,16 +63,19 @@ onBeforeUnmount(() => {
 listen("start_convert", event => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
+    if (getFileName(file.filename) === getFileName(startConvert)) {
       file.status = "loading";
     }
   });
 });
 listen("row_count_err", event => {
   const excelRowCountErr: any = event.payload;
+  const basename = getFileName(excelRowCountErr.split("|")[0]);
+  const errorDetails = excelRowCountErr.split("|")[1];
   selectedFiles.value.forEach(file => {
-    if (file.filename === excelRowCountErr.split("|")[0]) {
+    if (getFileName(file.filename) === basename) {
       file.status = "error";
+      file.errorMessage = errorDetails;
     }
   });
   isLoading.value = false;
@@ -80,7 +83,7 @@ listen("row_count_err", event => {
 listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === e2cMsg) {
+    if (getFileName(file.filename) === getFileName(e2cMsg)) {
       file.status = "completed";
     }
   });
@@ -89,6 +92,10 @@ listen("e2c_progress", (event: any) => {
   const pgs: number = event.payload;
   progress.value = pgs;
 });
+
+function getFileName(path) {
+  return path.split("\\").pop().split("/").pop();
+}
 
 // open file
 async function selectFile() {
@@ -109,15 +116,9 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file, status: "" };
+      return { filename: getFileName(file), status: "" };
     });
   } else if (selected === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择Excel文件",
-      position: "bottom-right",
-      type: "warning"
-    });
     return;
   } else {
     data.filePath = selected;
@@ -136,37 +137,35 @@ async function excelToCsv() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("switch_excel", {
-        path: data.filePath,
-        skipRows: data.skipRows
-      });
+  try {
+    const result: string = await invoke("switch_excel", {
+      path: data.filePath,
+      skipRows: data.skipRows
+    });
 
-      if (result.startsWith("excel to csv failed:")) {
-        throw result.toString();
-      }
-
-      ElNotification({
-        message: "Convert done, elapsed time: " + result + " s",
-        position: "bottom-right",
-        type: "success",
-        duration: 5000
-      });
-      isLoading.value = false;
-    } catch (err) {
-      ElNotification({
-        title: "Invoke switch_excel Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("excel to csv failed:")) {
+      throw JSON.stringify(result).toString();
     }
+
+    ElNotification({
+      message: `Convert done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
     isLoading.value = false;
+  } catch (err) {
+    ElNotification({
+      title: "Invoke switch_excel Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 
@@ -190,7 +189,7 @@ async function excelToCsv() {
           >
             Open File
           </el-button>
-          <el-tooltip content="with header row" placement="top" effect="light">
+          <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 16px; margin-right: 16px; width: 80px"
@@ -217,17 +216,27 @@ async function excelToCsv() {
       :data="selectedFiles"
       :height="formHeight"
       style="width: 100%"
+      show-overflow-tooltip
     >
-      <el-table-column prop="filename" label="file" style="width: 80%" />
+      <el-table-column type="index" width="50" />
+      <el-table-column
+        prop="filename"
+        label="File"
+        class-name="file-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 30%"
+      />
       <el-table-column
         prop="status"
-        label="status"
+        label="Status"
         :filters="[
           { text: 'x', value: 'error' },
           { text: '√', value: 'completed' }
         ]"
         :filter-method="filterFileStatus"
-        width="100"
+        class-name="status-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 10%"
       >
         <template #default="scope">
           <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
@@ -241,7 +250,21 @@ async function excelToCsv() {
           </ElIcon>
         </template>
       </el-table-column>
+      <el-table-column
+        prop="errorMessage"
+        label="Info"
+        class-name="info-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 60%"
+      >
+        <template #default="scope">
+          <span v-if="scope.row.status === 'error'">{{
+            scope.row.errorMessage
+          }}</span>
+        </template>
+      </el-table-column>
     </el-table>
+
     <el-progress
       v-if="isLoading"
       :percentage="progress"
