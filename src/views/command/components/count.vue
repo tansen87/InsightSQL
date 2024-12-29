@@ -43,15 +43,16 @@ onBeforeUnmount(() => {
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
-      file.status = "...";
+    if (getFileName(file.filename) === getFileName(startConvert)) {
+      file.status = "";
     }
   });
 });
 listen("count_msg", (event: any) => {
   const countMsg: any = event.payload;
+  const basename = getFileName(countMsg.split("|")[0]);
   selectedFiles.value.forEach(file => {
-    if (file.filename.split("\\").pop() === countMsg.split("|")[0]) {
+    if (getFileName(file.filename) === basename) {
       file.status = countMsg.split("|")[1];
     }
   });
@@ -60,6 +61,10 @@ listen("count_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
 });
+
+function getFileName(path: string) {
+  return path.split("\\").pop().split("/").pop();
+}
 
 // open file
 async function selectFile() {
@@ -79,7 +84,7 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file, status: "" };
+      return { filename: getFileName(file), status: " " };
     });
   } else if (selected === null) {
     return;
@@ -112,7 +117,7 @@ async function countData() {
     }
 
     ElNotification({
-      message: "Count done, elapsed time: " + result + " s",
+      message: `Count done, elapsed time: ${result} s`,
       position: "bottom-right",
       type: "success",
       duration: 5000
@@ -173,10 +178,11 @@ async function countData() {
         :height="formHeight"
         style="width: 100%"
       >
-        <el-table-column prop="filename" label="file" style="width: 80%" />
-        <el-table-column label="rows" width="100">
+        <el-table-column type="index" width="50" />
+        <el-table-column prop="filename" label="file" style="width: 60%" />
+        <el-table-column label="rows (include header)" width="200">
           <template #default="scope">
-            <ElIcon v-if="scope.row.status === '...'" class="is-loading">
+            <ElIcon v-if="scope.row.status === ''" class="is-loading">
               <Loading />
             </ElIcon>
             <span>{{ scope.row.status }}</span>

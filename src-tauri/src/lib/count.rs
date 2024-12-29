@@ -21,7 +21,7 @@ async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
 
     let mut rdr = csv::ReaderBuilder::new()
       .delimiter(sep)
-      .has_headers(true)
+      .has_headers(false)
       .from_reader(File::open(file)?);
 
     let mut record = csv::ByteRecord::new();
@@ -36,8 +36,7 @@ async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
 
     countf += 1;
     let progress = ((countf as f32) / (file_len as f32)) * 100.0;
-    let progress_s = format!("{progress:.0}");
-    window.emit("count_progress", progress_s)?;
+    window.emit("count_progress", format!("{progress:.0}"))?;
   }
 
   Ok(())
