@@ -6,18 +6,17 @@ const router = useRouter();
 const commands = ref([
   {
     title: "Apply",
-    description:
-      "Apply a series of transformation functions to given CSV column/s.",
+    description: "Apply a series of transformation functions to CSV column/s.",
     route: "/command/components/apply"
   },
   {
     title: "Cat",
-    description: "Cat CSV and Excel files.",
+    description: "Merge multiple CSV or Excel files into one CSV or xlsx file.",
     route: "/command/components/cat"
   },
   {
     title: "Excel to csv",
-    description: "Exports Excel to csv files.",
+    description: "Batch convert Excel to CSV.",
     route: "/command/components/excel"
   },
   {
@@ -27,7 +26,7 @@ const commands = ref([
   },
   {
     title: "Csv to xlsx",
-    description: "Exports csv to xlsx files.",
+    description: "Batch convert CSV to Excel.",
     route: "/command/components/csv"
   },
   {

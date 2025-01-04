@@ -218,12 +218,13 @@ async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> 
         Ok(df) => {
           if let Err(err) = XlsxWriter::new().write_xlsx(&df, dest) {
             window.emit("rows_err", format!("{file}|{err}"))?;
-            return Ok(());
+            continue;
           }
           window.emit("c2x_msg", file)?;
         }
         Err(err) => {
           window.emit("rows_err", format!("{file}|{err}"))?;
+          continue;
         }
       }
     } else {
@@ -231,6 +232,7 @@ async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> 
         "rows_err",
         format!("{file}|{row_count} rows exceed the maximum row in Excel"),
       )?;
+      continue;
     }
 
     count += 1;
