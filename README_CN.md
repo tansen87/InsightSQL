@@ -9,6 +9,14 @@
 
   ![sqlp.gif](/demo/sqlp.gif)
 
+* CSV to xlsx
+
+  ![csv2xlsx.gif](/demo/csv2xlsx.gif)
+
+* Excel to CSV
+
+  ![excel2csv.gif](/demo/excel2csv.gif)
+
 * Cat
 
   ![cat.gif](/demo/cat.gif)

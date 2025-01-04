@@ -25,17 +25,17 @@ English | [中文](./README_CN.md)
 ## ✨Features
 
 - [x] Use Polars SQL for querying, allows to load Excel, CSV and Parquet files, support saving as csv, xlsx or paquet files
-- [x] Concatenate CSV and Excel files
-- [x] Exports Excel to a csv file
+- [x] Merge multiple CSV or Excel files into one CSV or xlsx file (use Polars **concat_lf_diagonal**)
+- [x] Batch convert Excel to CSV
 - [x] Count the rows of CSV files
-- [x] Exports csv to a xlsx file
+- [x] Batch convert CSV to Excel
 - [x] Rename the columns of a CSV
 - [x] Select, re-order columns
 - [x] Select fields matching rows
 - [x] Fill empty fields in selected columns of a CSV
 - [x] Split one CSV file into many CSV files
 - [x] Add an index for a CSV
-- [x] Drop headers from CSV
+- [x] Drop headers from CSVs
 - [x] Convert Chinese to Pinyin for specific column in CSV
 - [x] Replace CSV data using a regex
 - [x] Apply series of string, math transformations to given CSV column/s
