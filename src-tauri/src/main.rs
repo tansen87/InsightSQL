@@ -50,6 +50,7 @@ fn main() {
       fill::get_fill_headers,
       fill::fill,
       split::split,
+      #[cfg(target_os = "windows")]
       access::access,
       dbf::dbf,
       behead::behead,
