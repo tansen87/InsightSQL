@@ -23,12 +23,6 @@ jobs:
         with:
           node-version: 18
 
-      - name: Generate changelog
-        id: create_release
-        run: npx changelogithub --draft --name InsightSQL-${{ steps.vars.outputs.tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
   publish:
     permissions:
       contents: write
