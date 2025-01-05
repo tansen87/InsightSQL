@@ -3,6 +3,7 @@
   windows_subsystem = "windows"
 )]
 
+#[cfg(target_os = "windows")]
 use lib::access;
 use lib::apply;
 use lib::behead;
@@ -10,8 +11,8 @@ use lib::cat;
 use lib::convert;
 use lib::count;
 use lib::dbf;
-use lib::fill;
 use lib::enumerate;
+use lib::fill;
 use lib::modify;
 use lib::offset;
 use lib::pinyin;
