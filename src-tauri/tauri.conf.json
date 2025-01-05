@@ -48,7 +48,7 @@
   "productName": "InsightSQL",
   "mainBinaryName": "InsightSQL",
   "version": "../package.json",
-  "identifier": "",
+  "identifier": "com.InsightSQL.dev",
   "plugins": {},
   "app": {
     "windows": [
