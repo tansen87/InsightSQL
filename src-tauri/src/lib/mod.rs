@@ -1,3 +1,4 @@
+#[cfg(target_os = "windows")]
 pub mod access;
 pub mod apply;
 pub mod behead;
@@ -6,9 +7,9 @@ pub mod convert;
 pub mod count;
 pub mod dbf;
 pub mod detect;
+pub mod enumerate;
 pub mod excel_reader;
 pub mod fill;
-pub mod enumerate;
 pub mod modify;
 pub mod offset;
 pub mod pinyin;
