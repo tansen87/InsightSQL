@@ -1,9 +1,15 @@
-use std::{borrow::Cow, collections::HashMap, fs::File, path::Path, time::Instant};
+use std::{
+  borrow::Cow,
+  collections::HashMap,
+  fs::File,
+  path::Path,
+  time::Instant,
+};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use regex::bytes::RegexBuilder;
 
-use crate::detect::detect_separator;
+use crate::detect::{detect_separator, Selection};
 
 async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(file_path.as_str(), 0) {
@@ -34,7 +40,7 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
 
 async fn regex_replace(
   file_path: String,
-  select_column: String,
+  sel: String,
   regex_pattern: String,
   replacement: String,
 ) -> Result<()> {
@@ -60,14 +66,7 @@ async fn regex_replace(
     .from_path(output_path)?;
 
   let headers = rdr.headers()?.clone();
-  let header_idx = match headers.iter().position(|field| field == select_column) {
-    Some(idx) => idx,
-    None => {
-      return Err(anyhow!(
-        "The column '{select_column}' was not found in the headers."
-      ))
-    }
-  };
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[sel.as_str()][..])?;
 
   wtr.write_record(&headers)?;
 
@@ -77,7 +76,7 @@ async fn regex_replace(
       .into_iter()
       .enumerate()
       .map(|(idx, val)| {
-        if header_idx == idx {
+        if sel.get_indices().contains(&idx) {
           if pattern.is_match(val) {
             pattern.replace_all(val, replacement.as_bytes())
           } else {

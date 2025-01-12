@@ -74,4 +74,8 @@ impl Selection {
       .filter_map(|&idx| row.get(idx).map(ByteString::from))
       .collect()
   }
+
+  pub fn get_indices(&self) -> &Vec<usize> {
+    &self.indices
+  }
 }

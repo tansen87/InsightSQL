@@ -23,7 +23,6 @@ const tableColumn1 = ref([]);
 const tableData1 = ref([]);
 const tableColumn2 = ref([]);
 const tableData2 = ref([]);
-const tableRef = ref(null);
 const windowHeight = ref(window.innerHeight);
 const formHeight = computed(() => {
   const height = 278;
