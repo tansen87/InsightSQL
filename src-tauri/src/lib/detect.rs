@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+use anyhow::{anyhow, Result};
+use csv::ByteRecord;
+
 pub fn detect_separator(path: &str, skip_rows: usize) -> Option<char> {
   let file = File::open(path).expect("Failed to open file");
   let reader = BufReader::new(file);
@@ -39,4 +42,36 @@ pub fn detect_separator(path: &str, skip_rows: usize) -> Option<char> {
   }
 
   separator
+}
+
+type ByteString = Vec<u8>;
+pub struct Selection {
+  indices: Vec<usize>,
+}
+
+impl Selection {
+  pub fn from_headers(headers: &ByteRecord, field_names: &[&str]) -> Result<Self> {
+    let header_map: HashMap<_, _> = headers
+      .iter()
+      .enumerate()
+      .map(|(idx, name)| (String::from_utf8_lossy(name).into_owned(), idx))
+      .collect();
+    let mut indices = Vec::new();
+    for &field_name in field_names {
+      match header_map.get(field_name) {
+        Some(&index) => indices.push(index),
+        None => return Err(anyhow!("Field '{}' not found in headers.", field_name).into()),
+      }
+    }
+
+    Ok(Selection { indices })
+  }
+
+  pub fn get_row_key(&self, row: &ByteRecord) -> Vec<ByteString> {
+    self
+      .indices
+      .iter()
+      .filter_map(|&idx| row.get(idx).map(ByteString::from))
+      .collect()
+  }
 }

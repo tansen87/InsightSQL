@@ -167,6 +167,15 @@ export default {
         title: "replace",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/join",
+      name: "join",
+      component: () => import("@/views/command/components/join.vue"),
+      meta: {
+        title: "join",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

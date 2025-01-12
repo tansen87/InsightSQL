@@ -88,6 +88,11 @@ const commands = ref([
     title: "Replace",
     description: "Replace occurrences of a pattern across a CSV file.",
     route: "/command/components/replace"
+  },
+  {
+    title: "Join",
+    description: "Joins two sets of CSV data on the specified columns.",
+    route: "/command/components/join"
   }
 ]);
 const searchText = ref("");

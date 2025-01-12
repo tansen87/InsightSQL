@@ -7,10 +7,12 @@ name = "InsightSQL"
 version = "0.5.0"
 dependencies = [
  "anyhow",
+ "byteorder",
  "calamine",
  "chrono",
  "cpc",
  "csv",
+ "csv-index",
  "dbase",
  "dynfmt",
  "indexmap 2.7.0",
@@ -1191,6 +1193,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5efa2b3d7902f4b634a20cae3c9c4e6209dc4779feb6863329607560143efa70"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "csv-index"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f274135fcb98bd7e6e47a9e0b44639ec53b3e5d6c1930e2a9e6a014f90470404"
+dependencies = [
+ "byteorder",
+ "csv",
 ]
 
 [[package]]

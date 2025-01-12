@@ -13,6 +13,7 @@ use lib::count;
 use lib::dbf;
 use lib::enumerate;
 use lib::fill;
+use lib::join;
 use lib::modify;
 use lib::offset;
 use lib::pinyin;
@@ -49,6 +50,8 @@ fn main() {
       search::search,
       fill::get_fill_headers,
       fill::fill,
+      join::get_join_headers,
+      join::join,
       split::split,
       #[cfg(target_os = "windows")]
       access::access,

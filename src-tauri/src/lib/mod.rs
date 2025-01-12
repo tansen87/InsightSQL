@@ -10,6 +10,8 @@ pub mod detect;
 pub mod enumerate;
 pub mod excel_reader;
 pub mod fill;
+pub mod index;
+pub mod join;
 pub mod modify;
 pub mod offset;
 pub mod pinyin;
