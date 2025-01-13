@@ -1,11 +1,17 @@
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::{
+  collections::HashMap,
+  fs::File,
+  io::{BufRead, BufReader},
+  path::Path,
+};
 
 use anyhow::{anyhow, Result};
 use csv::ByteRecord;
 
-pub fn detect_separator(path: &str, skip_rows: usize) -> Option<char> {
+pub fn detect_separator<P>(path: P, skip_rows: usize) -> Option<char>
+where
+  P: AsRef<Path>,
+{
   let file = File::open(path).expect("Failed to open file");
   let reader = BufReader::new(file);
 
@@ -45,6 +51,7 @@ pub fn detect_separator(path: &str, skip_rows: usize) -> Option<char> {
 }
 
 type ByteString = Vec<u8>;
+
 pub struct Selection {
   indices: Vec<usize>,
 }

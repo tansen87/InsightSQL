@@ -1,15 +1,11 @@
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::BufWriter;
-use std::path::Path;
-use std::time::Instant;
+use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
-use crate::detect::detect_separator;
+use crate::detect::{detect_separator, Selection};
 
-async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(path.as_str(), 0) {
+async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -36,60 +32,42 @@ async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
   Ok(hs)
 }
 
-async fn fill_values(input_file: String, fill_column: String, fill_value: String) -> Result<()> {
-  let sep = match detect_separator(input_file.as_str(), 0) {
+async fn fill_values<P: AsRef<Path>>(path: P, fill_column: String, fill_value: String) -> Result<()> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
 
-  let fill_columns: Vec<&str> = fill_column.split('|').collect();
-
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(&input_file)?);
+    .from_reader(File::open(&path)?);
 
-  let headers = rdr.headers()?;
+  let headers = rdr.headers()?.clone();
 
-  let mut header_indices = Vec::new();
-  for column in &fill_columns {
-    let index = match headers.iter().position(|field| &field == column) {
-      Some(idx) => idx,
-      None => {
-        return Err(anyhow!(
-          "The column '{}' was not found in the headers.",
-          column
-        ));
-      }
-    };
-    header_indices.push(index);
-  }
+  let fill_columns: Vec<&str> = fill_column.split('|').collect();
+  let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
 
-  let parent_path = Path::new(&input_file)
+  let parent_path = &path.as_ref()
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap();
-  let file_name = Path::new(&input_file)
-    .file_stem()
-    .unwrap()
-    .to_str()
-    .unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_file = format!("{}/{}.fill.csv", parent_path, file_name);
 
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
     .from_writer(BufWriter::new(File::create(output_file)?));
 
-  wtr.write_record(headers)?;
+  wtr.write_record(&headers)?;
 
-  for result in rdr.deserialize() {
-    let mut record: Vec<String> = result?;
-    for &index in &header_indices {
-      if record.get(index).map_or(true, |s| s.is_empty()) {
-        record[index] = fill_value.clone();
+  for record in rdr.deserialize() {
+    let mut row: Vec<String> = record?;
+    for &index in sel.get_indices() {
+      if row.get(index).map_or(true, |s| s.is_empty()) {
+        row[index] = fill_value.clone();
       }
     }
-    wtr.write_record(&record)?;
+    wtr.write_record(&row)?;
   }
 
   Ok(wtr.flush()?)
@@ -118,10 +96,6 @@ pub async fn fill(path: String, columns: String, values: String) -> Result<Strin
 }
 
 /// for integration test
-pub async fn public_fill(
-  input_file: String,
-  fill_column: String,
-  fill_value: String,
-) -> Result<()> {
-  fill_values(input_file, fill_column, fill_value).await
+pub async fn public_fill(path: String, fill_column: String, fill_value: String) -> Result<()> {
+  fill_values(path, fill_column, fill_value).await
 }

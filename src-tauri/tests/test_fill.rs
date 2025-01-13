@@ -25,7 +25,7 @@ async fn test_fill() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  let fill_column = "gender".to_string();
+  let fill_column = "gender|age".to_string();
   let fill_value = "unknown".to_string();
   public_fill(
     file_path.to_str().unwrap().to_string(),
@@ -42,7 +42,7 @@ async fn test_fill() -> Result<()> {
   let content = fs::read_to_string(output_path)?;
   let expected_data = vec![
     "name,age,gender",
-    "Tom,,unknown",
+    "Tom,unknown,unknown",
     "Jerry,19,unknown",
     "Patrick,4,male",
     "Sandy,24,female",
