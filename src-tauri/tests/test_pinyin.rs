@@ -14,7 +14,7 @@ async fn test_pinyin() -> Result<()> {
 
   let data = vec![
     "name,age,gender",
-    "汤姆,18,male",
+    "汤姆,18,男",
     "杰瑞,19,male",
     "Patrick,4,male",
     "Sandy,24,female",
@@ -25,7 +25,7 @@ async fn test_pinyin() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  public_pinyin(file_path.to_str().unwrap().to_string(), "name".to_string()).await?;
+  public_pinyin(file_path.to_str().unwrap().to_string(), "name|gender".to_string()).await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.pinyin.csv",
@@ -37,7 +37,7 @@ async fn test_pinyin() -> Result<()> {
     .from_path(output_path)?;
 
   let expected_data = vec![
-    vec!["TANGMU", "18", "male"],
+    vec!["TANGMU", "18", "NAN"],
     vec!["JIERUI", "19", "male"],
     vec!["Patrick", "4", "male"],
     vec!["Sandy", "24", "female"],
@@ -49,7 +49,6 @@ async fn test_pinyin() -> Result<()> {
     assert_eq!(fields, expected_data[i], "record {} does not match", i);
   }
 
-  // 清理临时目录
   drop(file_path);
   temp_dir.close()?;
 

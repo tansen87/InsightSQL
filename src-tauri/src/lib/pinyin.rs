@@ -1,17 +1,13 @@
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::BufWriter;
-use std::path::Path;
-use std::time::Instant;
+use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 use pinyin::ToPinyin;
 
-use crate::detect::detect_separator;
+use crate::detect::{detect_separator, Selection};
 
-async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(file_path.as_str(), 0) {
+async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -19,7 +15,7 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(file_path)?);
+    .from_reader(File::open(path)?);
 
   let headers = rdr.headers()?.clone();
   let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
@@ -38,11 +34,8 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   Ok(hs)
 }
 
-async fn chinese_to_pinyin(file_path: String, columns: String) -> Result<()> {
-  let cols: Vec<&str> = columns.split('|').collect();
-  let cols_set: HashSet<&str> = cols.into_iter().collect();
-
-  let sep = match detect_separator(file_path.as_str(), 0) {
+async fn chinese_to_pinyin<P: AsRef<Path>>(path: P, columns: String) -> Result<()> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -50,23 +43,22 @@ async fn chinese_to_pinyin(file_path: String, columns: String) -> Result<()> {
   let mut rdr = ReaderBuilder::new()
     .has_headers(true)
     .delimiter(sep)
-    .from_path(Path::new(&file_path))?;
-  let mut rdr_header = ReaderBuilder::new()
-    .has_headers(true)
-    .delimiter(sep)
-    .from_path(Path::new(&file_path))?;
+    .from_path(&path)?;
 
-  let parent_path = Path::new(&file_path)
+  let cols: Vec<&str> = columns.split('|').collect();
+  let sel = Selection::from_headers(rdr.byte_headers()?, &cols[..])?;
+
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|path| path.to_string_lossy())
     .unwrap();
-  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{}/{}.pinyin.csv", parent_path, file_name);
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
-  let headers = rdr_header.headers()?;
-  let header_map: Vec<&str> = headers.into_iter().collect();
+  let headers = rdr.headers()?;
 
   wtr.write_record(headers)?;
 
@@ -78,7 +70,7 @@ async fn chinese_to_pinyin(file_path: String, columns: String) -> Result<()> {
     for (i, field) in record.iter().enumerate() {
       let mut new_field = String::from(field);
 
-      if cols_set.contains(&header_map[i]) {
+      if sel.get_indices().contains(&i) {
         new_field = new_field
           .chars()
           .map(|c| {
@@ -98,18 +90,18 @@ async fn chinese_to_pinyin(file_path: String, columns: String) -> Result<()> {
 }
 
 #[tauri::command]
-pub async fn get_pinyin_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(file_path).await {
+pub async fn get_pinyin_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }
 }
 
 #[tauri::command]
-pub async fn pinyin(file_path: String, columns: String) -> Result<String, String> {
+pub async fn pinyin(path: String, columns: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(file_path, columns).await {
+  match chinese_to_pinyin(path, columns).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -120,6 +112,6 @@ pub async fn pinyin(file_path: String, columns: String) -> Result<String, String
 }
 
 /// for integration test
-pub async fn public_pinyin(file_path: String, columns: String) -> Result<()> {
-  chinese_to_pinyin(file_path, columns).await
+pub async fn public_pinyin(path: String, columns: String) -> Result<()> {
+  chinese_to_pinyin(path, columns).await
 }

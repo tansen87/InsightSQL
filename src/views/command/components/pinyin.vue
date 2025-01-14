@@ -10,8 +10,8 @@ const isPath = ref(false);
 const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
-  filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
+  path: "",
+  fileFormats: ["*"]
 });
 
 async function selectFile() {
@@ -28,17 +28,17 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.path = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
   isPath.value = true;
 
   try {
     const headers: any = await invoke("get_pinyin_headers", {
-      filePath: data.filePath
+      path: data.path
     });
     if (JSON.stringify(headers).startsWith("get header error:")) {
       throw JSON.stringify(headers).toString();
@@ -57,7 +57,7 @@ async function selectFile() {
 
 // invoke pinyin
 async function chineseToPinyin() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -78,12 +78,12 @@ async function chineseToPinyin() {
 
   const cols = Object.values(columns.value).join("|");
 
-  if (data.filePath !== "") {
+  if (data.path !== "") {
     isLoading.value = true;
 
     try {
       const result: string = await invoke("pinyin", {
-        filePath: data.filePath,
+        path: data.path,
         columns: cols
       });
 
@@ -143,7 +143,7 @@ async function chineseToPinyin() {
         </el-button>
       </div>
       <el-text type="primary" size="large">
-        <span v-if="isPath">{{ data.filePath }}</span>
+        <span v-if="isPath">{{ data.path }}</span>
         <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>
     </div>
