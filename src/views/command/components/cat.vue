@@ -45,6 +45,10 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
 });
 
+function basename(path: string) {
+  return path.split("\\").pop().split("/").pop();
+}
+
 // open file
 async function selectFile() {
   selectedFiles.value = [];
@@ -59,17 +63,11 @@ async function selectFile() {
   });
   if (Array.isArray(selected)) {
     data.filePath = selected.join("|").toString();
-    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file };
+    const rows = selected.filter((row: any) => row.trim() !== "");
+    selectedFiles.value = rows.map((file: any) => {
+      return { filename: basename(file) };
     });
   } else if (selected === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
     return;
   } else {
     data.filePath = selected;
@@ -125,10 +123,10 @@ async function concatData() {
 
     isLoading.value = false;
     ElNotification({
-      message: "Cat done, elapsed time: " + result + " s",
+      message: `Cat done, elapsed time: ${result} s`,
       position: "bottom-right",
       type: "success",
-      duration: 0
+      duration: 20000
     });
   } catch (err) {
     ElNotification({
