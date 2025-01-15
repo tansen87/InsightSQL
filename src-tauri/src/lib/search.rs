@@ -1,10 +1,10 @@
 use std::{collections::HashMap, fs::File, io::BufReader, path::Path, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
-use crate::detect::detect_separator;
+use crate::detect::{detect_separator, Selection};
 
 #[derive(Debug)]
 enum SearchMode {
@@ -25,8 +25,8 @@ impl From<&str> for SearchMode {
   }
 }
 
-async fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(path, 0) {
+async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -52,8 +52,8 @@ async fn get_header(path: &str) -> Result<Vec<HashMap<String, String>>> {
   Ok(hs)
 }
 
-async fn generic_search<F>(
-  path: String,
+async fn generic_search<F, P>(
+  path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
@@ -62,6 +62,7 @@ async fn generic_search<F>(
 ) -> Result<String>
 where
   F: Fn(&str, &[String]) -> bool + Send + Sync,
+  P: AsRef<Path>,
 {
   let mut match_rows: usize = 0;
   let mut rdr = csv::ReaderBuilder::new()
@@ -69,14 +70,7 @@ where
     .from_reader(BufReader::new(File::open(path)?));
   let headers = rdr.headers()?.clone();
 
-  let name_idx = match headers.iter().position(|field| field == select_column) {
-    Some(idx) => idx,
-    None => {
-      return Err(anyhow!(
-        "The column '{select_column}' was not found in the headers."
-      ));
-    }
-  };
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
 
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
@@ -86,7 +80,7 @@ where
 
   for result in rdr.records() {
     let record = result?;
-    if let Some(value) = record.get(name_idx) {
+    if let Some(value) = record.get(sel.first_indices()?) {
       if match_fn(value, &conditions) {
         wtr.write_record(&record)?;
         match_rows += 1;
@@ -97,8 +91,8 @@ where
   Ok(match_rows.to_string())
 }
 
-async fn equal_search(
-  path: String,
+async fn equal_search<P: AsRef<Path>>(
+  path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
@@ -115,8 +109,8 @@ async fn equal_search(
   .await
 }
 
-async fn contains_search(
-  path: String,
+async fn contains_search<P: AsRef<Path>>(
+  path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
@@ -137,8 +131,8 @@ async fn contains_search(
   .await
 }
 
-async fn startswith_search(
-  path: String,
+async fn startswith_search<P: AsRef<Path>>(
+  path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
@@ -155,8 +149,8 @@ async fn startswith_search(
   .await
 }
 
-async fn regex_search(
-  path: String,
+async fn regex_search<P: AsRef<Path>>(
+  path: P,
   sep: u8,
   select_column: String,
   regex_char: String,
@@ -183,23 +177,28 @@ pub async fn get_search_headers(path: String) -> Result<Vec<HashMap<String, Stri
   }
 }
 
-async fn perform_search(
-  path: String,
-  sep: u8,
+async fn perform_search<P: AsRef<Path>>(
+  path: P,
   select_column: String,
   conditions: String,
   mode: SearchMode,
 ) -> Result<String> {
+  let sep = match detect_separator(&path, 0) {
+    Some(separator) => separator as u8,
+    None => b',',
+  };
+
   let vec_conditions: Vec<String> = conditions
     .split('|')
     .map(|s| s.trim().to_string())
     .collect();
 
-  let parent_path = Path::new(&path)
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|path| path.to_string_lossy())
     .unwrap();
-  let file_name = Path::new(&path).file_stem().unwrap().to_str().unwrap();
+  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{}/{}.search.csv", parent_path, file_name);
 
   match mode {
@@ -224,14 +223,9 @@ pub async fn search(
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  let sep = match detect_separator(path.as_str(), 0) {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
   let search_mode: SearchMode = mode.as_str().into();
 
-  match perform_search(path, sep, select_column, condition, search_mode).await {
+  match perform_search(path, select_column, condition, search_mode).await {
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

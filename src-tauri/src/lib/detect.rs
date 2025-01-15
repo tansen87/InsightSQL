@@ -85,4 +85,12 @@ impl Selection {
   pub fn get_indices(&self) -> &Vec<usize> {
     &self.indices
   }
+
+  pub fn first_indices(&self) -> Result<usize> {
+    self
+      .indices
+      .get(0)
+      .copied()
+      .ok_or(anyhow!("The indices vector is empty."))
+  }
 }
