@@ -2,7 +2,7 @@ use std::{fs::File, path::Path, time::Instant};
 
 use anyhow::Result;
 
-use crate::detect::detect_separator;
+use crate::utils::detect_separator;
 
 async fn get_header(file_path: &str) -> Result<Vec<String>> {
   let sep = match detect_separator(file_path, 0) {

@@ -6,7 +6,7 @@ pub mod cat;
 pub mod convert;
 pub mod count;
 pub mod dbf;
-pub mod detect;
+pub mod utils;
 pub mod enumerate;
 pub mod excel_reader;
 pub mod fill;

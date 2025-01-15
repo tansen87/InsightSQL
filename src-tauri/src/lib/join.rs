@@ -9,7 +9,7 @@ use std::time::Instant;
 use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::detect::{detect_separator, Selection};
+use crate::utils::{detect_separator, Selection};
 use crate::index::Indexed;
 
 type ByteString = Vec<u8>;

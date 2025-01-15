@@ -12,7 +12,7 @@ use polars::{
 };
 
 use crate::{
-  detect::detect_separator,
+  utils::detect_separator,
   excel_reader::{ExcelReader, ToPolarsDataFrame},
   xlsx_writer::XlsxWriter,
 };

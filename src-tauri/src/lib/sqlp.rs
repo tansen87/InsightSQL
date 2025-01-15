@@ -22,7 +22,7 @@ use polars::{
 use tauri::Emitter;
 
 use crate::excel_reader::{ExcelReader, ToPolarsDataFrame};
-use crate::{detect::detect_separator, xlsx_writer::XlsxWriter};
+use crate::{utils::detect_separator, xlsx_writer::XlsxWriter};
 
 fn execute_query(
   query: &str,

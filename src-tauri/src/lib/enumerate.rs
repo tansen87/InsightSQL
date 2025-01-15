@@ -2,7 +2,7 @@ use std::{fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 
-use crate::detect::detect_separator;
+use crate::utils::detect_separator;
 
 async fn add_index(file_path: String) -> Result<()> {
   let sep = match detect_separator(file_path.as_str(), 0) {

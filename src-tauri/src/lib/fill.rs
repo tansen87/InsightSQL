@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Insta
 
 use anyhow::Result;
 
-use crate::detect::{detect_separator, Selection};
+use crate::utils::{detect_separator, Selection};
 
 async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(&path, 0) {

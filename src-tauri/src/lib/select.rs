@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
-use crate::detect::detect_separator;
+use crate::utils::detect_separator;
 
 async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
   let sep = match detect_separator(path.as_str(), 0) {

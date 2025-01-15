@@ -8,6 +8,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use csv::ByteRecord;
 
+/// Check the delimiter of CSV
 pub fn detect_separator<P>(path: P, skip_rows: usize) -> Option<char>
 where
   P: AsRef<Path>,

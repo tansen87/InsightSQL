@@ -10,7 +10,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::detect::detect_separator;
+use crate::utils::detect_separator;
 
 #[macro_export]
 macro_rules! regex_oncelock {

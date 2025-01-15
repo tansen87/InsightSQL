@@ -3,7 +3,7 @@ use std::{fs::File, path::Path, time::Instant};
 use anyhow::Result;
 use tauri::Emitter;
 
-use crate::detect::detect_separator;
+use crate::utils::detect_separator;
 
 async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
   /* count csv rows */

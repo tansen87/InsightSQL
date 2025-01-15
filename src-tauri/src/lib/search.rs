@@ -4,7 +4,7 @@ use anyhow::Result;
 use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
-use crate::detect::{detect_separator, Selection};
+use crate::utils::{detect_separator, Selection};
 
 #[derive(Debug)]
 enum SearchMode {

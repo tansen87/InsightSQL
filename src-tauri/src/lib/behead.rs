@@ -3,7 +3,7 @@ use std::{path::Path, time::Instant};
 use anyhow::Result;
 use tauri::Emitter;
 
-use crate::detect::detect_separator;
+use crate::utils::detect_separator;
 
 async fn drop_headers(file_path: String, window: tauri::Window) -> Result<()> {
   let vec_path: Vec<&str> = file_path.split('|').collect();

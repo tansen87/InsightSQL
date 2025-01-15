@@ -14,7 +14,7 @@ use polars::{
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::Emitter;
 
-use crate::{detect::detect_separator, xlsx_writer::XlsxWriter};
+use crate::{utils::detect_separator, xlsx_writer::XlsxWriter};
 
 async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* convert excel to csv */

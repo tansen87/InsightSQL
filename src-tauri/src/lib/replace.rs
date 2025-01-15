@@ -1,18 +1,12 @@
-use std::{
-  borrow::Cow,
-  collections::HashMap,
-  fs::File,
-  path::Path,
-  time::Instant,
-};
+use std::{borrow::Cow, collections::HashMap, fs::File, path::Path, time::Instant};
 
 use anyhow::Result;
 use regex::bytes::RegexBuilder;
 
-use crate::detect::{detect_separator, Selection};
+use crate::utils::{detect_separator, Selection};
 
-async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(file_path.as_str(), 0) {
+async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -20,7 +14,7 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(file_path)?);
+    .from_reader(File::open(&path)?);
 
   let headers = rdr.headers()?;
 
@@ -38,28 +32,29 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   Ok(hs)
 }
 
-async fn regex_replace(
-  file_path: String,
+async fn regex_replace<P: AsRef<Path>>(
+  path: P,
   sel: String,
   regex_pattern: String,
   replacement: String,
 ) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
 
-  let sep = match detect_separator(&file_path.as_str(), 0) {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(&file_path)?);
+    .from_reader(File::open(&path)?);
 
-  let parent_path = Path::new(&file_path)
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|path| path.to_string_lossy())
     .unwrap();
-  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{}/{}.replace.csv", parent_path, file_name);
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)
@@ -125,9 +120,9 @@ pub async fn replace(
 /// for integration test
 pub async fn public_replace(
   file_path: String,
-  select_column: String,
+  sel: String,
   regex_pattern: String,
   replacement: String,
 ) -> Result<()> {
-  regex_replace(file_path, select_column, regex_pattern, replacement).await
+  regex_replace(file_path, sel, regex_pattern, replacement).await
 }
