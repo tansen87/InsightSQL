@@ -2,37 +2,13 @@ use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Insta
 
 use anyhow::Result;
 
-use crate::utils::{detect_separator, Selection};
+use crate::utils::{detect_separator, get_same_headers, Selection};
 
-async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&path, 0) {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
-  let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(path)?);
-
-  let headers = rdr.headers()?.clone();
-  let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
-
-  let hs = vec_headers
-    .into_iter()
-    .enumerate()
-    .map(|(_index, value)| {
-      let mut map = HashMap::new();
-      map.insert("value".to_string(), value.clone());
-      map.insert("label".to_string(), value);
-      map
-    })
-    .collect();
-
-  Ok(hs)
-}
-
-async fn fill_values<P: AsRef<Path>>(path: P, fill_column: String, fill_value: String) -> Result<()> {
+async fn fill_values<P: AsRef<Path>>(
+  path: P,
+  fill_column: String,
+  fill_value: String,
+) -> Result<()> {
   let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
@@ -47,7 +23,8 @@ async fn fill_values<P: AsRef<Path>>(path: P, fill_column: String, fill_value: S
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
 
-  let parent_path = &path.as_ref()
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap();
@@ -75,7 +52,7 @@ async fn fill_values<P: AsRef<Path>>(path: P, fill_column: String, fill_value: S
 
 #[tauri::command]
 pub async fn get_fill_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(path).await {
+  match get_same_headers(path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }

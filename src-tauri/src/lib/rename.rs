@@ -4,25 +4,23 @@ use anyhow::Result;
 
 use crate::utils::detect_separator;
 
-async fn get_header(file_path: &str) -> Result<Vec<String>> {
-  let sep = match detect_separator(file_path, 0) {
+async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(file_path)?);
+    .from_reader(File::open(&path)?);
 
-  let headers = rdr.headers()?.clone();
-  let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
+  let headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();
 
-  Ok(vec_headers)
+  Ok(headers)
 }
 
-async fn rename_headers(file_path: &str, r_header: String) -> Result<()> {
-  let sep = match detect_separator(file_path, 0) {
+async fn rename_headers<P: AsRef<Path>>(path: P, r_header: String) -> Result<()> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -30,14 +28,15 @@ async fn rename_headers(file_path: &str, r_header: String) -> Result<()> {
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(file_path)?);
+    .from_reader(File::open(&path)?);
 
   let mut new_rdr = csv::Reader::from_reader(r_header.as_bytes());
 
   let new_headers = new_rdr.byte_headers()?;
 
-  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
-  let parent_path = Path::new(&file_path)
+  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap();

@@ -10,7 +10,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::utils::detect_separator;
+use crate::utils::{detect_separator, get_same_headers};
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -60,33 +60,6 @@ enum ApplyCmd {
   Operations,
   CalcConv,
   DynFmt,
-}
-
-async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&file_path, 0) {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
-  let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(&file_path)?);
-
-  let headers = rdr.headers()?;
-
-  let hs: Vec<HashMap<String, String>> = headers
-    .iter()
-    .map(|header| {
-      let mut map = HashMap::new();
-      let header_str = header.to_string();
-      map.insert("value".to_string(), header_str.clone());
-      map.insert("label".to_string(), header_str);
-      map
-    })
-    .collect();
-
-  Ok(hs)
 }
 
 fn replace_column_value(
@@ -465,7 +438,7 @@ async fn apply_perform(
 
 #[tauri::command]
 pub async fn get_apply_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(file_path).await {
+  match get_same_headers(file_path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get_apply_header: {err}")),
   }

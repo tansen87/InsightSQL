@@ -10,8 +10,8 @@ use anyhow::{anyhow, Result};
 
 use crate::utils::detect_separator;
 
-async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(path.as_str(), 0) {
+async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -19,10 +19,9 @@ async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .has_headers(true)
-    .from_reader(File::open(path)?);
+    .from_reader(File::open(&path)?);
 
-  let headers = rdr.headers()?.clone();
-  let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
+  let vec_headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();
 
   let hs = vec_headers
     .into_iter()
@@ -38,8 +37,8 @@ async fn get_header(path: String) -> Result<Vec<HashMap<String, String>>> {
   Ok(hs)
 }
 
-async fn select_columns(path: String, cols: String) -> Result<()> {
-  let sep = match detect_separator(path.as_str(), 0) {
+async fn select_columns<P: AsRef<Path>>(path: P, cols: String) -> Result<()> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -47,18 +46,16 @@ async fn select_columns(path: String, cols: String) -> Result<()> {
   let cols_cleaned: String = cols.replace("\r", "").replace("\n", "");
   let cols_select: Vec<&str> = cols_cleaned.split('|').collect();
 
-  let file_path = Path::new(&path);
-  let file_name = file_path.file_stem().unwrap().to_str().unwrap();
-  let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
-  let parent_path = file_path
+  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|parent| parent.to_string_lossy())
     .unwrap();
-  let output_path = format!("{}/{}.select_{}.csv", parent_path, file_name, current_time);
+  let output_path = format!("{parent_path}/{file_name}.select.csv");
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .has_headers(true)
     .from_reader(File::open(&path)?);
 
   let headers = rdr.headers()?.clone();

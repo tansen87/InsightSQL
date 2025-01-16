@@ -4,7 +4,7 @@ use anyhow::Result;
 use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
-use crate::utils::{detect_separator, Selection};
+use crate::utils::{detect_separator, get_same_headers, Selection};
 
 #[derive(Debug)]
 enum SearchMode {
@@ -23,33 +23,6 @@ impl From<&str> for SearchMode {
       _ => SearchMode::Regex,
     }
   }
-}
-
-async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&path, 0) {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
-  let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(path)?);
-
-  let headers = rdr.headers()?;
-
-  let hs: Vec<HashMap<String, String>> = headers
-    .iter()
-    .map(|header| {
-      let mut map = HashMap::new();
-      let header_str = header.to_string();
-      map.insert("value".to_string(), header_str.clone());
-      map.insert("label".to_string(), header_str);
-      map
-    })
-    .collect();
-
-  Ok(hs)
 }
 
 async fn generic_search<F, P>(
@@ -171,7 +144,7 @@ async fn regex_search<P: AsRef<Path>>(
 
 #[tauri::command]
 pub async fn get_search_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(path.as_str()).await {
+  match get_same_headers(path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }

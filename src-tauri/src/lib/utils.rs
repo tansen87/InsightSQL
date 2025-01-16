@@ -95,3 +95,29 @@ impl Selection {
       .ok_or(anyhow!("The indices vector is empty."))
   }
 }
+
+/// Get csv headers
+pub async fn get_same_headers<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let sep = match detect_separator(&path, 0) {
+    Some(separator) => separator as u8,
+    None => b',',
+  };
+
+  let mut rdr = csv::ReaderBuilder::new()
+    .delimiter(sep)
+    .has_headers(true)
+    .from_reader(File::open(&path)?);
+
+  let headers: Vec<HashMap<String, String>> = rdr
+    .headers()?
+    .iter()
+    .map(|header| {
+      let mut map = HashMap::new();
+      map.insert("value".to_string(), header.to_string());
+      map.insert("label".to_string(), header.to_string());
+      map
+    })
+    .collect();
+
+  Ok(headers)
+}

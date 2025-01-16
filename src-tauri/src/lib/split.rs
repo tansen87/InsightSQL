@@ -20,23 +20,23 @@ fn new_writer(
   Ok(wtr)
 }
 
-async fn split_csv(file_path: String, size: u32) -> Result<()> {
-  let sep = match detect_separator(&file_path.as_str(), 0) {
+async fn split_csv<P: AsRef<Path>>(path: P, size: u32) -> Result<()> {
+  let sep = match detect_separator(&path, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
 
-  let parent_path = Path::new(&file_path)
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|path| path.to_string_lossy())
     .unwrap();
-  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{}/{}", parent_path, file_name);
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(&file_path)?);
+    .from_reader(File::open(&path)?);
 
   let headers = rdr.byte_headers()?.clone();
 

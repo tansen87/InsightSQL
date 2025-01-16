@@ -9,8 +9,8 @@ use std::time::Instant;
 use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::utils::{detect_separator, Selection};
 use crate::index::Indexed;
+use crate::utils::{detect_separator, get_same_headers, Selection};
 
 type ByteString = Vec<u8>;
 
@@ -158,18 +158,18 @@ impl<R: io::Read + io::Seek, W: io::Write> IoState<R, W> {
   }
 }
 
-fn new_io_state(
-  path1: String,
-  path2: String,
+fn new_io_state<P: AsRef<Path>>(
+  path1: P,
+  path2: P,
   sel1: String,
   sel2: String,
   nulls: bool,
 ) -> Result<IoState<fs::File, Box<dyn io::Write + 'static>>> {
-  let sep1 = match detect_separator(path1.as_str(), 0) {
+  let sep1 = match detect_separator(&path1, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
-  let sep2 = match detect_separator(path2.as_str(), 0) {
+  let sep2 = match detect_separator(&path2, 0) {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -180,12 +180,13 @@ fn new_io_state(
     .delimiter(sep2)
     .from_reader(File::open(&path2)?);
 
-  let parent_path = Path::new(&path1)
+  let parent_path = &path1
+    .as_ref()
     .parent()
     .map(|path| path.to_string_lossy())
     .unwrap();
 
-  let file_name = Path::new(&path1).file_stem().unwrap().to_str().unwrap();
+  let file_name = &path1.as_ref().file_stem().unwrap().to_str().unwrap();
 
   let output_path = format!("{parent_path}/{file_name}.join.csv");
 
@@ -288,9 +289,9 @@ impl<R> fmt::Debug for ValueIndex<R> {
   }
 }
 
-async fn run_join(
-  path1: String,
-  path2: String,
+async fn run_join<P: AsRef<Path>>(
+  path1: P,
+  path2: P,
   sel1: String,
   sel2: String,
   join_type: &str,
@@ -325,36 +326,9 @@ async fn run_join(
   }
 }
 
-async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(file_path.as_str(), 0) {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
-  let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(file_path)?);
-
-  let headers = rdr.headers()?;
-
-  let hs: Vec<HashMap<String, String>> = headers
-    .iter()
-    .map(|header| {
-      let mut map = HashMap::new();
-      let header_str = header.to_string();
-      map.insert("value".to_string(), header_str.clone());
-      map.insert("label".to_string(), header_str);
-      map
-    })
-    .collect();
-
-  Ok(hs)
-}
-
 #[tauri::command]
 pub async fn get_join_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(file_path).await {
+  match get_same_headers(file_path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }
