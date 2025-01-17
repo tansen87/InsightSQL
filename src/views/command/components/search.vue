@@ -126,43 +126,40 @@ async function searchData() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const matchRows: string = await invoke("search", {
-        path: data.filePath,
-        selectColumn: columns.value,
-        mode: data.mode,
-        condition: data.condition
-      });
+  try {
+    const matchRows: string = await invoke("search", {
+      path: data.filePath,
+      selectColumn: columns.value,
+      mode: data.mode,
+      condition: data.condition
+    });
 
-      if (JSON.stringify(matchRows).startsWith("search failed")) {
-        throw JSON.stringify(matchRows).toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message:
-          "Search done, match rows: " +
-          matchRows +
-          " lines, elapsed time: " +
-          runtime.value,
-        position: "bottom-right",
-        type: "success",
-        duration: 10000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Search Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(matchRows).startsWith("search failed")) {
+      throw JSON.stringify(matchRows).toString();
     }
+
     isLoading.value = false;
+    ElNotification({
+      message: `Search done, match rows: 
+        ${matchRows}
+         lines, elapsed time: 
+        ${runtime.value}`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Search Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

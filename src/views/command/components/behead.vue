@@ -107,36 +107,34 @@ async function dropHeaders() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("behead", {
-        filePath: data.filePath
-      });
+  try {
+    const result: string = await invoke("behead", {
+      filePath: data.filePath
+    });
 
-      if (result.startsWith("behead failed:")) {
-        throw result.toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message: "Drop done, elapsed time: " + result + " s",
-        position: "bottom-right",
-        type: "success",
-        duration: 10000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Behead Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (result.startsWith("behead failed:")) {
+      throw result.toString();
     }
+
     isLoading.value = false;
+    ElNotification({
+      message: `Drop done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Behead Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

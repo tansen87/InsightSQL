@@ -124,43 +124,41 @@ async function applyData() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("apply", {
-        filePath: data.filePath,
-        selectColumns: selectColumns.value.join("|"),
-        applyMode: data.applyMode,
-        operations: operations.value.join("|"),
-        comparand: data.comparand,
-        replacement: data.replacement,
-        formatstr: data.formatstr,
-        newColumn: data.newColumn
-      });
+  try {
+    const result: string = await invoke("apply", {
+      filePath: data.filePath,
+      selectColumns: selectColumns.value.join("|"),
+      applyMode: data.applyMode,
+      operations: operations.value.join("|"),
+      comparand: data.comparand,
+      replacement: data.replacement,
+      formatstr: data.formatstr,
+      newColumn: data.newColumn
+    });
 
-      if (JSON.stringify(result).startsWith("apply failed:")) {
-        throw JSON.stringify(result).toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message: "Apply done, " + "elapsed time: " + result + " s.",
-        position: "bottom-right",
-        type: "success",
-        duration: 10000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Apply Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("apply failed:")) {
+      throw JSON.stringify(result).toString();
     }
+
     isLoading.value = false;
+    ElNotification({
+      message: `Apply done, elapsed time: ${result} s.`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Apply Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification, ElIcon } from "element-plus";
 import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
+import { shortFileName } from "@/utils/utils";
 
 const isLoading = ref(false);
 const progress = ref(0);
@@ -43,16 +44,16 @@ onBeforeUnmount(() => {
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === getFileName(startConvert)) {
+    if (shortFileName(file.filename) === shortFileName(startConvert)) {
       file.status = "";
     }
   });
 });
 listen("count_msg", (event: any) => {
   const countMsg: any = event.payload;
-  const basename = getFileName(countMsg.split("|")[0]);
+  const basename = shortFileName(countMsg.split("|")[0]);
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === basename) {
+    if (shortFileName(file.filename) === basename) {
       file.status = countMsg.split("|")[1];
     }
   });
@@ -61,10 +62,6 @@ listen("count_progress", (event: any) => {
   const pgs: any = event.payload;
   progress.value = pgs;
 });
-
-function getFileName(path: string) {
-  return path.split("\\").pop().split("/").pop();
-}
 
 // open file
 async function selectFile() {
@@ -84,7 +81,7 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: getFileName(file), status: " " };
+      return { filename: shortFileName(file), status: " " };
     });
   } else if (selected === null) {
     return;

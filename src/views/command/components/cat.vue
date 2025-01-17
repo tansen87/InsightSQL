@@ -4,6 +4,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
+import { shortFileName } from "@/utils/utils";
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
@@ -45,10 +46,6 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateWindowHeight);
 });
 
-function basename(path: string) {
-  return path.split("\\").pop().split("/").pop();
-}
-
 // open file
 async function selectFile() {
   selectedFiles.value = [];
@@ -65,7 +62,7 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const rows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = rows.map((file: any) => {
-      return { filename: basename(file) };
+      return { filename: shortFileName(file) };
     });
   } else if (selected === null) {
     return;

@@ -97,7 +97,7 @@ async function netAmount() {
 
     isLoading.value = false;
     ElNotification({
-      message: "Offset done, elapsed time: " + result + " s",
+      message: `Offset done, elapsed time: ${result} s`,
       position: "bottom-right",
       type: "success",
       duration: 10000

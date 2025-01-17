@@ -61,7 +61,7 @@ async function splitData() {
     }
 
     ElNotification({
-      message: "Split done, elapsed time: " + result + " s",
+      message: `Split done, elapsed time: ${result} s`,
       position: "bottom-right",
       type: "success",
       duration: 5000

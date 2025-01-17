@@ -145,7 +145,7 @@ async function joinData() {
 
     isLoading.value = false;
     ElNotification({
-      message: "Join done, " + "elapsed time: " + result + " s.",
+      message: `Join done, elapsed time: ${result} s.`,
       position: "bottom-right",
       type: "success",
       duration: 10000

@@ -91,22 +91,21 @@ async function accessData() {
     });
     return;
   }
-  if (data.filePath !== "") {
-    isLoading.value = true;
 
-    await invoke("access", {
-      filePath: data.filePath,
-      sep: data.sep
-    });
+  isLoading.value = true;
 
-    isLoading.value = false;
-    ElNotification({
-      message: "Convert done, elapsed time: " + runtime.value,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
-  }
+  await invoke("access", {
+    filePath: data.filePath,
+    sep: data.sep
+  });
+
+  isLoading.value = false;
+  ElNotification({
+    message: `Convert done, elapsed time: ${runtime.value}`,
+    position: "bottom-right",
+    type: "success",
+    duration: 5000
+  });
 }
 </script>
 

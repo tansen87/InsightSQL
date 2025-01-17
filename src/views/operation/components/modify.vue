@@ -113,7 +113,7 @@ async function modifyFilename() {
 
   isLoading.value = false;
   ElNotification({
-    message: "Modify done, elapsed time: " + runtime.value,
+    message: `Modify done, elapsed time: ${runtime.value} s`,
     position: "bottom-right",
     type: "success",
     duration: 10000

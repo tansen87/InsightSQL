@@ -30,19 +30,7 @@ const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
-  fileFormats: [
-    "csv",
-    "txt",
-    "tsv",
-    "spext",
-    "dat",
-    "parquet",
-    "xls",
-    "xlsx",
-    "xlsm",
-    "xlsb",
-    "ods"
-  ],
+  fileFormats: ["*"],
   write: false,
   writeFormat: "csv",
   lowMemory: false,
@@ -161,7 +149,7 @@ async function queryData() {
     tableData.value = arrayData;
 
     ElNotification({
-      message: "Query done, elapsed time: " + runtime.value + " s",
+      message: `Query done, elapsed time: ${runtime.value} s`,
       position: "bottom-right",
       type: "success",
       duration: 5000

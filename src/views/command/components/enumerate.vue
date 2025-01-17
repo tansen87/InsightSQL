@@ -102,7 +102,7 @@ async function enumerate() {
 
     isLoading.value = false;
     ElNotification({
-      message: "Enumerate done, elapsed time: " + result + " s",
+      message: `Enumerate done, elapsed time: ${result} s`,
       position: "bottom-right",
       type: "success",
       duration: 5000

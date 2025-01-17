@@ -120,40 +120,37 @@ async function replaceData() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("replace", {
-        filePath: data.filePath,
-        selectColumn: selectColumn.value,
-        regexPattern: data.regexPattern,
-        replacement: data.replacement
-      });
+  try {
+    const result: string = await invoke("replace", {
+      filePath: data.filePath,
+      selectColumn: selectColumn.value,
+      regexPattern: data.regexPattern,
+      replacement: data.replacement
+    });
 
-      if (JSON.stringify(result).startsWith("Replace failed:")) {
-        throw JSON.stringify(result).toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message: "Replace done, " + "elapsed time: " + result + " s.",
-        position: "bottom-right",
-        type: "success",
-        duration: 10000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Replace Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("Replace failed:")) {
+      throw JSON.stringify(result).toString();
     }
 
     isLoading.value = false;
+    ElNotification({
+      message: `Replace done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Replace Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

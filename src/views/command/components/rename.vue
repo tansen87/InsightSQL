@@ -119,7 +119,7 @@ async function renameData() {
     }
 
     ElNotification({
-      message: "Rename done, elapsed time: " + result + " s",
+      message: `Rename done, elapsed time: ${result} s`,
       position: "bottom-right",
       type: "success",
       duration: 10000

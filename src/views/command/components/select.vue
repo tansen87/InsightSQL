@@ -101,7 +101,7 @@ async function selectColumns() {
 
       isLoading.value = false;
       ElNotification({
-        message: "Select done, elapsed time: " + result + " s",
+        message: `Select done, elapsed time: ${result} s`,
         position: "bottom-right",
         type: "success",
         duration: 10000

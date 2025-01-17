@@ -11,6 +11,7 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
+import { shortFileName } from "@/utils/utils";
 
 interface FileStatus {
   filename: string;
@@ -63,7 +64,7 @@ onBeforeUnmount(() => {
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === getFileName(startConvert)) {
+    if (shortFileName(file.filename) === shortFileName(startConvert)) {
       file.status = "loading";
     }
   });
@@ -74,10 +75,10 @@ listen("c2x_progress", (event: any) => {
 });
 listen("rows_err", (event: any) => {
   const csvRowsErr: any = event.payload;
-  const basename = getFileName(csvRowsErr.split("|")[0]);
+  const basename = shortFileName(csvRowsErr.split("|")[0]);
   const errorDetails = csvRowsErr.split("|")[1];
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === basename) {
+    if (shortFileName(file.filename) === basename) {
       file.status = "error";
       file.errorMessage = errorDetails;
     }
@@ -87,15 +88,11 @@ listen("rows_err", (event: any) => {
 listen("c2x_msg", (event: any) => {
   const c2xMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === getFileName(c2xMsg)) {
+    if (shortFileName(file.filename) === shortFileName(c2xMsg)) {
       file.status = "completed";
     }
   });
 });
-
-function getFileName(path) {
-  return path.split("\\").pop().split("/").pop();
-}
 
 // open file
 async function selectFile() {
@@ -116,7 +113,7 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: getFileName(file), status: "" };
+      return { filename: shortFileName(file), status: "" };
     });
   } else if (selected === null) {
     return;
@@ -137,36 +134,34 @@ async function csvToxlsx() {
     return;
   }
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("switch_csv", {
-        path: data.filePath,
-        skipRows: data.skipRows
-      });
+  try {
+    const result: string = await invoke("switch_csv", {
+      path: data.filePath,
+      skipRows: data.skipRows
+    });
 
-      if (result.startsWith("csv to xlsx failed:")) {
-        throw result.toString();
-      }
-      ElNotification({
-        message: "Convert done, elapsed time: " + result + " s",
-        position: "bottom-right",
-        type: "success",
-        duration: 5000
-      });
-      isLoading.value = false;
-    } catch (err) {
-      ElNotification({
-        title: "Invoke switch_csv Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (result.startsWith("csv to xlsx failed:")) {
+      throw result.toString();
     }
+    ElNotification({
+      message: `Convert done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
     isLoading.value = false;
+  } catch (err) {
+    ElNotification({
+      title: "Invoke switch_csv Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

@@ -12,6 +12,7 @@ import {
   SwitchFilled,
   Loading
 } from "@element-plus/icons-vue";
+import { shortFileName } from "@/utils/utils";
 
 interface FileStatus {
   filename: string;
@@ -63,17 +64,17 @@ onBeforeUnmount(() => {
 listen("start_convert", event => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === getFileName(startConvert)) {
+    if (shortFileName(file.filename) === shortFileName(startConvert)) {
       file.status = "loading";
     }
   });
 });
 listen("row_count_err", event => {
   const excelRowCountErr: any = event.payload;
-  const basename = getFileName(excelRowCountErr.split("|")[0]);
+  const basename = shortFileName(excelRowCountErr.split("|")[0]);
   const errorDetails = excelRowCountErr.split("|")[1];
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === basename) {
+    if (shortFileName(file.filename) === basename) {
       file.status = "error";
       file.errorMessage = errorDetails;
     }
@@ -83,7 +84,7 @@ listen("row_count_err", event => {
 listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (getFileName(file.filename) === getFileName(e2cMsg)) {
+    if (shortFileName(file.filename) === shortFileName(e2cMsg)) {
       file.status = "completed";
     }
   });
@@ -92,10 +93,6 @@ listen("e2c_progress", (event: any) => {
   const pgs: number = event.payload;
   progress.value = pgs;
 });
-
-function getFileName(path) {
-  return path.split("\\").pop().split("/").pop();
-}
 
 // open file
 async function selectFile() {
@@ -116,7 +113,7 @@ async function selectFile() {
     data.filePath = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: getFileName(file), status: "" };
+      return { filename: shortFileName(file), status: "" };
     });
   } else if (selected === null) {
     return;

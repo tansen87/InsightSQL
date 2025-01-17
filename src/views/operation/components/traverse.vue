@@ -83,22 +83,20 @@ async function traverseDirectory() {
     return;
   }
 
-  if (data.folderPath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    await invoke("traverse", {
-      folderPath: data.folderPath,
-      output: output
-    });
+  await invoke("traverse", {
+    folderPath: data.folderPath,
+    output: output
+  });
 
-    isLoading.value = false;
-    ElNotification({
-      message: "Traverse done.",
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
-  }
+  isLoading.value = false;
+  ElNotification({
+    message: "Traverse done.",
+    position: "bottom-right",
+    type: "success",
+    duration: 10000
+  });
 }
 </script>
 

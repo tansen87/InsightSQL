@@ -80,38 +80,36 @@ async function fillData() {
 
   const cols = Object.values(columns.value).join("|");
 
-  if (data.filePath !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("fill", {
-        path: data.filePath,
-        columns: cols,
-        values: data.value
-      });
+  try {
+    const result: string = await invoke("fill", {
+      path: data.filePath,
+      columns: cols,
+      values: data.value
+    });
 
-      if (JSON.stringify(result).startsWith("fill failed:")) {
-        throw JSON.stringify(result).toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message: "Fill done, elapsed time: " + result + " s",
-        position: "bottom-right",
-        type: "success",
-        duration: 10000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Fill Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("fill failed:")) {
+      throw JSON.stringify(result).toString();
     }
+
     isLoading.value = false;
+    ElNotification({
+      message: `Fill done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Fill Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

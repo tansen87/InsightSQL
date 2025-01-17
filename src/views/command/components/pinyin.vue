@@ -78,37 +78,35 @@ async function chineseToPinyin() {
 
   const cols = Object.values(columns.value).join("|");
 
-  if (data.path !== "") {
-    isLoading.value = true;
+  isLoading.value = true;
 
-    try {
-      const result: string = await invoke("pinyin", {
-        path: data.path,
-        columns: cols
-      });
+  try {
+    const result: string = await invoke("pinyin", {
+      path: data.path,
+      columns: cols
+    });
 
-      if (JSON.stringify(result).startsWith("pinyin failed:")) {
-        throw JSON.stringify(result).toString();
-      }
-
-      isLoading.value = false;
-      ElNotification({
-        message: "Convert done, elapsed time: " + result + " s",
-        position: "bottom-right",
-        type: "success",
-        duration: 5000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Pinyin Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("pinyin failed:")) {
+      throw JSON.stringify(result).toString();
     }
+
     isLoading.value = false;
+    ElNotification({
+      message: `Convert done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Pinyin Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 
