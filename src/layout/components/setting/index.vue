@@ -28,8 +28,6 @@ import { toggleTheme } from "@pureadmin/theme/dist/browser-utils";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 
-import dayIcon from "@/assets/svg/day.svg?component";
-import darkIcon from "@/assets/svg/dark.svg?component";
 import Check from "@iconify-icons/ep/check";
 import Logout from "@iconify-icons/ri/logout-circle-r-line";
 
@@ -43,7 +41,6 @@ const verticalRef = ref();
 const horizontalRef = ref();
 
 const {
-  dataTheme,
   layoutTheme,
   themeColors,
   dataThemeChange,
@@ -232,16 +229,6 @@ onBeforeMount(() => {
 
 <template>
   <panel>
-    <el-divider>主题</el-divider>
-    <el-switch
-      v-model="dataTheme"
-      inline-prompt
-      class="pure-datatheme"
-      :active-icon="dayIcon"
-      :inactive-icon="darkIcon"
-      @change="dataThemeChange"
-    />
-
     <el-divider>导航栏模式</el-divider>
     <ul class="pure-theme">
       <el-tooltip

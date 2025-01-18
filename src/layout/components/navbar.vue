@@ -4,8 +4,12 @@ import { useNav } from "@/layout/hooks/useNav";
 import Breadcrumb from "./sidebar/breadCrumb.vue";
 import topCollapse from "./sidebar/topCollapse.vue";
 import Setting from "@iconify-icons/ri/settings-3-line";
+import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
+import dayIcon from "@/assets/svg/day.svg?component";
+import darkIcon from "@/assets/svg/dark.svg?component";
 
 const { layout, device, onPanel, pureApp, toggleSideBar } = useNav();
+const { dataTheme, dataThemeChange } = useDataThemeChange();
 </script>
 
 <template>
@@ -27,6 +31,15 @@ const { layout, device, onPanel, pureApp, toggleSideBar } = useNav();
     <mixNav v-if="layout === 'mix'" />
 
     <div v-if="layout === 'vertical'" class="vertical-header-right">
+      <el-switch
+        v-model="dataTheme"
+        inline-prompt
+        class="pure-datatheme"
+        :active-icon="dayIcon"
+        :inactive-icon="darkIcon"
+        @change="dataThemeChange"
+        style="margin-right: 5px"
+      />
       <span
         class="set-icon navbar-bg-hover"
         title="打开项目配置"
