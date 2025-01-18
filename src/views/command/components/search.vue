@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { Search, FolderOpened } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -13,27 +14,14 @@ const columns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  fileFormats: ["*"],
   mode: "equal",
   condition: ""
 });
 const tableColumn = ref([]);
 const tableData = ref([]);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
-const formHeight = computed(() => {
-  const height = 278;
-  return windowHeight.value - height;
-});
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(315);
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
@@ -140,7 +128,6 @@ async function searchData() {
       throw JSON.stringify(matchRows).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Search done, match rows: 
         ${matchRows}

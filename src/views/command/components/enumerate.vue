@@ -1,37 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const columns = ref([]);
 const isPath = ref(false);
 const tableData = ref([]);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
+  fileFormats: ["*"]
 });
-
-const formHeight = computed(() => {
-  const height = 220;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(220);
 
 async function selectFile() {
   isLoading.value = false;
@@ -100,7 +84,6 @@ async function enumerate() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Enumerate done, elapsed time: ${result} s`,
       position: "bottom-right",

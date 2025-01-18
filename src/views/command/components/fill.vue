@@ -93,7 +93,6 @@ async function fillData() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Fill done, elapsed time: ${result} s`,
       position: "bottom-right",

@@ -90,7 +90,6 @@ async function chineseToPinyin() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Convert done, elapsed time: ${result} s`,
       position: "bottom-right",

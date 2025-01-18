@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  ref,
-  reactive,
-  onMounted,
-  watch,
-  computed,
-  onBeforeUnmount
-} from "vue";
+import { ref, reactive, watch, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -14,6 +7,7 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
 import "./ace-config";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const columns = ref([]);
 const treeHeaders = ref([]);
@@ -27,7 +21,6 @@ const tables = ref([]);
 const isDataLoaded = ref(false);
 const headersByFile = reactive({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
-const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
@@ -36,6 +29,7 @@ const data = reactive({
   lowMemory: false,
   skipRows: "0"
 });
+const { formHeight } = useDynamicFormHeight(150);
 
 const initializeEditor = editor => {
   editor.completers.push({
@@ -65,23 +59,6 @@ const initializeEditor = editor => {
     });
   });
 };
-
-const formHeight = computed(() => {
-  const height = 150;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;

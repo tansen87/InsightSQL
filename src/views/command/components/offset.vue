@@ -95,7 +95,6 @@ async function netAmount() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Offset done, elapsed time: ${result} s`,
       position: "bottom-right",

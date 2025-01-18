@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -11,6 +11,7 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 interface FileStatus {
   filename: string;
@@ -21,7 +22,6 @@ const selectedFiles = ref([]);
 const isLoading = ref(false);
 const progress = ref(0);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
@@ -42,23 +42,7 @@ const filterFileStatus = (
   const property = column["property"];
   return row[property] === value;
 };
-
-const formHeight = computed(() => {
-  const height = 205;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(205);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
@@ -133,7 +117,6 @@ async function convertData() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Convert done, elapsed time: ${result} s`,
       position: "bottom-right",

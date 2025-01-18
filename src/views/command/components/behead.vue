@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -11,6 +11,7 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const progress = ref(0);
@@ -18,9 +19,8 @@ const tableRef = ref(null);
 const selectedFiles = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
+  fileFormats: ["*"]
 });
-const windowHeight = ref(window.innerHeight);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -28,23 +28,7 @@ const customColors = [
   { color: "#ADFF2F", percentage: 80 },
   { color: "#9ACD32", percentage: 100 }
 ];
-
-const formHeight = computed(() => {
-  const height = 225;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(225);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
@@ -118,7 +102,6 @@ async function dropHeaders() {
       throw result.toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Drop done, elapsed time: ${result} s`,
       position: "bottom-right",

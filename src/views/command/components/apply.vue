@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -12,7 +13,7 @@ const operations = ref([]);
 const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  fileFormats: ["*"],
   applyMode: "Operations",
   comparand: "",
   replacement: "",
@@ -22,20 +23,7 @@ const data = reactive({
 const tableColumn = ref([]);
 const tableData = ref([]);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
-const formHeight = computed(() => {
-  const height = 312;
-  return windowHeight.value - height;
-});
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(312);
 
 async function selectFile() {
   isLoading.value = false;
@@ -142,7 +130,6 @@ async function applyData() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Apply done, elapsed time: ${result} s.`,
       position: "bottom-right",

@@ -1,30 +1,20 @@
-use std::fmt;
 use std::path::Path;
-use std::{error::Error, time::Instant};
+use std::time::Instant;
 
+use anyhow::{anyhow, Result};
 use csv::StringRecord;
 use lazy_static::lazy_static;
 use odbc_api::{buffers::TextRowSet, ConnectionOptions, Cursor, Environment, ResultSetMetadata};
-use tauri::Emitter;
 
-#[derive(Debug)]
-struct CustomError(String);
-impl fmt::Display for CustomError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "Error: {}", self.0)
-  }
-}
-impl Error for CustomError {}
-
-fn connection(odbc_conn_string: &str) -> Result<odbc_api::Connection<'_>, odbc_api::Error> {
+fn connection(odbc_conn: &str) -> Result<odbc_api::Connection<'_>, odbc_api::Error> {
   lazy_static! {
     static ref ENV: Environment = Environment::new().unwrap();
   }
-  let conn = ENV.connect_with_connection_string(odbc_conn_string, ConnectionOptions::default())?;
+  let conn = ENV.connect_with_connection_string(odbc_conn, ConnectionOptions::default())?;
   Ok(conn)
 }
 
-fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>, Box<dyn Error>> {
+fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
   let mut cursor = conn.tables("", "", "", "")?;
   let mut tables = Vec::new();
   let mut buffer = TextRowSet::for_cursor(100, &mut cursor, Some(4096))?;
@@ -50,19 +40,17 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>, Box<dyn Err
   Ok(tables)
 }
 
-fn access_to_csv(file_path: String, sep: String) -> Result<(), Box<dyn Error>> {
+async fn access_to_csv(path: String, sep: String) -> Result<()> {
   let driver = "{Microsoft Access Driver (*.mdb, *.accdb)}";
   let batch_size = 5000;
 
-  let mut separator = Vec::new();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
-    sep.into_bytes()[0]
+    sep.as_bytes()[0]
   };
-  separator.push(sep);
 
-  let vec_path: Vec<&str> = file_path.split('|').collect();
+  let vec_path: Vec<&str> = path.split('|').collect();
   let parent_path = Path::new(&vec_path[0])
     .parent()
     .map(|parent| parent.to_string_lossy())
@@ -79,9 +67,7 @@ fn access_to_csv(file_path: String, sep: String) -> Result<(), Box<dyn Error>> {
 
       match conn.execute(&query, ())? {
         Some(mut cursor) => {
-          let mut writer = csv::WriterBuilder::new()
-            .delimiter(separator[0])
-            .from_path(&fname)?;
+          let mut writer = csv::WriterBuilder::new().delimiter(sep).from_path(&fname)?;
           let headers: Vec<String> = cursor.column_names()?.collect::<Result<_, _>>()?;
           writer.write_record(headers)?;
 
@@ -97,11 +83,7 @@ fn access_to_csv(file_path: String, sep: String) -> Result<(), Box<dyn Error>> {
           }
           writer.flush()?;
         }
-        None => {
-          return Err(Box::new(CustomError(
-            "Query came back empty. No output has been created.".into(),
-          )))
-        }
+        None => return Err(anyhow!("Query came back empty.")),
       }
     }
   }
@@ -110,20 +92,15 @@ fn access_to_csv(file_path: String, sep: String) -> Result<(), Box<dyn Error>> {
 }
 
 #[tauri::command]
-pub async fn access(file_path: String, sep: String, window: tauri::Window) {
+pub async fn access(path: String, sep: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match (async { access_to_csv(file_path, sep) }).await {
-    Ok(result) => result,
-    Err(err) => {
-      eprintln!("access error: {err}");
-      window.emit("access_err", &err.to_string()).unwrap();
-      err.to_string();
+  match access_to_csv(path, sep).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok(format!("{elapsed_time:.2}"))
     }
-  };
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  let runtime = format!("{elapsed_time:.2} s");
-  window.emit("runtime", runtime).unwrap();
+    Err(err) => Err(format!("access failed: {err}")),
+  }
 }

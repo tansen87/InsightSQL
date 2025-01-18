@@ -1,50 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
-import { shortFileName } from "@/utils/utils";
+import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
-  fileFormats: [
-    "csv",
-    "txt",
-    "tsv",
-    "spext",
-    "dat",
-    "parquet",
-    "xls",
-    "xlsx",
-    "xlsm",
-    "xlsb",
-    "ods"
-  ],
+  fileFormats: ["*"],
   memory: true,
   skipRows: "0"
 });
-
-const formHeight = computed(() => {
-  const height = 205;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(205);
 
 // open file
 async function selectFile() {
@@ -103,6 +74,7 @@ async function concatData() {
   }
 
   isLoading.value = true;
+
   const saveFileType = outputPath.split(".").pop();
 
   try {
@@ -118,7 +90,6 @@ async function concatData() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Cat done, elapsed time: ${result} s`,
       position: "bottom-right",

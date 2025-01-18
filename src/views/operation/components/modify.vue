@@ -1,39 +1,23 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const tableData: any = ref([]);
 const selectedFiles = ref([]);
 const runtime = ref(0.0);
 const isLoading = ref(false);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
   sep: "_"
 });
-
-const formHeight = computed(() => {
-  const height = 205;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(205);
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const tableData: any = ref([]);
 const isLoading = ref(false);
 const isPath = ref(false);
 const search = ref("");
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -22,23 +22,7 @@ const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
-
-const formHeight = computed(() => {
-  const height = 205;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(205);
 
 // open file
 async function selectFile() {
@@ -103,6 +87,7 @@ async function renameData() {
     });
     return;
   }
+
   isLoading.value = true;
 
   try {
@@ -124,8 +109,6 @@ async function renameData() {
       type: "success",
       duration: 10000
     });
-
-    isLoading.value = false;
   } catch (err) {
     ElNotification({
       title: "Invoke rename error",

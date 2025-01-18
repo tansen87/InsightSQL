@@ -8,7 +8,7 @@ import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
+  fileFormats: ["*"]
 });
 const originalList = ref([]);
 const selectList = ref([]);
@@ -88,35 +88,33 @@ async function selectColumns() {
 
   isLoading.value = true;
   isPath.value = true;
-  if (data.filePath !== "") {
-    try {
-      const result: string = await invoke("select", {
-        path: data.filePath,
-        cols: names.value
-      });
 
-      if (JSON.stringify(result).startsWith("Select failed:")) {
-        throw JSON.stringify(result).toString();
-      }
+  try {
+    const result: string = await invoke("select", {
+      path: data.filePath,
+      cols: names.value
+    });
 
-      isLoading.value = false;
-      ElNotification({
-        message: `Select done, elapsed time: ${result} s`,
-        position: "bottom-right",
-        type: "success",
-        duration: 10000
-      });
-    } catch (err) {
-      ElNotification({
-        title: "Invoke Select Error",
-        message: err.toString(),
-        position: "bottom-right",
-        type: "error",
-        duration: 10000
-      });
+    if (JSON.stringify(result).startsWith("Select failed:")) {
+      throw JSON.stringify(result).toString();
     }
-    isLoading.value = false;
+
+    ElNotification({
+      message: `Select done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Select Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
   }
+  isLoading.value = false;
 }
 </script>
 

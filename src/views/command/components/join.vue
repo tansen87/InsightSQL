@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const isPath1 = ref(false);
@@ -23,20 +24,7 @@ const tableColumn1 = ref([]);
 const tableData1 = ref([]);
 const tableColumn2 = ref([]);
 const tableData2 = ref([]);
-const windowHeight = ref(window.innerHeight);
-const formHeight = computed(() => {
-  const height = 278;
-  return windowHeight.value - height;
-});
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(278);
 
 async function selectFile(fileIndex) {
   const isPath = fileIndex === 1 ? isPath1 : isPath2;
@@ -143,7 +131,6 @@ async function joinData() {
       throw JSON.stringify(result).toString();
     }
 
-    isLoading.value = false;
     ElNotification({
       message: `Join done, elapsed time: ${result} s.`,
       position: "bottom-right",

@@ -9,7 +9,7 @@ const isLoading = ref(false);
 const isPath = ref(false);
 const data = reactive({
   filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  fileFormats: ["*"],
   size: 1000000
 });
 
@@ -75,7 +75,6 @@ async function splitData() {
       duration: 10000
     });
   }
-
   isLoading.value = false;
 }
 </script>

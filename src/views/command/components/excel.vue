@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -12,7 +12,7 @@ import {
   SwitchFilled,
   Loading
 } from "@element-plus/icons-vue";
-import { shortFileName } from "@/utils/utils";
+import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
 interface FileStatus {
   filename: string;
@@ -22,7 +22,6 @@ const selectedFiles = ref([]);
 const isLoading = ref(false);
 const progress = ref(0);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -43,23 +42,7 @@ const data = reactive({
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
   skipRows: "0"
 });
-
-const formHeight = computed(() => {
-  const height = 240;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
+const { formHeight } = useDynamicFormHeight(230);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;
@@ -152,7 +135,6 @@ async function excelToCsv() {
       type: "success",
       duration: 5000
     });
-    isLoading.value = false;
   } catch (err) {
     ElNotification({
       title: "Invoke switch_excel Error",

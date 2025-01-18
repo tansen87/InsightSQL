@@ -1,53 +1,20 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
-const runtime = ref(0.0);
 const tableRef = ref(null);
-const windowHeight = ref(window.innerHeight);
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["mdb", "accdb"],
   sep: "|"
 });
-
-const formHeight = computed(() => {
-  const height = 205;
-  return windowHeight.value - height;
-});
-
-const updateWindowHeight = () => {
-  windowHeight.value = window.innerHeight;
-};
-
-onMounted(() => {
-  window.addEventListener("resize", updateWindowHeight);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateWindowHeight);
-});
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("access_err", (event: any) => {
-  const accessErr = event.payload;
-  ElNotification({
-    title: "Access Error",
-    message: accessErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
+const { formHeight } = useDynamicFormHeight(205);
 
 // open file
 async function selectFile() {
@@ -62,27 +29,21 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
       return { filename: file };
     });
   } else if (selected === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 }
 
 // convert data
 async function accessData() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择文件",
@@ -94,18 +55,32 @@ async function accessData() {
 
   isLoading.value = true;
 
-  await invoke("access", {
-    filePath: data.filePath,
-    sep: data.sep
-  });
+  try {
+    const result: string = await invoke("access", {
+      path: data.path,
+      sep: data.sep
+    });
 
+    if (JSON.stringify(result).startsWith("access failed:")) {
+      throw JSON.stringify(result).toString();
+    }
+
+    ElNotification({
+      message: `Convert done, elapsed time: ${result}`,
+      position: "bottom-right",
+      type: "success",
+      duration: 5000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Invoke Access Error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
   isLoading.value = false;
-  ElNotification({
-    message: `Convert done, elapsed time: ${runtime.value}`,
-    position: "bottom-right",
-    type: "success",
-    duration: 5000
-  });
 }
 </script>
 
