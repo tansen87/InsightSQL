@@ -6,6 +6,7 @@ import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
+import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 import "./ace-config";
 import { useDynamicFormHeight } from "@/utils/utils";
 
@@ -30,7 +31,10 @@ const data = reactive({
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(150);
-
+const { layoutTheme } = useDataThemeChange();
+const theme = computed(() =>
+  layoutTheme.value.darkMode ? "monokai" : "chrome"
+);
 const initializeEditor = editor => {
   editor.completers.push({
     getCompletions: (editor, session, pos, prefix, callback) => {
@@ -430,11 +434,11 @@ watch(
                 enableLiveAutocompletion: true,
                 customScrollbar: true,
                 showPrintMargin: false,
-                fontSize: '1.1rem'
+                fontSize: '1.0rem'
               }"
               :key="counter"
               @init="initializeEditor"
-              theme="chrome"
+              :theme="theme"
               style="flex: 1 1 0%; height: 100%"
             />
           </el-form-item>
