@@ -187,12 +187,3 @@ async function fillData() {
     </div>
   </div>
 </template>
-
-<style>
-.page-container {
-  margin-bottom: 20px;
-  padding: 20px;
-  border-radius: 10px;
-  background-color: #fff;
-}
-</style>

@@ -172,12 +172,3 @@ async function concatData() {
     </el-table>
   </el-form>
 </template>
-
-<style lang="scss">
-.page-container {
-  margin-bottom: 20px;
-  padding: 20px;
-  border-radius: 10px;
-  background-color: #fff;
-}
-</style>

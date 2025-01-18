@@ -278,12 +278,3 @@ function splitFilename(filename) {
     </el-form>
   </el-form>
 </template>
-
-<style>
-.page-container {
-  margin-bottom: 20px;
-  padding: 20px;
-  border-radius: 10px;
-  background-color: #fff;
-}
-</style>

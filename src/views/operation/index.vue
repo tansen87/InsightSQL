@@ -28,9 +28,9 @@ function toCommands(route) {
 </script>
 
 <template>
-  <div class="page-container">
+  <div>
     <el-input
-      placeholder="Search for command..."
+      placeholder="Search for operation..."
       v-model="searchText"
       class="search-input"
     />
@@ -58,11 +58,6 @@ function toCommands(route) {
 </template>
 
 <style lang="scss" scoped>
-// .page-container {
-//   display: flex;
-//   flex-direction: column;
-//   height: 100%;
-// }
 .search-input {
   position: sticky;
   top: 0;

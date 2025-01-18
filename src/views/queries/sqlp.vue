@@ -486,12 +486,6 @@ watch(
 </template>
 
 <style scoped>
-.page-container {
-  margin-bottom: 10px;
-  padding: 15px;
-  border-radius: 10px;
-  background-color: #fff;
-}
 .icon-group {
   display: flex;
   justify-content: flex-end;

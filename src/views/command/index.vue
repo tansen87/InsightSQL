@@ -108,7 +108,7 @@ function toCommands(route) {
 </script>
 
 <template>
-  <div class="page-container">
+  <div>
     <el-input
       placeholder="Search for command..."
       v-model="searchText"
