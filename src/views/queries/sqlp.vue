@@ -6,7 +6,7 @@ import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
-import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
+import { useDark } from "@pureadmin/utils";
 import "./ace-config";
 import { useDynamicFormHeight } from "@/utils/utils";
 
@@ -31,10 +31,8 @@ const data = reactive({
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(150);
-const { layoutTheme } = useDataThemeChange();
-const theme = computed(() =>
-  layoutTheme.value.darkMode ? "monokai" : "chrome"
-);
+const { isDark } = useDark();
+const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
 const initializeEditor = editor => {
   editor.completers.push({
     getCompletions: (editor, session, pos, prefix, callback) => {
@@ -111,7 +109,6 @@ async function queryData() {
       skipRows: data.skipRows
     });
 
-    // check if df is an error message
     if (
       (typeof df[0] === "string" && df[0].startsWith("execute_query")) ||
       df[0].startsWith("prepare_query")
@@ -131,7 +128,7 @@ async function queryData() {
 
     ElNotification({
       message: `Query done, elapsed time: ${runtime.value} s`,
-      position: "bottom-right",
+      position: "top-left",
       type: "success",
       duration: 5000
     });
@@ -187,7 +184,6 @@ async function selectFile() {
   // 使用 Promise.all 并行处理每个文件
   await Promise.all(
     data.filePath.split("|").map(async (path, index) => {
-      // const basename = viewFileName.value[index].replace(/\.[^/.]+$/, "");
       const basename = viewFileName.value[index];
       try {
         const result: any = await invoke("query", {
@@ -343,14 +339,14 @@ watch(
       >
         <div style="display: flex; align-items: flex-start">
           <el-button
-            type="primary"
+            type="default"
             @click="selectViewFile()"
             :icon="FolderOpened"
             plain
           >
             Open File
           </el-button>
-          <el-tooltip content="with header row" placement="top" effect="light">
+          <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 10px; width: 80px"
@@ -370,7 +366,9 @@ watch(
             </el-tooltip>
           </el-form-item>
         </div>
-        <el-button @click="viewTable = true" :icon="View"> View </el-button>
+        <el-button @click="viewTable = true" :icon="View" type="default" plain>
+          View
+        </el-button>
         <el-form-item>
           <el-tooltip
             content="Export data or not"
@@ -401,7 +399,7 @@ watch(
             </el-select>
           </el-tooltip>
           <el-button
-            type="success"
+            type="default"
             @click="queryViewData"
             :loading="isLoading"
             :icon="Search"

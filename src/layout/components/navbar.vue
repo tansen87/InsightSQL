@@ -35,8 +35,8 @@ const { dataTheme, dataThemeChange } = useDataThemeChange();
         v-model="dataTheme"
         inline-prompt
         class="pure-datatheme"
-        :active-icon="dayIcon"
-        :inactive-icon="darkIcon"
+        :active-icon="darkIcon"
+        :inactive-icon="dayIcon"
         @change="dataThemeChange"
         style="margin-right: 5px"
       />
