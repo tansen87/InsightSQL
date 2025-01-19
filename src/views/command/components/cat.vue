@@ -12,7 +12,7 @@ const tableRef = ref(null);
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
-  memory: true,
+  lowMemory: false,
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(205);
@@ -82,7 +82,7 @@ async function concatData() {
       filePath: data.filePath,
       outputPath: outputPath,
       fileType: saveFileType,
-      memory: data.memory,
+      lowMemory: data.lowMemory,
       skipRows: data.skipRows
     });
 
@@ -121,7 +121,7 @@ async function concatData() {
       >
         <div style="display: flex; align-items: flex-start">
           <el-button
-            type="primary"
+            type="default"
             @click="selectFile()"
             :icon="FolderOpened"
             plain
@@ -134,14 +134,14 @@ async function concatData() {
             effect="light"
           >
             <el-select
-              v-model="data.memory"
+              v-model="data.lowMemory"
               style="margin-left: 16px; width: 100px"
             >
-              <el-option label="Memory" :value="true" />
-              <el-option label="Stream" :value="false" />
+              <el-option label="Memory" :value="false" />
+              <el-option label="Stream" :value="true" />
             </el-select>
           </el-tooltip>
-          <el-tooltip content="with header row" placement="top" effect="light">
+          <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 16px; width: 80px"
@@ -149,7 +149,7 @@ async function concatData() {
             />
           </el-tooltip>
           <el-button
-            type="success"
+            type="default"
             @click="concatData()"
             :loading="isLoading"
             :icon="Connection"
@@ -168,6 +168,7 @@ async function concatData() {
       :height="formHeight"
       style="width: 100%"
     >
+      <el-table-column type="index" width="50" />
       <el-table-column prop="filename" />
     </el-table>
   </el-form>

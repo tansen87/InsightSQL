@@ -111,7 +111,6 @@ fn execute_query(
             CsvWriter::new(&mut w)
               .with_separator(sep)
               .with_float_precision(Some(2))
-              .n_threads(4)
               .finish(&mut df)
           };
           w.flush()?;
@@ -124,7 +123,6 @@ fn execute_query(
   match execute_inner() {
     Ok(()) => Ok(query_df_to_json(df)?),
     Err(e) => {
-      eprintln!("Failed to execute query: {query}\n{e}");
       return Ok(format!("execute_query => {e}"));
     }
   }
@@ -141,7 +139,7 @@ async fn prepare_query(
   let mut ctx = SQLContext::new();
 
   let mut output: Vec<Option<String>> = Vec::new();
-  let current_time = chrono::Local::now().format("%Y-%m-%d-%H%M%S");
+  let current_time = chrono::Local::now().format("%H%M%S");
 
   let output_suffix = format!("sqlp_{}", current_time);
 
@@ -156,14 +154,22 @@ async fn prepare_query(
     output.push(output_str);
   }
 
-  let optimization_state = if low_memory {
-    let mut opts = OptFlags::default();
-    opts.set(OptFlags::FILE_CACHING, false);
-    opts.set(OptFlags::STREAMING, true);
-    opts
+  let mut opt_state = OptFlags::from_bits_truncate(0);
+  if low_memory {
+    opt_state |= OptFlags::PROJECTION_PUSHDOWN
+      | OptFlags::PREDICATE_PUSHDOWN
+      | OptFlags::CLUSTER_WITH_COLUMNS
+      | OptFlags::SIMPLIFY_EXPR
+      | OptFlags::FILE_CACHING
+      | OptFlags::SLICE_PUSHDOWN
+      | OptFlags::COMM_SUBPLAN_ELIM
+      | OptFlags::COMM_SUBEXPR_ELIM
+      | OptFlags::ROW_ESTIMATE
+      | OptFlags::FAST_PROJECTION;
   } else {
-    OptFlags::default()
+    opt_state |= OptFlags::default();
   };
+  opt_state.set(OptFlags::STREAMING, low_memory);
 
   let mut table_aliases = HashMap::with_capacity(file_path.len());
   let mut lossy_table_name = Cow::default();
@@ -223,7 +229,7 @@ async fn prepare_query(
       }
     };
 
-    ctx.register(table_name, lf.with_optimizations(optimization_state));
+    ctx.register(table_name, lf.with_optimizations(opt_state));
   }
 
   let mut vec_result = Vec::new();

@@ -259,7 +259,6 @@ const fileTreeData = computed(() => {
   if (!isDataLoaded.value) return []; // 如果数据未加载完成，则返回空数组
 
   return viewFileName.value.map((fileName, index) => {
-    // const basename = fileName.replace(/\.[^/.]+$/, "");
     const basename = fileName;
     const headers = headersByFile[basename] || [];
     const children = headers.map(header => ({

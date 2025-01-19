@@ -20,7 +20,7 @@ async fn concat_all(
   path: String,
   output_path: String,
   file_type: String,
-  memory: bool,
+  low_memory: bool,
   skip_rows: String,
 ) -> Result<()> {
   /* concat csv and excel files into a xlsx or csv file */
@@ -65,7 +65,7 @@ async fn concat_all(
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
           .with_skip_rows(skip_rows.parse::<usize>()?)
-          .with_low_memory(!memory)
+          .with_low_memory(low_memory)
           .finish()?;
 
         csv_reader
@@ -87,7 +87,7 @@ async fn concat_all(
     },
   )?;
 
-  if memory {
+  if !low_memory {
     let mut cat_df = cat_lf.collect()?;
     let row_len = cat_df.shape().0;
     if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
@@ -131,12 +131,12 @@ pub async fn concat(
   file_path: String,
   output_path: String,
   file_type: String,
-  memory: bool,
+  low_memory: bool,
   skip_rows: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match concat_all(file_path, output_path, file_type, memory, skip_rows).await {
+  match concat_all(file_path, output_path, file_type, low_memory, skip_rows).await {
     Ok(()) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
