@@ -12,7 +12,7 @@ const tableRef = ref(null);
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
-  lowMemory: false,
+  mode: "Memory",
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(205);
@@ -82,7 +82,7 @@ async function concatData() {
       filePath: data.filePath,
       outputPath: outputPath,
       fileType: saveFileType,
-      lowMemory: data.lowMemory,
+      mode: data.mode,
       skipRows: data.skipRows
     });
 
@@ -129,22 +129,23 @@ async function concatData() {
             Open File
           </el-button>
           <el-tooltip
-            content="Memory or stream Cat"
+            content="Polars memory or stream, Csv stream Cat"
             placement="top"
             effect="light"
           >
             <el-select
-              v-model="data.lowMemory"
-              style="margin-left: 16px; width: 100px"
+              v-model="data.mode"
+              style="margin-left: 12px; width: 100px"
             >
-              <el-option label="Memory" :value="false" />
-              <el-option label="Stream" :value="true" />
+              <el-option label="Memory" value="memory" />
+              <el-option label="Stream" value="stream" />
+              <el-option label="Csv" value="csv" />
             </el-select>
           </el-tooltip>
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 16px; width: 80px"
+              style="margin-left: 12px; width: 80px"
               placeholder="skip rows"
             />
           </el-tooltip>
@@ -154,7 +155,7 @@ async function concatData() {
             :loading="isLoading"
             :icon="Connection"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 12px"
           >
             Cat
           </el-button>

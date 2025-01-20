@@ -1,29 +1,35 @@
 use std::{fs::File, num::NonZeroUsize, path::Path, time::Instant};
 
 use anyhow::{anyhow, Result};
+use indexmap::IndexSet;
 use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter,
-    UnionArgs,
+    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter, UnionArgs,
   },
 };
 
 use crate::{
-  utils::detect_separator,
   excel_reader::{ExcelReader, ToPolarsDataFrame},
+  utils::detect_separator,
   xlsx_writer::XlsxWriter,
 };
 
-async fn concat_all(
+async fn cat_with_polars(
   path: String,
   output_path: String,
   file_type: String,
-  low_memory: bool,
+  mode: String,
   skip_rows: String,
 ) -> Result<()> {
   /* concat csv and excel files into a xlsx or csv file */
+  let low_memory = match mode.as_str() {
+    "memory" => false,
+    "stream" => true,
+    _ => false,
+  };
+
   let vec_path: Vec<&str> = path.split('|').collect();
 
   let mut lfs = Vec::new();
@@ -126,22 +132,104 @@ async fn concat_all(
   Ok(())
 }
 
+async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
+  let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
+
+  let mut vec_sep = Vec::new();
+
+  let paths: Vec<&str> = path.split('|').collect();
+
+  for p in &paths {
+    let sep = match detect_separator(&p, 0) {
+      Some(separator) => separator as u8,
+      None => b',',
+    };
+    vec_sep.push(sep);
+
+    let mut rdr = csv::ReaderBuilder::new().delimiter(sep).from_path(p)?;
+
+    for field in rdr.byte_headers()? {
+      let fi = field.to_vec().into_boxed_slice();
+      all_columns.insert(fi);
+    }
+  }
+
+  let mut wtr = csv::WriterBuilder::new()
+    .delimiter(vec_sep[0])
+    .from_path(output_path)?;
+
+  for c in &all_columns {
+    wtr.write_field(c)?;
+  }
+  wtr.write_byte_record(&csv::ByteRecord::new())?;
+
+  for (idx, p) in paths.iter().enumerate() {
+    let mut rdr = csv::ReaderBuilder::new()
+      .delimiter(vec_sep[idx])
+      .from_path(&p)?;
+    let h = rdr.byte_headers()?;
+
+    let mut columns_of_this_file =
+      rustc_hash::FxHashMap::with_capacity_and_hasher(all_columns.len(), Default::default());
+
+    for (n, field) in h.into_iter().enumerate() {
+      let fi = field.to_vec().into_boxed_slice();
+      if columns_of_this_file.contains_key(&fi) {
+        eprintln!(
+          "Warning: dulplicate column `{}` name in file `{:?}`.",
+          String::from_utf8_lossy(&*fi),
+          p,
+        );
+      }
+      columns_of_this_file.insert(fi, n);
+    }
+
+    for row in rdr.byte_records() {
+      let row = row?;
+      for c in &all_columns {
+        if let Some(idx) = columns_of_this_file.get(c) {
+          if let Some(d) = row.get(*idx) {
+            wtr.write_field(d)?;
+          } else {
+            wtr.write_field(b"")?;
+          }
+        } else {
+          wtr.write_field(b"")?;
+        }
+      }
+      wtr.write_byte_record(&csv::ByteRecord::new())?;
+    }
+  }
+
+  Ok(())
+}
+
 #[tauri::command]
 pub async fn concat(
   file_path: String,
   output_path: String,
   file_type: String,
-  low_memory: bool,
+  mode: String,
   skip_rows: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match concat_all(file_path, output_path, file_type, low_memory, skip_rows).await {
-    Ok(()) => {
-      let end_time = Instant::now();
-      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
-    }
-    Err(err) => Err(format!("cat failed: {err}")),
+  match mode.to_lowercase().as_str() {
+    "csv" => match cat_with_csv(file_path, output_path).await {
+      Ok(()) => {
+        let end_time = Instant::now();
+        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+        Ok(format!("{elapsed_time:.2}"))
+      }
+      Err(err) => Err(format!("cat failed: {err}")),
+    },
+    _ => match cat_with_polars(file_path, output_path, file_type, mode, skip_rows).await {
+      Ok(()) => {
+        let end_time = Instant::now();
+        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+        Ok(format!("{elapsed_time:.2}"))
+      }
+      Err(err) => Err(format!("cat failed: {err}")),
+    },
   }
 }

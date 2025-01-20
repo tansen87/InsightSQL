@@ -25,6 +25,7 @@ dependencies = [
  "regex",
  "rust_decimal",
  "rust_xlsxwriter",
+ "rustc-hash",
  "ryu",
  "serde",
  "serde_json",
