@@ -98,7 +98,7 @@ async fn cat_with_polars(
     let row_len = cat_df.shape().0;
     if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
       let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_xlsx(&cat_df, output_path.into())?;
+      xlsx_writer.write_dataframe(&cat_df, output_path.into())?;
     } else {
       CsvWriter::new(File::create(output_path)?)
         .with_separator(vec_sep[0])

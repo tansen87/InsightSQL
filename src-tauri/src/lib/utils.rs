@@ -121,3 +121,12 @@ pub async fn get_same_headers<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<Str
 
   Ok(headers)
 }
+
+/// Count csv rows
+pub fn count_csv_rows<P: AsRef<Path>>(path: P) -> Result<usize> {
+  let file = File::open(path)?;
+  let reader = BufReader::new(file);
+  let total_rows = reader.lines().count().saturating_sub(1);
+
+  Ok(total_rows)
+}

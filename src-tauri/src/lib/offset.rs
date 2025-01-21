@@ -305,7 +305,7 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
     if cat_row < 104_0000 {
       let save_path = format!("{parent_path}/{file_name}.net.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_xlsx(&cat, save_path.into())?;
+      xlsx_writer.write_dataframe(&cat, save_path.into())?;
     } else {
       let save_path = format!("{parent_path}/{file_name}.net.csv");
       CsvWriter::new(File::create(save_path)?)
@@ -331,7 +331,7 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
     if cat_surplus_row < 104_0000 {
       let save_path = format!("{parent_path}/{file_name}.surplus.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_xlsx(&cat_surplus, save_path.into())?;
+      xlsx_writer.write_dataframe(&cat_surplus, save_path.into())?;
     } else {
       let save_path = format!("{parent_path}/{file_name}.surplus.csv");
       CsvWriter::new(File::create(save_path)?)
@@ -570,7 +570,7 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
     if cat_row < 104_0000 {
       let save_path = format!("{parent_path}/{file_name}.net.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_xlsx(&cat, save_path.into())?;
+      xlsx_writer.write_dataframe(&cat, save_path.into())?;
     } else {
       let save_path = format!("{parent_path}/{file_name}.net.csv");
       CsvWriter::new(File::create(save_path)?)
@@ -596,7 +596,7 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
     if cat_surplus_row < 104_0000 {
       let save_path = format!("{parent_path}/{file_name}.surplus.xlsx");
       let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_xlsx(&cat_surplus, save_path.into())?;
+      xlsx_writer.write_dataframe(&cat_surplus, save_path.into())?;
     } else {
       let save_path = format!("{parent_path}/{file_name}.surplus.csv");
       CsvWriter::new(File::create(save_path)?)

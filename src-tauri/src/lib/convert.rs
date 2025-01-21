@@ -1,9 +1,4 @@
-use std::{
-  fs::File,
-  io::{BufRead, BufReader},
-  path::PathBuf,
-  time::Instant,
-};
+use std::{path::PathBuf, time::Instant};
 
 use anyhow::Result;
 use calamine::{Data, HeaderRow, Range, Reader};
@@ -14,7 +9,10 @@ use polars::{
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::Emitter;
 
-use crate::{utils::detect_separator, xlsx_writer::XlsxWriter};
+use crate::{
+  utils::{count_csv_rows, detect_separator},
+  xlsx_writer::XlsxWriter,
+};
 
 async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* convert excel to csv */
@@ -176,13 +174,6 @@ async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) ->
   Ok(())
 }
 
-fn count_csv_rows(file_path: &str) -> Result<usize> {
-  let file = File::open(file_path)?;
-  let reader = BufReader::new(file);
-
-  Ok(reader.lines().count())
-}
-
 async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* csv to xlsx */
   let vec_path: Vec<&str> = path.split('|').collect();
@@ -216,7 +207,7 @@ async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> 
 
       match dfs {
         Ok(df) => {
-          if let Err(err) = XlsxWriter::new().write_xlsx(&df, dest) {
+          if let Err(err) = XlsxWriter::new().write_dataframe(&df, dest) {
             window.emit("rows_err", format!("{file}|{err}"))?;
             continue;
           }

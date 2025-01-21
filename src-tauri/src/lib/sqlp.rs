@@ -78,7 +78,7 @@ fn execute_query(
           );
           let mut xlsx_writer = XlsxWriter::new();
           xlsx_writer
-            .write_xlsx(&df, output_path)
+            .write_dataframe(&df, output_path)
             .expect("Writing to xlsx failed");
           Ok(())
         }

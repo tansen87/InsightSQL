@@ -17,7 +17,7 @@ impl XlsxWriter {
     }
   }
 
-  pub fn write_xlsx(&mut self, df: &DataFrame, output_path: PathBuf) -> Result<()> {
+  pub fn write_dataframe(&mut self, df: &DataFrame, output_path: PathBuf) -> Result<()> {
     /* write dataframe to xlsx */
     let worksheet = self.workbook.add_worksheet();
 
