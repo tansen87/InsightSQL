@@ -1,6 +1,8 @@
-use std::path::PathBuf;
+use std::fs::File;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use csv::{Reader, StringRecord};
 use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
 use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use rust_decimal::Decimal;
@@ -17,8 +19,37 @@ impl XlsxWriter {
     }
   }
 
+  /// write csv to xlsx
+  pub fn write_xlsx<P: AsRef<Path>>(
+    &mut self,
+    mut rdr: Reader<File>,
+    chunk_size: usize,
+    output: P,
+  ) -> Result<()> {
+    let headers = rdr.headers()?.clone();
+
+    let mut chunk: Vec<csv::StringRecord> = Vec::with_capacity(chunk_size);
+
+    for result in rdr.records() {
+      let record = result?;
+      chunk.push(record);
+
+      if chunk.len() >= chunk_size {
+        Self::write_chunk(&mut chunk, &headers, &mut self.workbook)?;
+
+        chunk.clear();
+      }
+    }
+
+    if !chunk.is_empty() {
+      Self::write_chunk(&mut chunk, &headers, &mut self.workbook)?;
+    }
+
+    Ok(self.workbook.save(output)?)
+  }
+
+  /// write dataframe to xlsx
   pub fn write_dataframe(&mut self, df: &DataFrame, output_path: PathBuf) -> Result<()> {
-    /* write dataframe to xlsx */
     let worksheet = self.workbook.add_worksheet();
 
     // Ensure that each Series in the DataFrame is a single chunk
@@ -105,5 +136,29 @@ impl XlsxWriter {
     } else {
       series.clone()
     }
+  }
+
+  fn write_chunk<'a>(
+    chunk: &mut Vec<StringRecord>,
+    headers: &StringRecord,
+    workbook: &mut Workbook,
+  ) -> Result<()> {
+    let worksheet = workbook.add_worksheet();
+
+    for (col, col_name) in headers.iter().enumerate() {
+      worksheet.write_string(0, col.try_into()?, col_name.to_string())?;
+    }
+    for (row, row_value) in chunk.iter().enumerate() {
+      for (col, col_value) in row_value.iter().enumerate() {
+        worksheet.write_string(
+          (row + 1).try_into()?,
+          col.try_into()?,
+          col_value.to_string(),
+        )?;
+      }
+    }
+
+    chunk.clear();
+    Ok(())
   }
 }

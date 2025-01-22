@@ -40,7 +40,8 @@ const filterFileStatus = (
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
-  skipRows: "0"
+  skipRows: "0",
+  mode: "Polars"
 });
 const { formHeight } = useDynamicFormHeight(220);
 
@@ -122,7 +123,8 @@ async function csvToxlsx() {
   try {
     const result: string = await invoke("switch_csv", {
       path: data.filePath,
-      skipRows: data.skipRows
+      skipRows: data.skipRows,
+      mode: data.mode
     });
 
     if (result.startsWith("csv to xlsx failed:")) {
@@ -160,33 +162,46 @@ async function csvToxlsx() {
       >
         <div style="display: flex; align-items: flex-start">
           <el-button
-            type="primary"
+            type="default"
             @click="selectFile()"
             :icon="FolderOpened"
             plain
           >
             Open File
           </el-button>
+          <el-tooltip
+            content="Polars or Csv engine"
+            placement="top"
+            effect="light"
+          >
+            <el-select
+              v-model="data.mode"
+              style="margin-left: 12px; width: 85px"
+            >
+              <el-option label="Polars" value="polars" />
+              <el-option label="Csv" value="csv" />
+            </el-select>
+          </el-tooltip>
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 16px; width: 80px"
+              style="margin-left: 12px; width: 80px"
               placeholder="skip rows"
             />
           </el-tooltip>
           <el-button
-            type="success"
+            type="default"
             @click="csvToxlsx()"
             :loading="isLoading"
             :icon="SwitchFilled"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 12px"
           >
             Convert
           </el-button>
         </div>
-        <el-text type="primary" size="large">
-          Exports csv to a xlsx file
+        <el-text type="default" size="large">
+          Batch convert csv to xlsx
         </el-text>
       </div>
     </el-form>

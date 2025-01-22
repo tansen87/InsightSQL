@@ -1,13 +1,14 @@
 use std::{path::PathBuf, time::Instant};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use calamine::{Data, HeaderRow, Range, Reader};
+use csv::ReaderBuilder;
 use polars::{
   io::SerReader,
   prelude::{CsvParseOptions, CsvReadOptions},
 };
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
-use tauri::Emitter;
+use tauri::{Emitter, Window};
 
 use crate::{
   utils::{count_csv_rows, detect_separator},
@@ -174,61 +175,43 @@ async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) ->
   Ok(())
 }
 
-async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
-  /* csv to xlsx */
-  let vec_path: Vec<&str> = path.split('|').collect();
+/// convert csv to xlsx
+async fn csv_to_xlsx(
+  file: &str,
+  sep: u8,
+  skip_rows: usize,
+  use_polars: bool,
+  chunk_size: Option<usize>,
+) -> Result<()> {
+  let sce = PathBuf::from(file);
+  let dest = sce.with_extension("xlsx");
+  let row_count = count_csv_rows(file)?;
 
-  let mut count: usize = 0;
-  let file_len = vec_path.len();
+  if row_count >= 104_0000 {
+    return Err(anyhow!(
+      "{file}|{row_count} rows exceed the maximum row in Excel"
+    ));
+  }
 
-  for file in vec_path.iter() {
-    window.emit("start_convert", file)?;
+  if use_polars {
+    let dfs = CsvReadOptions::default()
+      .with_parse_options(CsvParseOptions::default().with_separator(sep))
+      .with_skip_rows(skip_rows)
+      .with_infer_schema_length(Some(0))
+      .try_into_reader_with_file_path(Some(file.into()))
+      .and_then(|reader| reader.finish());
 
-    let sep = match detect_separator(file, 0) {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
-
-    let sce = PathBuf::from(file);
-    let dest = sce.with_extension("xlsx");
-    let row_count = count_csv_rows(file)?;
-
-    if row_count < 104_0000 {
-      let dfs = CsvReadOptions::default()
-        .with_parse_options(
-          CsvParseOptions::default()
-            .with_separator(sep)
-            .with_missing_is_null(false),
-        )
-        .with_skip_rows(skip_rows.parse::<usize>()?)
-        .with_infer_schema_length(Some(0))
-        .try_into_reader_with_file_path(Some(file.into()))
-        .and_then(|reader| reader.finish());
-
-      match dfs {
-        Ok(df) => {
-          if let Err(err) = XlsxWriter::new().write_dataframe(&df, dest) {
-            window.emit("rows_err", format!("{file}|{err}"))?;
-            continue;
-          }
-          window.emit("c2x_msg", file)?;
-        }
-        Err(err) => {
-          window.emit("rows_err", format!("{file}|{err}"))?;
-          continue;
-        }
-      }
-    } else {
-      window.emit(
-        "rows_err",
-        format!("{file}|{row_count} rows exceed the maximum row in Excel"),
-      )?;
-      continue;
+    match dfs {
+      Ok(df) => XlsxWriter::new().write_dataframe(&df, dest)?,
+      Err(err) => return Err(anyhow!("{err}")),
     }
+  } else {
+    let rdr = ReaderBuilder::new().delimiter(sep).from_path(file);
 
-    count += 1;
-    let progress = ((count as f32) / (file_len as f32)) * 100.0;
-    window.emit("c2x_progress", format!("{progress:.0}"))?;
+    match rdr {
+      Ok(r) => XlsxWriter::new().write_xlsx(r, chunk_size.unwrap_or(10_0000), dest)?,
+      Err(err) => return Err(anyhow!("{err}")),
+    }
   }
 
   Ok(())
@@ -238,20 +221,48 @@ async fn csv_to_xlsx(path: String, skip_rows: String, window: tauri::Window) -> 
 pub async fn switch_csv(
   path: String,
   skip_rows: String,
-  window: tauri::Window,
+  mode: String,
+  window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
-  let switch_csv_window = window.clone();
+  let mut count: usize = 0;
+  let vec_path: Vec<&str> = path.split('|').collect();
+  let file_len = vec_path.len();
 
-  match csv_to_xlsx(path, skip_rows, switch_csv_window).await {
-    Ok(_) => {
-      let end_time = Instant::now();
-      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2}");
-      Ok(runtime)
+  for file in vec_path.iter() {
+    window
+      .emit("start_convert", file)
+      .map_err(|e| e.to_string())?;
+
+    let sep = match detect_separator(file, skip_rows.parse::<usize>().map_err(|e| e.to_string())?) {
+      Some(separator) => separator as u8,
+      None => b',',
+    };
+    let skip_rows_num = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
+
+    let use_polars = mode != "csv";
+    match csv_to_xlsx(file, sep, skip_rows_num, use_polars, None).await {
+      Ok(_) => {
+        count += 1;
+        let progress = ((count as f32) / (file_len as f32)) * 100.0;
+        window
+          .emit("c2x_progress", format!("{progress:.0}"))
+          .map_err(|e| e.to_string())?;
+        window.emit("c2x_msg", file).map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        eprintln!("{}", format!("{file}|{err}"));
+        window
+          .emit("rows_err", format!("{file}|{err}"))
+          .map_err(|e| e.to_string())?;
+        continue;
+      }
     }
-    Err(err) => Err(format!("csv to xlsx failed: {err}")),
   }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  Ok(format!("{elapsed_time:.2}"))
 }
 
 #[tauri::command]
