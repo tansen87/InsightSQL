@@ -66,7 +66,6 @@ const logoVal = ref($storage.configure?.showLogo ?? true);
 const settings = reactive({
   greyVal: $storage.configure.grey,
   weakVal: $storage.configure.weak,
-  tabsVal: $storage.configure.hideTabs,
   showLogo: $storage.configure.showLogo,
   showModel: $storage.configure.showModel,
   multiTagsCache: $storage.configure.multiTagsCache
@@ -112,12 +111,6 @@ const weekChange = (value): void => {
     document.querySelector("html")
   );
   storageConfigureChange("weak", value);
-};
-
-const tagsChange = () => {
-  const showVal = settings.tabsVal;
-  storageConfigureChange("hideTabs", showVal);
-  emitter.emit("tagViewsChange", showVal as unknown as string);
 };
 
 const multiTagsCacheChange = () => {
@@ -222,7 +215,6 @@ onBeforeMount(() => {
       document.querySelector("html")?.setAttribute("class", "html-grey");
     settings.weakVal &&
       document.querySelector("html")?.setAttribute("class", "html-weakness");
-    settings.tabsVal && tagsChange();
   });
 });
 </script>
@@ -326,17 +318,6 @@ onBeforeMount(() => {
           active-text="开"
           inactive-text="关"
           @change="weekChange"
-        />
-      </li>
-      <li>
-        <span class="dark:text-white">隐藏标签页</span>
-        <el-switch
-          v-model="settings.tabsVal"
-          inline-prompt
-          inactive-color="#a6a6a6"
-          active-text="开"
-          inactive-text="关"
-          @change="tagsChange"
         />
       </li>
       <li>

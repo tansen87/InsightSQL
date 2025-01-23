@@ -19,7 +19,6 @@ export const injectResponsiveStorage = (app: App, config: ServerConfigs) => {
       configure: Storage.getData("configure", nameSpace) ?? {
         grey: config.Grey ?? false,
         weak: config.Weak ?? false,
-        hideTabs: config.HideTabs ?? true,
         showLogo: config.ShowLogo ?? true,
         showModel: config.ShowModel ?? "smart",
         multiTagsCache: config.MultiTagsCache ?? false
@@ -28,7 +27,7 @@ export const injectResponsiveStorage = (app: App, config: ServerConfigs) => {
     config.MultiTagsCache
       ? {
           // 默认显示顶级菜单tag
-          tags: Storage.getData("tags", nameSpace) ?? routerArrays
+          routerArrays
         }
       : {}
   );

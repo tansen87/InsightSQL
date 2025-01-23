@@ -59,7 +59,6 @@ export interface setType {
     withoutAnimation: boolean;
     mobile: boolean;
   };
-  hideTabs: boolean;
 }
 
 export type menuType = {

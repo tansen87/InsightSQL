@@ -29,7 +29,6 @@ export function useLayout() {
       $storage.configure = {
         grey: $config?.Grey ?? false,
         weak: $config?.Weak ?? false,
-        hideTabs: $config?.HideTabs ?? true,
         showLogo: $config?.ShowLogo ?? true,
         showModel: $config?.ShowModel ?? "smart",
         multiTagsCache: $config?.MultiTagsCache ?? false

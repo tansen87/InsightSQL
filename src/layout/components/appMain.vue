@@ -20,20 +20,16 @@ const transitions = computed(() => {
   };
 });
 
-const hideTabs = computed(() => {
-  return $storage?.configure.hideTabs;
-});
-
 const layout = computed(() => {
   return $storage?.layout.layout === "vertical";
 });
 
 const getSectionStyle = computed(() => {
   return [
-    hideTabs.value && layout ? "padding-top: 48px;" : "",
-    !hideTabs.value && layout ? "padding-top: 85px;" : "",
-    hideTabs.value && !layout.value ? "padding-top: 48px" : "",
-    !hideTabs.value && !layout.value ? "padding-top: 85px;" : "",
+    layout.value ? "padding-top: 44px;" : "",
+    layout.value ? "padding-top: 44px;" : "",
+    !layout.value ? "padding-top: 44px" : "",
+    !layout.value ? "padding-top: 44px;" : "",
     props.fixedHeader ? "" : "padding-top: 0;"
   ];
 });

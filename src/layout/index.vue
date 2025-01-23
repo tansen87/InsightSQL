@@ -11,7 +11,6 @@ import { deviceDetection, useDark, useGlobal } from "@pureadmin/utils";
 import { h, reactive, computed, onMounted, defineComponent } from "vue";
 
 import navbar from "./components/navbar.vue";
-import tag from "./components/tag/index.vue";
 import appMain from "./components/appMain.vue";
 import setting from "./components/setting/index.vue";
 import Vertical from "./components/sidebar/vertical.vue";
@@ -44,10 +43,6 @@ const set: setType = reactive({
       withoutAnimation: set.sidebar.withoutAnimation,
       mobile: set.device === "mobile"
     };
-  }),
-
-  hideTabs: computed(() => {
-    return $storage?.configure.hideTabs;
   })
 });
 
@@ -109,7 +104,7 @@ const layoutHeader = defineComponent({
       {
         class: { "fixed-header": set.fixedHeader },
         style: [
-          set.hideTabs && layout.value.includes("horizontal")
+          layout.value.includes("horizontal")
             ? isDark.value
               ? "box-shadow: 0 1px 4px #0d0d0d"
               : "box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08)"
@@ -124,8 +119,7 @@ const layoutHeader = defineComponent({
             : null,
           !pureSetting.hiddenSideBar && layout.value.includes("horizontal")
             ? h(Horizontal)
-            : null,
-          h(tag)
+            : null
         ]
       }
     );
