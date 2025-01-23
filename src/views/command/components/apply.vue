@@ -160,17 +160,12 @@ async function applyData() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
       </div>
 
-      <el-text type="primary" size="large">
+      <el-text>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>
           Apply a series of transformation functions to given CSV column/s
@@ -281,7 +276,6 @@ async function applyData() {
 
       <div style="width: 10%; text-align: right">
         <el-button
-          type="success"
           @click="applyData()"
           :loading="isLoading"
           :icon="Refresh"

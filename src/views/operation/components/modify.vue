@@ -221,12 +221,7 @@ function splitFilename(filename) {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
@@ -241,7 +236,6 @@ function splitFilename(filename) {
             <el-option label="]" value="]" />
           </el-select>
           <el-button
-            type="success"
             @click="modifyFilename()"
             :loading="isLoading"
             :icon="Watermelon"
@@ -252,7 +246,7 @@ function splitFilename(filename) {
           </el-button>
         </div>
 
-        <el-text type="primary" size="large">
+        <el-text>
           <el-icon> <Watermelon /> </el-icon>
           <span>Batch modify filenames</span>
         </el-text>

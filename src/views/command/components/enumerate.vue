@@ -114,16 +114,10 @@ async function enumerate() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
         <el-button
-          type="success"
           @click="enumerate()"
           :loading="isLoading"
           :icon="IceCreamRound"
@@ -133,7 +127,7 @@ async function enumerate() {
           Enumerate
         </el-button>
       </div>
-      <el-text type="primary" size="large">
+      <el-text>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Add an index for a CSV</span>
       </el-text>

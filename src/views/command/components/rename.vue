@@ -138,16 +138,10 @@ async function headerEdit(row: any) {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-button
-            type="success"
             @click="renameData()"
             :loading="isLoading"
             :icon="Watermelon"
@@ -158,7 +152,7 @@ async function headerEdit(row: any) {
           </el-button>
         </div>
 
-        <el-text type="primary" size="large">
+        <el-text>
           <span v-if="isPath">{{ data.filePath }}</span>
           <span v-else>Rename the columns of a CSV</span>
         </el-text>

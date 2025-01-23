@@ -111,16 +111,10 @@ async function traverseDirectory() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFolder()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFolder()" :icon="FolderOpened" plain>
           Open Folder
         </el-button>
         <el-button
-          type="success"
           @click="traverseDirectory()"
           :loading="isLoading"
           :icon="Cherry"
@@ -129,7 +123,7 @@ async function traverseDirectory() {
           Traverse
         </el-button>
       </div>
-      <el-text type="primary" size="large">
+      <el-text>
         <el-icon> <Cherry /> </el-icon>
         <span v-if="isPath">{{ data.folderPath }}</span>
         <span v-else>Traverse the directory to obtain filenames</span>

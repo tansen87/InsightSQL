@@ -178,26 +178,16 @@ const viewFileName2 = computed(() => {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile(1)"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile(1)" :icon="FolderOpened" plain>
           File 1
         </el-button>
 
-        <el-button
-          type="primary"
-          @click="selectFile(2)"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile(2)" :icon="FolderOpened" plain>
           File 2
         </el-button>
       </div>
 
-      <el-text type="primary" size="large">
+      <el-text>
         <span>Joins two sets of CSV data on the specified columns</span>
       </el-text>
     </div>
@@ -265,7 +255,6 @@ const viewFileName2 = computed(() => {
         </el-tooltip>
       </div>
       <el-button
-        type="success"
         @click="joinData()"
         :loading="isLoading"
         :icon="Refresh"
@@ -279,7 +268,7 @@ const viewFileName2 = computed(() => {
       <!-- 第一个文件的文本和表格 -->
       <div style="display: flex; flex-direction: column; width: 49%">
         <div style="margin-bottom: 10px">
-          <el-text type="primary" size="large">
+          <el-text>
             <span v-if="isPath1">{{ viewFileName1[0] }}</span>
           </el-text>
         </div>
@@ -302,7 +291,7 @@ const viewFileName2 = computed(() => {
       <!-- 第二个文件的文本和表格 -->
       <div style="display: flex; flex-direction: column; width: 49%">
         <div style="margin-bottom: 10px">
-          <el-text type="primary" size="large">
+          <el-text>
             <span v-if="isPath2">{{ viewFileName2[0] }}</span>
           </el-text>
         </div>

@@ -127,16 +127,10 @@ async function countData() {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-button
-            type="success"
             @click="countData()"
             :loading="isLoading"
             :icon="Grape"
@@ -146,9 +140,7 @@ async function countData() {
             Count
           </el-button>
         </div>
-        <el-text type="primary" size="large">
-          Count the rows of CSV files
-        </el-text>
+        <el-text> Count the rows of CSV files </el-text>
       </div>
 
       <el-table

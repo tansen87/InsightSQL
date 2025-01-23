@@ -120,16 +120,10 @@ async function chineseToPinyin() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
         <el-button
-          type="success"
           @click="chineseToPinyin()"
           :loading="isLoading"
           :icon="IceCreamRound"
@@ -139,7 +133,7 @@ async function chineseToPinyin() {
           Convert
         </el-button>
       </div>
-      <el-text type="primary" size="large">
+      <el-text>
         <span v-if="isPath">{{ data.path }}</span>
         <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>

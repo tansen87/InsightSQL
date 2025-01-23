@@ -147,12 +147,7 @@ async function convertData() {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-tooltip
@@ -171,7 +166,6 @@ async function convertData() {
             </el-select>
           </el-tooltip>
           <el-button
-            type="success"
             @click="convertData()"
             :loading="isLoading"
             :icon="Connection"
@@ -181,7 +175,7 @@ async function convertData() {
             Convert
           </el-button>
         </div>
-        <el-text type="primary" size="large"> Convert dbf file to CSV </el-text>
+        <el-text> Convert dbf file to CSV </el-text>
       </div>
     </el-form>
     <el-table

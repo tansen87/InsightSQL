@@ -131,16 +131,10 @@ async function selectColumns() {
         "
       >
         <div style="display: flex; align-items: center">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-button
-            type="success"
             @click="selectColumns()"
             :loading="isLoading"
             :icon="Cherry"
@@ -152,7 +146,7 @@ async function selectColumns() {
         </div>
 
         <!-- Title -->
-        <el-text type="primary" size="large">
+        <el-text>
           <span v-if="isPath">{{ data.filePath }}</span>
           <span v-else>Select, re-order columns</span>
         </el-text>

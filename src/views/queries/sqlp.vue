@@ -337,12 +337,7 @@ watch(
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="default"
-            @click="selectViewFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectViewFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-tooltip content="skip rows" placement="top" effect="light">
@@ -365,7 +360,7 @@ watch(
             </el-tooltip>
           </el-form-item>
         </div>
-        <el-button @click="viewTable = true" :icon="View" type="default" plain>
+        <el-button @click="viewTable = true" :icon="View" plain>
           View
         </el-button>
         <el-form-item>
@@ -398,7 +393,6 @@ watch(
             </el-select>
           </el-tooltip>
           <el-button
-            type="default"
             @click="queryViewData"
             :loading="isLoading"
             :icon="Search"

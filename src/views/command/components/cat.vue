@@ -120,12 +120,7 @@ async function concatData() {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="default"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-tooltip
@@ -150,7 +145,6 @@ async function concatData() {
             />
           </el-tooltip>
           <el-button
-            type="default"
             @click="concatData()"
             :loading="isLoading"
             :icon="Connection"
@@ -160,7 +154,7 @@ async function concatData() {
             Cat
           </el-button>
         </div>
-        <el-text type="primary" size="large"> Cat CSV and Excel files </el-text>
+        <el-text> Cat CSV and Excel files </el-text>
       </div>
     </el-form>
     <el-table

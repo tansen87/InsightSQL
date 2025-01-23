@@ -125,12 +125,7 @@ async function netAmount() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
         <el-select
@@ -142,7 +137,7 @@ async function netAmount() {
         </el-select>
       </div>
 
-      <el-text type="primary" size="large">
+      <el-text>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Net amount</span>
       </el-text>

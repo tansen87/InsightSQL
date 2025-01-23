@@ -106,7 +106,7 @@ async function selectFile() {
   }
 }
 
-// convert csv to xlsx
+// invoke switch_csv
 async function csvToxlsx() {
   if (data.filePath === "") {
     ElNotification({
@@ -161,12 +161,7 @@ async function csvToxlsx() {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="default"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-tooltip
@@ -190,7 +185,6 @@ async function csvToxlsx() {
             />
           </el-tooltip>
           <el-button
-            type="default"
             @click="csvToxlsx()"
             :loading="isLoading"
             :icon="SwitchFilled"
@@ -200,9 +194,7 @@ async function csvToxlsx() {
             Convert
           </el-button>
         </div>
-        <el-text type="default" size="large">
-          Batch convert csv to xlsx
-        </el-text>
+        <el-text> Batch convert csv to xlsx </el-text>
       </div>
     </el-form>
     <el-table

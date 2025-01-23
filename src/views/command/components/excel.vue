@@ -160,12 +160,7 @@ async function excelToCsv() {
         "
       >
         <el-form-item>
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-tooltip content="skip rows" placement="top" effect="light">
@@ -176,7 +171,6 @@ async function excelToCsv() {
             />
           </el-tooltip>
           <el-button
-            type="success"
             @click="excelToCsv()"
             :loading="isLoading"
             :icon="SwitchFilled"
@@ -185,9 +179,7 @@ async function excelToCsv() {
             Convert
           </el-button>
         </el-form-item>
-        <el-text type="primary" size="large">
-          Exports Excel to a csv file
-        </el-text>
+        <el-text> Batch convert excel to csv </el-text>
       </div>
     </el-form>
     <el-table

@@ -132,16 +132,10 @@ async function dropHeaders() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
         <el-button
-          type="success"
           @click="dropHeaders()"
           :loading="isLoading"
           :icon="Cpu"
@@ -151,7 +145,7 @@ async function dropHeaders() {
           Drop
         </el-button>
       </div>
-      <el-text type="primary" size="large">
+      <el-text>
         <span>Drop headers from CSV</span>
       </el-text>
     </div>

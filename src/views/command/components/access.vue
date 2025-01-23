@@ -95,12 +95,7 @@ async function accessData() {
         "
       >
         <div style="display: flex; align-items: flex-start">
-          <el-button
-            type="primary"
-            @click="selectFile()"
-            :icon="FolderOpened"
-            plain
-          >
+          <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
           <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
@@ -110,7 +105,6 @@ async function accessData() {
             <el-option label=";" value=";" />
           </el-select>
           <el-button
-            type="success"
             @click="accessData()"
             :loading="isLoading"
             :icon="Connection"
@@ -120,7 +114,7 @@ async function accessData() {
             Convert
           </el-button>
         </div>
-        <el-text type="primary" size="large">
+        <el-text>
           <el-icon> <Connection /> </el-icon>
           Convert Access Database to CSV
         </el-text>

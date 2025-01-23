@@ -123,17 +123,12 @@ async function fillData() {
       "
     >
       <div style="display: flex; align-items: flex-start">
-        <el-button
-          type="primary"
-          @click="selectFile()"
-          :icon="FolderOpened"
-          plain
-        >
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
       </div>
 
-      <el-text type="primary" size="large">
+      <el-text>
         <span v-if="isPath">{{ data.filePath }}</span>
         <span v-else>Fill empty fields in selected columns of a CSV</span>
       </el-text>
@@ -176,7 +171,6 @@ async function fillData() {
       </div>
       <el-button
         style="margin-top: 15px"
-        type="success"
         @click="fillData()"
         :loading="isLoading"
         :icon="Cpu"
