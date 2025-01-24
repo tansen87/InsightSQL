@@ -59,7 +59,8 @@
         "resizable": true,
         "title": "InsightSQL",
         "dragDropEnabled": false,
-        "center": true
+        "center": true,
+        "decorations": false
       }
     ],
     "security": {

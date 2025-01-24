@@ -18,10 +18,7 @@ import {
 export function useDataThemeChange() {
   const { layoutTheme, layout } = useLayout();
   const themeColors = ref<Array<themeColorsType>>([
-    /* 亮白色 */
-    { color: "#ffffff", themeColor: "light" },
-    /* 道奇蓝 */
-    { color: "#1b2a47", themeColor: "default" }
+    { color: "rgb(85, 85, 85)", themeColor: "default" }
   ]);
 
   const { $storage } = useGlobal<GlobalPropertiesApi>();

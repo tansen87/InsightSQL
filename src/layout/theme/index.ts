@@ -7,27 +7,15 @@ import type { multipleScopeVarsOptions } from "@pureadmin/theme";
 /** 预设主题色 */
 const themeColors = {
   /* 亮白色 */
-  light: {
-    subMenuActiveText: "#000000d9",
+  default: {
+    subMenuActiveText: "#000",
     menuBg: "#fff",
-    menuHover: "#f6f6f6",
+    menuHover: "rgba(171, 175, 180, 0.08)",
     subMenuBg: "#fff",
     subMenuActiveBg: "#e0ebf6",
-    menuText: "rgb(0 0 0 / 60%)",
+    menuText: "#606266",
     sidebarLogo: "#fff",
     menuTitleHover: "#000",
-    menuActiveBefore: "#4091f7"
-  },
-  /* 道奇蓝 */
-  default: {
-    subMenuActiveText: "#fff",
-    menuBg: "#001529",
-    menuHover: "rgb(64 145 247 / 15%)",
-    subMenuBg: "#0f0303",
-    subMenuActiveBg: "#4091f7",
-    menuText: "rgb(254 254 254 / 65%)",
-    sidebarLogo: "#002140",
-    menuTitleHover: "#fff",
     menuActiveBefore: "#4091f7"
   }
 };

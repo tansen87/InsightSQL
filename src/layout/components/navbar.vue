@@ -7,46 +7,86 @@ import Setting from "@iconify-icons/ri/settings-3-line";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import {
+  Minus,
+  CopyDocument,
+  Close,
+  Sunny,
+  Moon
+} from "@element-plus/icons-vue";
 
 const { layout, device, onPanel, pureApp, toggleSideBar } = useNav();
 const { dataTheme, dataThemeChange } = useDataThemeChange();
+const appWindow = getCurrentWindow();
+
+function themeChange() {
+  dataTheme.value = !dataTheme.value;
+  dataThemeChange();
+}
+
+const handleMouseDown = e => {
+  if (e.target.closest(".set-icon")) {
+    return;
+  }
+  if (e.buttons === 1) {
+    appWindow.startDragging();
+  }
+};
 </script>
 
 <template>
-  <div
-    class="navbar bg-[#fff] shadow-sm shadow-[rgba(0, 21, 41, 0.08)] dark:shadow-[#0d0d0d]"
-  >
-    <topCollapse
-      v-if="device === 'mobile'"
-      class="hamburger-container"
-      :is-active="pureApp.sidebar.opened"
-      @toggleClick="toggleSideBar"
-    />
-
-    <Breadcrumb
-      v-if="layout !== 'mix' && device !== 'mobile'"
-      class="breadcrumb-container"
-    />
-
-    <mixNav v-if="layout === 'mix'" />
-
-    <div v-if="layout === 'vertical'" class="vertical-header-right">
-      <el-switch
-        v-model="dataTheme"
-        inline-prompt
-        class="pure-datatheme"
-        :active-icon="darkIcon"
-        :inactive-icon="dayIcon"
-        @change="dataThemeChange"
-        style="margin-right: 5px"
+  <div @mousedown="handleMouseDown">
+    <div
+      class="navbar bg-[#fff] shadow-sm shadow-[rgba(0, 21, 41, 0.08)] dark:shadow-[#0d0d0d]"
+    >
+      <topCollapse
+        v-if="device === 'mobile'"
+        class="hamburger-container"
+        :is-active="pureApp.sidebar.opened"
+        @toggleClick="toggleSideBar"
       />
-      <span
-        class="set-icon navbar-bg-hover"
-        title="打开项目配置"
-        @click="onPanel"
-      >
-        <IconifyIconOffline :icon="Setting" />
-      </span>
+
+      <Breadcrumb
+        v-if="layout !== 'mix' && device !== 'mobile'"
+        class="breadcrumb-container"
+      />
+
+      <mixNav v-if="layout === 'mix'" />
+
+      <div v-if="layout === 'vertical'" class="vertical-header-right">
+        <span @click="themeChange" class="set-icon navbar-bg-hover">
+          <el-icon v-if="dataTheme"><Moon /></el-icon>
+          <el-icon v-else><Sunny /></el-icon>
+        </span>
+        <span class="set-icon navbar-bg-hover" title="setting" @click="onPanel">
+          <IconifyIconOffline :icon="Setting" />
+        </span>
+        <span
+          class="set-icon navbar-bg-hover"
+          id="minimize"
+          title="zoom out"
+          @click="appWindow.minimize"
+        >
+          <el-icon><Minus /></el-icon>
+        </span>
+        <span
+          class="set-icon navbar-bg-hover"
+          id="maximize"
+          title="zoom in"
+          @click="appWindow.toggleMaximize"
+        >
+          <el-icon><CopyDocument /></el-icon>
+        </span>
+        <span
+          class="set-icon navbar-bg-hover"
+          id="close"
+          title="close"
+          @click="appWindow.close"
+        >
+          <el-icon><Close /></el-icon>
+        </span>
+      </div>
     </div>
   </div>
 </template>

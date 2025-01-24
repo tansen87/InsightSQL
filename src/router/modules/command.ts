@@ -3,16 +3,16 @@ export default {
   redirect: "/command/index",
   meta: {
     icon: "command",
-    title: "command",
+    title: "cmd",
     rank: 1
   },
   children: [
     {
       path: "/command/index",
-      name: "command",
+      name: "cmd",
       component: () => import("@/views/command/index.vue"),
       meta: {
-        title: "command"
+        title: "cmd"
       }
     },
     {

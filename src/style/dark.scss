@@ -26,19 +26,6 @@ html.dark {
     filter: invert(0.9) hue-rotate(180deg);
   }
 
-  /* 标签页 */
-  .tags-view {
-    .arrow-left,
-    .arrow-right {
-      border-right: 1px solid $border-style;
-      box-shadow: none;
-    }
-
-    .arrow-right {
-      border-left: 1px solid $border-style;
-    }
-  }
-
   /* 项目配置面板 */
   .right-panel-items {
     .el-divider__text {
