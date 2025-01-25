@@ -22,7 +22,7 @@ const data = reactive({
   filePath: "",
   fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
 });
-const { formHeight } = useDynamicFormHeight(205);
+const { formHeight } = useDynamicFormHeight(134);
 
 // open file
 async function selectFile() {

@@ -43,7 +43,7 @@ const data = reactive({
   skipRows: "0",
   mode: "Polars"
 });
-const { formHeight } = useDynamicFormHeight(220);
+const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;

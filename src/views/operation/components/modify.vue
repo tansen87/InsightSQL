@@ -17,7 +17,7 @@ const data = reactive({
   fileFormats: ["*"],
   sep: "_"
 });
-const { formHeight } = useDynamicFormHeight(205);
+const { formHeight } = useDynamicFormHeight(134);
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;

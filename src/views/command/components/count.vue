@@ -22,7 +22,7 @@ const data = reactive({
   filePath: "",
   fileFormats: ["*"]
 });
-const { formHeight } = useDynamicFormHeight(205);
+const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;

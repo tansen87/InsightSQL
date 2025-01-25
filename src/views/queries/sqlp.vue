@@ -30,7 +30,7 @@ const data = reactive({
   lowMemory: false,
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(150);
+const { formHeight } = useDynamicFormHeight(102);
 const { isDark } = useDark();
 const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
 const initializeEditor = editor => {
@@ -481,12 +481,6 @@ watch(
 </template>
 
 <style scoped>
-.icon-group {
-  display: flex;
-  justify-content: flex-end;
-  margin-left: 50px;
-  align-items: center;
-}
 .el-icon {
   font-size: 25px;
 }

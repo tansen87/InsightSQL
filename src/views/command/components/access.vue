@@ -14,7 +14,7 @@ const data = reactive({
   fileFormats: ["mdb", "accdb"],
   sep: "|"
 });
-const { formHeight } = useDynamicFormHeight(205);
+const { formHeight } = useDynamicFormHeight(134);
 
 // open file
 async function selectFile() {
@@ -114,10 +114,7 @@ async function accessData() {
             Convert
           </el-button>
         </div>
-        <el-text>
-          <el-icon> <Connection /> </el-icon>
-          Convert Access Database to CSV
-        </el-text>
+        <el-text> Convert Access Database to CSV </el-text>
       </div>
     </el-form>
     <el-table

@@ -15,7 +15,7 @@ const data = reactive({
   mode: "Memory",
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(205);
+const { formHeight } = useDynamicFormHeight(134);
 
 // open file
 async function selectFile() {

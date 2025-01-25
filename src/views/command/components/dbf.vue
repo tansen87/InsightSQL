@@ -42,7 +42,7 @@ const filterFileStatus = (
   const property = column["property"];
   return row[property] === value;
 };
-const { formHeight } = useDynamicFormHeight(205);
+const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;

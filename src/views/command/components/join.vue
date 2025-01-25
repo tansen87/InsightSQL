@@ -24,7 +24,7 @@ const tableColumn1 = ref([]);
 const tableData1 = ref([]);
 const tableColumn2 = ref([]);
 const tableData2 = ref([]);
-const { formHeight } = useDynamicFormHeight(278);
+const { formHeight } = useDynamicFormHeight(215);
 
 async function selectFile(fileIndex) {
   const isPath = fileIndex === 1 ? isPath1 : isPath2;

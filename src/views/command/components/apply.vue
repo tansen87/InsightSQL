@@ -23,7 +23,7 @@ const data = reactive({
 const tableColumn = ref([]);
 const tableData = ref([]);
 const tableRef = ref(null);
-const { formHeight } = useDynamicFormHeight(312);
+const { formHeight } = useDynamicFormHeight(278);
 
 async function selectFile() {
   isLoading.value = false;

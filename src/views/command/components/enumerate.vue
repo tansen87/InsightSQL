@@ -15,7 +15,7 @@ const data = reactive({
   filePath: "",
   fileFormats: ["*"]
 });
-const { formHeight } = useDynamicFormHeight(220);
+const { formHeight } = useDynamicFormHeight(149);
 
 async function selectFile() {
   isLoading.value = false;

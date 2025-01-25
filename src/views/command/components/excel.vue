@@ -42,7 +42,7 @@ const data = reactive({
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(230);
+const { formHeight } = useDynamicFormHeight(152);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;

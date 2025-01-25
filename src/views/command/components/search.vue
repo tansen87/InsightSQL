@@ -21,7 +21,7 @@ const data = reactive({
 const tableColumn = ref([]);
 const tableData = ref([]);
 const tableRef = ref(null);
-const { formHeight } = useDynamicFormHeight(315);
+const { formHeight } = useDynamicFormHeight(242);
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;

@@ -28,7 +28,7 @@ const customColors = [
   { color: "#ADFF2F", percentage: 80 },
   { color: "#9ACD32", percentage: 100 }
 ];
-const { formHeight } = useDynamicFormHeight(225);
+const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
