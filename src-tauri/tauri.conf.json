@@ -55,7 +55,7 @@
       {
         "fullscreen": false,
         "width": 840,
-        "height": 640,
+        "height": 660,
         "resizable": true,
         "title": "InsightSQL",
         "dragDropEnabled": false,
