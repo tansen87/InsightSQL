@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import mixNav from "./sidebar/mixNav.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import Breadcrumb from "./sidebar/breadCrumb.vue";
 import topCollapse from "./sidebar/topCollapse.vue";
@@ -73,8 +72,6 @@ function handleCloseDialog() {
         v-if="layout !== 'mix' && device !== 'mobile'"
         class="breadcrumb-container"
       />
-
-      <mixNav v-if="layout === 'mix'" />
 
       <div v-if="layout === 'vertical'" class="vertical-header-right">
         <div class="search-container">
@@ -203,29 +200,5 @@ function handleCloseDialog() {
     flex-wrap: wrap;
     min-width: 100%;
   }
-}
-
-.search-container {
-  position: relative;
-}
-.command-list {
-  border: 1px solid #ddd;
-  max-height: 200px;
-  overflow-y: auto;
-  position: absolute;
-  width: 100%;
-  z-index: 10000;
-  left: 0;
-  right: 0;
-  top: 100%;
-  margin: 0;
-  box-sizing: border-box;
-}
-.command-item {
-  padding: 8px 16px;
-  cursor: pointer;
-}
-.command-item:hover {
-  background-color: #f6dada;
 }
 </style>

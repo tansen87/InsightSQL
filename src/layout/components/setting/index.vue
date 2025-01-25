@@ -1,15 +1,6 @@
 <script setup lang="ts">
+import { ref, unref, watch, reactive, nextTick, onBeforeMount } from "vue";
 import {
-  ref,
-  unref,
-  watch,
-  reactive,
-  computed,
-  nextTick,
-  onBeforeMount
-} from "vue";
-import {
-  useDark,
   debounce,
   useGlobal,
   storageLocal,
@@ -28,11 +19,9 @@ import { toggleTheme } from "@pureadmin/theme/dist/browser-utils";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 
-import Check from "@iconify-icons/ep/check";
 import Logout from "@iconify-icons/ri/logout-circle-r-line";
 
 const router = useRouter();
-const { isDark } = useDark();
 const { device, tooltipEffect } = useNav();
 const { $storage } = useGlobal<GlobalPropertiesApi>();
 
@@ -40,13 +29,7 @@ const mixRef = ref();
 const verticalRef = ref();
 const horizontalRef = ref();
 
-const {
-  layoutTheme,
-  themeColors,
-  dataThemeChange,
-  setEpThemeColor,
-  setLayoutThemeColor
-} = useDataThemeChange();
+const { layoutTheme, dataThemeChange, setEpThemeColor } = useDataThemeChange();
 
 /* body添加layout属性，作用于src/style/sidebar.scss */
 if (unref(layoutTheme)) {
@@ -69,19 +52,6 @@ const settings = reactive({
   showLogo: $storage.configure.showLogo,
   showModel: $storage.configure.showModel,
   multiTagsCache: $storage.configure.multiTagsCache
-});
-
-const getThemeColorStyle = computed(() => {
-  return color => {
-    return { background: color };
-  };
-});
-
-/** 当网页为暗黑模式时不显示亮白色切换选项 */
-const showThemeColors = computed(() => {
-  return themeColor => {
-    return themeColor === "light" && isDark.value ? false : true;
-  };
 });
 
 function storageConfigureChange<T>(key: string, val: T): void {
@@ -153,25 +123,6 @@ function setFalse(Doms): any {
     toggleClass(false, "is-select", unref(v));
   });
 }
-
-/** 主题色 激活选择项 */
-const getThemeColor = computed(() => {
-  return current => {
-    if (
-      current === layoutTheme.value.theme &&
-      layoutTheme.value.theme !== "light"
-    ) {
-      return "#fff";
-    } else if (
-      current === layoutTheme.value.theme &&
-      layoutTheme.value.theme === "light"
-    ) {
-      return "#1d2b45";
-    } else {
-      return "transparent";
-    }
-  };
-});
 
 /** 设置导航模式 */
 function setLayoutModel(layout: string) {
@@ -257,43 +208,6 @@ onBeforeMount(() => {
           <div />
         </li>
       </el-tooltip>
-
-      <el-tooltip
-        v-if="device !== 'mobile'"
-        :effect="tooltipEffect"
-        class="item"
-        content="混合模式"
-        placement="bottom"
-        popper-class="pure-tooltip"
-      >
-        <li
-          :class="layoutTheme.layout === 'mix' ? 'is-select' : ''"
-          ref="mixRef"
-          @click="setLayoutModel('mix')"
-        >
-          <div />
-          <div />
-        </li>
-      </el-tooltip>
-    </ul>
-
-    <el-divider>主题色</el-divider>
-    <ul class="theme-color">
-      <li
-        v-for="(item, index) in themeColors"
-        :key="index"
-        v-show="showThemeColors(item.themeColor)"
-        :style="getThemeColorStyle(item.color)"
-        @click="setLayoutThemeColor(item.themeColor)"
-      >
-        <el-icon
-          style="margin: 0.1em 0.1em 0 0"
-          :size="17"
-          :color="getThemeColor(item.themeColor)"
-        >
-          <IconifyIconOffline :icon="Check" />
-        </el-icon>
-      </li>
     </ul>
 
     <el-divider>界面显示</el-divider>
