@@ -130,7 +130,7 @@ async function concatData() {
           >
             <el-select
               v-model="data.mode"
-              style="margin-left: 12px; width: 100px"
+              style="margin-left: 10px; width: 100px"
             >
               <el-option label="Memory" value="memory" />
               <el-option label="Stream" value="stream" />
@@ -140,7 +140,7 @@ async function concatData() {
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 12px; width: 80px"
+              style="margin-left: 10px; width: 80px"
               placeholder="skip rows"
             />
           </el-tooltip>
@@ -149,7 +149,7 @@ async function concatData() {
             :loading="isLoading"
             :icon="Connection"
             plain
-            style="margin-left: 12px"
+            style="margin-left: 10px"
           >
             Cat
           </el-button>

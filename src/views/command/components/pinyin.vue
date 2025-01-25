@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -126,9 +126,9 @@ async function chineseToPinyin() {
         <el-button
           @click="chineseToPinyin()"
           :loading="isLoading"
-          :icon="IceCreamRound"
+          :icon="SwitchFilled"
           plain
-          style="margin-left: 16px"
+          style="margin-left: 10px"
         >
           Convert
         </el-button>
@@ -150,7 +150,7 @@ async function chineseToPinyin() {
         v-model="columns"
         multiple
         filterable
-        style="margin-top: 15px; width: 100%"
+        style="margin-top: 12px; width: 100%"
         placeholder="please choose columns"
       >
         <el-option

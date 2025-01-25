@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const tableData: any = ref([]);
@@ -224,7 +224,7 @@ function splitFilename(filename) {
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
+          <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
             <el-option label="," value="," />
             <el-option label="-" value="-" />
             <el-option label="_" value="_" />
@@ -238,16 +238,15 @@ function splitFilename(filename) {
           <el-button
             @click="modifyFilename()"
             :loading="isLoading"
-            :icon="Watermelon"
+            :icon="SwitchFilled"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 10px"
           >
             Modify
           </el-button>
         </div>
 
         <el-text>
-          <el-icon> <Watermelon /> </el-icon>
           <span>Batch modify filenames</span>
         </el-text>
       </div>

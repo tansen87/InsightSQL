@@ -171,7 +171,7 @@ async function csvToxlsx() {
           >
             <el-select
               v-model="data.mode"
-              style="margin-left: 12px; width: 85px"
+              style="margin-left: 10px; width: 85px"
             >
               <el-option label="Polars" value="polars" />
               <el-option label="Csv" value="csv" />
@@ -180,7 +180,7 @@ async function csvToxlsx() {
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 12px; width: 80px"
+              style="margin-left: 10px; width: 80px"
               placeholder="skip rows"
             />
           </el-tooltip>
@@ -189,7 +189,7 @@ async function csvToxlsx() {
             :loading="isLoading"
             :icon="SwitchFilled"
             plain
-            style="margin-left: 12px"
+            style="margin-left: 10px"
           >
             Convert
           </el-button>

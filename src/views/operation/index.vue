@@ -1,20 +1,12 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { ref, computed } from "vue";
+import { storeToRefs } from "pinia";
+import { useCommandStore } from "@/store/modules/commands";
 
 const router = useRouter();
-const commands = ref([
-  {
-    title: "Modify",
-    description: "Batch modify filenames.",
-    route: "/operation/components/modify"
-  },
-  {
-    title: "Traverse",
-    description: "Traverse the directory to obtain filenames.",
-    route: "/operation/components/traverse"
-  }
-]);
+const commandStore = useCommandStore();
+const { commands } = storeToRefs(commandStore);
 const searchText = ref("");
 const filteredCommands = computed(() => {
   return commands.value.filter(command =>
@@ -61,7 +53,7 @@ function toCommands(route) {
 .search-input {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 500;
   padding: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 16px;

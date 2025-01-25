@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { FolderOpened, Connection } from "@element-plus/icons-vue";
+import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const selectedFiles = ref([]);
@@ -98,7 +98,7 @@ async function accessData() {
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 16px; width: 100px">
+          <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
             <el-option label="," value="," />
             <el-option label="|" value="|" />
             <el-option label="\t" value="\t" />
@@ -107,9 +107,9 @@ async function accessData() {
           <el-button
             @click="accessData()"
             :loading="isLoading"
-            :icon="Connection"
+            :icon="SwitchFilled"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 10px"
           >
             Convert
           </el-button>

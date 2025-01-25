@@ -5,7 +5,7 @@ import { appConfigDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
-import { FolderOpened, Cherry } from "@element-plus/icons-vue";
+import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 
 const isPath = ref(false);
 const isLoading = ref(false);
@@ -117,14 +117,13 @@ async function traverseDirectory() {
         <el-button
           @click="traverseDirectory()"
           :loading="isLoading"
-          :icon="Cherry"
+          :icon="SwitchFilled"
           plain
         >
           Traverse
         </el-button>
       </div>
       <el-text>
-        <el-icon> <Cherry /> </el-icon>
         <span v-if="isPath">{{ data.folderPath }}</span>
         <span v-else>Traverse the directory to obtain filenames</span>
       </el-text>

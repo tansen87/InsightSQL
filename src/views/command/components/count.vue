@@ -135,7 +135,7 @@ async function countData() {
             :loading="isLoading"
             :icon="Grape"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 10px"
           >
             Count
           </el-button>

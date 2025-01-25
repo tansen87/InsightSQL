@@ -280,18 +280,11 @@ const defaultProps = {
   label: "label"
 };
 
-// 节点点击事件处理
 const handleNodeClick = async data => {
   try {
     const textToCopy = JSON.stringify(data.label);
-
-    // 检查是否支持剪贴板API
     if (navigator.clipboard) {
-      // 复制文本到剪贴板
       await navigator.clipboard.writeText(textToCopy);
-    } else {
-      // TODO: 如果不支持,则提供一个备用方案
-      console.log("Your browser does not support the Clipboard API");
     }
   } catch (err) {
     console.error("Failed to copy to clipboard: ", err);
@@ -479,9 +472,3 @@ watch(
     </el-drawer>
   </el-form>
 </template>
-
-<style scoped>
-.el-icon {
-  font-size: 25px;
-}
-</style>

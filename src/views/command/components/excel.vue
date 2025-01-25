@@ -166,7 +166,7 @@ async function excelToCsv() {
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 16px; margin-right: 16px; width: 80px"
+              style="margin-left: 10px; margin-right: 10px; width: 80px"
               placeholder="skip rows"
             />
           </el-tooltip>

@@ -5,11 +5,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import {
-  Cpu,
   FolderOpened,
   Loading,
   Select,
-  CloseBold
+  CloseBold,
+  Delete
 } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
@@ -138,8 +138,8 @@ async function dropHeaders() {
         <el-button
           @click="dropHeaders()"
           :loading="isLoading"
-          :icon="Cpu"
-          style="margin-left: 16px"
+          :icon="Delete"
+          style="margin-left: 10px"
           plain
         >
           Drop

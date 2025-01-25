@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { Refresh, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
@@ -171,7 +171,7 @@ async function replaceData() {
         position: sticky;
       "
     >
-      <div style="margin-top: 15px; display: flex; align-items: flex-start">
+      <div style="margin-top: 12px; display: flex; align-items: flex-start">
         <el-select
           v-model="selectColumn"
           filterable
@@ -186,7 +186,7 @@ async function replaceData() {
           />
         </el-select>
         <el-input
-          style="margin-left: 15px; width: 200px"
+          style="margin-left: 10px; width: 200px"
           placeholder="regex pattern"
           v-model="data.regexPattern"
           clearable
@@ -202,7 +202,7 @@ async function replaceData() {
         Replace
       </el-button>
     </div>
-    <div style="margin-top: 15px">
+    <div style="margin-top: 12px">
       <el-input
         v-model="data.replacement"
         autosize
@@ -223,7 +223,7 @@ async function replaceData() {
         :data="tableData"
         :height="formHeight"
         border
-        style="margin-top: 15px; width: 100%"
+        style="margin-top: 12px; width: 100%"
       >
         <el-table-column
           v-for="column in tableColumn"

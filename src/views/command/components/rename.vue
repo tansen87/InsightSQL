@@ -3,7 +3,7 @@ import { ref, reactive, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { Watermelon, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const tableData: any = ref([]);
@@ -144,9 +144,9 @@ async function headerEdit(row: any) {
           <el-button
             @click="renameData()"
             :loading="isLoading"
-            :icon="Watermelon"
+            :icon="Refresh"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 10px"
           >
             Rename
           </el-button>

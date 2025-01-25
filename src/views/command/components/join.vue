@@ -3,7 +3,7 @@ import { ref, reactive, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { Refresh, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, Connection } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
@@ -200,7 +200,7 @@ const viewFileName2 = computed(() => {
         position: sticky;
       "
     >
-      <div style="margin-top: 15px; display: flex; align-items: flex-start">
+      <div style="margin-top: 12px; display: flex; align-items: flex-start">
         <el-tooltip content="column of file1" placement="top" effect="light">
           <el-select
             v-model="sel1"
@@ -257,9 +257,9 @@ const viewFileName2 = computed(() => {
       <el-button
         @click="joinData()"
         :loading="isLoading"
-        :icon="Refresh"
+        :icon="Connection"
         plain
-        style="margin-top: 15px"
+        style="margin-top: 12px"
       >
         Join
       </el-button>

@@ -6,7 +6,7 @@ import { listen } from "@tauri-apps/api/event";
 import { ElNotification, TableColumnCtx } from "element-plus";
 import {
   FolderOpened,
-  Connection,
+  SwitchFilled,
   Loading,
   Select,
   CloseBold
@@ -157,7 +157,7 @@ async function convertData() {
           >
             <el-select
               v-model="data.sep"
-              style="margin-left: 16px; width: 100px"
+              style="margin-left: 10px; width: 100px"
             >
               <el-option label="," value="," />
               <el-option label="|" value="|" />
@@ -168,9 +168,9 @@ async function convertData() {
           <el-button
             @click="convertData()"
             :loading="isLoading"
-            :icon="Connection"
+            :icon="SwitchFilled"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 10px"
           >
             Convert
           </el-button>

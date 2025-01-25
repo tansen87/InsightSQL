@@ -21,7 +21,7 @@ const data = reactive({
 const tableColumn = ref([]);
 const tableData = ref([]);
 const tableRef = ref(null);
-const { formHeight } = useDynamicFormHeight(242);
+const { formHeight } = useDynamicFormHeight(233);
 
 listen("runtime", (event: any) => {
   runtime.value = event.payload;
@@ -180,7 +180,7 @@ async function searchData() {
         position: sticky;
       "
     >
-      <div style="margin-top: 15px; display: flex; align-items: flex-start">
+      <div style="margin-top: 12px; display: flex; align-items: flex-start">
         <el-tooltip content="Search mode" placement="bottom" effect="light">
           <el-select v-model="data.mode" style="width: 112px">
             <el-option label="equal" value="equal" />
@@ -192,7 +192,7 @@ async function searchData() {
         <el-select
           v-model="columns"
           filterable
-          style="margin-left: 12px; width: 200px"
+          style="margin-left: 10px; width: 200px"
           placeholder="Search by column"
         >
           <el-option
@@ -208,12 +208,12 @@ async function searchData() {
         :loading="isLoading"
         :icon="Search"
         plain
-        style="margin-top: 10px"
+        style="margin-top: 12px"
       >
         Search
       </el-button>
     </div>
-    <div style="margin-top: 15px">
+    <div style="margin-top: 12px">
       <el-input
         v-model="data.condition"
         autosize
@@ -234,7 +234,7 @@ async function searchData() {
         :data="tableData"
         :height="formHeight"
         border
-        style="margin-top: 15px; width: 100%"
+        style="margin-top: 12px; width: 100%"
       >
         <el-table-column
           v-for="column in tableColumn"
