@@ -321,7 +321,7 @@ function getHistoryMode(routerHistory): RouterHistory {
     } else if (leftMode === "h5") {
       return createWebHistory("");
     }
-  } //has param
+  } // has param
   else if (historyMode.length === 2) {
     if (leftMode === "hash") {
       return createWebHashHistory(rightMode);
@@ -362,7 +362,6 @@ export {
   filterTree,
   initRouter,
   getTopMenu,
-  // addPathMatch,
   isOneOfArray,
   getHistoryMode,
   addAsyncRoutes,

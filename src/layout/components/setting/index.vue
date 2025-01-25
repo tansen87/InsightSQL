@@ -41,9 +41,6 @@ if (unref(layoutTheme)) {
   setLayoutModel(layout);
 }
 
-/** 默认灵动模式 */
-const markValue = ref($storage.configure?.showModel ?? "smart");
-
 const logoVal = ref($storage.configure?.showLogo ?? true);
 
 const settings = reactive({
@@ -83,31 +80,19 @@ const weekChange = (value): void => {
   storageConfigureChange("weak", value);
 };
 
-const multiTagsCacheChange = () => {
-  const multiTagsCache = settings.multiTagsCache;
-  storageConfigureChange("multiTagsCache", multiTagsCache);
-  useMultiTagsStoreHook().multiTagsCacheChange(multiTagsCache);
-};
-
 /** 清空缓存并返回登录页 */
 function onReset() {
   removeToken();
   storageLocal().clear();
   storageSession().clear();
-  const { Grey, Weak, MultiTagsCache, EpThemeColor, Layout } = getConfig();
+  const { Grey, Weak, EpThemeColor, Layout } = getConfig();
   useAppStoreHook().setLayout(Layout);
   setEpThemeColor(EpThemeColor);
-  useMultiTagsStoreHook().multiTagsCacheChange(MultiTagsCache);
   toggleClass(Grey, "html-grey", document.querySelector("html"));
   toggleClass(Weak, "html-weakness", document.querySelector("html"));
   router.push("/login");
   useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
   resetRouter();
-}
-
-function onChange(label) {
-  storageConfigureChange("showModel", label);
-  emitter.emit("tagViewsShowModel", label);
 }
 
 /** 侧边栏Logo */
@@ -246,25 +231,6 @@ onBeforeMount(() => {
           inactive-text="关"
           @change="logoChange"
         />
-      </li>
-      <li>
-        <span class="dark:text-white">标签页持久化</span>
-        <el-switch
-          v-model="settings.multiTagsCache"
-          inline-prompt
-          inactive-color="#a6a6a6"
-          active-text="开"
-          inactive-text="关"
-          @change="multiTagsCacheChange"
-        />
-      </li>
-
-      <li>
-        <span class="dark:text-white">标签风格</span>
-        <el-radio-group v-model="markValue" size="small" @change="onChange">
-          <el-radio value="card">卡片</el-radio>
-          <el-radio value="smart">灵动</el-radio>
-        </el-radio-group>
       </li>
     </ul>
 
