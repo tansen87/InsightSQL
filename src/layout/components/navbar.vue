@@ -5,16 +5,19 @@ import Breadcrumb from "./sidebar/breadCrumb.vue";
 import topCollapse from "./sidebar/topCollapse.vue";
 import Setting from "@iconify-icons/ri/settings-3-line";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
-import dayIcon from "@/assets/svg/day.svg?component";
-import darkIcon from "@/assets/svg/dark.svg?component";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Minus,
   CopyDocument,
   Close,
   Sunny,
-  Moon
+  Moon,
+  Search
 } from "@element-plus/icons-vue";
+import { useCommandStore } from "@/store/modules/commands";
+import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
+import { computed, ref } from "vue";
 
 const { layout, device, onPanel, pureApp, toggleSideBar } = useNav();
 const { dataTheme, dataThemeChange } = useDataThemeChange();
@@ -26,13 +29,32 @@ function themeChange() {
 }
 
 const handleMouseDown = e => {
-  if (e.target.closest(".set-icon")) {
+  if (e.target.closest(".set-icon") || e.target.closest(".search-container")) {
     return;
   }
   if (e.buttons === 1) {
     appWindow.startDragging();
   }
 };
+
+const router = useRouter();
+const commandStore = useCommandStore();
+const { commands } = storeToRefs(commandStore);
+const searchQuery = ref("");
+const showDialog = ref(false);
+const filteredCommands = computed(() => {
+  return commands.value.filter(command =>
+    command.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+function navigateToCommand(routePath) {
+  router.push({ path: routePath });
+  searchQuery.value = "";
+}
+function handleCloseDialog() {
+  searchQuery.value = "";
+  showDialog.value = false;
+}
 </script>
 
 <template>
@@ -55,6 +77,40 @@ const handleMouseDown = e => {
       <mixNav v-if="layout === 'mix'" />
 
       <div v-if="layout === 'vertical'" class="vertical-header-right">
+        <div class="search-container">
+          <span
+            class="set-icon navbar-bg-hover"
+            title="search"
+            @click="showDialog = true"
+          >
+            <el-icon><Search /></el-icon>
+          </span>
+
+          <el-dialog
+            v-model="showDialog"
+            width="30%"
+            @close="handleCloseDialog"
+          >
+            <el-input
+              v-model="searchQuery"
+              placeholder="Search for command"
+              @click="filteredCommands"
+            />
+            <el-scrollbar style="height: 200px; margin-top: 10px">
+              <ul style="padding: 0; margin: 0">
+                <li
+                  v-for="command in filteredCommands"
+                  :key="command.route"
+                  @click="navigateToCommand(command.route)"
+                  class="command-item"
+                >
+                  {{ command.title }}
+                </li>
+              </ul>
+            </el-scrollbar>
+          </el-dialog>
+        </div>
+
         <span @click="themeChange" class="set-icon navbar-bg-hover">
           <el-icon v-if="dataTheme"><Moon /></el-icon>
           <el-icon v-else><Sunny /></el-icon>
@@ -147,5 +203,29 @@ const handleMouseDown = e => {
     flex-wrap: wrap;
     min-width: 100%;
   }
+}
+
+.search-container {
+  position: relative;
+}
+.command-list {
+  border: 1px solid #ddd;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  width: 100%;
+  z-index: 10000;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+.command-item {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.command-item:hover {
+  background-color: #f6dada;
 }
 </style>

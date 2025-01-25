@@ -3,7 +3,7 @@ export default {
   redirect: "/operation/index",
   meta: {
     icon: "fileChartLine",
-    title: "operation",
+    title: "oper",
     rank: 2
   },
   children: [
@@ -12,7 +12,7 @@ export default {
       name: "operation",
       component: () => import("@/views/operation/index.vue"),
       meta: {
-        title: "operation"
+        title: "oper"
       }
     },
     {

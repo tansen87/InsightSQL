@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from "vue";
+import { ref, watch, nextTick, computed } from "vue";
 import SidebarItem from "./sidebarItem.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import { usePermissionStoreHook } from "@/store/modules/permission";
@@ -13,10 +13,13 @@ import {
   Sunny,
   Moon
 } from "@element-plus/icons-vue";
+import { useCommandStore } from "@/store/modules/commands";
+import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 
 const menuRef = ref();
 
-const { route, title, routers, backTopMenu, onPanel, menuSelect } = useNav();
+const { route, routers, onPanel, menuSelect } = useNav();
 const { dataTheme, dataThemeChange } = useDataThemeChange();
 const appWindow = getCurrentWindow();
 
@@ -28,7 +31,8 @@ function themeChange() {
 const handleMouseDown = e => {
   if (
     e.target.closest(".horizontal-header-menu") ||
-    e.target.closest(".set-icon")
+    e.target.closest(".set-icon") ||
+    e.target.closest(".search-container")
   ) {
     return;
   }
@@ -47,6 +51,20 @@ watch(
     menuSelect(route.path, routers);
   }
 );
+
+const router = useRouter();
+const commandStore = useCommandStore();
+const { commands } = storeToRefs(commandStore);
+const searchQuery = ref("");
+const filteredCommands = computed(() => {
+  return commands.value.filter(command =>
+    command.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+function navigateToCommand(routePath) {
+  router.push({ path: routePath });
+  searchQuery.value = "";
+}
 </script>
 
 <template>
@@ -55,9 +73,6 @@ watch(
     class="horizontal-header"
     @mousedown="handleMouseDown"
   >
-    <div class="horizontal-header-left" @click="backTopMenu">
-      <span>{{ title }}</span>
-    </div>
     <el-menu
       router
       ref="menuRef"
@@ -73,6 +88,33 @@ watch(
         :base-path="route.path"
       />
     </el-menu>
+    <div class="search-container">
+      <div>
+        <el-input
+          v-model="searchQuery"
+          placeholder="Search for InsightSQL"
+          @click="filteredCommands"
+        />
+      </div>
+
+      <el-scrollbar
+        v-if="searchQuery && filteredCommands.length"
+        class="command-list"
+        style="height: 200px"
+      >
+        <ul style="padding: 0; margin: 0">
+          <li
+            v-for="command in filteredCommands"
+            :key="command.route"
+            @click="navigateToCommand(command.route)"
+            class="command-item"
+          >
+            <span>{{ command.title }}</span>
+          </li>
+        </ul>
+      </el-scrollbar>
+    </div>
+
     <div class="horizontal-header-right">
       <span @click="themeChange" class="set-icon navbar-bg-hover">
         <el-icon v-if="dataTheme"><Moon /></el-icon>
@@ -122,5 +164,29 @@ watch(
     flex-wrap: wrap;
     min-width: 100%;
   }
+}
+
+.search-container {
+  position: relative;
+}
+.command-list {
+  border: 1px solid #ddd;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  width: 100%;
+  z-index: 1000;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+.command-item {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.command-item:hover {
+  background-color: #f6dada;
 }
 </style>
