@@ -3,11 +3,13 @@ import { ref, reactive } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { FolderOpened, Connection } from "@element-plus/icons-vue";
+import { FolderOpened, Connection, Check } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
 const selectedFiles = ref([]);
 const isLoading = ref(false);
+const completed = ref(false);
+const result = ref(null);
 const tableRef = ref(null);
 const data = reactive({
   filePath: "",
@@ -20,6 +22,7 @@ const { formHeight } = useDynamicFormHeight(134);
 // open file
 async function selectFile() {
   selectedFiles.value = [];
+  completed.value = false;
   const selected = await open({
     multiple: true,
     filters: [
@@ -78,7 +81,7 @@ async function concatData() {
   const saveFileType = outputPath.split(".").pop();
 
   try {
-    const result: string = await invoke("concat", {
+    const res: string = await invoke("concat", {
       filePath: data.filePath,
       outputPath: outputPath,
       fileType: saveFileType,
@@ -90,12 +93,8 @@ async function concatData() {
       throw JSON.stringify(result).toString();
     }
 
-    ElNotification({
-      message: `Cat done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 20000
-    });
+    result.value = res;
+    completed.value = true;
   } catch (err) {
     ElNotification({
       title: "Invoke cat error",
@@ -154,7 +153,15 @@ async function concatData() {
             Cat
           </el-button>
         </div>
-        <el-text> Cat CSV and Excel files </el-text>
+        <el-text>
+          <span v-if="completed">
+            <el-icon color="green" style="margin-right: 2px">
+              <Check />
+            </el-icon>
+            Cat done, elapsed time: {{ result }} s
+          </span>
+          <span v-else> Cat CSV and Excel files </span>
+        </el-text>
       </div>
     </el-form>
     <el-table
