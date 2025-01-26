@@ -11,7 +11,7 @@ use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 
 use crate::{
-  utils::{count_csv_rows, detect_separator},
+  utils::{CsvOptions, detect_separator},
   xlsx_writer::XlsxWriter,
 };
 
@@ -185,7 +185,7 @@ async fn csv_to_xlsx(
 ) -> Result<()> {
   let sce = PathBuf::from(file);
   let dest = sce.with_extension("xlsx");
-  let row_count = count_csv_rows(file)?;
+  let row_count = CsvOptions::new(file).count_csv_rows()?;
 
   if row_count >= 104_0000 {
     return Err(anyhow!(

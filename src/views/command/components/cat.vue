@@ -6,7 +6,9 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Connection, Check } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
+const columns = ref("");
 const selectedFiles = ref([]);
+const originalColumns = ref([]);
 const isLoading = ref(false);
 const completed = ref(false);
 const result = ref(null);
@@ -15,9 +17,10 @@ const data = reactive({
   filePath: "",
   fileFormats: ["*"],
   mode: "Memory",
-  skipRows: "0"
+  skipRows: "0",
+  useCols: ""
 });
-const { formHeight } = useDynamicFormHeight(134);
+const { formHeight } = useDynamicFormHeight(181);
 
 // open file
 async function selectFile() {
@@ -43,6 +46,20 @@ async function selectFile() {
   } else {
     data.filePath = selected;
   }
+
+  const headers: string[] = await invoke("get_cat_headers", {
+    path: data.filePath,
+    skipRows: data.skipRows
+  });
+
+  if (JSON.stringify(headers).startsWith("get header error:")) {
+    throw JSON.stringify(headers).toString();
+  }
+
+  originalColumns.value = headers.map(header => ({
+    label: header,
+    value: header
+  }));
 }
 
 // data concat
@@ -79,6 +96,7 @@ async function concatData() {
   isLoading.value = true;
 
   const saveFileType = outputPath.split(".").pop();
+  const useCols = Object.values(columns.value).join("|");
 
   try {
     const res: string = await invoke("concat", {
@@ -86,7 +104,8 @@ async function concatData() {
       outputPath: outputPath,
       fileType: saveFileType,
       mode: data.mode,
-      skipRows: data.skipRows
+      skipRows: data.skipRows,
+      useCols: useCols
     });
 
     if (JSON.stringify(result).startsWith("cat failed:")) {
@@ -164,6 +183,20 @@ async function concatData() {
         </el-text>
       </div>
     </el-form>
+    <el-select
+      v-model="columns"
+      multiple
+      filterable
+      style="margin-top: 12px; width: 100%"
+      placeholder="Choose columns if you need to cat specific column"
+    >
+      <el-option
+        v-for="item in originalColumns"
+        :key="item.value"
+        :label="item.label"
+        :value="item.value"
+      />
+    </el-select>
     <el-table
       ref="tableRef"
       :data="selectedFiles"

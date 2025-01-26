@@ -38,6 +38,7 @@ fn main() {
     .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
       sqlp::query,
+      cat::get_cat_headers,
       cat::concat,
       convert::switch_excel,
       convert::switch_csv,

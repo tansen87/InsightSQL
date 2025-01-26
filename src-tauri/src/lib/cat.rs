@@ -1,18 +1,20 @@
-use std::{fs::File, num::NonZeroUsize, path::Path, time::Instant};
+use std::{collections::HashSet, fs::File, num::NonZeroUsize, path::Path, time::Instant};
 
 use anyhow::{anyhow, Result};
+use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use indexmap::IndexSet;
 use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter, UnionArgs,
+    cols, CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter,
+    UnionArgs,
   },
 };
 
 use crate::{
   excel_reader::{ExcelReader, ToPolarsDataFrame},
-  utils::detect_separator,
+  utils::{detect_separator, inter_headers, skip_csv_rows},
   xlsx_writer::XlsxWriter,
 };
 
@@ -22,6 +24,7 @@ async fn cat_with_polars(
   file_type: String,
   mode: String,
   skip_rows: String,
+  use_cols: String,
 ) -> Result<()> {
   /* concat csv and excel files into a xlsx or csv file */
   let low_memory = match mode.as_str() {
@@ -30,12 +33,17 @@ async fn cat_with_polars(
     _ => false,
   };
 
-  let vec_path: Vec<&str> = path.split('|').collect();
+  let paths: Vec<&str> = path.split('|').collect();
+  let use_cols: Vec<&str> = use_cols.split('|').collect();
+  let use_cols = match use_cols.len() {
+    0 | 1 if use_cols.get(0).map_or(true, |&s| s.is_empty()) => vec!["all"],
+    _ => use_cols,
+  };
 
   let mut lfs = Vec::new();
   let mut vec_sep = Vec::new();
 
-  for (idx, file) in vec_path.iter().enumerate() {
+  for (idx, file) in paths.iter().enumerate() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
 
     let file_extension = match Path::new(file).extension() {
@@ -73,6 +81,12 @@ async fn cat_with_polars(
           .with_skip_rows(skip_rows.parse::<usize>()?)
           .with_low_memory(low_memory)
           .finish()?;
+
+        let csv_reader = if use_cols == vec!["all"] {
+          csv_reader
+        } else {
+          csv_reader.select([cols(use_cols.clone())])
+        };
 
         csv_reader
       }
@@ -132,7 +146,7 @@ async fn cat_with_polars(
   Ok(())
 }
 
-async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
+async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> Result<()> {
   let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
 
   let mut vec_sep = Vec::new();
@@ -145,8 +159,10 @@ async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
       None => b',',
     };
     vec_sep.push(sep);
-
-    let mut rdr = csv::ReaderBuilder::new().delimiter(sep).from_path(p)?;
+    let skip_rows_reader = skip_csv_rows(p, skip_rows.parse::<usize>()?)?;
+    let mut rdr = ReaderBuilder::new()
+      .delimiter(sep)
+      .from_reader(skip_rows_reader);
 
     for field in rdr.byte_headers()? {
       let fi = field.to_vec().into_boxed_slice();
@@ -154,19 +170,18 @@ async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
     }
   }
 
-  let mut wtr = csv::WriterBuilder::new()
+  let mut wtr = WriterBuilder::new()
     .delimiter(vec_sep[0])
     .from_path(output_path)?;
 
   for c in &all_columns {
     wtr.write_field(c)?;
   }
-  wtr.write_byte_record(&csv::ByteRecord::new())?;
+  wtr.write_byte_record(&ByteRecord::new())?;
 
   for (idx, p) in paths.iter().enumerate() {
-    let mut rdr = csv::ReaderBuilder::new()
-      .delimiter(vec_sep[idx])
-      .from_path(&p)?;
+    let skip_rows_reader = skip_csv_rows(p, skip_rows.parse::<usize>()?)?;
+    let mut rdr = ReaderBuilder::new().delimiter(vec_sep[idx]).from_reader(skip_rows_reader);
     let h = rdr.byte_headers()?;
 
     let mut columns_of_this_file =
@@ -197,11 +212,19 @@ async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
           wtr.write_field(b"")?;
         }
       }
-      wtr.write_byte_record(&csv::ByteRecord::new())?;
+      wtr.write_byte_record(&ByteRecord::new())?;
     }
   }
 
   Ok(())
+}
+
+#[tauri::command]
+pub async fn get_cat_headers(path: String, skip_rows: String) -> Result<HashSet<String>, String> {
+  match inter_headers(path, skip_rows.parse::<usize>().map_err(|e| e.to_string())?).await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
+  }
 }
 
 #[tauri::command]
@@ -211,11 +234,12 @@ pub async fn concat(
   file_type: String,
   mode: String,
   skip_rows: String,
+  use_cols: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match mode.to_lowercase().as_str() {
-    "csv" => match cat_with_csv(file_path, output_path).await {
+  match mode.as_str() {
+    "csv" => match cat_with_csv(file_path, skip_rows, output_path).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -223,13 +247,15 @@ pub async fn concat(
       }
       Err(err) => Err(format!("cat failed: {err}")),
     },
-    _ => match cat_with_polars(file_path, output_path, file_type, mode, skip_rows).await {
-      Ok(()) => {
-        let end_time = Instant::now();
-        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-        Ok(format!("{elapsed_time:.2}"))
+    _ => {
+      match cat_with_polars(file_path, output_path, file_type, mode, skip_rows, use_cols).await {
+        Ok(()) => {
+          let end_time = Instant::now();
+          let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+          Ok(format!("{elapsed_time:.2}"))
+        }
+        Err(err) => Err(format!("cat failed: {err}")),
       }
-      Err(err) => Err(format!("cat failed: {err}")),
-    },
+    }
   }
 }
