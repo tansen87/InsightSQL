@@ -10,7 +10,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::utils::{detect_separator, get_same_headers};
+use crate::utils::{get_same_headers, CsvOptions};
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -202,7 +202,8 @@ async fn apply_perform(
   new_column: bool,
 ) -> Result<()> {
   let select_columns: Vec<&str> = select_columns.split('|').collect();
-  let sep = match detect_separator(&file_path, 0) {
+  let csv_options = CsvOptions::new(&file_path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -220,7 +221,7 @@ async fn apply_perform(
 
   let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(file_path.clone())?);
+    .from_reader(File::open(&file_path)?);
   let parent_path = Path::new(&file_path)
     .parent()
     .map(|path| path.to_string_lossy())

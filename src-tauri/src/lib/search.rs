@@ -4,7 +4,7 @@ use anyhow::Result;
 use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
-use crate::utils::{detect_separator, get_same_headers, Selection};
+use crate::utils::{get_same_headers, CsvOptions, Selection};
 
 #[derive(Debug)]
 enum SearchMode {
@@ -156,7 +156,8 @@ async fn perform_search<P: AsRef<Path>>(
   conditions: String,
   mode: SearchMode,
 ) -> Result<String> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

@@ -3,7 +3,7 @@ use std::{borrow::Cow, collections::HashMap, fs::File, path::Path, time::Instant
 use anyhow::Result;
 use regex::bytes::RegexBuilder;
 
-use crate::utils::{detect_separator, get_same_headers, Selection};
+use crate::utils::{get_same_headers, CsvOptions, Selection};
 
 async fn regex_replace<P: AsRef<Path>>(
   path: P,
@@ -13,7 +13,8 @@ async fn regex_replace<P: AsRef<Path>>(
 ) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
 
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

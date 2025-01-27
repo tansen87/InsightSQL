@@ -11,7 +11,7 @@ use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 
 use crate::{
-  utils::{CsvOptions, detect_separator},
+  utils::CsvOptions,
   xlsx_writer::XlsxWriter,
 };
 
@@ -233,8 +233,9 @@ pub async fn switch_csv(
     window
       .emit("start_convert", file)
       .map_err(|e| e.to_string())?;
-
-    let sep = match detect_separator(file, skip_rows.parse::<usize>().map_err(|e| e.to_string())?) {
+    let mut csv_options = CsvOptions::new(file);
+    csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+    let sep = match csv_options.detect_separator() {
       Some(separator) => separator as u8,
       None => b',',
     };

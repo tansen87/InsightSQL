@@ -22,7 +22,7 @@ use polars::{
 use tauri::Emitter;
 
 use crate::excel_reader::{ExcelReader, ToPolarsDataFrame};
-use crate::{utils::detect_separator, xlsx_writer::XlsxWriter};
+use crate::{utils::CsvOptions, xlsx_writer::XlsxWriter};
 
 fn execute_query(
   query: &str,
@@ -198,7 +198,9 @@ async fn prepare_query(
         vec_sep.push(b'|');
       }
       _ => {
-        let sep = match detect_separator(table, skip_rows.parse::<usize>()?) {
+        let mut csv_options = CsvOptions::new(table);
+        csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+        let sep = match csv_options.detect_separator() {
           Some(separator) => separator as u8,
           None => b',',
         };

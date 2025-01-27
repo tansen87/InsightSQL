@@ -18,57 +18,113 @@ impl<P: AsRef<Path>> CsvOptions<P> {
     CsvOptions { path, skip_rows: 0 }
   }
 
+  /// Sets the number of rows to skip
+  pub fn set_skip_rows(&mut self, skip_rows: usize) {
+    self.skip_rows = skip_rows;
+  }
+
+  /// Check the delimiter of CSV
+  pub fn detect_separator(&self) -> Option<char> {
+    let file = File::open(&self.path).expect("Failed to open file");
+    let reader = BufReader::new(file);
+
+    let mut lines_iter = reader.lines();
+
+    // Skip the first `skip_rows` lines
+    for _ in 0..self.skip_rows {
+      if let Some(Ok(_)) = lines_iter.next() {
+        // Line skipped
+      } else {
+        // If there are not enough lines to skip, return None or handle as you see fit
+        return None;
+      }
+    }
+
+    let mut line = String::new();
+    let mut separators_count = HashMap::new();
+    let mut max_count = 0;
+    let mut separator = None;
+    let seg_symbols = [';', ',', '\t', '|', '^'];
+
+    // read next line after skipping
+    if let Some(Ok(next_line)) = lines_iter.next() {
+      line.push_str(&next_line);
+
+      // count all possible occurrences of segmentation symbols
+      for c in seg_symbols {
+        let count = line.matches(c).count();
+        if count > max_count {
+          max_count = count;
+          separator = Some(c);
+        }
+        separators_count.insert(c, count);
+      }
+    }
+
+    separator
+  }
+
   /// Count csv rows
   pub fn count_csv_rows(&self) -> Result<usize> {
-    let file = File::open(&self.path)?;
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(File::open(&self.path)?);
     let total_rows = reader.lines().count().saturating_sub(1);
 
     Ok(total_rows)
   }
-}
 
-/// Check the delimiter of CSV
-pub fn detect_separator<P>(path: P, skip_rows: usize) -> Option<char>
-where
-  P: AsRef<Path>,
-{
-  let file = File::open(path).expect("Failed to open file");
-  let reader = BufReader::new(file);
+  /// Skip the first n lines of csv
+  pub fn skip_csv_rows(&self) -> Result<BufReader<File>> {
+    let mut reader = BufReader::new(File::open(&self.path)?);
+    let mut line = String::new();
 
-  let mut lines_iter = reader.lines();
-
-  // Skip the first `skip_rows` lines
-  for _ in 0..skip_rows {
-    if let Some(Ok(_)) = lines_iter.next() {
-      // Line skipped
-    } else {
-      // If there are not enough lines to skip, return None or handle as you see fit
-      return None;
-    }
-  }
-
-  let mut line = String::new();
-  let mut separators_count = HashMap::new();
-  let mut max_count = 0;
-  let mut separator = None;
-
-  // read next line after skipping
-  if let Some(Ok(next_line)) = lines_iter.next() {
-    line.push_str(&next_line);
-
-    // count all possible occurrences of segmentation symbols
-    for c in [';', ',', '\t', '|', '^'] {
-      let count = line.matches(c).count();
-      if count > max_count {
-        max_count = count;
-        separator = Some(c);
+    for _ in 0..self.skip_rows {
+      if reader.read_line(&mut line)? == 0 {
+        // reached the end of the file before skipping all lines
+        break;
       }
-      separators_count.insert(c, count);
+      line.clear();
     }
+
+    Ok(reader)
   }
 
-  separator
+  /// The intersection of all headers between many csv files
+  pub fn inter_headers(&self) -> Result<HashSet<String>> {
+    let path4split = &self.path.as_ref().to_string_lossy();
+    let ff: Vec<&str> = path4split.split('|').collect();
+    let mut header_sets: Vec<HashSet<String>> = vec![];
+
+    for f in ff {
+      let mut csv_options = CsvOptions::new(f);
+      csv_options.set_skip_rows(self.skip_rows);
+      let skip_rows_reader = csv_options.skip_csv_rows()?;
+      let sep = match csv_options.detect_separator() {
+        Some(separator) => separator as u8,
+        None => b',',
+      };
+      let mut rdr = ReaderBuilder::new()
+        .delimiter(sep)
+        .from_reader(skip_rows_reader);
+      if let Ok(headers) = rdr.headers() {
+        let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
+        header_sets.push(header_set);
+      }
+    }
+
+    // start with the assumption that all headers are common
+    let mut common_headers: HashSet<String> = if let Some(first_set) = header_sets.first() {
+      first_set.clone()
+    } else {
+      HashSet::new()
+    };
+
+    // find intersection of all sets
+    for headers in header_sets.iter().skip(1) {
+      common_headers = common_headers.intersection(headers).cloned().collect();
+    }
+
+    Ok(common_headers)
+  }
 }
 
 type ByteString = Vec<u8>;
@@ -118,7 +174,7 @@ impl Selection {
 
 /// Get csv headers
 pub async fn get_same_headers<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&path, 0) {
+  let sep = match CsvOptions::new(&path).detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -140,56 +196,4 @@ pub async fn get_same_headers<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<Str
     .collect();
 
   Ok(headers)
-}
-
-/// Skip the first n lines of csv
-pub fn skip_csv_rows<P: AsRef<Path>>(path: P, skip_rows: usize) -> Result<BufReader<File>> {
-  let mut reader = BufReader::new(File::open(&path)?);
-  let mut line = String::new();
-
-  for _ in 0..skip_rows {
-    if reader.read_line(&mut line)? == 0 {
-      // reached the end of the file before skipping all lines
-      break;
-    }
-    line.clear();
-  }
-
-  Ok(reader)
-}
-
-/// The intersection of all headers between many csv files
-pub async fn inter_headers<P: AsRef<Path>>(path: P, skip_rows: usize) -> Result<HashSet<String>> {
-  let path4split = &path.as_ref().to_string_lossy();
-  let ff: Vec<&str> = path4split.split('|').collect();
-  let mut header_sets: Vec<HashSet<String>> = vec![];
-
-  for f in ff {
-    let skip_rows_reader = skip_csv_rows(f, skip_rows)?;
-    let sep = match detect_separator(f, skip_rows) {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
-    let mut rdr = ReaderBuilder::new()
-      .delimiter(sep)
-      .from_reader(skip_rows_reader);
-    if let Ok(headers) = rdr.headers() {
-      let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
-      header_sets.push(header_set);
-    }
-  }
-
-  // start with the assumption that all headers are common
-  let mut common_headers: HashSet<String> = if let Some(first_set) = header_sets.first() {
-    first_set.clone()
-  } else {
-    HashSet::new()
-  };
-
-  // find intersection of all sets
-  for headers in header_sets.iter().skip(1) {
-    common_headers = common_headers.intersection(headers).cloned().collect();
-  }
-
-  Ok(common_headers)
 }

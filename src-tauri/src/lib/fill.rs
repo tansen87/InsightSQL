@@ -2,14 +2,15 @@ use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Insta
 
 use anyhow::Result;
 
-use crate::utils::{detect_separator, get_same_headers, Selection};
+use crate::utils::{CsvOptions, get_same_headers, Selection};
 
 async fn fill_values<P: AsRef<Path>>(
   path: P,
   fill_column: String,
   fill_value: String,
 ) -> Result<()> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

@@ -2,7 +2,7 @@ use std::{fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 
-use crate::utils::detect_separator;
+use crate::utils::CsvOptions;
 
 fn new_writer(
   headers: &csv::ByteRecord,
@@ -21,7 +21,8 @@ fn new_writer(
 }
 
 async fn split_csv<P: AsRef<Path>>(path: P, size: u32) -> Result<()> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

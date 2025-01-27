@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { Cpu, FolderOpened } from "@element-plus/icons-vue";
+import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -57,7 +57,7 @@ async function selectFile() {
   }
 }
 
-// fill data
+// invoke fill
 async function fillData() {
   if (data.filePath === "") {
     ElNotification({
@@ -138,7 +138,7 @@ async function fillData() {
       v-model="columns"
       multiple
       filterable
-      style="margin-top: 15px; width: 100%"
+      style="margin-top: 12px; width: 100%"
       placeholder="please choose columns"
     >
       <el-option
@@ -156,24 +156,20 @@ async function fillData() {
         position: sticky;
       "
     >
-      <div style="margin-top: 15px; display: flex; align-items: flex-start">
+      <div style="margin-top: 12px; display: flex; align-items: flex-start">
         <el-tooltip
           content="The value of fill"
           placement="bottom"
           effect="light"
         >
-          <el-input
-            v-model="data.value"
-            style="width: 120px; margin-right: 16px"
-            clearable
-          />
+          <el-input v-model="data.value" style="width: 120px" clearable />
         </el-tooltip>
       </div>
       <el-button
-        style="margin-top: 15px"
+        style="margin-top: 12px"
         @click="fillData()"
         :loading="isLoading"
-        :icon="Cpu"
+        :icon="Refresh"
         plain
       >
         Fill

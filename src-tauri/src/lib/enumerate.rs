@@ -2,10 +2,11 @@ use std::{fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 
-use crate::utils::detect_separator;
+use crate::utils::CsvOptions;
 
 async fn add_index(file_path: String) -> Result<()> {
-  let sep = match detect_separator(file_path.as_str(), 0) {
+  let csv_options = CsvOptions::new(&file_path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

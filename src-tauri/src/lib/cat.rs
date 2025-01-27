@@ -14,7 +14,7 @@ use polars::{
 
 use crate::{
   excel_reader::{ExcelReader, ToPolarsDataFrame},
-  utils::{detect_separator, inter_headers, skip_csv_rows},
+  utils::CsvOptions,
   xlsx_writer::XlsxWriter,
 };
 
@@ -56,7 +56,9 @@ async fn cat_with_polars(
         vec_sep.push(b'|');
       }
       _ => {
-        let sep = match detect_separator(file, skip_rows.parse::<usize>()?) {
+        let mut csv_options = CsvOptions::new(file);
+        csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+        let sep = match csv_options.detect_separator() {
           Some(separator) => separator as u8,
           None => b',',
         };
@@ -154,12 +156,14 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
   let paths: Vec<&str> = path.split('|').collect();
 
   for p in &paths {
-    let sep = match detect_separator(&p, 0) {
+    let mut csv_options = CsvOptions::new(p);
+    csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+    let sep = match csv_options.detect_separator() {
       Some(separator) => separator as u8,
       None => b',',
     };
     vec_sep.push(sep);
-    let skip_rows_reader = skip_csv_rows(p, skip_rows.parse::<usize>()?)?;
+    let skip_rows_reader = csv_options.skip_csv_rows()?;
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
       .from_reader(skip_rows_reader);
@@ -180,8 +184,12 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
   wtr.write_byte_record(&ByteRecord::new())?;
 
   for (idx, p) in paths.iter().enumerate() {
-    let skip_rows_reader = skip_csv_rows(p, skip_rows.parse::<usize>()?)?;
-    let mut rdr = ReaderBuilder::new().delimiter(vec_sep[idx]).from_reader(skip_rows_reader);
+    let mut csv_options = CsvOptions::new(p);
+    csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+    let skip_rows_reader = csv_options.skip_csv_rows()?;
+    let mut rdr = ReaderBuilder::new()
+      .delimiter(vec_sep[idx])
+      .from_reader(skip_rows_reader);
     let h = rdr.byte_headers()?;
 
     let mut columns_of_this_file =
@@ -221,7 +229,9 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
 
 #[tauri::command]
 pub async fn get_cat_headers(path: String, skip_rows: String) -> Result<HashSet<String>, String> {
-  match inter_headers(path, skip_rows.parse::<usize>().map_err(|e| e.to_string())?).await {
+  let mut csv_options = CsvOptions::new(path);
+  csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+  match csv_options.inter_headers() {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }

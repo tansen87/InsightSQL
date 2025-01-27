@@ -26,6 +26,8 @@ const { formHeight } = useDynamicFormHeight(181);
 async function selectFile() {
   selectedFiles.value = [];
   completed.value = false;
+  originalColumns.value = [];
+  columns.value = "";
   const selected = await open({
     multiple: true,
     filters: [

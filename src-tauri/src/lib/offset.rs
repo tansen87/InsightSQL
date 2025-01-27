@@ -12,8 +12,8 @@ use polars::{
 };
 
 use crate::{
-  utils::detect_separator,
   excel_reader::{ExcelReader, ToPolarsDataFrame},
+  utils::CsvOptions,
   xlsx_writer::XlsxWriter,
 };
 
@@ -29,7 +29,8 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path.as_str(), 0) {
+      let csv_options = CsvOptions::new(&file_path);
+      let sep = match csv_options.detect_separator() {
         Some(separator) => separator as u8,
         None => b',',
       };
@@ -40,7 +41,7 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
   let mut tmp = Vec::new();
   match file_extension.as_str() {
     "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
-      let mut workbook = calamine::open_workbook_auto(file_path)?;
+      let mut workbook = calamine::open_workbook_auto(&file_path)?;
       let range = workbook.worksheet_range_at(0).unwrap()?;
       let vec_headers: Vec<String> = range
         .rows()
@@ -99,7 +100,8 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path, 0) {
+      let csv_options = CsvOptions::new(&file_path);
+      let sep = match csv_options.detect_separator() {
         Some(separator) => separator as u8,
         None => b',',
       };
@@ -357,7 +359,8 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
       vec_sep.push(b'|');
     }
     _ => {
-      let sep = match detect_separator(file_path, 0) {
+      let csv_options = CsvOptions::new(file_path);
+      let sep = match csv_options.detect_separator() {
         Some(separator) => separator as u8,
         None => b',',
       };

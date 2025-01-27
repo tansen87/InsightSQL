@@ -3,7 +3,7 @@ use std::{path::Path, time::Instant};
 use anyhow::Result;
 use tauri::Emitter;
 
-use crate::utils::detect_separator;
+use crate::utils::CsvOptions;
 
 async fn drop_headers(file_path: String, window: tauri::Window) -> Result<()> {
   let vec_path: Vec<&str> = file_path.split('|').collect();
@@ -17,8 +17,8 @@ async fn drop_headers(file_path: String, window: tauri::Window) -> Result<()> {
 
   for fp in vec_path.iter() {
     window.emit("start_convert", fp)?;
-
-    let sep = match detect_separator(fp, 0) {
+    let csv_options = CsvOptions::new(fp);
+    let sep = match csv_options.detect_separator() {
       Some(separator) => separator as u8,
       None => b',',
     };

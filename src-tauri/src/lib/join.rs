@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, WriteBytesExt};
 
 use crate::index::Indexed;
-use crate::utils::{detect_separator, get_same_headers, Selection};
+use crate::utils::{CsvOptions, get_same_headers, Selection};
 
 type ByteString = Vec<u8>;
 
@@ -165,11 +165,13 @@ fn new_io_state<P: AsRef<Path>>(
   sel2: String,
   nulls: bool,
 ) -> Result<IoState<fs::File, Box<dyn io::Write + 'static>>> {
-  let sep1 = match detect_separator(&path1, 0) {
+  let csv_options1 = CsvOptions::new(&path1);
+  let sep1 = match csv_options1.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
-  let sep2 = match detect_separator(&path2, 0) {
+  let csv_options2 = CsvOptions::new(&path2);
+  let sep2 = match csv_options2.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

@@ -8,10 +8,11 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
-use crate::utils::detect_separator;
+use crate::utils::CsvOptions;
 
 async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -38,7 +39,8 @@ async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, Strin
 }
 
 async fn select_columns<P: AsRef<Path>>(path: P, cols: String) -> Result<()> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

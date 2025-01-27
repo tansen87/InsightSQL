@@ -4,10 +4,11 @@ use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 use pinyin::ToPinyin;
 
-use crate::utils::{detect_separator, Selection};
+use crate::utils::{CsvOptions, Selection};
 
 async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -35,7 +36,8 @@ async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, Strin
 }
 
 async fn chinese_to_pinyin<P: AsRef<Path>>(path: P, columns: String) -> Result<()> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

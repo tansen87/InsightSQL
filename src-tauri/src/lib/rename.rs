@@ -2,10 +2,11 @@ use std::{fs::File, path::Path, time::Instant};
 
 use anyhow::Result;
 
-use crate::utils::detect_separator;
+use crate::utils::CsvOptions;
 
 async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
@@ -20,7 +21,8 @@ async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
 }
 
 async fn rename_headers<P: AsRef<Path>>(path: P, r_header: String) -> Result<()> {
-  let sep = match detect_separator(&path, 0) {
+  let csv_options = CsvOptions::new(&path);
+  let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };

@@ -3,7 +3,7 @@ use std::{fs::File, path::Path, time::Instant};
 use anyhow::Result;
 use tauri::Emitter;
 
-use crate::utils::detect_separator;
+use crate::utils::CsvOptions;
 
 async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
   /* count csv rows */
@@ -13,8 +13,8 @@ async fn count_rows(path: String, window: tauri::Window) -> Result<()> {
 
   for file in vec_path.iter() {
     window.emit("start_convert", file)?;
-
-    let sep = match detect_separator(file, 0) {
+    let csv_options = CsvOptions::new(file);
+    let sep = match csv_options.detect_separator() {
       Some(separator) => separator as u8,
       None => b',',
     };
