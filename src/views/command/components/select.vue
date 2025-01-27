@@ -6,14 +6,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 
-const data = reactive({
-  filePath: "",
-  fileFormats: ["*"]
-});
 const originalList = ref([]);
 const selectList = ref([]);
 const isLoading = ref(false);
 const isPath = ref(false);
+const data = reactive({
+  path: "",
+  fileFormats: ["*"],
+  skipRows: "0"
+});
 
 // open file
 async function selectFile() {
@@ -32,18 +33,19 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.path = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 
   isPath.value = true;
 
   try {
-    const headers: any = await invoke("get_select_headers", {
-      path: data.filePath
+    const headers: string[] = await invoke("get_select_headers", {
+      path: data.path,
+      skipRows: data.skipRows
     });
     originalList.value = headers;
 
@@ -61,9 +63,9 @@ async function selectFile() {
   }
 }
 
-// select data
+// invoke select
 async function selectColumns() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -91,11 +93,12 @@ async function selectColumns() {
 
   try {
     const result: string = await invoke("select", {
-      path: data.filePath,
-      cols: names.value
+      path: data.path,
+      cols: names.value,
+      skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("Select failed:")) {
+    if (JSON.stringify(result).startsWith("select failed:")) {
       throw JSON.stringify(result).toString();
     }
 
@@ -134,12 +137,19 @@ async function selectColumns() {
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
+          <el-tooltip content="skip rows" placement="top" effect="light">
+            <el-input
+              v-model="data.skipRows"
+              style="margin-left: 10px; width: 50px"
+              placeholder="skip rows"
+            />
+          </el-tooltip>
           <el-button
             @click="selectColumns()"
             :loading="isLoading"
             :icon="Cherry"
             plain
-            style="margin-left: 16px"
+            style="margin-left: 10px"
           >
             Select
           </el-button>
@@ -147,7 +157,7 @@ async function selectColumns() {
 
         <!-- Title -->
         <el-text>
-          <span v-if="isPath">{{ data.filePath }}</span>
+          <span v-if="isPath">{{ data.path }}</span>
           <span v-else>Select, re-order columns</span>
         </el-text>
       </div>
