@@ -11,6 +11,12 @@ const isLoading = ref(false);
 const isPath = ref(false);
 const search = ref("");
 const tableRef = ref(null);
+const data = reactive({
+  path: "",
+  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  skipRows: "0"
+});
+const { formHeight } = useDynamicFormHeight(134);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -18,11 +24,6 @@ const filterTableData = computed(() =>
       data.col1.toLowerCase().includes(search.value.toLowerCase())
   )
 );
-const data = reactive({
-  filePath: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
-});
-const { formHeight } = useDynamicFormHeight(134);
 
 // open file
 async function selectFile() {
@@ -40,18 +41,19 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.path = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 
   isPath.value = true;
 
   try {
-    const headers: string = await invoke("get_rename_headers", {
-      filePath: data.filePath
+    const headers: string[] = await invoke("get_rename_headers", {
+      path: data.path,
+      skipRows: data.skipRows
     });
 
     if (JSON.stringify(headers).startsWith("get header error:")) {
@@ -76,9 +78,9 @@ async function selectFile() {
   }
 }
 
-// rename csv headers
+// invoke rename
 async function renameData() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -95,8 +97,9 @@ async function renameData() {
     const headersString = headersStringArray.join(",");
 
     const result: string = await invoke("rename", {
-      filePath: data.filePath,
-      headers: headersString
+      path: data.path,
+      headers: headersString,
+      skipRows: data.skipRows
     });
 
     if (JSON.stringify(result).startsWith("rename failed:")) {
@@ -141,6 +144,13 @@ async function headerEdit(row: any) {
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
+          <el-tooltip content="skip rows" placement="top" effect="light">
+            <el-input
+              v-model="data.skipRows"
+              style="margin-left: 10px; width: 50px"
+              placeholder="skip rows"
+            />
+          </el-tooltip>
           <el-button
             @click="renameData()"
             :loading="isLoading"
@@ -153,7 +163,7 @@ async function headerEdit(row: any) {
         </div>
 
         <el-text>
-          <span v-if="isPath">{{ data.filePath }}</span>
+          <span v-if="isPath">{{ data.path }}</span>
           <span v-else>Rename the columns of a CSV</span>
         </el-text>
       </div>

@@ -24,10 +24,14 @@ async fn test_rename() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  // 定义新表头
   let new_header = "first_name,years_old,sex";
 
-  public_rename(file_path.to_str().unwrap(), new_header.to_string()).await?;
+  public_rename(
+    file_path.to_str().unwrap(),
+    new_header.to_string(),
+    "1".to_string(),
+  )
+  .await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.rename.csv",
@@ -37,7 +41,6 @@ async fn test_rename() -> Result<()> {
   let content = fs::read_to_string(output_path)?;
   let expected_content = vec![
     "first_name,years_old,sex",
-    "Tom,18,male",
     "Jerry,19,male",
     "Patrick,4,male",
     "Sandy,24,female",
@@ -47,7 +50,6 @@ async fn test_rename() -> Result<()> {
 
   assert_eq!(content, expected_content);
 
-  // 清理临时目录
   drop(file_path);
   temp_dir.close()?;
 
