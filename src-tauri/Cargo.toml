@@ -34,7 +34,7 @@ itoa = "1"
 lazy_static = "1.5.0"
 odbc-api = "9.0.0"
 pinyin = { version = "0.10.0", features = ["plain"] }
-polars = { version = "0.45.1", features = [
+polars = { version = "0.46.0", features = [
     "asof_join",
     "cross_join",
     "cse",

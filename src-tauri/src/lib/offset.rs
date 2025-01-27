@@ -299,6 +299,7 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
         to_supertypes: true,
         diagonal: true,
         from_partitioned_ds: false,
+        maintain_order: true,
       },
     )?
     .collect()?;
@@ -325,6 +326,7 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
         to_supertypes: true,
         diagonal: true,
         from_partitioned_ds: false,
+        maintain_order: true,
       },
     )?
     .collect()?;
@@ -565,6 +567,7 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
         to_supertypes: true,
         diagonal: true,
         from_partitioned_ds: false,
+        maintain_order: true,
       },
     )?
     .collect()?;
@@ -591,6 +594,7 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
         to_supertypes: true,
         diagonal: true,
         from_partitioned_ds: false,
+        maintain_order: true,
       },
     )?
     .collect()?;

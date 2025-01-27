@@ -106,6 +106,7 @@ async fn cat_with_polars(
       to_supertypes: true,
       diagonal: true,
       from_partitioned_ds: false,
+      maintain_order: true,
     },
   )?;
 
