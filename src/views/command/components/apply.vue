@@ -12,13 +12,14 @@ const selectColumns = ref([]);
 const operations = ref([]);
 const originalColumns = ref([]);
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["*"],
   applyMode: "Operations",
   comparand: "",
   replacement: "",
   formatstr: "",
-  newColumn: false
+  newColumn: false,
+  skipRows: "0"
 });
 const tableColumn = ref([]);
 const tableData = ref([]);
@@ -41,27 +42,28 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.path = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
   isPath.value = true;
 
   try {
-    const header: any = await invoke("get_apply_headers", {
-      filePath: data.filePath
+    const header: string[] = await invoke("get_apply_headers", {
+      path: data.path,
+      skipRows: data.skipRows
     });
     originalColumns.value = header;
 
     const result: string = await invoke("query", {
-      path: data.filePath,
+      path: data.path,
       sqlQuery: "select * from _t_1 limit 10",
       write: false,
       writeFormat: "csv",
       lowMemory: false,
-      skipRows: "0"
+      skipRows: data.skipRows
     });
 
     if (
@@ -93,7 +95,7 @@ async function selectFile() {
 
 // apply function
 async function applyData() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -116,14 +118,15 @@ async function applyData() {
 
   try {
     const result: string = await invoke("apply", {
-      filePath: data.filePath,
+      path: data.path,
       selectColumns: selectColumns.value.join("|"),
       applyMode: data.applyMode,
       operations: operations.value.join("|"),
       comparand: data.comparand,
       replacement: data.replacement,
       formatstr: data.formatstr,
-      newColumn: data.newColumn
+      newColumn: data.newColumn,
+      skipRows: data.skipRows
     });
 
     if (JSON.stringify(result).startsWith("apply failed:")) {
@@ -163,10 +166,17 @@ async function applyData() {
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 50px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
       </div>
 
       <el-text>
-        <span v-if="isPath">{{ data.filePath }}</span>
+        <span v-if="isPath">{{ data.path }}</span>
         <span v-else>
           Apply a series of transformation functions to given CSV column/s
         </span>

@@ -1,7 +1,8 @@
-use std::{collections::HashMap, fs::File, path::Path, sync::OnceLock, time::Instant};
+use std::{collections::HashMap, path::Path, sync::OnceLock, time::Instant};
 
 use anyhow::{anyhow, Result};
 use cpc::{eval, units::Unit};
+use csv::{ReaderBuilder, WriterBuilder};
 use dynfmt::Format;
 use rayon::{
   iter::{IndexedParallelIterator, ParallelIterator},
@@ -191,8 +192,8 @@ fn apply_operations(
   }
 }
 
-async fn apply_perform(
-  file_path: String,
+async fn apply_perform<P: AsRef<Path>>(
+  path: P,
   select_columns: String,
   apply_mode: String,
   operations: &str,
@@ -200,9 +201,11 @@ async fn apply_perform(
   replacement: String,
   formatstr: String,
   new_column: bool,
+  skip_rows: String,
 ) -> Result<()> {
   let select_columns: Vec<&str> = select_columns.split('|').collect();
-  let csv_options = CsvOptions::new(&file_path);
+  let mut csv_options = CsvOptions::new(&path);
+  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -219,18 +222,17 @@ async fn apply_perform(
     None
   };
 
-  let mut rdr = csv::ReaderBuilder::new()
+  let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(&file_path)?);
-  let parent_path = Path::new(&file_path)
+    .from_reader(csv_options.skip_csv_rows()?);
+  let parent_path = &path
+    .as_ref()
     .parent()
     .map(|path| path.to_string_lossy())
     .unwrap();
-  let file_name = Path::new(&file_path).file_stem().unwrap().to_str().unwrap();
+  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{}/{}.apply.csv", parent_path, file_name);
-  let mut wtr = csv::WriterBuilder::new()
-    .delimiter(sep)
-    .from_path(output_path)?;
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   let headers = rdr.byte_headers()?;
 
@@ -330,7 +332,7 @@ async fn apply_perform(
     for _ in 0..batchsize {
       match rdr.read_record(&mut batch_record) {
         Ok(true) => batch.push(std::mem::take(&mut batch_record)),
-        Ok(false) => break, // nothing else to add to batch
+        Ok(false) => break,
         Err(err) => {
           return Err(anyhow!("Error reading file: {err}"));
         }
@@ -432,14 +434,18 @@ async fn apply_perform(
     }
 
     batch.clear();
-  } // end batch loop
+  }
 
   Ok(wtr.flush()?)
 }
 
 #[tauri::command]
-pub async fn get_apply_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  let csv_options = CsvOptions::new(file_path);
+pub async fn get_apply_headers(
+  path: String,
+  skip_rows: String,
+) -> Result<Vec<HashMap<String, String>>, String> {
+  let mut csv_options = CsvOptions::new(path);
+  csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
   match csv_options.map_headers().await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
@@ -448,7 +454,7 @@ pub async fn get_apply_headers(file_path: String) -> Result<Vec<HashMap<String, 
 
 #[tauri::command]
 pub async fn apply(
-  file_path: String,
+  path: String,
   select_columns: String,
   apply_mode: String,
   operations: String,
@@ -456,11 +462,12 @@ pub async fn apply(
   replacement: String,
   formatstr: String,
   new_column: bool,
+  skip_rows: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   match apply_perform(
-    file_path,
+    path,
     select_columns,
     apply_mode,
     operations.as_str(),
@@ -468,6 +475,7 @@ pub async fn apply(
     replacement,
     formatstr,
     new_column,
+    skip_rows,
   )
   .await
   {
