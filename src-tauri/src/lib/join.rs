@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, WriteBytesExt};
 
 use crate::index::Indexed;
-use crate::utils::{CsvOptions, get_same_headers, Selection};
+use crate::utils::{CsvOptions, Selection};
 
 type ByteString = Vec<u8>;
 
@@ -330,7 +330,8 @@ async fn run_join<P: AsRef<Path>>(
 
 #[tauri::command]
 pub async fn get_join_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_same_headers(file_path).await {
+  let csv_options = CsvOptions::new(file_path);
+  match csv_options.map_headers().await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }

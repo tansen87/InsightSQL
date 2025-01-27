@@ -3,7 +3,7 @@ use std::{borrow::Cow, collections::HashMap, fs::File, path::Path, time::Instant
 use anyhow::Result;
 use regex::bytes::RegexBuilder;
 
-use crate::utils::{get_same_headers, CsvOptions, Selection};
+use crate::utils::{CsvOptions, Selection};
 
 async fn regex_replace<P: AsRef<Path>>(
   path: P,
@@ -66,7 +66,8 @@ async fn regex_replace<P: AsRef<Path>>(
 pub async fn get_replace_headers(
   file_path: String,
 ) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_same_headers(file_path).await {
+  let csv_options = CsvOptions::new(file_path);
+  match csv_options.map_headers().await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }

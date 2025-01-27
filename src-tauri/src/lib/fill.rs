@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Insta
 
 use anyhow::Result;
 
-use crate::utils::{CsvOptions, get_same_headers, Selection};
+use crate::utils::{CsvOptions, Selection};
 
 async fn fill_values<P: AsRef<Path>>(
   path: P,
@@ -53,7 +53,8 @@ async fn fill_values<P: AsRef<Path>>(
 
 #[tauri::command]
 pub async fn get_fill_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_same_headers(path).await {
+  let csv_options = CsvOptions::new(&path);
+  match csv_options.map_headers().await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("get header error: {err}")),
   }

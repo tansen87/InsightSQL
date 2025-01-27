@@ -10,7 +10,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::utils::{get_same_headers, CsvOptions};
+use crate::utils::CsvOptions;
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -439,9 +439,10 @@ async fn apply_perform(
 
 #[tauri::command]
 pub async fn get_apply_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_same_headers(file_path).await {
+  let csv_options = CsvOptions::new(file_path);
+  match csv_options.map_headers().await {
     Ok(result) => Ok(result),
-    Err(err) => Err(format!("get_apply_header: {err}")),
+    Err(err) => Err(format!("get header error: {err}")),
   }
 }
 

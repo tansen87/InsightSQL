@@ -4,7 +4,7 @@ use anyhow::Result;
 use regex::bytes::RegexBuilder;
 use tauri::Emitter;
 
-use crate::utils::{get_same_headers, CsvOptions, Selection};
+use crate::utils::{CsvOptions, Selection};
 
 #[derive(Debug)]
 enum SearchMode {
@@ -142,14 +142,6 @@ async fn regex_search<P: AsRef<Path>>(
   .await
 }
 
-#[tauri::command]
-pub async fn get_search_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_same_headers(path).await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
-  }
-}
-
 async fn perform_search<P: AsRef<Path>>(
   path: P,
   select_column: String,
@@ -188,6 +180,15 @@ async fn perform_search<P: AsRef<Path>>(
 }
 
 #[tauri::command]
+pub async fn get_search_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  let csv_options = CsvOptions::new(path);
+  match csv_options.map_headers().await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("get header error: {err}")),
+  }
+}
+
+#[tauri::command]
 pub async fn search(
   path: String,
   select_column: String,
@@ -205,7 +206,7 @@ pub async fn search(
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       window
         .emit("runtime", format!("{elapsed_time:.2}"))
-        .unwrap();
+        .map_err(|e| e.to_string())?;
       Ok(result)
     }
     Err(err) => Err(format!("search failed: {err}")),
