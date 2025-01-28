@@ -13,9 +13,7 @@ import {
 } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const progress = ref(0);
-const selectedFiles = ref([]);
+const [isLoading, selectedFiles, progress] = [ref(false), ref([]), ref(0)];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -33,10 +31,20 @@ const { formHeight } = useDynamicFormHeight(134);
 listen("start_convert", (event: any) => {
   const startConvert: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(startConvert)) {
+    if (file.filename === startConvert) {
       file.status = "loading";
     }
   });
+});
+listen("behead_err", (event: any) => {
+  const beheadErr: string = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === beheadErr.split("|")[0]) {
+      file.status = "error";
+      file.errorMessage = beheadErr.split("|")[1];
+    }
+  });
+  isLoading.value = false;
 });
 listen("drop_progress", (event: any) => {
   const pgs: any = event.payload;
@@ -45,7 +53,7 @@ listen("drop_progress", (event: any) => {
 listen("drop_msg", (event: any) => {
   const dropMsg: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(dropMsg)) {
+    if (file.filename === dropMsg) {
       file.status = "completed";
     }
   });
@@ -53,7 +61,6 @@ listen("drop_msg", (event: any) => {
 
 async function selectFile() {
   selectedFiles.value = [];
-  isLoading.value = false;
   progress.value = 0;
 
   const selected = await open({
@@ -111,7 +118,7 @@ async function dropHeaders() {
   } catch (err) {
     ElNotification({
       title: "Behead failed",
-      message: err.match(/behead failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -128,6 +135,7 @@ async function dropHeaders() {
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -135,6 +143,7 @@ async function dropHeaders() {
             placeholder="skip rows"
           />
         </el-tooltip>
+
         <el-button
           @click="dropHeaders()"
           :loading="isLoading"
@@ -157,6 +166,7 @@ async function dropHeaders() {
       style="width: 100%"
       empty-text=""
     >
+      <el-table-column type="index" width="50" />
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column prop="status" label="status" width="100">
         <template #default="scope">
@@ -169,6 +179,19 @@ async function dropHeaders() {
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
             <CloseBold />
           </ElIcon>
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="errorMessage"
+        label="Info"
+        class-name="info-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 60%"
+      >
+        <template #default="scope">
+          <span v-if="scope.row.status === 'error'">
+            {{ scope.row.errorMessage }}
+          </span>
         </template>
       </el-table-column>
     </el-table>
