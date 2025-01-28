@@ -10,26 +10,25 @@ const isLoading = ref(false);
 const isPath1 = ref(false);
 const isPath2 = ref(false);
 const sel1 = ref("");
-const originalColumns1 = ref([]);
 const sel2 = ref("");
-const originalColumns2 = ref([]);
 const data = reactive({
   path1: "",
   path2: "",
   joinType: "left",
   nulls: false,
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"]
+  fileFormats: ["*"]
 });
+const tableHeader1 = ref([]);
+const tableHeader2 = ref([]);
 const tableColumn1 = ref([]);
-const tableData1 = ref([]);
 const tableColumn2 = ref([]);
+const tableData1 = ref([]);
 const tableData2 = ref([]);
 const { formHeight } = useDynamicFormHeight(215);
 
 async function selectFile(fileIndex) {
   const isPath = fileIndex === 1 ? isPath1 : isPath2;
-  const originalColumns: any =
-    fileIndex === 1 ? originalColumns1 : originalColumns2;
+  const tableHeader: any = fileIndex === 1 ? tableHeader1 : tableHeader2;
   const selectColumn = fileIndex === 1 ? sel1 : sel2;
   const tableColumn = fileIndex === 1 ? tableColumn1 : tableColumn2;
   const tableData = fileIndex === 1 ? tableData1 : tableData2;
@@ -37,7 +36,9 @@ async function selectFile(fileIndex) {
 
   isLoading.value = false;
   isPath.value = false;
-  originalColumns.value = [];
+  tableHeader.value = [];
+  tableColumn.value = [];
+  tableData.value = [];
   selectColumn.value = "";
 
   const selected = await open({
@@ -56,9 +57,6 @@ async function selectFile(fileIndex) {
   isPath.value = true;
 
   try {
-    const header = await invoke("get_join_headers", { filePath: data[path] });
-    originalColumns.value = header;
-
     const result: string = await invoke("query", {
       path: data[path],
       sqlQuery: "select * from _t_1 limit 10",
@@ -77,6 +75,10 @@ async function selectFile(fileIndex) {
 
     const jsonData = JSON.parse(result);
     const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
+    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
+      label: header,
+      value: header
+    }));
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -86,7 +88,7 @@ async function selectFile(fileIndex) {
   } catch (err) {
     ElNotification({
       title: "Open file error",
-      message: err.message,
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -139,8 +141,8 @@ async function joinData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Join Error",
-      message: err.toString(),
+      title: "Join failed",
+      message: err.match(/join failed: (.*)/)[1].toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -169,15 +171,8 @@ const viewFileName2 = computed(() => {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile(1)" :icon="FolderOpened" plain>
           File 1
         </el-button>
@@ -192,15 +187,8 @@ const viewFileName2 = computed(() => {
       </el-text>
     </div>
 
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="margin-top: 12px; display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2" style="margin-top: 12px">
         <el-tooltip content="column of file1" placement="top" effect="light">
           <el-select
             v-model="sel1"
@@ -209,13 +197,14 @@ const viewFileName2 = computed(() => {
             placeholder="column of file1"
           >
             <el-option
-              v-for="item in originalColumns1"
+              v-for="item in tableHeader1"
               :key="item.value"
               :label="item.label"
               :value="item.value"
             />
           </el-select>
         </el-tooltip>
+
         <el-tooltip content="column of file2" placement="top" effect="light">
           <el-select
             v-model="sel2"
@@ -224,13 +213,14 @@ const viewFileName2 = computed(() => {
             placeholder="column of file2"
           >
             <el-option
-              v-for="item in originalColumns2"
+              v-for="item in tableHeader2"
               :key="item.value"
               :label="item.label"
               :value="item.value"
             />
           </el-select>
         </el-tooltip>
+
         <el-tooltip
           content="When set true, joins will work on empty fields"
           placement="top"
@@ -241,6 +231,7 @@ const viewFileName2 = computed(() => {
             <el-option label="false" :value="false" />
           </el-select>
         </el-tooltip>
+
         <el-tooltip content="join type" placement="top" effect="light">
           <el-select
             v-model="data.joinType"
@@ -254,6 +245,7 @@ const viewFileName2 = computed(() => {
           </el-select>
         </el-tooltip>
       </div>
+
       <el-button
         @click="joinData()"
         :loading="isLoading"
@@ -264,8 +256,8 @@ const viewFileName2 = computed(() => {
         Join
       </el-button>
     </div>
+
     <div style="display: flex; justify-content: space-between">
-      <!-- 第一个文件的文本和表格 -->
       <div style="display: flex; flex-direction: column; width: 49%">
         <div style="margin-bottom: 10px">
           <el-text>
@@ -273,10 +265,10 @@ const viewFileName2 = computed(() => {
           </el-text>
         </div>
         <el-table
-          ref="tableRef1"
           :data="tableData1"
           :height="formHeight"
           border
+          empty-text=""
           style="width: 100%"
         >
           <el-table-column
@@ -288,7 +280,6 @@ const viewFileName2 = computed(() => {
         </el-table>
       </div>
 
-      <!-- 第二个文件的文本和表格 -->
       <div style="display: flex; flex-direction: column; width: 49%">
         <div style="margin-bottom: 10px">
           <el-text>
@@ -296,10 +287,10 @@ const viewFileName2 = computed(() => {
           </el-text>
         </div>
         <el-table
-          ref="tableRef2"
           :data="tableData2"
           :height="formHeight"
           border
+          empty-text=""
           style="width: 100%"
         >
           <el-table-column

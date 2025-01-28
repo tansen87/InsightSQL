@@ -8,6 +8,7 @@ use std::time::Instant;
 
 use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, WriteBytesExt};
+use csv::ReaderBuilder;
 
 use crate::index::Indexed;
 use crate::utils::{CsvOptions, Selection};
@@ -175,10 +176,10 @@ fn new_io_state<P: AsRef<Path>>(
     Some(separator) => separator as u8,
     None => b',',
   };
-  let mut rdr1 = csv::ReaderBuilder::new()
+  let mut rdr1 = ReaderBuilder::new()
     .delimiter(sep1)
     .from_reader(File::open(&path1)?);
-  let mut rdr2 = csv::ReaderBuilder::new()
+  let mut rdr2 = ReaderBuilder::new()
     .delimiter(sep2)
     .from_reader(File::open(&path2)?);
 
@@ -325,15 +326,6 @@ async fn run_join<P: AsRef<Path>>(
       "Unknown join type '{}'. Please pick one of 'left', 'right', 'full', 'cross', or 'inner'.",
       join_type
     )),
-  }
-}
-
-#[tauri::command]
-pub async fn get_join_headers(file_path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  let csv_options = CsvOptions::new(file_path);
-  match csv_options.map_headers().await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
   }
 }
 
