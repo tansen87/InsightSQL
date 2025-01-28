@@ -6,22 +6,33 @@ import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 
-const originalList = ref([]);
-const selectList = ref([]);
-const isLoading = ref(false);
-const isPath = ref(false);
+const [originalList, selectList, isLoading, isPath, searchText] = [
+  ref([]),
+  ref([]),
+  ref(false),
+  ref(false),
+  ref("")
+];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
   skipRows: "0"
 });
 
-// open file
+const filteredItems = computed(() => {
+  if (!searchText.value) {
+    return originalList.value;
+  }
+  return originalList.value.filter(item =>
+    item.name.toLowerCase().includes(searchText.value.toLowerCase())
+  );
+});
+
 async function selectFile() {
-  isLoading.value = false;
-  isPath.value = false;
   originalList.value = [];
   selectList.value = [];
+  isPath.value = false;
+  searchText.value = "";
 
   const selected = await open({
     multiple: false,
@@ -76,7 +87,7 @@ async function selectColumns() {
   }
   if (selectList.value.length === 0) {
     ElNotification({
-      title: "Column not defined",
+      title: "Column not found",
       message: "未选择columns",
       position: "bottom-right",
       type: "warning"
@@ -110,7 +121,7 @@ async function selectColumns() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Select Error",
+      title: "Select failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -123,20 +134,13 @@ async function selectColumns() {
 
 <template>
   <div class="flex flex-col">
-    <!-- Top section -->
     <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          width: 100%;
-        "
-      >
-        <div style="display: flex; align-items: center">
+      <div class="custom-container1">
+        <div class="custom-container2">
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
+
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
@@ -144,6 +148,7 @@ async function selectColumns() {
               placeholder="skip rows"
             />
           </el-tooltip>
+
           <el-button
             @click="selectColumns()"
             :loading="isLoading"
@@ -155,7 +160,6 @@ async function selectColumns() {
           </el-button>
         </div>
 
-        <!-- Title -->
         <el-text>
           <span v-if="isPath">{{ data.path }}</span>
           <span v-else>Select, re-order columns</span>
@@ -163,11 +167,16 @@ async function selectColumns() {
       </div>
     </el-form>
 
-    <!-- Middle and Bottom sections -->
+    <el-input
+      v-model="searchText"
+      style="margin-top: 12px"
+      placeholder="Type to search original headers"
+    />
+
     <div class="flex grow mt-4">
       <div class="w-full">
         <div class="text-center mb-2">Original Columns</div>
-        <el-form
+        <div
           class="flex-grow mr-4"
           style="display: flex; flex-direction: column; align-items: flex-start"
         >
@@ -179,18 +188,19 @@ async function selectColumns() {
             group="selectGroup"
           >
             <div
-              v-for="item in originalList"
+              v-for="item in filteredItems"
               :key="item.id"
               class="cursor-move h-30 bg-gray-500/5 rounded p-3"
             >
               {{ item.name }}
             </div>
           </VueDraggable>
-        </el-form>
+        </div>
       </div>
+
       <div class="w-full">
         <div class="text-center mb-2">Select Columns</div>
-        <el-form
+        <div
           class="flex-grow"
           style="display: flex; flex-direction: column; align-items: flex-start"
         >
@@ -209,7 +219,7 @@ async function selectColumns() {
               {{ item.name }}
             </div>
           </VueDraggable>
-        </el-form>
+        </div>
       </div>
     </div>
   </div>
