@@ -3,42 +3,16 @@ import { ref, reactive } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { appConfigDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 
-const isPath = ref(false);
-const isLoading = ref(false);
+const [isLoading, isPath] = [ref(false), ref(false)];
 const data = reactive({
   folderPath: ""
 });
 
-listen("traverse_err", (event: any) => {
-  const traverseErr: any = event.payload;
-  ElNotification({
-    title: "Traverse Error",
-    message: traverseErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-listen("traverse_write_err", (event: any) => {
-  const traverseWriteErr: any = event.payload;
-  ElNotification({
-    title: "Write Error",
-    message: traverseWriteErr,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-
 async function selectFolder() {
   isPath.value = false;
-  isLoading.value = false;
 
   const selected = await open({
     directory: true,
@@ -56,7 +30,7 @@ async function selectFolder() {
   isPath.value = true;
 }
 
-// traverse directory
+// invoke traverse
 async function traverseDirectory() {
   if (data.folderPath === "") {
     ElNotification({
@@ -85,32 +59,39 @@ async function traverseDirectory() {
 
   isLoading.value = true;
 
-  await invoke("traverse", {
-    folderPath: data.folderPath,
-    output: output
-  });
+  try {
+    const result: string = await invoke("traverse", {
+      folderPath: data.folderPath,
+      output: output
+    });
 
+    if (JSON.stringify(result).startsWith("traverse failed:")) {
+      throw JSON.stringify(result).toString();
+    }
+
+    ElNotification({
+      message: result,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Traverse failed",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
   isLoading.value = false;
-  ElNotification({
-    message: "Traverse done.",
-    position: "bottom-right",
-    type: "success",
-    duration: 10000
-  });
 }
 </script>
 
 <template>
   <el-form class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFolder()" :icon="FolderOpened" plain>
           Open Folder
         </el-button>
