@@ -18,10 +18,8 @@ interface FileStatus {
   filename: string;
   status: string;
 }
-const selectedFiles = ref([]);
-const isLoading = ref(false);
-const progress = ref(0);
-const tableRef = ref(null);
+
+const [selectedFiles, isLoading, progress] = [ref([]), ref(false), ref(0)];
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -38,7 +36,7 @@ const filterFileStatus = (
   return row[property] === value;
 };
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
   skipRows: "0"
 });
@@ -77,9 +75,7 @@ listen("e2c_progress", (event: any) => {
   progress.value = pgs;
 });
 
-// open file
 async function selectFile() {
-  isLoading.value = false;
   selectedFiles.value = [];
   progress.value = 0;
 
@@ -93,7 +89,7 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
       return { filename: shortFileName(file), status: "" };
@@ -101,13 +97,13 @@ async function selectFile() {
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 }
 
-// convert excel to csv
+// invoke switch_excel
 async function excelToCsv() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择Excel文件",
@@ -121,7 +117,7 @@ async function excelToCsv() {
 
   try {
     const result: string = await invoke("switch_excel", {
-      path: data.filePath,
+      path: data.path,
       skipRows: data.skipRows
     });
 
@@ -137,7 +133,7 @@ async function excelToCsv() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke switch_excel Error",
+      title: "Excel to csv failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -150,44 +146,39 @@ async function excelToCsv() {
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          position: sticky;
-        "
-      >
-        <el-form-item>
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
-            Open File
-          </el-button>
-          <el-tooltip content="skip rows" placement="top" effect="light">
-            <el-input
-              v-model="data.skipRows"
-              style="margin-left: 10px; margin-right: 10px; width: 80px"
-              placeholder="skip rows"
-            />
-          </el-tooltip>
-          <el-button
-            @click="excelToCsv()"
-            :loading="isLoading"
-            :icon="SwitchFilled"
-            plain
-          >
-            Convert
-          </el-button>
-        </el-form-item>
-        <el-text> Batch convert excel to csv </el-text>
-      </div>
-    </el-form>
+    <div class="custom-container1">
+      <el-form-item>
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          Open File
+        </el-button>
+
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; margin-right: 10px; width: 80px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
+
+        <el-button
+          @click="excelToCsv()"
+          :loading="isLoading"
+          :icon="SwitchFilled"
+          plain
+        >
+          Convert
+        </el-button>
+      </el-form-item>
+
+      <el-text> Batch convert excel to csv </el-text>
+    </div>
+
     <el-table
-      ref="tableRef"
       :data="selectedFiles"
       :height="formHeight"
       style="width: 100%"
       show-overflow-tooltip
+      empty-text=""
     >
       <el-table-column type="index" width="50" />
       <el-table-column
