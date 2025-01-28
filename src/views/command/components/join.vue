@@ -6,11 +6,31 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath1 = ref(false);
-const isPath2 = ref(false);
-const sel1 = ref("");
-const sel2 = ref("");
+const [
+  isLoading,
+  isPath1,
+  isPath2,
+  sel1,
+  sel2,
+  tableHeader1,
+  tableHeader2,
+  tableColumn1,
+  tableColumn2,
+  tableData1,
+  tableData2
+] = [
+  ref(false),
+  ref(false),
+  ref(false),
+  ref(""),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path1: "",
   path2: "",
@@ -18,28 +38,22 @@ const data = reactive({
   nulls: false,
   fileFormats: ["*"]
 });
-const tableHeader1 = ref([]);
-const tableHeader2 = ref([]);
-const tableColumn1 = ref([]);
-const tableColumn2 = ref([]);
-const tableData1 = ref([]);
-const tableData2 = ref([]);
+
 const { formHeight } = useDynamicFormHeight(215);
 
 async function selectFile(fileIndex) {
   const isPath = fileIndex === 1 ? isPath1 : isPath2;
-  const tableHeader: any = fileIndex === 1 ? tableHeader1 : tableHeader2;
   const selectColumn = fileIndex === 1 ? sel1 : sel2;
+  const tableHeader: any = fileIndex === 1 ? tableHeader1 : tableHeader2;
   const tableColumn = fileIndex === 1 ? tableColumn1 : tableColumn2;
   const tableData = fileIndex === 1 ? tableData1 : tableData2;
   const path = fileIndex === 1 ? "path1" : "path2";
 
-  isLoading.value = false;
   isPath.value = false;
+  selectColumn.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
-  selectColumn.value = "";
 
   const selected = await open({
     multiple: false,
@@ -142,7 +156,7 @@ async function joinData() {
   } catch (err) {
     ElNotification({
       title: "Join failed",
-      message: err.match(/join failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
