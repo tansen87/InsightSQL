@@ -26,7 +26,12 @@ async fn test_select() -> Result<()> {
 
   let cols = "name|age".to_string();
 
-  public_select(file_path.to_str().unwrap().to_string(), cols).await?;
+  public_select(
+    file_path.to_str().unwrap().to_string(),
+    cols,
+    "0".to_string(),
+  )
+  .await?;
 
   // 检查输出文件是否正确生成
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
