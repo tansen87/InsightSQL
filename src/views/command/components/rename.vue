@@ -6,14 +6,15 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const tableData: any = ref([]);
-const isLoading = ref(false);
-const isPath = ref(false);
-const search = ref("");
-const tableRef = ref(null);
+const [tableData, isLoading, isPath, search] = [
+  ref([]),
+  ref(false),
+  ref(false),
+  ref("")
+];
 const data = reactive({
   path: "",
-  fileFormats: ["csv", "txt", "tsv", "spext", "dat"],
+  fileFormats: ["*"],
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(134);
@@ -25,11 +26,10 @@ const filterTableData = computed(() =>
   )
 );
 
-// open file
 async function selectFile() {
   tableData.value = [];
-  isLoading.value = false;
   isPath.value = false;
+  search.value = "";
 
   const selected = await open({
     multiple: false,
@@ -114,7 +114,7 @@ async function renameData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke rename error",
+      title: "Rename failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -132,18 +132,12 @@ async function headerEdit(row: any) {
 <template>
   <el-form class="page-container" :style="formHeight">
     <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          position: sticky;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
+      <div class="custom-container1">
+        <div class="custom-container2">
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
+
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
@@ -151,6 +145,7 @@ async function headerEdit(row: any) {
               placeholder="skip rows"
             />
           </el-tooltip>
+
           <el-button
             @click="renameData()"
             :loading="isLoading"
@@ -167,11 +162,12 @@ async function headerEdit(row: any) {
           <span v-else>Rename the columns of a CSV</span>
         </el-text>
       </div>
+
       <el-table
-        ref="tableRef"
         :data="filterTableData"
         :height="formHeight"
         style="width: 100%"
+        empty-text=""
       >
         <el-table-column prop="col1" label="headers" style="width: 50%" />
         <el-table-column prop="col2" label="new headers" width="300">
