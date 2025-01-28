@@ -1,4 +1,7 @@
-use std::{path::PathBuf, time::Instant};
+use std::{
+  path::{Path, PathBuf},
+  time::Instant,
+};
 
 use anyhow::{anyhow, Result};
 use calamine::{Data, HeaderRow, Range, Reader};
@@ -10,18 +13,15 @@ use polars::{
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 
-use crate::{
-  utils::CsvOptions,
-  xlsx_writer::XlsxWriter,
-};
+use crate::{utils::CsvOptions, xlsx_writer::XlsxWriter};
 
 async fn excel_to_csv(path: String, skip_rows: String, window: tauri::Window) -> Result<()> {
   /* convert excel to csv */
-  let vec_path: Vec<&str> = path.split('|').collect();
+  let paths: Vec<&str> = path.split('|').collect();
   let mut count: usize = 0;
-  let file_len = vec_path.len();
+  let file_len = paths.len();
 
-  for file in vec_path.iter() {
+  for file in paths.iter() {
     window.emit("start_convert", file)?;
 
     let sce = PathBuf::from(file);
@@ -188,9 +188,7 @@ async fn csv_to_xlsx(
   let row_count = CsvOptions::new(file).count_csv_rows()?;
 
   if row_count >= 104_0000 {
-    return Err(anyhow!(
-      "{file}|{row_count} rows exceed the maximum row in Excel"
-    ));
+    return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
   }
 
   if use_polars {
@@ -226,12 +224,18 @@ pub async fn switch_csv(
 ) -> Result<String, String> {
   let start_time = Instant::now();
   let mut count: usize = 0;
-  let vec_path: Vec<&str> = path.split('|').collect();
-  let file_len = vec_path.len();
+  let paths: Vec<&str> = path.split('|').collect();
+  let file_len = paths.len();
 
-  for file in vec_path.iter() {
+  for file in paths.iter() {
+    let filename = Path::new(file)
+      .file_name()
+      .unwrap()
+      .to_str()
+      .unwrap()
+      .to_string();
     window
-      .emit("start_convert", file)
+      .emit("start_convert", &filename)
       .map_err(|e| e.to_string())?;
     let mut csv_options = CsvOptions::new(file);
     csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
@@ -249,12 +253,13 @@ pub async fn switch_csv(
         window
           .emit("c2x_progress", format!("{progress:.0}"))
           .map_err(|e| e.to_string())?;
-        window.emit("c2x_msg", file).map_err(|e| e.to_string())?;
+        window
+          .emit("c2x_msg", &filename)
+          .map_err(|e| e.to_string())?;
       }
       Err(err) => {
-        eprintln!("{}", format!("{file}|{err}"));
         window
-          .emit("rows_err", format!("{file}|{err}"))
+          .emit("rows_err", format!("{}|{err}", &filename))
           .map_err(|e| e.to_string())?;
         continue;
       }

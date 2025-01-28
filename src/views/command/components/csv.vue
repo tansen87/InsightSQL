@@ -18,10 +18,6 @@ interface FileStatus {
   status: string;
 }
 
-const isLoading = ref(false);
-const progress = ref(0);
-const selectedFiles = ref([]);
-const tableRef = ref(null);
 const customColors = [
   { color: "#98FB98", percentage: 20 },
   { color: "#7CFC00", percentage: 40 },
@@ -37,8 +33,9 @@ const filterFileStatus = (
   const property = column["property"];
   return row[property] === value;
 };
+const [isLoading, progress, selectedFiles] = [ref(false), ref(0), ref([])];
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["*"],
   skipRows: "0",
   mode: "Polars"
@@ -48,7 +45,7 @@ const { formHeight } = useDynamicFormHeight(134);
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(startConvert)) {
+    if (file.filename === startConvert) {
       file.status = "loading";
     }
   });
@@ -58,13 +55,11 @@ listen("c2x_progress", (event: any) => {
   progress.value = pgs;
 });
 listen("rows_err", (event: any) => {
-  const csvRowsErr: any = event.payload;
-  const basename = shortFileName(csvRowsErr.split("|")[0]);
-  const errorDetails = csvRowsErr.split("|")[1];
+  const csvRowsErr: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === basename) {
+    if (file.filename === csvRowsErr.split("|")[0]) {
       file.status = "error";
-      file.errorMessage = errorDetails;
+      file.errorMessage = csvRowsErr.split("|")[1];
     }
   });
   isLoading.value = false;
@@ -72,13 +67,12 @@ listen("rows_err", (event: any) => {
 listen("c2x_msg", (event: any) => {
   const c2xMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(c2xMsg)) {
+    if (file.filename === c2xMsg) {
       file.status = "completed";
     }
   });
 });
 
-// open file
 async function selectFile() {
   selectedFiles.value = [];
   isLoading.value = false;
@@ -94,7 +88,7 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
       return { filename: shortFileName(file), status: "" };
@@ -102,13 +96,13 @@ async function selectFile() {
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 }
 
 // invoke switch_csv
 async function csvToxlsx() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -122,7 +116,7 @@ async function csvToxlsx() {
 
   try {
     const result: string = await invoke("switch_csv", {
-      path: data.filePath,
+      path: data.path,
       skipRows: data.skipRows,
       mode: data.mode
     });
@@ -139,7 +133,7 @@ async function csvToxlsx() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke switch_csv Error",
+      title: "Csv to xlsx failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -152,57 +146,51 @@ async function csvToxlsx() {
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
-            Open File
-          </el-button>
-          <el-tooltip
-            content="Polars or Csv engine"
-            placement="top"
-            effect="light"
-          >
-            <el-select
-              v-model="data.mode"
-              style="margin-left: 10px; width: 85px"
-            >
-              <el-option label="Polars" value="polars" />
-              <el-option label="Csv" value="csv" />
-            </el-select>
-          </el-tooltip>
-          <el-tooltip content="skip rows" placement="top" effect="light">
-            <el-input
-              v-model="data.skipRows"
-              style="margin-left: 10px; width: 80px"
-              placeholder="skip rows"
-            />
-          </el-tooltip>
-          <el-button
-            @click="csvToxlsx()"
-            :loading="isLoading"
-            :icon="SwitchFilled"
-            plain
-            style="margin-left: 10px"
-          >
-            Convert
-          </el-button>
-        </div>
-        <el-text> Batch convert csv to xlsx </el-text>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          Open File
+        </el-button>
+
+        <el-tooltip
+          content="Polars or Csv engine"
+          placement="top"
+          effect="light"
+        >
+          <el-select v-model="data.mode" style="margin-left: 10px; width: 85px">
+            <el-option label="Polars" value="polars" />
+            <el-option label="Csv" value="csv" />
+          </el-select>
+        </el-tooltip>
+
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 80px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
+
+        <el-button
+          @click="csvToxlsx()"
+          :loading="isLoading"
+          :icon="SwitchFilled"
+          plain
+          style="margin-left: 10px"
+        >
+          Convert
+        </el-button>
       </div>
-    </el-form>
+
+      <el-text> Batch convert csv to xlsx </el-text>
+    </div>
+
     <el-table
-      ref="tableRef"
       :data="selectedFiles"
       :height="formHeight"
       style="width: 100%"
       show-overflow-tooltip
+      empty-text=""
     >
       <el-table-column type="index" width="50" />
       <el-table-column
@@ -244,9 +232,9 @@ async function csvToxlsx() {
         style="flex: 0 0 60%"
       >
         <template #default="scope">
-          <span v-if="scope.row.status === 'error'">{{
-            scope.row.errorMessage
-          }}</span>
+          <span v-if="scope.row.status === 'error'">
+            {{ scope.row.errorMessage }}
+          </span>
         </template>
       </el-table-column>
     </el-table>
