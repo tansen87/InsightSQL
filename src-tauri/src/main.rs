@@ -64,7 +64,6 @@ fn main() {
       enumerate::enumer,
       pinyin::pinyin,
       replace::replace,
-      apply::get_apply_headers,
       apply::apply,
     ])
     .run(tauri::generate_context!())

@@ -6,11 +6,15 @@ import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath = ref(false);
-const selectColumns = ref([]);
-const operations = ref([]);
-const originalColumns = ref([]);
+const [
+  isLoading,
+  isPath,
+  selectColumns,
+  operations,
+  tableHeader,
+  tableColumn,
+  tableData
+] = [ref(false), ref(false), ref([]), ref([]), ref([]), ref([]), ref([])];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -21,16 +25,16 @@ const data = reactive({
   newColumn: false,
   skipRows: "0"
 });
-const tableColumn = ref([]);
-const tableData = ref([]);
-const tableRef = ref(null);
 const { formHeight } = useDynamicFormHeight(278);
 
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
-  originalColumns.value = [];
   selectColumns.value = [];
+  operations.value = [];
+  tableHeader.value = [];
+  tableColumn.value = [];
+  tableData.value = [];
 
   const selected = await open({
     multiple: false,
@@ -51,12 +55,6 @@ async function selectFile() {
   isPath.value = true;
 
   try {
-    const header: string[] = await invoke("get_apply_headers", {
-      path: data.path,
-      skipRows: data.skipRows
-    });
-    originalColumns.value = header;
-
     const result: string = await invoke("query", {
       path: data.path,
       sqlQuery: "select * from _t_1 limit 10",
@@ -74,8 +72,11 @@ async function selectFile() {
     }
 
     const jsonData = JSON.parse(result);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
+    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
+      label: header,
+      value: header
+    }));
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -93,7 +94,7 @@ async function selectFile() {
   }
 }
 
-// apply function
+// invoke apply
 async function applyData() {
   if (data.path === "") {
     ElNotification({
@@ -141,7 +142,7 @@ async function applyData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Apply Error",
+      title: "Apply failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -154,18 +155,12 @@ async function applyData() {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -182,6 +177,7 @@ async function applyData() {
         </span>
       </el-text>
     </div>
+
     <el-select
       v-model="selectColumns"
       filterable
@@ -190,12 +186,13 @@ async function applyData() {
       style="width: 100%; margin-top: 12px"
     >
       <el-option
-        v-for="item in originalColumns"
+        v-for="item in tableHeader"
         :key="item.value"
         :label="item.label"
         :value="item.value"
       />
     </el-select>
+
     <el-select
       v-model="operations"
       filterable
@@ -214,16 +211,9 @@ async function applyData() {
       <el-option label="Round" value="round" />
       <el-option label="Squeeze" value="squeeze" />
     </el-select>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
+
+    <div class="custom-container1">
       <div style="width: 90%; display: flex; align-items: center">
-        <!-- 这里的内容保持不变 -->
         <div style="flex: 1; margin-top: 12px">
           <el-tooltip content="apply mode" placement="bottom" effect="light">
             <el-select v-model="data.applyMode" style="width: 100%">
@@ -233,6 +223,7 @@ async function applyData() {
             </el-select>
           </el-tooltip>
         </div>
+
         <div style="flex: 1; margin-left: 5px; margin-top: 12px">
           <el-tooltip
             content="replace - from"
@@ -247,6 +238,7 @@ async function applyData() {
             />
           </el-tooltip>
         </div>
+
         <div style="flex: 1; margin-left: 5px; margin-top: 12px">
           <el-tooltip content="replace - to" placement="bottom" effect="light">
             <el-input
@@ -257,6 +249,7 @@ async function applyData() {
             />
           </el-tooltip>
         </div>
+
         <div style="flex: 3; margin-left: 5px; margin-top: 12px">
           <el-tooltip content="formatstr" placement="bottom" effect="light">
             <el-input
@@ -267,6 +260,7 @@ async function applyData() {
             />
           </el-tooltip>
         </div>
+
         <div style="flex: 1; margin-left: 5px">
           <el-switch
             v-model="data.newColumn"
@@ -296,19 +290,13 @@ async function applyData() {
         </el-button>
       </div>
     </div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
+
+    <div class="custom-container1">
       <el-table
-        ref="tableRef"
         :data="tableData"
         :height="formHeight"
         border
+        empty-text=""
         style="margin-top: 12px; width: 100%"
       >
         <el-table-column
