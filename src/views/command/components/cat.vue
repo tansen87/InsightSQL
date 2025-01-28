@@ -6,13 +6,8 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Connection, Check } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
-const columns = ref("");
-const selectedFiles = ref([]);
-const originalColumns = ref([]);
-const isLoading = ref(false);
-const completed = ref(false);
-const result = ref(null);
-const tableRef = ref(null);
+const [columns, selectedFiles, originalColumns, isLoading, completed, result] =
+  [ref(""), ref([]), ref([]), ref(false), ref(false), ref(null)];
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
@@ -22,12 +17,11 @@ const data = reactive({
 });
 const { formHeight } = useDynamicFormHeight(181);
 
-// open file
 async function selectFile() {
-  selectedFiles.value = [];
-  completed.value = false;
-  originalColumns.value = [];
   columns.value = "";
+  selectedFiles.value = [];
+  originalColumns.value = [];
+  completed.value = false;
   const selected = await open({
     multiple: true,
     filters: [
@@ -64,7 +58,7 @@ async function selectFile() {
   }));
 }
 
-// data concat
+// invoke concat
 async function concatData() {
   if (data.filePath === "") {
     ElNotification({
@@ -118,7 +112,7 @@ async function concatData() {
     completed.value = true;
   } catch (err) {
     ElNotification({
-      title: "Invoke cat error",
+      title: "Cat failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -132,17 +126,12 @@ async function concatData() {
 <template>
   <el-form class="page-container" :style="formHeight">
     <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
+      <div class="custom-container1">
+        <div class="custom-container2">
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
+
           <el-tooltip
             content="Polars memory or stream, Csv stream Cat"
             placement="top"
@@ -157,6 +146,7 @@ async function concatData() {
               <el-option label="Csv" value="csv" />
             </el-select>
           </el-tooltip>
+
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
@@ -164,6 +154,7 @@ async function concatData() {
               placeholder="skip rows"
             />
           </el-tooltip>
+
           <el-button
             @click="concatData()"
             :loading="isLoading"
@@ -174,6 +165,7 @@ async function concatData() {
             Cat
           </el-button>
         </div>
+
         <el-text>
           <span v-if="completed">
             <el-icon color="green" style="margin-right: 2px">
@@ -185,6 +177,7 @@ async function concatData() {
         </el-text>
       </div>
     </el-form>
+
     <el-select
       v-model="columns"
       multiple
@@ -199,10 +192,12 @@ async function concatData() {
         :value="item.value"
       />
     </el-select>
+
     <el-table
       ref="tableRef"
       :data="selectedFiles"
       :height="formHeight"
+      empty-text=""
       style="width: 100%"
     >
       <el-table-column type="index" width="50" />
