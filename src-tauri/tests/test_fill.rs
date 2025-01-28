@@ -11,8 +11,8 @@ async fn test_fill() -> Result<()> {
   let temp_dir = TempDir::new()?;
 
   let data = vec![
-    "name,age,gender",
     "Tom,,",
+    "name,age,gender",
     "Jerry,19,",
     "Patrick,4,male",
     "Sandy,24,female",
@@ -31,6 +31,7 @@ async fn test_fill() -> Result<()> {
     file_path.to_str().unwrap().to_string(),
     fill_column,
     fill_value,
+    "1".to_string(),
   )
   .await?;
 
@@ -39,10 +40,9 @@ async fn test_fill() -> Result<()> {
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 
-  let content = fs::read_to_string(output_path)?;
+  let fill_data = fs::read_to_string(output_path)?;
   let expected_data = vec![
     "name,age,gender",
-    "Tom,unknown,unknown",
     "Jerry,19,unknown",
     "Patrick,4,male",
     "Sandy,24,female",
@@ -50,9 +50,8 @@ async fn test_fill() -> Result<()> {
   .join("\n")
     + "\n";
 
-  assert_eq!(content, expected_data);
+  assert_eq!(fill_data, expected_data);
 
-  // 清理临时目录
   drop(file_path);
   temp_dir.close()?;
 

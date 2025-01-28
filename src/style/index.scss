@@ -25,3 +25,13 @@
   border-radius: 5px;
   background-color: #fff;
 }
+.custom-container1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: sticky;
+}
+.custom-container2 {
+  display: flex;
+  align-items: flex-start;
+}

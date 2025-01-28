@@ -2,14 +2,12 @@
 import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { Search, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const isPath = ref(false);
-const runtime = ref(0.0);
 const columns = ref("");
 const originalColumns = ref([]);
 const tableColumn = ref([]);
@@ -23,10 +21,6 @@ const data = reactive({
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(233);
-
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
 
 async function selectFile() {
   isLoading.value = false;
