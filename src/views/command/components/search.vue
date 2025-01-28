@@ -6,13 +6,14 @@ import { ElNotification } from "element-plus";
 import { Search, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath = ref(false);
-const columns = ref("");
-const originalColumns = ref([]);
-const tableColumn = ref([]);
-const tableData = ref([]);
-const tableRef = ref(null);
+const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -23,10 +24,11 @@ const data = reactive({
 const { formHeight } = useDynamicFormHeight(233);
 
 async function selectFile() {
-  isLoading.value = false;
   isPath.value = false;
-  originalColumns.value = [];
   columns.value = "";
+  tableHeader.value = [];
+  tableColumn.value = [];
+  tableData.value = [];
 
   const selected = await open({
     multiple: false,
@@ -46,12 +48,6 @@ async function selectFile() {
   }
   isPath.value = true;
 
-  const header: string[] = await invoke("get_search_headers", {
-    path: data.path,
-    skipRows: data.skipRows
-  });
-  originalColumns.value = header;
-
   try {
     const result: string = await invoke("query", {
       path: data.path,
@@ -70,8 +66,11 @@ async function selectFile() {
     }
 
     const jsonData = JSON.parse(result);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
+    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
+      label: header,
+      value: header
+    }));
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -137,7 +136,7 @@ async function searchData() {
   } catch (err) {
     ElNotification({
       title: "Search failed",
-      message: err.match(/search failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -149,18 +148,12 @@ async function searchData() {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -176,15 +169,8 @@ async function searchData() {
       </el-text>
     </div>
 
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="margin-top: 12px; display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2" style="margin-top: 12px">
         <el-tooltip content="Search mode" placement="bottom" effect="light">
           <el-select v-model="data.mode" style="width: 112px">
             <el-option label="equal" value="equal" />
@@ -193,6 +179,7 @@ async function searchData() {
             <el-option label="regex" value="regex" />
           </el-select>
         </el-tooltip>
+
         <el-select
           v-model="columns"
           filterable
@@ -200,13 +187,14 @@ async function searchData() {
           placeholder="Search by column"
         >
           <el-option
-            v-for="item in originalColumns"
+            v-for="item in tableHeader"
             :key="item.value"
             :label="item.label"
             :value="item.value"
           />
         </el-select>
       </div>
+
       <el-button
         @click="searchData()"
         :loading="isLoading"
@@ -217,6 +205,7 @@ async function searchData() {
         Search
       </el-button>
     </div>
+
     <div style="margin-top: 12px">
       <el-input
         v-model="data.condition"
@@ -225,28 +214,20 @@ async function searchData() {
         placeholder="Search rows with text...Example: tom|jack|world"
       />
     </div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
+
+    <el-table
+      :data="tableData"
+      :height="formHeight"
+      border
+      empty-text=""
+      style="margin-top: 12px; width: 100%"
     >
-      <el-table
-        ref="tableRef"
-        :data="tableData"
-        :height="formHeight"
-        border
-        style="margin-top: 12px; width: 100%"
-      >
-        <el-table-column
-          v-for="column in tableColumn"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
-        />
-      </el-table>
-    </div>
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
   </div>
 </template>
