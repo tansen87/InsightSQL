@@ -2,42 +2,21 @@
 import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const tableData: any = ref([]);
-const selectedFiles = ref([]);
-const runtime = ref(0.0);
-const isLoading = ref(false);
-const tableRef = ref(null);
+const [isLoading, selectedFiles, tableData] = [ref(false), ref([]), ref([])];
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["*"],
   sep: "_"
 });
 const { formHeight } = useDynamicFormHeight(134);
 
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-listen("modify_err", (event: any) => {
-  const modifyError = event.payload;
-  ElNotification({
-    title: "Modify Error",
-    message: modifyError,
-    position: "bottom-right",
-    type: "error",
-    duration: 10000
-  });
-  isLoading.value = false;
-});
-
-// open file
 async function selectFile() {
+  selectedFiles.value = [];
   tableData.value = [];
-  isLoading.value = false;
 
   const selected = await open({
     multiple: true,
@@ -49,12 +28,12 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
     selectedFiles.value = selected.map(file => file.match(/[^\\/]+$/)[0]);
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 
   for (let i = 0; i < selectedFiles.value.length; i++) {
@@ -71,9 +50,9 @@ async function selectFile() {
   }
 }
 
-// modify filename
+// invoke modify
 async function modifyFilename() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择文件",
@@ -90,18 +69,32 @@ async function modifyFilename() {
 
   isLoading.value = true;
 
-  await invoke("modify", {
-    filePath: data.filePath,
-    fileName: filename
-  });
+  try {
+    const result: string = await invoke("modify", {
+      path: data.path,
+      fileName: filename
+    });
 
+    if (JSON.stringify(result).startsWith("modify failed:")) {
+      throw JSON.stringify(result).toString();
+    }
+
+    ElNotification({
+      message: `Modify done, elapsed time: ${result} s`,
+      position: "bottom-right",
+      type: "success",
+      duration: 10000
+    });
+  } catch (err) {
+    ElNotification({
+      title: "Modify failed",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
   isLoading.value = false;
-  ElNotification({
-    message: `Modify done, elapsed time: ${runtime.value} s`,
-    position: "bottom-right",
-    type: "success",
-    duration: 10000
-  });
 }
 
 // 同步编辑文件名
@@ -197,11 +190,9 @@ function filenameEdit(editedRow) {
 
 function splitFilename(filename) {
   const lastIndex = filename.lastIndexOf(".");
-
   if (lastIndex <= 0) {
     return { baseName: filename, extension: "" };
   }
-
   const baseName = filename.substring(0, lastIndex);
   const extension = filename.substring(lastIndex + 1);
 
@@ -212,15 +203,8 @@ function splitFilename(filename) {
 <template>
   <el-form class="page-container" :style="formHeight">
     <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          position: sticky;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
+      <div class="custom-container1">
+        <div class="custom-container2">
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
@@ -250,11 +234,12 @@ function splitFilename(filename) {
           <span>Batch modify filenames</span>
         </el-text>
       </div>
+
       <el-table
-        ref="tableRef"
         :data="tableData"
         :height="formHeight"
         style="width: 100%"
+        empty-text=""
       >
         <el-table-column prop="col1" label="filename" style="width: 50%" />
         <el-table-column prop="col2" label="new filename" style="width: 50%">
