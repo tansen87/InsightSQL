@@ -17,13 +17,12 @@ const isLoading = ref(false);
 const viewTable = ref(false);
 const runtime = ref(0.0);
 const counter = ref(0);
-const tableRef = ref(null);
 const tables = ref([]);
 const isDataLoaded = ref(false);
 const headersByFile = reactive({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["*"],
   write: false,
   writeFormat: "csv",
@@ -73,12 +72,12 @@ const queryViewData = async () => {
   }
 };
 
-// query data
+// invoke query
 async function queryData() {
   columns.value = [];
   tableData.value = [];
 
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择CSV, Excel or Parquet文件",
@@ -101,7 +100,7 @@ async function queryData() {
 
   try {
     const df: string = await invoke("query", {
-      path: data.filePath,
+      path: data.path,
       sqlQuery: sqlQuery.value,
       write: data.write,
       writeFormat: data.writeFormat,
@@ -160,8 +159,7 @@ async function selectFile() {
   columns.value = [];
   treeHeaders.value = [];
   tableData.value = [];
-  data.filePath = "";
-  isLoading.value = false;
+  data.path = "";
   viewTable.value = false;
 
   const selected = await open({
@@ -174,16 +172,16 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 
   // 使用 Promise.all 并行处理每个文件
   await Promise.all(
-    data.filePath.split("|").map(async (path, index) => {
+    data.path.split("|").map(async (path, index) => {
       const basename = viewFileName.value[index];
       try {
         const result: any = await invoke("query", {
@@ -238,7 +236,7 @@ async function selectFile() {
 
 // 处理文件路径，提取文件名
 const viewFileName = computed(() => {
-  const paths = data.filePath.split("|");
+  const paths = data.path.split("|");
   return paths.map(path => {
     const pathParts = path.split(/[/\\]/); // 使用正则表达式匹配 / 或 \
     let fileName = pathParts[pathParts.length - 1]; // 获取文件名
@@ -322,14 +320,8 @@ watch(
 <template>
   <el-form class="page-container">
     <el-form :style="{ height: formHeight + 'px' }">
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
+      <div class="custom-container1">
+        <div class="custom-container2">
           <el-button @click="selectViewFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
@@ -353,6 +345,7 @@ watch(
             </el-tooltip>
           </el-form-item>
         </div>
+
         <el-button @click="viewTable = true" :icon="View" plain>
           View
         </el-button>
@@ -455,9 +448,9 @@ watch(
     >
       <el-scrollbar :height="formHeight * 0.8">
         <el-table
-          ref="tableRef"
           :data="tableData"
           border
+          empty-text=""
           style="width: 100%"
           :height="formHeight * 0.8"
         >
