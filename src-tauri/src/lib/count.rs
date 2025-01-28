@@ -59,3 +59,8 @@ pub async fn count(path: String, window: Window) -> Result<String, String> {
   let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
   Ok(format!("{:.2}", elapsed_time))
 }
+
+/// for integration test
+pub async fn public_count(path: String) -> Result<u64> {
+  count_rows(path).await
+}
