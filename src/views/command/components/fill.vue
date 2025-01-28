@@ -6,13 +6,14 @@ import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath = ref(false);
-const columns = ref("");
-const originalColumns = ref([]);
-const tableColumn = ref([]);
-const tableData = ref([]);
-const tableRef = ref(null);
+const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -22,8 +23,11 @@ const data = reactive({
 const { formHeight } = useDynamicFormHeight(234);
 
 async function selectFile() {
-  isLoading.value = false;
   isPath.value = false;
+  columns.value = "";
+  tableHeader.value = [];
+  tableColumn.value = [];
+  tableData.value = [];
 
   const selected = await open({
     multiple: false,
@@ -44,15 +48,6 @@ async function selectFile() {
   isPath.value = true;
 
   try {
-    const headers: string[] = await invoke("get_fill_headers", {
-      path: data.path,
-      skipRows: data.skipRows
-    });
-    if (JSON.stringify(headers).startsWith("get header error:")) {
-      throw JSON.stringify(headers).toString();
-    }
-    originalColumns.value = headers;
-
     const result: string = await invoke("query", {
       path: data.path,
       sqlQuery: "select * from _t_1 limit 10",
@@ -70,8 +65,11 @@ async function selectFile() {
     }
 
     const jsonData = JSON.parse(result);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
+    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
+      label: header,
+      value: header
+    }));
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -135,7 +133,7 @@ async function fillData() {
   } catch (err) {
     ElNotification({
       title: "Fill failed",
-      message: err.match(/fill failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -152,6 +150,7 @@ async function fillData() {
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -172,15 +171,16 @@ async function fillData() {
       multiple
       filterable
       style="margin-top: 12px; width: 100%"
-      placeholder="please choose columns"
+      placeholder="Select the columns to be filled in"
     >
       <el-option
-        v-for="item in originalColumns"
+        v-for="item in tableHeader"
         :key="item.value"
         :label="item.label"
         :value="item.value"
       />
     </el-select>
+
     <div class="custom-container1">
       <div clas="custom-container2" style="margin-top: 12px">
         <el-tooltip
@@ -202,21 +202,19 @@ async function fillData() {
       </el-button>
     </div>
 
-    <div class="custom-container1">
-      <el-table
-        ref="tableRef"
-        :data="tableData"
-        :height="formHeight"
-        border
-        style="margin-top: 12px; width: 100%"
-      >
-        <el-table-column
-          v-for="column in tableColumn"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
-        />
-      </el-table>
-    </div>
+    <el-table
+      :data="tableData"
+      :height="formHeight"
+      border
+      empty-text=""
+      style="margin-top: 12px; width: 100%"
+    >
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
   </div>
 </template>
