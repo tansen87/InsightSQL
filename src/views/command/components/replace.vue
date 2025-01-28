@@ -6,12 +6,14 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath = ref(false);
-const selectColumn = ref("");
-const tableHeader = ref([]);
-const tableColumn = ref([]);
-const tableData = ref([]);
+const [isLoading, isPath, selectColumn, tableHeader, tableColumn, tableData] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -22,12 +24,11 @@ const data = reactive({
 const { formHeight } = useDynamicFormHeight(234);
 
 async function selectFile() {
-  isLoading.value = false;
   isPath.value = false;
+  selectColumn.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
-  selectColumn.value = "";
   data.regexPattern = "";
   data.replacement = "";
 
@@ -67,8 +68,7 @@ async function selectFile() {
     }
 
     const jsonData = JSON.parse(result);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
     tableHeader.value = Object.keys(arrayData[0]).map(header => ({
       label: header,
       value: header
@@ -135,7 +135,7 @@ async function replaceData() {
   } catch (err) {
     ElNotification({
       title: "Replace failed",
-      message: err.match(/replace failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -152,6 +152,7 @@ async function replaceData() {
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -182,6 +183,7 @@ async function replaceData() {
             :value="item.value"
           />
         </el-select>
+
         <el-input
           style="margin-left: 10px; width: 200px"
           placeholder="regex pattern"
@@ -189,6 +191,7 @@ async function replaceData() {
           clearable
         />
       </div>
+
       <el-button
         @click="replaceData()"
         :loading="isLoading"
@@ -209,21 +212,19 @@ async function replaceData() {
       />
     </div>
 
-    <div class="custom-container1">
-      <el-table
-        :data="tableData"
-        :height="formHeight"
-        border
-        empty-text=""
-        style="margin-top: 12px; width: 100%"
-      >
-        <el-table-column
-          v-for="column in tableColumn"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
-        />
-      </el-table>
-    </div>
+    <el-table
+      :data="tableData"
+      :height="formHeight"
+      border
+      empty-text=""
+      style="margin-top: 12px; width: 100%"
+    >
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
   </div>
 </template>
