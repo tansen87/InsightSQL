@@ -7,20 +7,20 @@ import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
-const columns = ref([]);
 const isPath = ref(false);
+const tableColumn = ref([]);
 const tableData = ref([]);
-const tableRef = ref(null);
 const data = reactive({
-  filePath: "",
-  fileFormats: ["*"]
+  path: "",
+  fileFormats: ["*"],
+  skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(149);
 
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
-  columns.value = [];
+  tableColumn.value = [];
   tableData.value = [];
 
   const selected = await open({
@@ -33,37 +33,54 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.path = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
   isPath.value = true;
 
-  const df: string = await invoke("query", {
-    path: data.filePath,
-    sqlQuery: "select * from _t_1 limit 5",
-    write: false,
-    writeFormat: "csv",
-    lowMemory: false,
-    skipRows: "0"
-  });
+  try {
+    const result: string = await invoke("query", {
+      path: data.path,
+      sqlQuery: "select * from _t_1 limit 10",
+      write: false,
+      writeFormat: "csv",
+      lowMemory: false,
+      skipRows: data.skipRows
+    });
 
-  const jsonData = JSON.parse(df);
-  const isJsonArray = Array.isArray(jsonData);
-  const arrayData = isJsonArray ? jsonData : [jsonData];
-  columns.value = Object.keys(arrayData[0]).map(key => ({
-    name: key,
-    label: key,
-    prop: key
-  }));
-  tableData.value = arrayData;
+    if (
+      result[0].startsWith("execute_query") ||
+      result[0].startsWith("prepare_query")
+    ) {
+      throw result[0].toString();
+    }
+
+    const jsonData = JSON.parse(result);
+    const isJsonArray = Array.isArray(jsonData);
+    const arrayData = isJsonArray ? jsonData : [jsonData];
+    tableColumn.value = Object.keys(arrayData[0]).map(key => ({
+      name: key,
+      label: key,
+      prop: key
+    }));
+    tableData.value = arrayData;
+  } catch (err) {
+    ElNotification({
+      title: "Open file error",
+      message: err.toString(),
+      position: "bottom-right",
+      type: "error",
+      duration: 10000
+    });
+  }
 }
 
-// invoke enumer function
+// invoke enumer
 async function enumerate() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -77,7 +94,8 @@ async function enumerate() {
 
   try {
     const result: string = await invoke("enumer", {
-      filePath: data.filePath
+      path: data.path,
+      skipRows: data.skipRows
     });
 
     if (JSON.stringify(result).startsWith("enumerate failed:")) {
@@ -92,8 +110,8 @@ async function enumerate() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Enumerate Error",
-      message: err.toString(),
+      title: "Enumerate failed",
+      message: err.match(/enumerate failed: (.*)/)[1].toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -105,50 +123,45 @@ async function enumerate() {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 50px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
         <el-button
           @click="enumerate()"
           :loading="isLoading"
           :icon="IceCreamRound"
           plain
-          style="margin-left: 16px"
+          style="margin-left: 10px"
         >
           Enumerate
         </el-button>
       </div>
+
       <el-text>
-        <span v-if="isPath">{{ data.filePath }}</span>
+        <span v-if="isPath">{{ data.path }}</span>
         <span v-else>Add an index for a CSV</span>
       </el-text>
     </div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
+
+    <div class="custom-container1">
       <el-table
-        ref="tableRef"
         :data="tableData"
         :height="formHeight"
         border
-        style="margin-top: 15px; width: 100%"
+        empty-text=""
+        style="margin-top: 12px; width: 100%"
       >
         <el-table-column
-          v-for="column in columns"
+          v-for="column in tableColumn"
           :prop="column.prop"
           :label="column.label"
           :key="column.prop"
