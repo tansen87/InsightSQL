@@ -4,53 +4,51 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElNotification, ElIcon } from "element-plus";
-import { Loading, FolderOpened, Grape } from "@element-plus/icons-vue";
+import {
+  Loading,
+  FolderOpened,
+  Grape,
+  CloseBold,
+  Select
+} from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const progress = ref(0);
-const selectedFiles = ref([]);
-const tableRef = ref(null);
-const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
+const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
-  filePath: "",
+  path: "",
   fileFormats: ["*"]
 });
 const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
-  const startConvert: any = event.payload;
+  const startConvert: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(startConvert)) {
+    if (file.filename === startConvert) {
       file.status = "";
     }
   });
 });
+listen("count_err", (event: any) => {
+  const countErr: string = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === countErr.split("|")[0]) {
+      file.status = "error";
+      file.infoMsg = countErr.split("|")[1];
+    }
+  });
+  isLoading.value = false;
+});
 listen("count_msg", (event: any) => {
   const countMsg: any = event.payload;
-  const basename = shortFileName(countMsg.split("|")[0]);
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === basename) {
-      file.status = countMsg.split("|")[1];
+    if (file.filename === countMsg.split("|")[0]) {
+      file.status = "completed";
+      file.infoMsg = countMsg.split("|")[1];
     }
   });
 });
-listen("count_progress", (event: any) => {
-  const pgs: any = event.payload;
-  progress.value = pgs;
-});
 
-// open file
 async function selectFile() {
-  isLoading.value = false;
-  progress.value = 0;
-
   const selected = await open({
     multiple: true,
     filters: [
@@ -61,7 +59,7 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
       return { filename: shortFileName(file), status: " " };
@@ -69,13 +67,13 @@ async function selectFile() {
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 }
 
-// count csv rows
+// invoke count
 async function countData() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -89,7 +87,7 @@ async function countData() {
 
   try {
     const result: string = await invoke("count", {
-      path: data.filePath
+      path: data.path
     });
 
     if (JSON.stringify(result).startsWith("count failed:")) {
@@ -104,7 +102,7 @@ async function countData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Count Error",
+      title: "Count failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -117,54 +115,73 @@ async function countData() {
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          position: sticky;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
-            Open File
-          </el-button>
-          <el-button
-            @click="countData()"
-            :loading="isLoading"
-            :icon="Grape"
-            plain
-            style="margin-left: 10px"
-          >
-            Count
-          </el-button>
-        </div>
-        <el-text> Count the rows of CSV files </el-text>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          Open File
+        </el-button>
+
+        <el-button
+          @click="countData()"
+          :loading="isLoading"
+          :icon="Grape"
+          plain
+          style="margin-left: 10px"
+        >
+          Count
+        </el-button>
       </div>
 
-      <el-table
-        ref="tableRef"
-        :data="selectedFiles"
-        :height="formHeight"
-        style="width: 100%"
+      <el-text> Count the rows of CSV files </el-text>
+    </div>
+
+    <el-table
+      :data="selectedFiles"
+      :height="formHeight"
+      style="width: 100%"
+      show-overflow-tooltip
+      empty-text=""
+    >
+      <el-table-column type="index" width="50" />
+      <el-table-column
+        prop="filename"
+        label="File"
+        class-name="file-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 30%"
+      />
+      <el-table-column
+        prop="status"
+        label="Status"
+        class-name="status-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 10%"
       >
-        <el-table-column type="index" width="50" />
-        <el-table-column prop="filename" label="file" style="width: 60%" />
-        <el-table-column label="rows (include header)" width="200">
-          <template #default="scope">
-            <ElIcon v-if="scope.row.status === ''" class="is-loading">
-              <Loading />
-            </ElIcon>
-            <span>{{ scope.row.status }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-form>
-    <el-progress
-      v-if="isLoading"
-      :percentage="progress"
-      :color="customColors"
-    />
+        <template #default="scope">
+          <ElIcon v-if="scope.row.status === ''" class="is-loading">
+            <Loading />
+          </ElIcon>
+          <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
+            <Select />
+          </ElIcon>
+          <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
+            <CloseBold />
+          </ElIcon>
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="infoMsg"
+        label="Info"
+        class-name="info-column"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 60%"
+      >
+        <template #default="scope">
+          <span v-if="scope.row.status === 'error'">{{
+            scope.row.infoMsg
+          }}</span>
+        </template>
+      </el-table-column>
+    </el-table>
   </el-form>
 </template>
