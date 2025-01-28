@@ -29,7 +29,12 @@ async fn test_split() -> Result<()> {
 
   let size: usize = 2;
 
-  public_split(file_path.to_str().unwrap().to_string(), size.try_into()?).await?;
+  public_split(
+    file_path.to_str().unwrap().to_string(),
+    size.try_into()?,
+    "0".to_string(),
+  )
+  .await?;
 
   // 验证结果
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
@@ -65,7 +70,6 @@ async fn test_split() -> Result<()> {
     }
   }
 
-  // 清理临时目录
   drop(file_path);
   temp_dir.close()?;
 
