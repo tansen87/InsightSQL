@@ -6,12 +6,14 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath = ref(false);
-const columns = ref("");
-const tableHeader = ref([]);
-const tableColumn = ref([]);
-const tableData = ref([]);
+const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -20,10 +22,10 @@ const data = reactive({
 const { formHeight } = useDynamicFormHeight(190);
 
 async function selectFile() {
-  isLoading.value = false;
   isPath.value = false;
   columns.value = "";
   tableHeader.value = [];
+  tableColumn.value = [];
   tableData.value = [];
 
   const selected = await open({
@@ -62,8 +64,7 @@ async function selectFile() {
     }
 
     const jsonData = JSON.parse(result);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
     tableHeader.value = Object.keys(arrayData[0]).map(header => ({
       label: header,
       value: header
@@ -130,7 +131,7 @@ async function chineseToPinyin() {
   } catch (err) {
     ElNotification({
       title: "Pinyin failed",
-      message: err.match(/pinyin failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -147,6 +148,7 @@ async function chineseToPinyin() {
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -154,6 +156,7 @@ async function chineseToPinyin() {
             placeholder="skip rows"
           />
         </el-tooltip>
+
         <el-button
           @click="chineseToPinyin()"
           :loading="isLoading"
@@ -171,22 +174,20 @@ async function chineseToPinyin() {
       </el-text>
     </div>
 
-    <div class="custom-container1">
-      <el-select
-        v-model="columns"
-        multiple
-        filterable
-        style="margin-top: 12px; width: 100%"
-        placeholder="please choose columns"
-      >
-        <el-option
-          v-for="item in tableHeader"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
-        />
-      </el-select>
-    </div>
+    <el-select
+      v-model="columns"
+      multiple
+      filterable
+      style="margin-top: 12px; width: 100%"
+      placeholder="please choose columns"
+    >
+      <el-option
+        v-for="item in tableHeader"
+        :key="item.value"
+        :label="item.label"
+        :value="item.value"
+      />
+    </el-select>
 
     <el-table
       :data="tableData"
