@@ -4,11 +4,9 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicFormHeight, shortFileName } from "@/utils/utils";
 
-const selectedFiles = ref([]);
-const isLoading = ref(false);
-const tableRef = ref(null);
+const [selectedFiles, isLoading] = [ref([]), ref(false)];
 const data = reactive({
   path: "",
   fileFormats: ["mdb", "accdb"],
@@ -16,9 +14,9 @@ const data = reactive({
 });
 const { formHeight } = useDynamicFormHeight(134);
 
-// open file
 async function selectFile() {
   selectedFiles.value = [];
+
   const selected = await open({
     multiple: true,
     filters: [
@@ -32,7 +30,7 @@ async function selectFile() {
     data.path = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file };
+      return { filename: shortFileName(file) };
     });
   } else if (selected === null) {
     return;
@@ -41,7 +39,7 @@ async function selectFile() {
   }
 }
 
-// convert data
+// invoke access
 async function accessData() {
   if (data.path === "") {
     ElNotification({
@@ -73,7 +71,7 @@ async function accessData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Access Error",
+      title: "Access failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -86,43 +84,40 @@ async function accessData() {
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
-            Open File
-          </el-button>
-          <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="|" value="|" />
-            <el-option label="\t" value="\t" />
-            <el-option label=";" value=";" />
-          </el-select>
-          <el-button
-            @click="accessData()"
-            :loading="isLoading"
-            :icon="SwitchFilled"
-            plain
-            style="margin-left: 10px"
-          >
-            Convert
-          </el-button>
-        </div>
-        <el-text> Convert Access Database to CSV </el-text>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          Open File
+        </el-button>
+
+        <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
+          <el-option label="," value="," />
+          <el-option label="|" value="|" />
+          <el-option label="\t" value="\t" />
+          <el-option label=";" value=";" />
+        </el-select>
+
+        <el-button
+          @click="accessData()"
+          :loading="isLoading"
+          :icon="SwitchFilled"
+          plain
+          style="margin-left: 10px"
+        >
+          Convert
+        </el-button>
       </div>
-    </el-form>
+
+      <el-text> Convert Access Database to CSV </el-text>
+    </div>
+
     <el-table
-      ref="tableRef"
       :data="selectedFiles"
       :height="formHeight"
       style="width: 100%"
+      empty-text=""
     >
+      <el-table-column type="index" width="50" />
       <el-table-column prop="filename" />
     </el-table>
   </el-form>
