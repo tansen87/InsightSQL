@@ -11,8 +11,8 @@ async fn test_replace() -> Result<()> {
   let file_path = temp_dir.path().join("input.csv");
 
   let data = vec![
-    "name,age,gender",
     "Tom,18,male",
+    "name,age,gender",
     "Jerry,19,male",
     "Patrick,4,male",
     "Sandy,24,female",
@@ -29,6 +29,7 @@ async fn test_replace() -> Result<()> {
     "age".to_string(),
     r"^\d+$".to_string(),
     "XX".to_string(),
+    "1".to_string(),
   )
   .await?;
 
@@ -40,20 +41,18 @@ async fn test_replace() -> Result<()> {
 
   // 读取输出文件内容
   let binding = fs::read_to_string(&output_path)?;
-  let output_content = binding.lines().collect::<Vec<_>>();
+  let replace_data = binding.lines().collect::<Vec<_>>();
 
   // 验证输出文件内容是否正确
   let expected_data = vec![
     "name,age,gender",
-    "Tom,XX,male",
     "Jerry,XX,male",
     "Patrick,XX,male",
     "Sandy,XX,female",
   ];
 
-  assert_eq!(output_content, expected_data);
+  assert_eq!(replace_data, expected_data);
 
-  // 清理临时目录
   drop(file_path);
   temp_dir.close()?;
 

@@ -9,23 +9,27 @@ import { useDynamicFormHeight } from "@/utils/utils";
 const isLoading = ref(false);
 const isPath = ref(false);
 const selectColumn = ref("");
-const originalColumns = ref([]);
-const data = reactive({
-  filePath: "",
-  fileFormats: ["*"],
-  regexPattern: "",
-  replacement: ""
-});
+const tableHeader = ref([]);
 const tableColumn = ref([]);
 const tableData = ref([]);
-const tableRef = ref(null);
-const { formHeight } = useDynamicFormHeight(243);
+const data = reactive({
+  path: "",
+  fileFormats: ["*"],
+  regexPattern: "",
+  replacement: "",
+  skipRows: "0"
+});
+const { formHeight } = useDynamicFormHeight(234);
 
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
-  originalColumns.value = [];
+  tableHeader.value = [];
+  tableColumn.value = [];
+  tableData.value = [];
   selectColumn.value = "";
+  data.regexPattern = "";
+  data.replacement = "";
 
   const selected = await open({
     multiple: false,
@@ -37,27 +41,22 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
+    data.path = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
   isPath.value = true;
 
   try {
-    const header: any = await invoke("get_replace_headers", {
-      filePath: data.filePath
-    });
-    originalColumns.value = header;
-
     const result: string = await invoke("query", {
-      path: data.filePath,
+      path: data.path,
       sqlQuery: "select * from _t_1 limit 10",
       write: false,
       writeFormat: "csv",
       lowMemory: false,
-      skipRows: "0"
+      skipRows: data.skipRows
     });
 
     if (
@@ -70,6 +69,10 @@ async function selectFile() {
     const jsonData = JSON.parse(result);
     const isJsonArray = Array.isArray(jsonData);
     const arrayData = isJsonArray ? jsonData : [jsonData];
+    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
+      label: header,
+      value: header
+    }));
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -89,7 +92,7 @@ async function selectFile() {
 
 // invoke replace
 async function replaceData() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -112,13 +115,14 @@ async function replaceData() {
 
   try {
     const result: string = await invoke("replace", {
-      filePath: data.filePath,
+      path: data.path,
       selectColumn: selectColumn.value,
       regexPattern: data.regexPattern,
-      replacement: data.replacement
+      replacement: data.replacement,
+      skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("Replace failed:")) {
+    if (JSON.stringify(result).startsWith("replace failed:")) {
       throw JSON.stringify(result).toString();
     }
 
@@ -130,8 +134,8 @@ async function replaceData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Replace Error",
-      message: err.toString(),
+      title: "Replace failed",
+      message: err.match(/replace failed: (.*)/)[1].toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -143,35 +147,28 @@ async function replaceData() {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 78px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
       </div>
 
       <el-text>
-        <span v-if="isPath">{{ data.filePath }}</span>
+        <span v-if="isPath">{{ data.path }}</span>
         <span v-else>Replace occurrences of a pattern across a CSV file</span>
       </el-text>
     </div>
 
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="margin-top: 12px; display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container1" style="margin-top: 12px">
         <el-select
           v-model="selectColumn"
           filterable
@@ -179,7 +176,7 @@ async function replaceData() {
           placeholder="Replace by column"
         >
           <el-option
-            v-for="item in originalColumns"
+            v-for="item in tableHeader"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -202,6 +199,7 @@ async function replaceData() {
         Replace
       </el-button>
     </div>
+
     <div style="margin-top: 12px">
       <el-input
         v-model="data.replacement"
@@ -210,19 +208,13 @@ async function replaceData() {
         placeholder="Replacement string - Replace with any string"
       />
     </div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
+
+    <div class="custom-container1">
       <el-table
-        ref="tableRef"
         :data="tableData"
         :height="formHeight"
         border
+        empty-text=""
         style="margin-top: 12px; width: 100%"
       >
         <el-table-column
