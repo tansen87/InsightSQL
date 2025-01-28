@@ -4,19 +4,27 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
+import { useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const isPath = ref(false);
 const columns = ref("");
-const originalColumns = ref([]);
+const tableHeader = ref([]);
+const tableColumn = ref([]);
+const tableData = ref([]);
 const data = reactive({
   path: "",
-  fileFormats: ["*"]
+  fileFormats: ["*"],
+  skipRows: "0"
 });
+const { formHeight } = useDynamicFormHeight(190);
 
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
+  columns.value = "";
+  tableHeader.value = [];
+  tableData.value = [];
 
   const selected = await open({
     multiple: false,
@@ -37,13 +45,35 @@ async function selectFile() {
   isPath.value = true;
 
   try {
-    const headers: any = await invoke("get_pinyin_headers", {
-      path: data.path
+    const result: string = await invoke("query", {
+      path: data.path,
+      sqlQuery: "select * from _t_1 limit 10",
+      write: false,
+      writeFormat: "csv",
+      lowMemory: false,
+      skipRows: data.skipRows
     });
-    if (JSON.stringify(headers).startsWith("get header error:")) {
-      throw JSON.stringify(headers).toString();
+
+    if (
+      result[0].startsWith("execute_query") ||
+      result[0].startsWith("prepare_query")
+    ) {
+      throw result[0].toString();
     }
-    originalColumns.value = headers;
+
+    const jsonData = JSON.parse(result);
+    const isJsonArray = Array.isArray(jsonData);
+    const arrayData = isJsonArray ? jsonData : [jsonData];
+    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
+      label: header,
+      value: header
+    }));
+    tableColumn.value = Object.keys(arrayData[0]).map(key => ({
+      name: key,
+      label: key,
+      prop: key
+    }));
+    tableData.value = arrayData;
   } catch (err) {
     ElNotification({
       title: "Open file error",
@@ -68,7 +98,7 @@ async function chineseToPinyin() {
   }
   if (columns.value.length === 0) {
     ElNotification({
-      title: "Column not defined",
+      title: "Column not found",
       message: "未选择columns",
       position: "bottom-right",
       type: "warning"
@@ -83,7 +113,8 @@ async function chineseToPinyin() {
   try {
     const result: string = await invoke("pinyin", {
       path: data.path,
-      columns: cols
+      columns: cols,
+      skipRows: data.skipRows
     });
 
     if (JSON.stringify(result).startsWith("pinyin failed:")) {
@@ -98,8 +129,8 @@ async function chineseToPinyin() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Pinyin Error",
-      message: err.toString(),
+      title: "Pinyin failed",
+      message: err.match(/pinyin failed: (.*)/)[1].toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -111,18 +142,18 @@ async function chineseToPinyin() {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 50px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
         <el-button
           @click="chineseToPinyin()"
           :loading="isLoading"
@@ -133,19 +164,14 @@ async function chineseToPinyin() {
           Convert
         </el-button>
       </div>
+
       <el-text>
         <span v-if="isPath">{{ data.path }}</span>
         <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>
     </div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
+
+    <div class="custom-container1">
       <el-select
         v-model="columns"
         multiple
@@ -154,12 +180,27 @@ async function chineseToPinyin() {
         placeholder="please choose columns"
       >
         <el-option
-          v-for="item in originalColumns"
+          v-for="item in tableHeader"
           :key="item.value"
           :label="item.label"
           :value="item.value"
         />
       </el-select>
     </div>
+
+    <el-table
+      :data="tableData"
+      :height="formHeight"
+      border
+      empty-text=""
+      style="margin-top: 12px; width: 100%"
+    >
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
   </div>
 </template>

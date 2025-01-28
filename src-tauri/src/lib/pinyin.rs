@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
@@ -6,37 +6,13 @@ use pinyin::ToPinyin;
 
 use crate::utils::{CsvOptions, Selection};
 
-async fn get_header<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
-  let mut rdr = csv::ReaderBuilder::new()
-    .delimiter(sep)
-    .has_headers(true)
-    .from_reader(File::open(path)?);
-
-  let headers = rdr.headers()?.clone();
-  let vec_headers: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
-
-  let hs = vec_headers
-    .into_iter()
-    .enumerate()
-    .map(|(_index, value)| {
-      let mut map = HashMap::new();
-      map.insert("value".to_string(), value.clone());
-      map.insert("label".to_string(), value);
-      map
-    })
-    .collect();
-
-  Ok(hs)
-}
-
-async fn chinese_to_pinyin<P: AsRef<Path>>(path: P, columns: String) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
+async fn chinese_to_pinyin<P: AsRef<Path>>(
+  path: P,
+  columns: String,
+  skip_rows: String,
+) -> Result<()> {
+  let mut csv_options = CsvOptions::new(&path);
+  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -45,7 +21,7 @@ async fn chinese_to_pinyin<P: AsRef<Path>>(path: P, columns: String) -> Result<(
   let mut rdr = ReaderBuilder::new()
     .has_headers(true)
     .delimiter(sep)
-    .from_path(&path)?;
+    .from_reader(csv_options.skip_csv_rows()?);
 
   let cols: Vec<&str> = columns.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &cols[..])?;
@@ -92,18 +68,10 @@ async fn chinese_to_pinyin<P: AsRef<Path>>(path: P, columns: String) -> Result<(
 }
 
 #[tauri::command]
-pub async fn get_pinyin_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(path).await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
-  }
-}
-
-#[tauri::command]
-pub async fn pinyin(path: String, columns: String) -> Result<String, String> {
+pub async fn pinyin(path: String, columns: String, skip_rows: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(path, columns).await {
+  match chinese_to_pinyin(path, columns, skip_rows).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -114,6 +82,6 @@ pub async fn pinyin(path: String, columns: String) -> Result<String, String> {
 }
 
 /// for integration test
-pub async fn public_pinyin(path: String, columns: String) -> Result<()> {
-  chinese_to_pinyin(path, columns).await
+pub async fn public_pinyin(path: String, columns: String, skip_rows: String) -> Result<()> {
+  chinese_to_pinyin(path, columns, skip_rows).await
 }

@@ -63,7 +63,6 @@ fn main() {
       offset::get_offset_headers,
       offset::offset,
       enumerate::enumer,
-      pinyin::get_pinyin_headers,
       pinyin::pinyin,
       replace::get_replace_headers,
       replace::replace,
