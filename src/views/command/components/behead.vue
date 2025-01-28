@@ -11,15 +11,15 @@ import {
   CloseBold,
   Delete
 } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 
 const isLoading = ref(false);
 const progress = ref(0);
-const tableRef = ref(null);
 const selectedFiles = ref([]);
 const data = reactive({
-  filePath: "",
-  fileFormats: ["*"]
+  path: "",
+  fileFormats: ["*"],
+  skipRows: "0"
 });
 const customColors = [
   { color: "#98FB98", percentage: 20 },
@@ -31,9 +31,9 @@ const customColors = [
 const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
-  const startConvert: any = event.payload;
+  const startConvert: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
+    if (shortFileName(file.filename) === shortFileName(startConvert)) {
       file.status = "loading";
     }
   });
@@ -43,15 +43,14 @@ listen("drop_progress", (event: any) => {
   progress.value = pgs;
 });
 listen("drop_msg", (event: any) => {
-  const dropMsg: any = event.payload;
+  const dropMsg: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === dropMsg) {
+    if (shortFileName(file.filename) === shortFileName(dropMsg)) {
       file.status = "completed";
     }
   });
 });
 
-// open file
 async function selectFile() {
   selectedFiles.value = [];
   isLoading.value = false;
@@ -67,21 +66,21 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
+    data.path = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file, status: "" };
+      return { filename: shortFileName(file), status: "" };
     });
   } else if (selected === null) {
     return;
   } else {
-    data.filePath = selected;
+    data.path = selected;
   }
 }
 
-// drop data
+// invoke behead
 async function dropHeaders() {
-  if (data.filePath === "") {
+  if (data.path === "") {
     ElNotification({
       title: "File not found",
       message: "未选择csv文件",
@@ -95,7 +94,8 @@ async function dropHeaders() {
 
   try {
     const result: string = await invoke("behead", {
-      filePath: data.filePath
+      path: data.path,
+      skipRows: data.skipRows
     });
 
     if (result.startsWith("behead failed:")) {
@@ -110,8 +110,8 @@ async function dropHeaders() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke Behead Error",
-      message: err.toString(),
+      title: "Behead failed",
+      message: err.match(/behead failed: (.*)/)[1].toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -123,18 +123,18 @@ async function dropHeaders() {
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 50px"
+            placeholder="skip rows"
+          />
+        </el-tooltip>
         <el-button
           @click="dropHeaders()"
           :loading="isLoading"
@@ -145,16 +145,17 @@ async function dropHeaders() {
           Drop
         </el-button>
       </div>
+
       <el-text>
         <span>Drop headers from CSV</span>
       </el-text>
     </div>
 
     <el-table
-      ref="tableRef"
       :data="selectedFiles"
       :height="formHeight"
       style="width: 100%"
+      empty-text=""
     >
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column prop="status" label="status" width="100">
