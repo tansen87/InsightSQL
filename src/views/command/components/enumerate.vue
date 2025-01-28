@@ -6,10 +6,12 @@ import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const isLoading = ref(false);
-const isPath = ref(false);
-const tableColumn = ref([]);
-const tableData = ref([]);
+const [isLoading, isPath, tableColumn, tableData] = [
+  ref(false),
+  ref(false),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
@@ -18,7 +20,6 @@ const data = reactive({
 const { formHeight } = useDynamicFormHeight(149);
 
 async function selectFile() {
-  isLoading.value = false;
   isPath.value = false;
   tableColumn.value = [];
   tableData.value = [];
@@ -59,8 +60,7 @@ async function selectFile() {
     }
 
     const jsonData = JSON.parse(result);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -111,7 +111,7 @@ async function enumerate() {
   } catch (err) {
     ElNotification({
       title: "Enumerate failed",
-      message: err.match(/enumerate failed: (.*)/)[1].toString(),
+      message: err.toString(),
       position: "bottom-right",
       type: "error",
       duration: 10000
@@ -128,6 +128,7 @@ async function enumerate() {
         <el-button @click="selectFile()" :icon="FolderOpened" plain>
           Open File
         </el-button>
+
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -135,6 +136,7 @@ async function enumerate() {
             placeholder="skip rows"
           />
         </el-tooltip>
+
         <el-button
           @click="enumerate()"
           :loading="isLoading"
@@ -152,21 +154,19 @@ async function enumerate() {
       </el-text>
     </div>
 
-    <div class="custom-container1">
-      <el-table
-        :data="tableData"
-        :height="formHeight"
-        border
-        empty-text=""
-        style="margin-top: 12px; width: 100%"
-      >
-        <el-table-column
-          v-for="column in tableColumn"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
-        />
-      </el-table>
-    </div>
+    <el-table
+      :data="tableData"
+      :height="formHeight"
+      border
+      empty-text=""
+      style="margin-top: 12px; width: 100%"
+    >
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
   </div>
 </template>
