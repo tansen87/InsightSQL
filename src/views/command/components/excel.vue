@@ -45,19 +45,17 @@ const { formHeight } = useDynamicFormHeight(152);
 listen("start_convert", event => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(startConvert)) {
+    if (file.filename === startConvert) {
       file.status = "loading";
     }
   });
 });
-listen("row_count_err", event => {
+listen("switch_excel_err", event => {
   const excelRowCountErr: any = event.payload;
-  const basename = shortFileName(excelRowCountErr.split("|")[0]);
-  const errorDetails = excelRowCountErr.split("|")[1];
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === basename) {
+    if (file.filename === excelRowCountErr.split("|")[0]) {
       file.status = "error";
-      file.errorMessage = errorDetails;
+      file.errorMessage = excelRowCountErr.split("|")[1];
     }
   });
   isLoading.value = false;
@@ -65,7 +63,7 @@ listen("row_count_err", event => {
 listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (shortFileName(file.filename) === shortFileName(e2cMsg)) {
+    if (file.filename === e2cMsg) {
       file.status = "completed";
     }
   });

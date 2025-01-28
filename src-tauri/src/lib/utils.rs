@@ -8,6 +8,8 @@ use std::{
 use anyhow::{anyhow, Result};
 use csv::{ByteRecord, ReaderBuilder};
 
+type ByteString = Vec<u8>;
+
 pub struct CsvOptions<P: AsRef<Path>> {
   path: P,
   skip_rows: usize,
@@ -155,7 +157,6 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   }
 }
 
-type ByteString = Vec<u8>;
 pub struct Selection {
   indices: Vec<usize>,
 }
