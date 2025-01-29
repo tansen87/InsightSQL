@@ -433,6 +433,7 @@ watch(
               :data="fileTreeData"
               :props="defaultProps"
               @node-click="handleNodeClick"
+              empty-text=""
               style="height: 100%; overflow-y: auto"
             />
           </el-scrollbar>

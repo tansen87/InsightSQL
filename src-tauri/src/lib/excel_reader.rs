@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::BufReader, path::Path};
 
 use anyhow::{anyhow, Result};
-use calamine::{CellType, Data, DataRef, DataType, HeaderRow, Range, Reader, ReaderRef};
+use calamine::{CellType, Data, DataType, HeaderRow, Range, Reader};
 use polars::{frame::DataFrame, prelude::Column};
 
 pub struct ExcelReader {
