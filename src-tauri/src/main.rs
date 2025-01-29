@@ -21,6 +21,7 @@ use lib::rename;
 use lib::replace;
 use lib::search;
 use lib::select;
+use lib::sort;
 use lib::split;
 use lib::sqlp;
 use lib::traverse;
@@ -63,6 +64,7 @@ fn main() {
       pinyin::pinyin,
       replace::replace,
       apply::apply,
+      sort::sort,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

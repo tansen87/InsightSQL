@@ -176,6 +176,15 @@ export default {
         title: "join",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/sort",
+      name: "sort",
+      component: () => import("@/views/command/components/sort.vue"),
+      meta: {
+        title: "sort",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

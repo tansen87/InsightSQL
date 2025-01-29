@@ -96,6 +96,11 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/join"
       },
       {
+        title: "Sort",
+        description: "Sorts CSV data lexicographically.",
+        route: "/command/components/sort"
+      },
+      {
         title: "Modify",
         description: "Batch modify filenames.",
         route: "/operation/components/modify"

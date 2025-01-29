@@ -18,6 +18,7 @@ pub mod rename;
 pub mod replace;
 pub mod search;
 pub mod select;
+pub mod sort;
 pub mod split;
 pub mod sqlp;
 pub mod traverse;
