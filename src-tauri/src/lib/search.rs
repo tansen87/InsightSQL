@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path, time::Instant};
+use std::{path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
@@ -216,19 +216,6 @@ async fn perform_search<P: AsRef<Path>>(
     SearchMode::Regex => {
       regex_search(path, sep, select_column, conditions, skip_rows, output_path).await
     }
-  }
-}
-
-#[tauri::command]
-pub async fn get_search_headers(
-  path: String,
-  skip_rows: String,
-) -> Result<Vec<HashMap<String, String>>, String> {
-  let mut csv_options = CsvOptions::new(path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
-  match csv_options.map_headers().await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
   }
 }
 

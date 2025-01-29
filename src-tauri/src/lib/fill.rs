@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
@@ -9,7 +9,7 @@ async fn fill_values<P: AsRef<Path>>(
   path: P,
   fill_column: String,
   fill_value: String,
-  skip_rows: String
+  skip_rows: String,
 ) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
@@ -55,20 +55,12 @@ async fn fill_values<P: AsRef<Path>>(
 }
 
 #[tauri::command]
-pub async fn get_fill_headers(
+pub async fn fill(
   path: String,
+  columns: String,
+  values: String,
   skip_rows: String,
-) -> Result<Vec<HashMap<String, String>>, String> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
-  match csv_options.map_headers().await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
-  }
-}
-
-#[tauri::command]
-pub async fn fill(path: String, columns: String, values: String, skip_rows: String) -> Result<String, String> {
+) -> Result<String, String> {
   let start_time = Instant::now();
 
   match fill_values(path, columns, values, skip_rows).await {
@@ -82,6 +74,11 @@ pub async fn fill(path: String, columns: String, values: String, skip_rows: Stri
 }
 
 /// for integration test
-pub async fn public_fill(path: String, fill_column: String, fill_value: String, skip_rows: String) -> Result<()> {
+pub async fn public_fill(
+  path: String,
+  fill_column: String,
+  fill_value: String,
+  skip_rows: String,
+) -> Result<()> {
   fill_values(path, fill_column, fill_value, skip_rows).await
 }
