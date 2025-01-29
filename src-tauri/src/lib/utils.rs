@@ -8,6 +8,8 @@ use std::{
 use anyhow::{anyhow, Result};
 use csv::{ByteRecord, ReaderBuilder};
 
+use crate::excel_reader::ExcelReader;
+
 type ByteString = Vec<u8>;
 
 pub struct CsvOptions<P: AsRef<Path>> {
@@ -23,6 +25,11 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   /// Sets the number of rows to skip
   pub fn set_skip_rows(&mut self, skip_rows: usize) {
     self.skip_rows = skip_rows;
+  }
+
+  /// Get the numer of rows to skip
+  pub fn get_skip_rows(&self) -> usize {
+    self.skip_rows
   }
 
   /// Check the delimiter of CSV
@@ -90,26 +97,36 @@ impl<P: AsRef<Path>> CsvOptions<P> {
     Ok(reader)
   }
 
-  /// The intersection of all headers between many csv files
+  /// The intersection of all headers between many csv or excel files
   pub fn inter_headers(&self) -> Result<HashSet<String>> {
     let path4split = &self.path.as_ref().to_string_lossy();
     let ff: Vec<&str> = path4split.split('|').collect();
     let mut header_sets: Vec<HashSet<String>> = vec![];
+    let excel_extension = ["xls", "xlsx", "xlsm", "xlsb", "ods"];
 
     for f in ff {
-      let mut csv_options = CsvOptions::new(f);
-      csv_options.set_skip_rows(self.skip_rows);
-      let skip_rows_reader = csv_options.skip_csv_rows()?;
-      let sep = match csv_options.detect_separator() {
-        Some(separator) => separator as u8,
-        None => b',',
-      };
-      let mut rdr = ReaderBuilder::new()
-        .delimiter(sep)
-        .from_reader(skip_rows_reader);
-      if let Ok(headers) = rdr.headers() {
-        let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
+      if excel_extension.iter().any(|&ext| f.ends_with(ext)) {
+        let mut opt = CsvOptions::new(f);
+        opt.set_skip_rows(self.skip_rows);
+        let column_names =
+          ExcelReader::new(f).get_column_names(0, opt.get_skip_rows().try_into()?)?;
+        let header_set: HashSet<String> = column_names.into_iter().collect();
         header_sets.push(header_set);
+      } else {
+        let mut csv_options = CsvOptions::new(f);
+        csv_options.set_skip_rows(self.skip_rows);
+        let skip_rows_reader = csv_options.skip_csv_rows()?;
+        let sep = match csv_options.detect_separator() {
+          Some(separator) => separator as u8,
+          None => b',',
+        };
+        let mut rdr = ReaderBuilder::new()
+          .delimiter(sep)
+          .from_reader(skip_rows_reader);
+        if let Ok(headers) = rdr.headers() {
+          let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
+          header_sets.push(header_set);
+        }
       }
     }
 

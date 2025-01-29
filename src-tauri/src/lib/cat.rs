@@ -68,11 +68,17 @@ async fn cat_with_polars(
 
     let lf = match file_extension.as_str() {
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
-        let mut excel_reader = ExcelReader::new(file);
-        let df: DataFrame = excel_reader
+        let df: DataFrame = ExcelReader::new(file)
           .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
           .to_df()?;
-        df.lazy()
+
+        let excel_reader = if use_cols == vec!["all"] {
+          df.lazy()
+        } else {
+          df.lazy().select([cols(use_cols.clone())])
+        };
+
+        excel_reader
       }
       _ => {
         let csv_reader = LazyCsvReader::new(file)

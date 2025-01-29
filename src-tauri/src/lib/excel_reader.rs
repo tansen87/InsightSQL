@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::BufReader, path::Path};
 
 use anyhow::{anyhow, Result};
-use calamine::{CellType, Data, DataType, HeaderRow, Range, Reader};
+use calamine::{CellType, Data, DataRef, DataType, HeaderRow, Range, Reader, ReaderRef};
 use polars::{frame::DataFrame, prelude::Column};
 
 pub struct ExcelReader {
@@ -91,5 +91,20 @@ impl ExcelReader {
       Some(Err(e)) => Err(e.into()),
       None => Err(anyhow!("Worksheet index out of bounds")),
     }
+  }
+
+  /// Get the worksheet's column names
+  /// NOTICE: It will load the entire worksheet into memory
+  pub fn get_column_names(&mut self, n: usize, skip_rows: u32) -> Result<Vec<String>> {
+    let column_names: Vec<String> = self
+      .worksheet_range_at(n, skip_rows)?
+      .rows()
+      .next()
+      .ok_or(anyhow!("No data"))?
+      .iter()
+      .map(|cell| cell.to_string())
+      .collect();
+
+    Ok(column_names)
   }
 }
