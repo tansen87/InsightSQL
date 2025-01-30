@@ -1,7 +1,4 @@
-use std::{
-  path::{Path, PathBuf},
-  time::Instant,
-};
+use std::{path::Path, time::Instant};
 
 use anyhow::{anyhow, Result};
 use calamine::{Data, HeaderRow, Range, Reader};
@@ -141,46 +138,47 @@ async fn excel_to_csv<P: AsRef<Path>>(path: P, skip_rows: u32) -> Result<()> {
     }
   }
 
-  wtr.flush()?;
-
-  Ok(())
+  Ok(wtr.flush()?)
 }
 
 /// convert csv to xlsx
-async fn csv_to_xlsx(
-  file: &str,
-  sep: u8,
+async fn csv_to_xlsx<P: AsRef<Path>>(
+  path: P,
   skip_rows: usize,
   use_polars: bool,
   chunk_size: Option<usize>,
 ) -> Result<()> {
-  let sce = PathBuf::from(file);
-  let dest = sce.with_extension("xlsx");
-  let row_count = CsvOptions::new(file).count_csv_rows()?;
+  let dest = path.as_ref().with_extension("xlsx");
+
+  let mut csv_options = CsvOptions::new(&path);
+  csv_options.set_skip_rows(skip_rows);
+
+  let row_count = csv_options.count_csv_rows()?;
+
+  let sep = match csv_options.detect_separator() {
+    Some(separator) => separator as u8,
+    None => b',',
+  };
 
   if row_count >= 104_0000 {
     return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
   }
 
   if use_polars {
-    let dfs = CsvReadOptions::default()
+    let df = CsvReadOptions::default()
       .with_parse_options(CsvParseOptions::default().with_separator(sep))
       .with_skip_rows(skip_rows)
       .with_infer_schema_length(Some(0))
-      .try_into_reader_with_file_path(Some(file.into()))
-      .and_then(|reader| reader.finish());
+      .try_into_reader_with_file_path(Some((&path.as_ref()).to_path_buf()))?
+      .finish()?;
 
-    match dfs {
-      Ok(df) => XlsxWriter::new().write_dataframe(&df, dest)?,
-      Err(err) => return Err(anyhow!("{err}")),
-    }
+    XlsxWriter::new().write_dataframe(&df, dest)?;
   } else {
-    let rdr = ReaderBuilder::new().delimiter(sep).from_path(file);
+    let rdr = ReaderBuilder::new()
+      .delimiter(sep)
+      .from_reader(csv_options.skip_csv_rows()?);
 
-    match rdr {
-      Ok(r) => XlsxWriter::new().write_xlsx(r, chunk_size.unwrap_or(10_0000), dest)?,
-      Err(err) => return Err(anyhow!("{err}")),
-    }
+    XlsxWriter::new().write_xlsx(rdr, chunk_size.unwrap_or(10_0000), dest)?;
   }
 
   Ok(())
@@ -197,27 +195,16 @@ pub async fn switch_csv(
   let mut count: usize = 0;
   let paths: Vec<&str> = path.split('|').collect();
   let file_len = paths.len();
+  let skip_rows = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
 
   for file in paths.iter() {
-    let filename = Path::new(file)
-      .file_name()
-      .unwrap()
-      .to_str()
-      .unwrap()
-      .to_string();
+    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
     window
-      .emit("start_convert", &filename)
+      .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
-    let mut csv_options = CsvOptions::new(file);
-    csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
-    let sep = match csv_options.detect_separator() {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
-    let skip_rows_num = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
 
     let use_polars = mode != "csv";
-    match csv_to_xlsx(file, sep, skip_rows_num, use_polars, None).await {
+    match csv_to_xlsx(file, skip_rows, use_polars, None).await {
       Ok(_) => {
         count += 1;
         let progress = ((count as f32) / (file_len as f32)) * 100.0;
@@ -225,12 +212,12 @@ pub async fn switch_csv(
           .emit("c2x_progress", format!("{progress:.0}"))
           .map_err(|e| e.to_string())?;
         window
-          .emit("c2x_msg", &filename)
+          .emit("c2x_msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("rows_err", format!("{}|{err}", &filename))
+          .emit("rows_err", format!("{}|{err}", filename))
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -256,14 +243,9 @@ pub async fn switch_excel(
   let file_len = paths.len();
 
   for file in paths.iter() {
-    let filename = Path::new(file)
-      .file_name()
-      .unwrap()
-      .to_str()
-      .unwrap()
-      .to_string();
+    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
     window
-      .emit("start_convert", &filename)
+      .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
 
     match excel_to_csv(file, skip_rows).await {
@@ -274,12 +256,12 @@ pub async fn switch_excel(
           .emit("e2c_progress", format!("{progress:.0}"))
           .map_err(|e| e.to_string())?;
         window
-          .emit("e2c_msg", &filename)
+          .emit("e2c_msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("switch_excel_err", format!("{}|{err}", &filename))
+          .emit("switch_excel_err", format!("{}|{err}", filename))
           .map_err(|e| e.to_string())?;
         continue;
       }

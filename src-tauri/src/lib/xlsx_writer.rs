@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
@@ -22,7 +23,7 @@ impl XlsxWriter {
   /// write csv to xlsx
   pub fn write_xlsx<P: AsRef<Path>>(
     &mut self,
-    mut rdr: Reader<File>,
+    mut rdr: Reader<BufReader<File>>,
     chunk_size: usize,
     output: P,
   ) -> Result<()> {
