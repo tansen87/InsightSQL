@@ -32,6 +32,7 @@ dynfmt = { version = "0.1.5", default-features = false, features = ["curly"] }
 indexmap = { version = "2.7.1", features = ["serde"] }
 itoa = "1"
 lazy_static = "1.5.0"
+num_cpus = "1"
 odbc-api = "9.0.0"
 pinyin = { version = "0.10.0", features = ["plain"] }
 polars = { version = "0.46.0", features = [

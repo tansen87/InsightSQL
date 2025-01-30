@@ -216,3 +216,8 @@ impl Selection {
       .ok_or(anyhow!("The indices vector is empty."))
   }
 }
+
+#[inline]
+pub fn num_cpus() -> usize {
+    num_cpus::get()
+}

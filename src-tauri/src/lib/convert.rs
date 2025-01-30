@@ -1,7 +1,7 @@
-use std::{path::Path, time::Instant};
+use std::{collections::HashMap, path::Path, time::Instant};
 
 use anyhow::{anyhow, Result};
-use calamine::{Data, HeaderRow, Range, Reader};
+use calamine::{open_workbook_auto, Data, HeaderRow, Range, Reader};
 use csv::{ReaderBuilder, WriterBuilder};
 use polars::{
   io::SerReader,
@@ -10,20 +10,42 @@ use polars::{
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 
-use crate::{utils::CsvOptions, xlsx_writer::XlsxWriter};
+use crate::{
+  utils::{num_cpus, CsvOptions},
+  xlsx_writer::XlsxWriter,
+};
 
-async fn excel_to_csv<P: AsRef<Path>>(path: P, skip_rows: u32) -> Result<()> {
+async fn excel_to_csv<P: AsRef<Path>>(
+  path: P,
+  skip_rows: u32,
+  sep: u8,
+  sheet_name: Option<String>,
+) -> Result<()> {
   let dest = &path.as_ref().with_extension("csv");
-  let mut wtr = WriterBuilder::new().delimiter(b'|').from_path(dest)?;
 
-  let mut workbook = calamine::open_workbook_auto(&path)?;
-  let range = if let Some(result) = workbook
-    .with_header_row(HeaderRow::Row(skip_rows))
-    .worksheet_range_at(0)
-  {
-    result?
-  } else {
-    Range::empty()
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(dest)?;
+
+  let mut workbook = open_workbook_auto(&path)?;
+
+  let range = match sheet_name {
+    None => {
+      match workbook
+        .with_header_row(HeaderRow::Row(skip_rows))
+        .worksheet_range_at(0)
+      {
+        Some(Ok(range)) => range,
+        Some(Err(_)) | None => Range::empty(),
+      }
+    }
+    Some(ref name) => {
+      match workbook
+        .with_header_row(HeaderRow::Row(skip_rows))
+        .worksheet_range(name)
+      {
+        Ok(range) => range,
+        Err(_) => Range::empty(),
+      }
+    }
   };
 
   let (row_count, col_count) = range.get_size();
@@ -68,7 +90,7 @@ async fn excel_to_csv<P: AsRef<Path>>(path: P, skip_rows: u32) -> Result<()> {
   }
 
   // set RAYON_NUM_THREADS
-  let ncpus = 4;
+  let ncpus = num_cpus();
   // set chunk_size to number of rows per core/thread
   // let chunk_size = row_count.div_ceil(ncpus);
   let chunk_size = (row_count + ncpus - 1) / ncpus;
@@ -229,10 +251,55 @@ pub async fn switch_csv(
   Ok(format!("{elapsed_time:.2}"))
 }
 
+fn get_sheetname_by_filename(
+  records: &Vec<HashMap<String, String>>,
+  filename: &str,
+) -> Option<String> {
+  for record in records.iter() {
+    if let Some(file) = record.get("filename") {
+      if file == filename {
+        return record.get("sheetname").cloned();
+      }
+    }
+  }
+  None
+}
+
+#[tauri::command]
+pub async fn map_excel_sheets(
+  path: String,
+) -> (HashMap<String, Vec<String>>, HashMap<String, String>) {
+  let mut map_sheets = HashMap::new();
+  let mut errors = HashMap::new();
+  let paths: Vec<&str> = path.split('|').collect();
+
+  for file in paths.iter() {
+    let filename = Path::new(file)
+      .file_name()
+      .unwrap()
+      .to_str()
+      .unwrap()
+      .to_string();
+    match open_workbook_auto(file).map_err(|e| e.to_string()) {
+      Ok(workbook) => {
+        let sheets = workbook.sheet_names();
+        map_sheets.insert(filename, sheets);
+      }
+      Err(err) => {
+        errors.insert(filename, format!("get sheets error|{}", err));
+      }
+    }
+  }
+
+  (map_sheets, errors)
+}
+
 #[tauri::command]
 pub async fn switch_excel(
   path: String,
   skip_rows: String,
+  sep: String,
+  map_file_sheet: Vec<HashMap<String, String>>,
   window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -241,6 +308,11 @@ pub async fn switch_excel(
   let paths: Vec<&str> = path.split('|').collect();
   let mut count: usize = 0;
   let file_len = paths.len();
+  let sep = if sep == "\\t" {
+    b'\t'
+  } else {
+    sep.into_bytes()[0]
+  };
 
   for file in paths.iter() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
@@ -248,7 +320,9 @@ pub async fn switch_excel(
       .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
 
-    match excel_to_csv(file, skip_rows).await {
+    let sheet_name = get_sheetname_by_filename(&map_file_sheet, filename);
+
+    match excel_to_csv(file, skip_rows, sep, sheet_name).await {
       Ok(_) => {
         count += 1;
         let progress = ((count as f32) / (file_len as f32)) * 100.0;

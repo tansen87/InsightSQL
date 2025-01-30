@@ -11,7 +11,11 @@ import {
   CloseBold,
   Delete
 } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import {
+  shortFileName,
+  useDynamicFormHeight,
+  customColors
+} from "@/utils/utils";
 
 const [isLoading, selectedFiles, progress] = [ref(false), ref([]), ref(0)];
 const data = reactive({
@@ -19,13 +23,6 @@ const data = reactive({
   fileFormats: ["*"],
   skipRows: "0"
 });
-const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
 const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {

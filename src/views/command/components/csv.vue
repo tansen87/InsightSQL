@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon, TableColumnCtx } from "element-plus";
+import { ElNotification, ElIcon } from "element-plus";
 import {
   FolderOpened,
   SwitchFilled,
@@ -11,28 +11,13 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import {
+  shortFileName,
+  useDynamicFormHeight,
+  customColors,
+  filterFileStatus
+} from "@/utils/utils";
 
-interface FileStatus {
-  filename: string;
-  status: string;
-}
-
-const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
-const filterFileStatus = (
-  value: string,
-  row: FileStatus,
-  column: TableColumnCtx<FileStatus>
-) => {
-  const property = column["property"];
-  return row[property] === value;
-};
 const [isLoading, progress, selectedFiles] = [ref(false), ref(0), ref([])];
 const data = reactive({
   path: "",

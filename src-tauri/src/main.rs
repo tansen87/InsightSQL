@@ -42,6 +42,7 @@ fn main() {
       cat::get_cat_headers,
       cat::concat,
       convert::switch_excel,
+      convert::map_excel_sheets,
       convert::switch_csv,
       count::count,
       rename::get_rename_headers,

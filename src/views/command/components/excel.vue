@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, watch } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { TableColumnCtx } from "element-plus";
 import { ElNotification, ElIcon } from "element-plus";
 import {
   CloseBold,
@@ -12,35 +11,28 @@ import {
   SwitchFilled,
   Loading
 } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import {
+  shortFileName,
+  useDynamicFormHeight,
+  customColors,
+  filterFileStatus
+} from "@/utils/utils";
 
-interface FileStatus {
-  filename: string;
-  status: string;
-}
-
-const [selectedFiles, isLoading, progress] = [ref([]), ref(false), ref(0)];
-const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
-const filterFileStatus = (
-  value: string,
-  row: FileStatus,
-  column: TableColumnCtx<FileStatus>
-) => {
-  const property = column["property"];
-  return row[property] === value;
-};
+const [
+  selectedFiles,
+  isLoading,
+  progress,
+  sheetsData,
+  sheetOptions,
+  fileSheet
+] = [ref([]), ref(false), ref(0), ref({}), ref([]), ref([])];
 const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
-  skipRows: "0"
+  skipRows: "0",
+  sep: "|"
 });
-const { formHeight } = useDynamicFormHeight(152);
+const { formHeight } = useDynamicFormHeight(167);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;
@@ -73,9 +65,47 @@ listen("e2c_progress", (event: any) => {
   progress.value = pgs;
 });
 
+const getSheetsForFile = fileName => {
+  return sheetsData.value[fileName] || [];
+};
+
+watch(
+  () => selectedFiles.value.map(file => file.selectedSheet),
+  (newVal, oldVal) => {
+    newVal.forEach((selectedSheet, index) => {
+      if (selectedSheet !== oldVal[index]) {
+        const fileSheetRecord = {
+          filename: selectedFiles.value[index].filename,
+          sheetname: selectedSheet
+        };
+
+        fileSheet.value.push(fileSheetRecord);
+      }
+    });
+  },
+  { deep: true }
+);
+
+function updateFileSheet(file) {
+  const existingRecordIndex = fileSheet.value.findIndex(
+    record => record.filename === file.filename
+  );
+  if (existingRecordIndex > -1) {
+    fileSheet.value[existingRecordIndex].sheetname = file.selectedSheet;
+  } else {
+    fileSheet.value.push({
+      filename: file.filename,
+      sheetname: file.selectedSheet
+    });
+  }
+}
+
 async function selectFile() {
   selectedFiles.value = [];
   progress.value = 0;
+  sheetsData.value = [];
+  sheetOptions.value = [];
+  fileSheet.value = [];
 
   const selected = await open({
     multiple: true,
@@ -97,6 +127,27 @@ async function selectFile() {
   } else {
     data.path = selected;
   }
+
+  const mapSheets: string[] = await invoke("map_excel_sheets", {
+    path: data.path
+  });
+
+  sheetsData.value = mapSheets[0];
+
+  for (const fileName in sheetsData.value) {
+    sheetsData.value[fileName].forEach(sheet => {
+      sheetOptions.value.push({
+        label: `${fileName} - ${sheet}`,
+        value: sheet
+      });
+    });
+  }
+
+  selectedFiles.value.forEach(file => {
+    if (!file.selectedSheet && getSheetsForFile(file.filename).length > 0) {
+      file.selectedSheet = getSheetsForFile(file.filename)[0];
+    }
+  });
 }
 
 // invoke switch_excel
@@ -113,10 +164,17 @@ async function excelToCsv() {
 
   isLoading.value = true;
 
+  const mapFileSheet = fileSheet.value.map(item => ({
+    filename: item.filename,
+    sheetname: item.sheetname
+  }));
+
   try {
     const result: string = await invoke("switch_excel", {
       path: data.path,
-      skipRows: data.skipRows
+      skipRows: data.skipRows,
+      sep: data.sep,
+      mapFileSheet: mapFileSheet
     });
 
     if (JSON.stringify(result).startsWith("excel to csv failed:")) {
@@ -153,9 +211,19 @@ async function excelToCsv() {
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
-            style="margin-left: 10px; margin-right: 10px; width: 80px"
+            style="margin-left: 10px; margin-right: 10px; width: 50px"
             placeholder="skip rows"
           />
+        </el-tooltip>
+
+        <el-tooltip content="write separator" placement="top" effect="light">
+          <el-select v-model="data.sep" style="margin-right: 10px; width: 50px">
+            <el-option label="|" value="|" />
+            <el-option label="," value="," />
+            <el-option label=";" value=";" />
+            <el-option label="^" value="^" />
+            <el-option label="\t" value="\t" />
+          </el-select>
         </el-tooltip>
 
         <el-button
@@ -208,19 +276,30 @@ async function excelToCsv() {
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
             <CloseBold />
           </ElIcon>
+          <span v-if="scope.row.errorMessage && scope.row.status !== 'loading'">
+            {{ scope.row.errorMessage || scope.row.status }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column
-        prop="errorMessage"
-        label="Info"
-        class-name="info-column"
+        prop="sheets"
+        label="Sheets"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
         <template #default="scope">
-          <span v-if="scope.row.status === 'error'">{{
-            scope.row.errorMessage
-          }}</span>
+          <el-select
+            v-model="scope.row.selectedSheet"
+            placeholder="Select a sheet"
+            @change="updateFileSheet(scope.row)"
+          >
+            <el-option
+              v-for="(sheet, index) in getSheetsForFile(scope.row.filename)"
+              :key="index"
+              :label="sheet"
+              :value="sheet"
+            />
+          </el-select>
         </template>
       </el-table-column>
     </el-table>
