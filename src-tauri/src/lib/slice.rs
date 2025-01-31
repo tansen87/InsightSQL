@@ -46,21 +46,20 @@ pub async fn slice_column_with_n_char<P: AsRef<Path>>(
 
     if let Some(value) = record.get(sel.first_indices()?) {
       let slice_n = if mode == "left" {
-        if value.len() >= n {
-          &value[..n]
-        } else {
-          value
-        }
+        value.chars().take(n).collect::<String>()
       } else {
-        if value.len() >= n {
-          &value[value.len() - n..]
-        } else {
-          value
-        }
+        value
+          .chars()
+          .rev()
+          .take(n)
+          .collect::<String>()
+          .chars()
+          .rev()
+          .collect::<String>()
       };
 
       let mut new_record = record.clone();
-      new_record.push_field(slice_n);
+      new_record.push_field(&slice_n);
 
       wtr.write_record(&new_record)?;
     }
