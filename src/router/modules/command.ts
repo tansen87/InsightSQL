@@ -185,6 +185,15 @@ export default {
         title: "sort",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/slice",
+      name: "slice",
+      component: () => import("@/views/command/components/slice.vue"),
+      meta: {
+        title: "slice",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

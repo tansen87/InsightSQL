@@ -21,6 +21,7 @@ use lib::rename;
 use lib::replace;
 use lib::search;
 use lib::select;
+use lib::slice;
 use lib::sort;
 use lib::split;
 use lib::sqlp;
@@ -38,34 +39,35 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
-      sqlp::query,
+      #[cfg(target_os = "windows")]
+      access::access,
+      apply::apply,
+      behead::behead,
       cat::get_cat_headers,
       cat::concat,
       convert::switch_excel,
       convert::map_excel_sheets,
       convert::switch_csv,
       count::count,
-      rename::get_rename_headers,
-      rename::rename,
-      select::get_select_headers,
-      select::select,
-      search::search,
+      dbf::dbf,
+      enumerate::enumer,
       fill::fill,
       join::join,
-      split::split,
-      #[cfg(target_os = "windows")]
-      access::access,
-      dbf::dbf,
-      behead::behead,
       modify::modify,
-      traverse::traverse,
       offset::get_offset_headers,
       offset::offset,
-      enumerate::enumer,
       pinyin::pinyin,
+      rename::get_rename_headers,
+      rename::rename,
       replace::replace,
-      apply::apply,
+      search::search,
+      select::get_select_headers,
+      select::select,
+      slice::slice,
       sort::sort,
+      split::split,
+      sqlp::query,
+      traverse::traverse,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
