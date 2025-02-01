@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
+import { viewOpenFile, viewSqlp } from "@/utils/view";
 
 const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
   ref(false),
@@ -16,7 +16,6 @@ const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
 ];
 const data = reactive({
   path: "",
-  fileFormats: ["*"],
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(190);
@@ -28,51 +27,20 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  const selected = await open({
-    multiple: false,
-    filters: [
-      {
-        name: "csv",
-        extensions: data.fileFormats
-      }
-    ]
-  });
-  if (Array.isArray(selected)) {
-    data.path = selected.toString();
-  } else if (selected === null) {
+  data.path = await viewOpenFile(false, "csv", ["*"]);
+  if (data.path === null) {
     return;
-  } else {
-    data.path = selected;
   }
   isPath.value = true;
 
   try {
-    const result: string[] = await invoke("query", {
-      path: data.path,
-      sqlQuery: "select * from _t_1 limit 10",
-      write: false,
-      writeFormat: "csv",
-      lowMemory: false,
-      skipRows: data.skipRows
-    });
-
-    const q = Array.isArray(result[0]) ? result[0][0] : null;
-    if (q.startsWith("Query failed")) {
-      throw q;
-    }
-
-    const jsonData = JSON.parse(result[0]);
-    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-    tableHeader.value = Object.keys(arrayData[0]).map(header => ({
-      label: header,
-      value: header
-    }));
-    tableColumn.value = Object.keys(arrayData[0]).map(key => ({
-      name: key,
-      label: key,
-      prop: key
-    }));
-    tableData.value = arrayData;
+    const { headerView, columnView, dataView } = await viewSqlp(
+      data.path,
+      data.skipRows
+    );
+    tableHeader.value = headerView;
+    tableColumn.value = columnView;
+    tableData.value = dataView;
   } catch (err) {
     ElNotification({
       title: "Open file error",
