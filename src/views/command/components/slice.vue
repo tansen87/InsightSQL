@@ -19,6 +19,7 @@ const data = reactive({
   path: "",
   skipRows: "0",
   n: "4",
+  sliceSep: "-",
   mode: "left"
 });
 const { formHeight } = useDynamicFormHeight(190);
@@ -117,6 +118,7 @@ async function sliceData() {
       skipRows: data.skipRows,
       selectColumn: selectColumn.value,
       n: data.n,
+      sliceSep: data.sliceSep,
       mode: data.mode
     });
 
@@ -181,18 +183,20 @@ async function sliceData() {
           />
         </el-select>
 
-        <el-tooltip content="Numer of n char" placement="top" effect="light">
+        <el-tooltip content="Numer of slice" placement="top" effect="light">
           <el-input v-model="data.n" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
-
-        <el-tooltip
-          content="Slice by left or right"
-          placement="top"
-          effect="light"
-        >
+        <el-tooltip content="Slice separator" placement="top" effect="light">
+          <el-input
+            v-model="data.sliceSep"
+            style="margin-left: 10px; width: 50px"
+          />
+        </el-tooltip>
+        <el-tooltip content="Slice mode" placement="top" effect="light">
           <el-select v-model="data.mode" style="margin-left: 10px; width: 80px">
             <el-option label="Left" value="left" />
             <el-option label="Right" value="right" />
+            <el-option label="Nth" value="nth" />
           </el-select>
         </el-tooltip>
       </div>
