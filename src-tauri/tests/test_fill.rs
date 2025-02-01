@@ -4,12 +4,10 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::fill::public_fill;
+use lib::fill;
 
 #[tokio::test]
 async fn test_fill() -> Result<()> {
-  let temp_dir = TempDir::new()?;
-
   let data = vec![
     "Tom,,",
     "name,age,gender",
@@ -18,6 +16,7 @@ async fn test_fill() -> Result<()> {
     "Sandy,24,female",
   ];
 
+  let temp_dir = TempDir::new()?;
   let file_path = temp_dir.path().join("data.csv");
 
   let mut file = File::create(&file_path)?;
@@ -27,8 +26,8 @@ async fn test_fill() -> Result<()> {
 
   let fill_column = "gender|age".to_string();
   let fill_value = "unknown".to_string();
-  public_fill(
-    file_path.to_str().unwrap().to_string(),
+  fill::fill_values(
+    file_path.to_str().unwrap(),
     fill_column,
     fill_value,
     "1".to_string(),
@@ -52,8 +51,5 @@ async fn test_fill() -> Result<()> {
 
   assert_eq!(fill_data, expected_data);
 
-  drop(file_path);
-  temp_dir.close()?;
-
-  Ok(())
+  Ok(temp_dir.close()?)
 }

@@ -4,7 +4,7 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::enumerate::public_enumerate;
+use lib::enumerate;
 
 #[tokio::test]
 async fn test_enumerate() -> Result<()> {
@@ -24,7 +24,7 @@ async fn test_enumerate() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  public_enumerate(file_path.to_str().unwrap().to_string(), "1".to_string()).await?;
+  enumerate::add_index(file_path.to_str().unwrap(), "1".to_string()).await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.enumerate.csv",
@@ -43,8 +43,5 @@ async fn test_enumerate() -> Result<()> {
 
   assert_eq!(enumerate_data, expected_data);
 
-  drop(file_path);
-  temp_dir.close()?;
-
-  Ok(())
+  Ok(temp_dir.close()?)
 }

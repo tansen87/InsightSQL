@@ -39,11 +39,14 @@ where
   P: AsRef<Path>,
 {
   let mut match_rows: usize = 0;
+
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
+
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
+
   let headers = rdr.headers()?.clone();
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
@@ -65,7 +68,7 @@ where
   Ok(match_rows.to_string())
 }
 
-async fn equal_search<P: AsRef<Path>>(
+pub async fn equal_search<P: AsRef<Path>>(
   path: P,
   sep: u8,
   select_column: String,
@@ -85,7 +88,7 @@ async fn equal_search<P: AsRef<Path>>(
   .await
 }
 
-async fn contains_search<P: AsRef<Path>>(
+pub async fn contains_search<P: AsRef<Path>>(
   path: P,
   sep: u8,
   select_column: String,
@@ -109,7 +112,7 @@ async fn contains_search<P: AsRef<Path>>(
   .await
 }
 
-async fn startswith_search<P: AsRef<Path>>(
+pub async fn startswith_search<P: AsRef<Path>>(
   path: P,
   sep: u8,
   select_column: String,
@@ -129,12 +132,11 @@ async fn startswith_search<P: AsRef<Path>>(
   .await
 }
 
-async fn regex_search<P: AsRef<Path>>(
+pub async fn regex_search<P: AsRef<Path>>(
   path: P,
   sep: u8,
   select_column: String,
   regex_char: String,
-
   skip_rows: usize,
   output_path: String,
 ) -> Result<String> {
@@ -161,6 +163,7 @@ async fn perform_search<P: AsRef<Path>>(
 ) -> Result<String> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -171,13 +174,9 @@ async fn perform_search<P: AsRef<Path>>(
     .map(|s| s.trim().to_string())
     .collect();
 
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|path| path.to_string_lossy())
-    .unwrap();
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{}/{}.search.csv", parent_path, file_name);
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_name}.search.csv");
 
   match mode {
     SearchMode::Equal => {
@@ -248,49 +247,4 @@ pub async fn search(
     }
     Err(err) => Err(format!("search failed: {err}")),
   }
-}
-
-/// for integration test
-pub async fn public_equal_search(
-  path: String,
-  sep: u8,
-  select_column: String,
-  conditions: Vec<String>,
-  skip_rows: usize,
-  output_path: String,
-) -> Result<String> {
-  equal_search(path, sep, select_column, conditions, skip_rows, output_path).await
-}
-
-pub async fn public_contains_search(
-  path: String,
-  sep: u8,
-  select_column: String,
-  conditions: Vec<String>,
-  skip_rows: usize,
-  output_path: String,
-) -> Result<String> {
-  contains_search(path, sep, select_column, conditions, skip_rows, output_path).await
-}
-
-pub async fn public_startswith_search(
-  path: String,
-  sep: u8,
-  select_column: String,
-  conditions: Vec<String>,
-  skip_rows: usize,
-  output_path: String,
-) -> Result<String> {
-  startswith_search(path, sep, select_column, conditions, skip_rows, output_path).await
-}
-
-pub async fn public_regex_search(
-  path: String,
-  sep: u8,
-  select_column: String,
-  regex_char: String,
-  skip_rows: usize,
-  output_path: String,
-) -> Result<String> {
-  regex_search(path, sep, select_column, regex_char, skip_rows, output_path).await
 }

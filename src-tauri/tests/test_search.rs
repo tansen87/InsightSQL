@@ -1,12 +1,9 @@
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::search::{
-  public_contains_search, public_equal_search, public_regex_search, public_startswith_search,
-};
+use lib::search;
 
 fn create_temp_csv() -> Result<(TempDir, String)> {
-  let temp_dir = TempDir::new()?;
   let data = vec![
     "name,age,gender",
     "Tom,18,male",
@@ -14,7 +11,10 @@ fn create_temp_csv() -> Result<(TempDir, String)> {
     "Patrick,4,male",
     "Sandy,24,female",
   ];
+
+  let temp_dir = TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
+
   let mut wtr = csv::Writer::from_path(&file_path)?;
   for line in &data {
     wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
@@ -37,12 +37,12 @@ async fn test_equal_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = public_equal_search(file_path, sep, column, conditions, 0, output_path).await?;
+  let result = search::equal_search(file_path, sep, column, conditions, 0, output_path).await?;
 
   // Expect 1 row matched, matched ("Tom")
   assert_eq!(result, "1");
 
-  Ok(())
+  Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
@@ -58,12 +58,12 @@ async fn test_contains_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = public_contains_search(file_path, sep, column, conditions, 0, output_path).await?;
+  let result = search::contains_search(file_path, sep, column, conditions, 0, output_path).await?;
 
   // Expect 2 rows matched, matched ("Patrick", "Sandy")
   assert_eq!(result, "2");
 
-  Ok(())
+  Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
@@ -79,12 +79,13 @@ async fn test_startswith_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = public_startswith_search(file_path, sep, column, conditions, 0, output_path).await?;
+  let result =
+    search::startswith_search(file_path, sep, column, conditions, 0, output_path).await?;
 
   // Expect 1 row matched, matched ("Jerry")
   assert_eq!(result, "1");
 
-  Ok(())
+  Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
@@ -100,10 +101,10 @@ async fn test_regex_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = public_regex_search(file_path, sep, column, regex_char, 0, output_path).await?;
+  let result = search::regex_search(file_path, sep, column, regex_char, 0, output_path).await?;
 
   // Expect 1 row matched, matched ("Jerry")
   assert_eq!(result, "1");
 
-  Ok(())
+  Ok(temp_dir.close()?)
 }

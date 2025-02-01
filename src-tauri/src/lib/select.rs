@@ -17,6 +17,7 @@ async fn get_header<P: AsRef<Path>>(
 ) -> Result<Vec<HashMap<String, String>>> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -43,23 +44,23 @@ async fn get_header<P: AsRef<Path>>(
   Ok(hs)
 }
 
-async fn select_columns<P: AsRef<Path>>(path: P, cols: String, skip_rows: String) -> Result<()> {
+pub async fn select_columns<P: AsRef<Path>>(
+  path: P,
+  cols: String,
+  skip_rows: String,
+) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
 
-  let cols_cleaned: String = cols.replace("\r", "").replace("\n", "");
-  let cols_select: Vec<&str> = cols_cleaned.split('|').collect();
+  let cols_select: Vec<&str> = cols.split('|').collect();
 
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap();
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_name}.select.csv");
 
   let mut rdr = ReaderBuilder::new()
@@ -91,6 +92,7 @@ async fn select_columns<P: AsRef<Path>>(path: P, cols: String, skip_rows: String
     .from_writer(BufWriter::new(File::create(output_path)?));
 
   wtr.write_record(cols_select.iter())?;
+
   let mut record = csv::ByteRecord::new();
 
   while rdr.read_byte_record(&mut record)? {
@@ -128,9 +130,4 @@ pub async fn select(path: String, cols: String, skip_rows: String) -> Result<Str
     }
     Err(err) => Err(format!("select failed: {err}")),
   }
-}
-
-/// for integration test
-pub async fn public_select(file_path: String, cols: String, skip_rows: String) -> Result<()> {
-  select_columns(file_path, cols, skip_rows).await
 }

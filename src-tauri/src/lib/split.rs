@@ -16,26 +16,24 @@ fn new_writer(
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)
     .from_writer(BufWriter::new(File::create(spath)?));
+
   wtr.write_record(headers)?;
 
   Ok(wtr)
 }
 
-async fn split_csv<P: AsRef<Path>>(path: P, size: u32, skip_rows: String) -> Result<()> {
+pub async fn split_csv<P: AsRef<Path>>(path: P, size: u32, skip_rows: String) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
 
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|path| path.to_string_lossy())
-    .unwrap();
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{}/{}", parent_path, file_name);
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_name}");
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -72,9 +70,4 @@ pub async fn split(path: String, size: u32, skip_rows: String) -> Result<String,
     }
     Err(err) => Err(format!("split failed: {err}")),
   }
-}
-
-/// for integration test
-pub async fn public_split(path: String, size: u32, skip_rows: String) -> Result<()> {
-  split_csv(path, size, skip_rows).await
 }

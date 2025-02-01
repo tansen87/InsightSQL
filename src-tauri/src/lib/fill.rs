@@ -5,7 +5,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::{CsvOptions, Selection};
 
-async fn fill_values<P: AsRef<Path>>(
+pub async fn fill_values<P: AsRef<Path>>(
   path: P,
   fill_column: String,
   fill_value: String,
@@ -13,6 +13,7 @@ async fn fill_values<P: AsRef<Path>>(
 ) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -27,17 +28,13 @@ async fn fill_values<P: AsRef<Path>>(
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
 
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap();
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_file = format!("{}/{}.fill.csv", parent_path, file_name);
+  let output_path = format!("{parent_path}/{file_name}.fill.csv");
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(output_file)?));
+    .from_writer(BufWriter::new(File::create(output_path)?));
 
   wtr.write_record(&headers)?;
 
@@ -71,14 +68,4 @@ pub async fn fill(
     }
     Err(err) => Err(format!("fill failed: {err}")),
   }
-}
-
-/// for integration test
-pub async fn public_fill(
-  path: String,
-  fill_column: String,
-  fill_value: String,
-  skip_rows: String,
-) -> Result<()> {
-  fill_values(path, fill_column, fill_value, skip_rows).await
 }

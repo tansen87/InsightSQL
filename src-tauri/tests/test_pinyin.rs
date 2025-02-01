@@ -5,7 +5,7 @@ use anyhow::Result;
 use csv::ReaderBuilder;
 use tempfile::TempDir;
 
-use lib::pinyin::public_pinyin;
+use lib::pinyin;
 
 #[tokio::test]
 async fn test_pinyin() -> Result<()> {
@@ -25,8 +25,8 @@ async fn test_pinyin() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  public_pinyin(
-    file_path.to_str().unwrap().to_string(),
+  pinyin::chinese_to_pinyin(
+    file_path.to_str().unwrap(),
     "name|gender".to_string(),
     "1".to_string(),
   )
@@ -53,8 +53,5 @@ async fn test_pinyin() -> Result<()> {
     assert_eq!(fields, expected_data[i], "record {} does not match", i);
   }
 
-  drop(file_path);
-  temp_dir.close()?;
-
-  Ok(())
+  Ok(temp_dir.close()?)
 }

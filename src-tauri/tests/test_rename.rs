@@ -4,7 +4,7 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::rename::public_rename;
+use lib::rename;
 
 #[tokio::test]
 async fn test_rename() -> Result<()> {
@@ -26,7 +26,7 @@ async fn test_rename() -> Result<()> {
 
   let new_header = "first_name,years_old,sex";
 
-  public_rename(
+  rename::rename_headers(
     file_path.to_str().unwrap(),
     new_header.to_string(),
     "1".to_string(),
@@ -50,8 +50,5 @@ async fn test_rename() -> Result<()> {
 
   assert_eq!(content, expected_content);
 
-  drop(file_path);
-  temp_dir.close()?;
-
-  Ok(())
+  Ok(temp_dir.close()?)
 }

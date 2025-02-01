@@ -3,7 +3,7 @@ use std::fs;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::replace::public_replace;
+use lib::replace;
 
 #[tokio::test]
 async fn test_replace() -> Result<()> {
@@ -24,8 +24,8 @@ async fn test_replace() -> Result<()> {
   }
   wtr.flush()?;
 
-  public_replace(
-    file_path.to_str().unwrap().to_string(),
+  replace::regex_replace(
+    file_path.to_str().unwrap(),
     "age".to_string(),
     r"^\d+$".to_string(),
     "XX".to_string(),
@@ -39,11 +39,9 @@ async fn test_replace() -> Result<()> {
   );
   let output_path = temp_dir.path().join(output_file_name);
 
-  // 读取输出文件内容
   let binding = fs::read_to_string(&output_path)?;
   let replace_data = binding.lines().collect::<Vec<_>>();
 
-  // 验证输出文件内容是否正确
   let expected_data = vec![
     "name,age,gender",
     "Jerry,XX,male",
@@ -53,8 +51,5 @@ async fn test_replace() -> Result<()> {
 
   assert_eq!(replace_data, expected_data);
 
-  drop(file_path);
-  temp_dir.close()?;
-
-  Ok(())
+  Ok(temp_dir.close()?)
 }

@@ -5,29 +5,25 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-async fn add_index<P: AsRef<Path>>(path: P, skip_rows: String) -> Result<()> {
+pub async fn add_index<P: AsRef<Path>>(path: P, skip_rows: String) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
 
-  let parent_path = &path.as_ref()
-    .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap();
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{}/{}.enumerate.csv", parent_path, file_name);
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_name}.enumerate.csv");
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
-    .from_writer(buf_writer);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
   let headers = rdr.headers()?;
   let mut new_headers = vec![String::from("unique_index")];
@@ -56,9 +52,4 @@ pub async fn enumer(path: String, skip_rows: String) -> Result<String, String> {
     }
     Err(err) => Err(format!("enumerate failed: {err}")),
   }
-}
-
-/// for integration test
-pub async fn public_enumerate(path: String, skip_rows: String) -> Result<()> {
-  add_index(path, skip_rows).await
 }

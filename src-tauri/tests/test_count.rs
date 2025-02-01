@@ -4,12 +4,10 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::count::public_count;
+use lib::count;
 
 #[tokio::test]
 async fn test_count() -> Result<()> {
-  let temp_dir = TempDir::new()?;
-  let file_path = temp_dir.path().join("data.csv");
   let data = vec![
     "name,age,gender",
     "Patrick,4,male",
@@ -18,16 +16,17 @@ async fn test_count() -> Result<()> {
     "Sandy,24,female",
   ];
 
+  let temp_dir = TempDir::new()?;
+  let file_path = temp_dir.path().join("data.csv");
+
   let mut file = File::create(&file_path)?;
   for line in data.iter() {
     writeln!(file, "{}", line)?;
   }
 
-  let row_count = public_count(file_path.to_str().unwrap().to_string()).await?;
+  let row_count = count::count_rows(file_path.to_str().unwrap()).await?;
+
   assert_eq!(row_count, 5);
 
-  drop(file_path);
-  temp_dir.close()?;
-
-  Ok(())
+  Ok(temp_dir.close()?)
 }

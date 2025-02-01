@@ -8,6 +8,7 @@ use crate::utils::CsvOptions;
 async fn get_header<P: AsRef<Path>>(path: P, skip_rows: String) -> Result<Vec<String>> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -22,13 +23,14 @@ async fn get_header<P: AsRef<Path>>(path: P, skip_rows: String) -> Result<Vec<St
   Ok(headers)
 }
 
-async fn rename_headers<P: AsRef<Path>>(
+pub async fn rename_headers<P: AsRef<Path>>(
   path: P,
   r_header: String,
   skip_rows: String,
 ) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
@@ -36,20 +38,15 @@ async fn rename_headers<P: AsRef<Path>>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .has_headers(true)
     .from_reader(csv_options.skip_csv_rows()?);
 
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
 
   let new_headers = new_rdr.byte_headers()?;
 
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap();
-  let output_path = format!("{}/{}.rename.csv", parent_path, file_name);
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_name}.rename.csv");
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
@@ -60,9 +57,7 @@ async fn rename_headers<P: AsRef<Path>>(
     wtr.write_record(&record)?;
   }
 
-  wtr.flush()?;
-
-  Ok(())
+  Ok(wtr.flush()?)
 }
 
 #[tauri::command]
@@ -85,9 +80,4 @@ pub async fn rename(path: String, headers: String, skip_rows: String) -> Result<
     }
     Err(err) => Err(format!("rename failed: {err}")),
   }
-}
-
-/// for integration test
-pub async fn public_rename(path: &str, r_header: String, skip_rows: String) -> Result<()> {
-  rename_headers(path, r_header, skip_rows).await
 }
