@@ -10,7 +10,7 @@ const [isLoading, selectedFiles, tableData] = [ref(false), ref([]), ref([])];
 const data = reactive({
   path: "",
   fileFormats: ["*"],
-  sep: "_"
+  sep: "-"
 });
 const { formHeight } = useDynamicFormHeight(134);
 
@@ -208,17 +208,10 @@ function splitFilename(filename) {
           <el-button @click="selectFile()" :icon="FolderOpened" plain>
             Open File
           </el-button>
-          <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
-            <el-option label="," value="," />
-            <el-option label="-" value="-" />
-            <el-option label="_" value="_" />
-            <el-option label=";" value=";" />
-            <el-option label="." value="." />
-            <el-option label="(" value="(" />
-            <el-option label=")" value=")" />
-            <el-option label="[" value="[" />
-            <el-option label="]" value="]" />
-          </el-select>
+          <el-input
+            v-model="data.sep"
+            style="margin-left: 10px; width: 100px"
+          />
           <el-button
             @click="modifyFilename()"
             :loading="isLoading"

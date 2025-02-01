@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, TableColumnCtx } from "element-plus";
+import { ElNotification } from "element-plus";
 import {
   FolderOpened,
   SwitchFilled,
@@ -11,37 +11,18 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import {
+  useDynamicFormHeight,
+  customColors,
+  filterFileStatus
+} from "@/utils/utils";
 
-interface FileStatus {
-  filename: string;
-  status: string;
-}
-
-const selectedFiles = ref([]);
-const isLoading = ref(false);
-const progress = ref(0);
-const tableRef = ref(null);
+const [isLoading, selectedFiles, progress] = [ref(false), ref([]), ref(0)];
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
   sep: "|"
 });
-const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
-const filterFileStatus = (
-  value: string,
-  row: FileStatus,
-  column: TableColumnCtx<FileStatus>
-) => {
-  const property = column["property"];
-  return row[property] === value;
-};
 const { formHeight } = useDynamicFormHeight(134);
 
 listen("start_convert", (event: any) => {
@@ -65,10 +46,8 @@ listen("dbf2csv_msg", (event: any) => {
   });
 });
 
-// open file
 async function selectFile() {
   selectedFiles.value = [];
-  isLoading.value = false;
   progress.value = 0;
 
   const selected = await open({
@@ -93,7 +72,7 @@ async function selectFile() {
   }
 }
 
-// convert data
+// invoke dbf
 async function convertData() {
   if (data.filePath === "") {
     ElNotification({
@@ -125,7 +104,7 @@ async function convertData() {
     });
   } catch (err) {
     ElNotification({
-      title: "Invoke DBF Error",
+      title: "Dbf failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -138,52 +117,38 @@ async function convertData() {
 
 <template>
   <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        "
-      >
-        <div style="display: flex; align-items: flex-start">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
-            Open File
-          </el-button>
-          <el-tooltip
-            content="Write the delimiter for CSV"
-            placement="top"
-            effect="light"
-          >
-            <el-select
-              v-model="data.sep"
-              style="margin-left: 10px; width: 100px"
-            >
-              <el-option label="," value="," />
-              <el-option label="|" value="|" />
-              <el-option label="\t" value="\t" />
-              <el-option label=";" value=";" />
-            </el-select>
-          </el-tooltip>
-          <el-button
-            @click="convertData()"
-            :loading="isLoading"
-            :icon="SwitchFilled"
-            plain
-            style="margin-left: 10px"
-          >
-            Convert
-          </el-button>
-        </div>
-        <el-text> Convert dbf file to CSV </el-text>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          Open File
+        </el-button>
+        <el-tooltip
+          content="Write the delimiter for CSV"
+          placement="top"
+          effect="light"
+        >
+          <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
+            <el-option label="," value="," />
+            <el-option label="|" value="|" />
+            <el-option label="\t" value="\t" />
+            <el-option label=";" value=";" />
+          </el-select>
+        </el-tooltip>
+
+        <el-button
+          @click="convertData()"
+          :loading="isLoading"
+          :icon="SwitchFilled"
+          plain
+          style="margin-left: 10px"
+        >
+          Convert
+        </el-button>
       </div>
-    </el-form>
-    <el-table
-      ref="tableRef"
-      :data="selectedFiles"
-      :height="formHeight"
-      style="width: 100%"
-    >
+      <el-text> Convert dbf file to CSV </el-text>
+    </div>
+
+    <el-table :data="selectedFiles" :height="formHeight" style="width: 100%">
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column
         prop="status"
@@ -208,6 +173,7 @@ async function convertData() {
         </template>
       </el-table-column>
     </el-table>
+
     <el-progress
       v-if="isLoading"
       :percentage="progress"

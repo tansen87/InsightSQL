@@ -19,7 +19,6 @@ use polars::{
   },
   sql::SQLContext,
 };
-use tauri::Emitter;
 
 use crate::excel_reader::{ExcelReader, ToPolarsDataFrame};
 use crate::{utils::CsvOptions, xlsx_writer::XlsxWriter};
@@ -123,7 +122,7 @@ fn execute_query(
   match execute_inner() {
     Ok(()) => Ok(query_df_to_json(df)?),
     Err(e) => {
-      return Ok(format!("execute_query => {e}"));
+      return Ok(format!("Query failed: {e}"));
     }
   }
 }
@@ -341,8 +340,7 @@ pub async fn query(
   write_format: String,
   low_memory: bool,
   skip_rows: String,
-  window: tauri::Window,
-) -> Result<Vec<String>, String> {
+) -> Result<(Vec<String>, String), String> {
   let start_time = Instant::now();
 
   let file_path: Vec<&str> = path.split('|').collect();
@@ -360,11 +358,9 @@ pub async fn query(
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      window
-        .emit("runtime", format!("{elapsed_time:.2}"))
-        .unwrap();
-      Ok(result)
+      let runtime = format!("{elapsed_time:.2}");
+      Ok((result, runtime))
     }
-    Err(err) => Err(format!("prepare_query => {err}")),
+    Err(err) => Err(format!("Query failed: {err}")),
   }
 }

@@ -47,7 +47,7 @@ async function selectFile() {
   isPath.value = true;
 
   try {
-    const result: string = await invoke("query", {
+    const result: string[] = await invoke("query", {
       path: data.path,
       sqlQuery: "select * from _t_1 limit 10",
       write: false,
@@ -56,14 +56,12 @@ async function selectFile() {
       skipRows: data.skipRows
     });
 
-    if (
-      result[0].startsWith("execute_query") ||
-      result[0].startsWith("prepare_query")
-    ) {
-      throw result[0].toString();
+    const q = Array.isArray(result[0]) ? result[0][0] : null;
+    if (q.startsWith("Query failed")) {
+      throw q;
     }
 
-    const jsonData = JSON.parse(result);
+    const jsonData = JSON.parse(result[0]);
     const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
     tableHeader.value = Object.keys(arrayData[0]).map(header => ({
       label: header,

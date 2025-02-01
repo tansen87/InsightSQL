@@ -2,7 +2,6 @@
 import { ref, reactive, watch, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { ElNotification } from "element-plus";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
@@ -15,7 +14,6 @@ const treeHeaders = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
 const viewTable = ref(false);
-const runtime = ref(0.0);
 const counter = ref(0);
 const tables = ref([]);
 const isDataLoaded = ref(false);
@@ -61,10 +59,6 @@ const initializeEditor = editor => {
   });
 };
 
-listen("runtime", (event: any) => {
-  runtime.value = event.payload;
-});
-
 const queryViewData = async () => {
   const queryResult = await queryData();
   if (queryResult) {
@@ -99,7 +93,7 @@ async function queryData() {
   isLoading.value = true;
 
   try {
-    const df: string = await invoke("query", {
+    const result: string[] = await invoke("query", {
       path: data.path,
       sqlQuery: sqlQuery.value,
       write: data.write,
@@ -108,16 +102,13 @@ async function queryData() {
       skipRows: data.skipRows
     });
 
-    if (
-      (typeof df[0] === "string" && df[0].startsWith("execute_query")) ||
-      df[0].startsWith("prepare_query")
-    ) {
-      throw df[0].toString();
+    const q = Array.isArray(result[0]) ? result[0][0] : null;
+    if (q.startsWith("Query failed")) {
+      throw q;
     }
 
-    const jsonData = JSON.parse(df);
-    const isJsonArray = Array.isArray(jsonData);
-    const arrayData = isJsonArray ? jsonData : [jsonData];
+    const jsonData = JSON.parse(result[0]);
+    const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
     columns.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -126,7 +117,7 @@ async function queryData() {
     tableData.value = arrayData;
 
     ElNotification({
-      message: `Query done, elapsed time: ${runtime.value} s`,
+      message: `Query done, elapsed time: ${result[1]} s`,
       position: "top-left",
       type: "success",
       duration: 5000
@@ -184,7 +175,7 @@ async function selectFile() {
     data.path.split("|").map(async (path, index) => {
       const basename = viewFileName.value[index];
       try {
-        const result: any = await invoke("query", {
+        const result: string[] = await invoke("query", {
           path: path,
           sqlQuery: `select * from "${basename}" limit 10`,
           write: false,
@@ -193,18 +184,13 @@ async function selectFile() {
           skipRows: data.skipRows
         });
 
-        if (
-          (typeof result[0] === "string" &&
-            result[0].startsWith("execute_query")) ||
-          result[0].startsWith("prepare_query")
-        ) {
-          throw result[0].toString();
+        const q = Array.isArray(result[0]) ? result[0][0] : null;
+        if (q.startsWith("Query failed")) {
+          throw q;
         }
 
-        const jsonData = JSON.parse(result);
-        const isJsonArray = Array.isArray(jsonData);
-        const arrayData = isJsonArray ? jsonData : [jsonData];
-
+        const jsonData = JSON.parse(result[0]);
+        const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
         columns.value = Object.keys(arrayData[0]).map(key => ({
           name: key,
           label: key,
