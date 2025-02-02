@@ -216,11 +216,15 @@ async function applyData() {
         </div>
 
         <div style="flex: 3; margin-left: 5px; margin-top: 12px">
-          <el-tooltip content="formatstr" placement="bottom" effect="light">
+          <el-tooltip
+            content="formatstr with CalcConv or DynFmt"
+            placement="bottom"
+            effect="light"
+          >
             <el-input
               v-model="data.formatstr"
               style="width: 100%"
-              placeholder="formatstr"
+              placeholder="{col1} + {col2}"
               clearable
             />
           </el-tooltip>

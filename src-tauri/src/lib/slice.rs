@@ -15,6 +15,7 @@ pub enum SliceMode {
   Left,
   Right,
   Nth,
+  Nmax,
   None,
 }
 
@@ -24,6 +25,7 @@ impl From<&str> for SliceMode {
       "left" => SliceMode::Left,
       "right" => SliceMode::Right,
       "nth" => SliceMode::Nth,
+      "nmax" => SliceMode::Nmax,
       _ => SliceMode::None,
     }
   }
@@ -35,6 +37,7 @@ impl SliceMode {
       SliceMode::Left => "left",
       SliceMode::Right => "right",
       SliceMode::Nth => "nth",
+      SliceMode::Nmax => "nmax",
       SliceMode::None => "none",
     }
   }
@@ -118,6 +121,46 @@ pub async fn slice_column_with_nth(
   Ok(wtr.flush()?)
 }
 
+pub async fn slice_column_with_nmax(
+  mut rdr: Reader<BufReader<File>>,
+  mut wtr: Writer<BufWriter<File>>,
+  select_column: &str,
+  n: usize,
+  slice_sep: &str,
+) -> Result<()> {
+  let mut headers = rdr.headers()?.clone();
+
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
+
+  let mut first_record = true;
+  for result in rdr.records() {
+    let record = result?;
+    if let Some(value) = record.get(sel.first_indices()?) {
+      let split_parts: Vec<&str> = value.split(slice_sep).collect();
+      if first_record {
+        for i in 1..=n {
+          headers.push_field(&format!("{}_nmax{}", select_column, i));
+        }
+        wtr.write_record(&headers)?;
+        first_record = false;
+      }
+
+      let mut new_record = record.clone();
+      for i in 0..n {
+        if i < split_parts.len() {
+          new_record.push_field(split_parts[i]);
+        } else {
+          new_record.push_field("");
+        }
+      }
+
+      wtr.write_record(&new_record)?;
+    }
+  }
+
+  Ok(wtr.flush()?)
+}
+
 pub async fn perform_slice<P: AsRef<Path>>(
   path: P,
   skip_rows: usize,
@@ -153,6 +196,7 @@ pub async fn perform_slice<P: AsRef<Path>>(
       slice_column_with_nchar(rdr, wtr, select_column, n, SliceMode::Right.to_str()).await?
     }
     SliceMode::Nth => slice_column_with_nth(rdr, wtr, select_column, n, slice_sep).await?,
+    SliceMode::Nmax => slice_column_with_nmax(rdr, wtr, select_column, n, slice_sep).await?,
     SliceMode::None => {}
   }
 

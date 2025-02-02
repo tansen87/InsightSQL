@@ -159,10 +159,11 @@ async function sliceData() {
           />
         </el-tooltip>
         <el-tooltip content="Slice mode" placement="top" effect="light">
-          <el-select v-model="data.mode" style="margin-left: 10px; width: 80px">
+          <el-select v-model="data.mode" style="margin-left: 10px; width: 84px">
             <el-option label="Left" value="left" />
             <el-option label="Right" value="right" />
             <el-option label="Nth" value="nth" />
+            <el-option label="Nmax" value="nmax" />
           </el-select>
         </el-tooltip>
       </div>
