@@ -108,13 +108,13 @@ html.dark {
     background-color: rgb(36 37 37);
   }
   .custom-container1 {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  position: sticky;
-}
-.custom-container2 {
-  display: flex;
-  align-items: flex-start;
-}
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: sticky;
+  }
+  .custom-container2 {
+    display: flex;
+    align-items: flex-start;
+  }
 }

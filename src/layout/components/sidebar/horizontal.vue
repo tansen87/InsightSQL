@@ -89,29 +89,24 @@ function navigateToCommand(routePath) {
       />
     </el-menu>
     <div class="search-container">
-      <div>
-        <el-input
-          v-model="searchQuery"
-          placeholder="Search for InsightSQL"
-          @click="filteredCommands"
-        />
-      </div>
+      <el-input
+        v-model="searchQuery"
+        placeholder="Search for InsightSQL"
+        @click="filteredCommands"
+      />
 
       <el-scrollbar
         v-if="searchQuery && filteredCommands.length"
         class="command-list"
-        style="height: 200px"
       >
-        <ul style="padding: 0; margin: 0">
-          <li
-            v-for="command in filteredCommands"
-            :key="command.route"
-            @click="navigateToCommand(command.route)"
-            class="command-item"
-          >
-            <span>{{ command.title }}</span>
-          </li>
-        </ul>
+        <el-form
+          v-for="command in filteredCommands"
+          :key="command.route"
+          @click="navigateToCommand(command.route)"
+          class="command-item"
+        >
+          <span>{{ command.title }}</span>
+        </el-form>
       </el-scrollbar>
     </div>
 
@@ -171,16 +166,10 @@ function navigateToCommand(routePath) {
 }
 .command-list {
   border: 1px solid #ddd;
-  max-height: 200px;
-  overflow-y: auto;
+  height: 200px;
   position: absolute;
   width: 100%;
   z-index: 1000;
-  left: 0;
-  right: 0;
-  top: 100%;
-  margin: 0;
-  box-sizing: border-box;
 }
 .command-item {
   padding: 8px 16px;

@@ -9,7 +9,7 @@ import { useDark } from "@pureadmin/utils";
 import "./ace-config";
 import { useDynamicFormHeight } from "@/utils/utils";
 
-const columns = ref([]);
+const tableColumn = ref([]);
 const treeHeaders = ref([]);
 const tableData = ref([]);
 const isLoading = ref(false);
@@ -23,7 +23,7 @@ const data = reactive({
   path: "",
   fileFormats: ["*"],
   write: false,
-  writeFormat: "csv",
+  writeFormat: "xlsx",
   lowMemory: false,
   skipRows: "0"
 });
@@ -68,7 +68,7 @@ const queryViewData = async () => {
 
 // invoke query
 async function queryData() {
-  columns.value = [];
+  tableColumn.value = [];
   tableData.value = [];
 
   if (data.path === "") {
@@ -109,7 +109,7 @@ async function queryData() {
 
     const jsonData = JSON.parse(result[0]);
     const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-    columns.value = Object.keys(arrayData[0]).map(key => ({
+    tableColumn.value = Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
       prop: key
@@ -127,7 +127,7 @@ async function queryData() {
     return true;
   } catch (err) {
     ElNotification({
-      title: "Invoke query error",
+      title: "SQL failed",
       message: err.toString(),
       position: "bottom-right",
       type: "error",
@@ -147,7 +147,7 @@ const selectViewFile = async () => {
 };
 
 async function selectFile() {
-  columns.value = [];
+  tableColumn.value = [];
   treeHeaders.value = [];
   tableData.value = [];
   data.path = "";
@@ -170,7 +170,7 @@ async function selectFile() {
     data.path = selected;
   }
 
-  // 使用 Promise.all 并行处理每个文件
+  // 使用Promise.all并行处理每个文件
   await Promise.all(
     data.path.split("|").map(async (path, index) => {
       const basename = viewFileName.value[index];
@@ -191,7 +191,7 @@ async function selectFile() {
 
         const jsonData = JSON.parse(result[0]);
         const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-        columns.value = Object.keys(arrayData[0]).map(key => ({
+        tableColumn.value = Object.keys(arrayData[0]).map(key => ({
           name: key,
           label: key,
           prop: key
@@ -224,13 +224,13 @@ async function selectFile() {
 const viewFileName = computed(() => {
   const paths = data.path.split("|");
   return paths.map(path => {
-    const pathParts = path.split(/[/\\]/); // 使用正则表达式匹配 / 或 \
-    let fileName = pathParts[pathParts.length - 1]; // 获取文件名
+    const pathParts = path.split(/[/\\]/);
+    let fileName = pathParts[pathParts.length - 1];
 
     // 去除文件后缀
     const dotIndex = fileName.lastIndexOf(".");
     if (dotIndex !== -1 && dotIndex < fileName.length - 1) {
-      // 确保 . 不是文件名的最后一个字符
+      // 确保.不是文件名的最后一个字符
       fileName = fileName.substring(0, dotIndex);
     }
 
@@ -251,14 +251,13 @@ const fileTreeData = computed(() => {
     }));
 
     return {
-      label: fileName, // 文件名作为节点标签
+      label: fileName,
       children: children,
       key: index
     };
   });
 });
 
-// 树形组件的配置
 const defaultProps = {
   children: "children",
   label: "label"
@@ -308,17 +307,16 @@ watch(
     <el-form :style="{ height: formHeight + 'px' }">
       <div class="custom-container1">
         <div class="custom-container2">
-          <el-button @click="selectViewFile()" :icon="FolderOpened" plain>
-            Open File
-          </el-button>
+          <el-tooltip content="open file" placement="top" effect="light">
+            <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
+          </el-tooltip>
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 10px; width: 80px"
-              placeholder="skip rows"
+              style="margin-left: 10px; width: 50px"
             />
           </el-tooltip>
-          <el-form-item style="margin-left: 10px; width: 100px">
+          <el-form-item style="margin-left: 10px; width: 95px">
             <el-tooltip
               content="Memory or stream query"
               placement="top"
@@ -332,9 +330,8 @@ watch(
           </el-form-item>
         </div>
 
-        <el-button @click="viewTable = true" :icon="View" plain>
-          View
-        </el-button>
+        <el-button @click="viewTable = true" :icon="View" circle />
+
         <el-form-item>
           <el-tooltip
             content="Export data or not"
@@ -357,22 +354,22 @@ watch(
           <el-tooltip content="Export type" placement="top" effect="light">
             <el-select
               v-model="data.writeFormat"
-              style="margin-left: 10px; width: 95px"
+              style="margin-left: 10px; width: 70px"
             >
               <el-option label="csv" value="csv" />
               <el-option label="xlsx" value="xlsx" />
               <el-option label="parquet" value="parquet" />
             </el-select>
           </el-tooltip>
-          <el-button
-            @click="queryViewData"
-            :loading="isLoading"
-            :icon="Search"
-            style="margin-left: 10px"
-            plain
-          >
-            Execute
-          </el-button>
+          <el-tooltip content="execute" placement="top" effect="light">
+            <el-button
+              @click="queryViewData"
+              :loading="isLoading"
+              :icon="Search"
+              style="margin-left: 10px"
+              circle
+            />
+          </el-tooltip>
         </el-form-item>
       </div>
 
@@ -442,7 +439,7 @@ watch(
           :height="formHeight * 0.8"
         >
           <el-table-column
-            v-for="column in columns"
+            v-for="column in tableColumn"
             :prop="column.prop"
             :label="column.label"
             :key="column.prop"
