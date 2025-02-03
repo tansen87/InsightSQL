@@ -55,7 +55,7 @@ pub async fn slice_column_with_nchar(
   let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
 
   let mut new_headers = headers.clone();
-  let new_column_name = format!("{}_slice-nchar", select_column);
+  let new_column_name = format!("{}_nchar", select_column);
   new_headers.push_field(&new_column_name);
 
   wtr.write_record(&new_headers)?;
@@ -98,7 +98,7 @@ pub async fn slice_column_with_nth(
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
 
-  let new_column_name = format!("{}_slice-nth", select_column);
+  let new_column_name = format!("{}_nth", select_column);
   headers.push_field(&new_column_name);
   wtr.write_record(&headers)?;
 
