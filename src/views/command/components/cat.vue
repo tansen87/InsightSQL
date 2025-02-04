@@ -1,13 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, nextTick } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { FolderOpened, Connection, Check } from "@element-plus/icons-vue";
+import { FolderOpened, Connection, Check, Link } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import { catContent, useMarkdown } from "@/utils/markdown";
 
-const [columns, selectedFiles, originalColumns, isLoading, completed, result] =
-  [ref(""), ref([]), ref([]), ref(false), ref(false), ref(null)];
+const [
+  columns,
+  selectedFiles,
+  originalColumns,
+  isLoading,
+  completed,
+  result,
+  infoDialog
+] = [ref(""), ref([]), ref([]), ref(false), ref(false), ref(null), ref(false)];
 const data = reactive({
   filePath: "",
   fileFormats: ["*"],
@@ -121,6 +129,12 @@ async function concatData() {
   }
   isLoading.value = false;
 }
+
+const { compiledMarkdown, manualHighlight } = useMarkdown(catContent);
+const handleDialogOpened = async () => {
+  await nextTick();
+  manualHighlight();
+};
 </script>
 
 <template>
@@ -166,15 +180,18 @@ async function concatData() {
           </el-button>
         </div>
 
-        <el-text>
+        <el-link @click="infoDialog = true" :icon="Link">
           <span v-if="completed">
             <el-icon color="green" style="margin-right: 2px">
               <Check />
             </el-icon>
             Cat done, elapsed time: {{ result }} s
           </span>
-          <span v-else> Cat CSV and Excel files </span>
-        </el-text>
+          <span v-else>
+            How to use
+            <span style="color: skyblue; font-weight: bold">cat</span>
+          </span>
+        </el-link>
       </div>
     </el-form>
 
@@ -203,5 +220,16 @@ async function concatData() {
       <el-table-column type="index" width="50" />
       <el-table-column prop="filename" />
     </el-table>
+
+    <el-dialog
+      v-model="infoDialog"
+      title="Cat - Merge multiple CSV or Excel files into one CSV or xlsx file"
+      width="800"
+      @opened="handleDialogOpened"
+    >
+      <el-scrollbar :height="formHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </el-form>
 </template>

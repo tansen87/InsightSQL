@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
-import { marked } from "marked";
-import Prism from "prismjs";
-import "prismjs/components/prism-sql";
-import "prismjs/themes/prism.css";
+import { useMarkdown } from "@/utils/markdown";
 
-const markdownContent = ref(`
+function content() {
+  return `
 # <u><a href="https://docs.pola.rs/py-polars/html/reference/sql/index.html" target="_blank">Polars SQL Interface</a></u>
 
 ### 1.Union
@@ -39,7 +36,7 @@ on t1.name = t2.name
 ### 4.Group by
 
 \`\`\`sql
-select 
+select
 idx
 ,sum(cast(amount as double)) amount
 from _t_1
@@ -54,19 +51,12 @@ select
 sum(cast(coalesce(age, 0) as double)) age
 from _t_1
 \`\`\`
-`);
+`;
+}
 
-const compiledMarkdown = ref(marked.parse(markdownContent.value));
-
-onMounted(() => {
-  Prism.highlightAll();
-});
-
-watch(markdownContent, newContent => {
-  compiledMarkdown.value = marked.parse(newContent);
-});
+const { compiledMarkdown } = useMarkdown(content);
 </script>
 
 <template>
-  <div v-html="compiledMarkdown" />
+  <div v-html="compiledMarkdown" class="page-container" />
 </template>

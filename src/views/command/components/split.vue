@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, nextTick } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { splitContent, useMarkdown } from "@/utils/markdown";
 
-const [isLoading, isPath, tableColumn, tableData] = [
+const [isLoading, isPath, tableColumn, tableData, infoDialog] = [
   ref(false),
   ref(false),
   ref([]),
-  ref([])
+  ref([]),
+  ref(false)
 ];
 const data = reactive({
   path: "",
@@ -87,6 +89,12 @@ async function splitData() {
   }
   isLoading.value = false;
 }
+
+const { compiledMarkdown, manualHighlight } = useMarkdown(splitContent);
+const handleDialogOpened = async () => {
+  await nextTick();
+  manualHighlight();
+};
 </script>
 
 <template>
@@ -106,10 +114,13 @@ async function splitData() {
         </el-tooltip>
       </div>
 
-      <el-text>
+      <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="isPath">{{ data.path }}</span>
-        <span v-else>Split one CSV file into many CSV files</span>
-      </el-text>
+        <span v-else>
+          How to use
+          <span style="color: skyblue; font-weight: bold">split</span>
+        </span>
+      </el-link>
     </div>
 
     <div class="custom-container1">
@@ -148,5 +159,16 @@ async function splitData() {
         :key="column.prop"
       />
     </el-table>
+
+    <el-dialog
+      v-model="infoDialog"
+      title="Split - Split one CSV file into many CSV files"
+      width="800"
+      @opened="handleDialogOpened"
+    >
+      <el-scrollbar :height="formHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

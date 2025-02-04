@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, nextTick } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { ElNotification } from "element-plus";
-import { FolderOpened, Refresh } from "@element-plus/icons-vue";
+import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { sliceContent, useMarkdown } from "@/utils/markdown";
 
-const [isLoading, isPath, selectColumn, tableHeader, tableColumn, tableData] = [
-  ref(false),
-  ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([])
-];
+const [
+  isLoading,
+  isPath,
+  selectColumn,
+  tableHeader,
+  tableColumn,
+  tableData,
+  infoDialog
+] = [ref(false), ref(false), ref(""), ref([]), ref([]), ref([]), ref(false)];
 const data = reactive({
   path: "",
   skipRows: "0",
@@ -109,6 +111,12 @@ async function sliceData() {
   }
   isLoading.value = false;
 }
+
+const { compiledMarkdown, manualHighlight } = useMarkdown(sliceContent);
+const handleDialogOpened = async () => {
+  await nextTick();
+  manualHighlight();
+};
 </script>
 
 <template>
@@ -127,10 +135,13 @@ async function sliceData() {
         </el-tooltip>
       </div>
 
-      <el-text>
+      <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="isPath">{{ data.path }}</span>
-        <span v-else>Slicing of CSV column</span>
-      </el-text>
+        <span v-else>
+          How to use
+          <span style="color: skyblue; font-weight: bold">slice</span>
+        </span>
+      </el-link>
     </div>
 
     <div class="custom-container1">
@@ -193,5 +204,16 @@ async function sliceData() {
         :key="column.prop"
       />
     </el-table>
+
+    <el-dialog
+      v-model="infoDialog"
+      title="Slice - Slicing of csv column"
+      width="800"
+      @opened="handleDialogOpened"
+    >
+      <el-scrollbar :height="formHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>
