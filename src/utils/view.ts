@@ -32,7 +32,8 @@ export async function viewSqlp(path: string, skipRows: string) {
     write: false,
     writeFormat: "csv",
     lowMemory: false,
-    skipRows: skipRows
+    skipRows: skipRows,
+    schemaLength: "0"
   });
 
   const q = Array.isArray(result[0]) ? result[0][0] : null;

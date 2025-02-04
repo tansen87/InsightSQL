@@ -134,7 +134,13 @@ async fn prepare_query(
   write_format: &str,
   low_memory: bool,
   skip_rows: String,
+  schema_length: &str,
 ) -> Result<Vec<String>> {
+  let infer_schema_length = match schema_length {
+    "0" => Some(0),
+    _ => Some(100),
+  };
+
   let mut ctx = SQLContext::new();
 
   let mut output: Vec<Option<String>> = Vec::new();
@@ -221,7 +227,7 @@ async fn prepare_query(
           .with_has_header(true)
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
-          .with_infer_schema_length(Some(0))
+          .with_infer_schema_length(infer_schema_length)
           .with_low_memory(low_memory)
           .with_skip_rows(skip_rows.parse::<usize>()?)
           .finish()?;
@@ -340,6 +346,7 @@ pub async fn query(
   write_format: String,
   low_memory: bool,
   skip_rows: String,
+  schema_length: String,
 ) -> Result<(Vec<String>, String), String> {
   let start_time = Instant::now();
 
@@ -352,6 +359,7 @@ pub async fn query(
     &write_format,
     low_memory,
     skip_rows,
+    schema_length.as_str()
   )
   .await
   {

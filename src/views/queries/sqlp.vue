@@ -25,7 +25,8 @@ const data = reactive({
   write: false,
   writeFormat: "xlsx",
   lowMemory: false,
-  skipRows: "0"
+  skipRows: "0",
+  schemaLength: "100"
 });
 const { formHeight } = useDynamicFormHeight(102);
 const { isDark } = useDark();
@@ -99,7 +100,8 @@ async function queryData() {
       write: data.write,
       writeFormat: data.writeFormat,
       lowMemory: data.lowMemory,
-      skipRows: data.skipRows
+      skipRows: data.skipRows,
+      schemaLength: data.schemaLength
     });
 
     const q = Array.isArray(result[0]) ? result[0][0] : null;
@@ -181,7 +183,8 @@ async function selectFile() {
           write: false,
           writeFormat: "csv",
           lowMemory: false,
-          skipRows: data.skipRows
+          skipRows: data.skipRows,
+          schemaLength: data.schemaLength
         });
 
         const q = Array.isArray(result[0]) ? result[0][0] : null;
@@ -309,6 +312,16 @@ watch(
         <div class="custom-container2">
           <el-tooltip content="open file" placement="top" effect="light">
             <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
+          </el-tooltip>
+          <el-tooltip
+            content="infer schema length"
+            placement="top"
+            effect="light"
+          >
+            <el-input
+              v-model="data.schemaLength"
+              style="margin-left: 10px; width: 50px"
+            />
           </el-tooltip>
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input

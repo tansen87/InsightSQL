@@ -177,8 +177,8 @@ pub async fn perform_slice<P: AsRef<Path>>(
     None => b',',
   };
 
-  let parent_path = &path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_name}.slice.csv");
 
   let rdr = ReaderBuilder::new()
