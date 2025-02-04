@@ -103,16 +103,32 @@ impl XlsxWriter {
             worksheet.write_string((col + 1).try_into()?, row.try_into()?, values)?;
           }
           AnyValue::Int64(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+            worksheet.write_number(
+              (col + 1).try_into()?,
+              row.try_into()?,
+              values.to_f64().unwrap_or(0.0),
+            )?;
           }
           AnyValue::Int32(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+            worksheet.write_number(
+              (col + 1).try_into()?,
+              row.try_into()?,
+              values.to_f64().unwrap_or(0.0),
+            )?;
           }
           AnyValue::Int16(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+            worksheet.write_number(
+              (col + 1).try_into()?,
+              row.try_into()?,
+              values.to_f64().unwrap_or(0.0),
+            )?;
           }
           AnyValue::Int8(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+            worksheet.write_number(
+              (col + 1).try_into()?,
+              row.try_into()?,
+              values.to_f64().unwrap_or(0.0),
+            )?;
           }
           AnyValue::UInt32(values) => {
             worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
