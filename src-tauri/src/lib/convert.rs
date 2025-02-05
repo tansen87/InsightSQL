@@ -168,25 +168,24 @@ async fn csv_to_xlsx<P: AsRef<Path>>(
   path: P,
   skip_rows: usize,
   use_polars: bool,
-  chunk_size: Option<usize>,
+  chunk_size: usize,
 ) -> Result<()> {
   let dest = path.as_ref().with_extension("xlsx");
 
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
 
-  let row_count = csv_options.count_csv_rows()?;
-
   let sep = match csv_options.detect_separator() {
     Some(separator) => separator as u8,
     None => b',',
   };
 
-  if row_count >= 104_0000 {
-    return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
-  }
-
   if use_polars {
+    let row_count = csv_options.count_csv_rows()?;
+    if row_count > 104_0000 {
+      return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
+    }
+
     let df = CsvReadOptions::default()
       .with_parse_options(CsvParseOptions::default().with_separator(sep))
       .with_skip_rows(skip_rows)
@@ -200,7 +199,7 @@ async fn csv_to_xlsx<P: AsRef<Path>>(
       .delimiter(sep)
       .from_reader(csv_options.skip_csv_rows()?);
 
-    XlsxWriter::new().write_xlsx(rdr, chunk_size.unwrap_or(10_0000), dest)?;
+    XlsxWriter::new().write_xlsx(rdr, chunk_size, dest)?;
   }
 
   Ok(())
@@ -211,13 +210,15 @@ pub async fn switch_csv(
   path: String,
   skip_rows: String,
   mode: String,
+  chunk_size: String,
   window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
-  let mut count: usize = 0;
+
   let paths: Vec<&str> = path.split('|').collect();
-  let file_len = paths.len();
   let skip_rows = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
+  let chunk_size = chunk_size.parse::<usize>().map_err(|e| e.to_string())?;
+  let use_polars = mode != "csv";
 
   for file in paths.iter() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
@@ -225,21 +226,15 @@ pub async fn switch_csv(
       .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
 
-    let use_polars = mode != "csv";
-    match csv_to_xlsx(file, skip_rows, use_polars, None).await {
+    match csv_to_xlsx(file, skip_rows, use_polars, chunk_size).await {
       Ok(_) => {
-        count += 1;
-        let progress = ((count as f32) / (file_len as f32)) * 100.0;
-        window
-          .emit("c2x_progress", format!("{progress:.0}"))
-          .map_err(|e| e.to_string())?;
         window
           .emit("c2x_msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("rows_err", format!("{}|{err}", filename))
+          .emit("rows_err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
         continue;
       }

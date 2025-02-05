@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon } from "element-plus";
+import { ElIcon } from "element-plus";
 import {
   FolderOpened,
   SwitchFilled,
@@ -14,16 +14,16 @@ import {
 import {
   shortFileName,
   useDynamicFormHeight,
-  customColors,
   filterFileStatus
 } from "@/utils/utils";
+import { message } from "@/utils/message";
 
-const [isLoading, progress, selectedFiles] = [ref(false), ref(0), ref([])];
+const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   path: "",
-  fileFormats: ["*"],
   skipRows: "0",
-  mode: "Polars"
+  mode: "Polars",
+  chunkSize: "1000000"
 });
 const { formHeight } = useDynamicFormHeight(134);
 
@@ -35,10 +35,6 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("c2x_progress", (event: any) => {
-  const pgs: any = event.payload;
-  progress.value = pgs;
-});
 listen("rows_err", (event: any) => {
   const csvRowsErr: string = event.payload;
   selectedFiles.value.forEach(file => {
@@ -47,7 +43,6 @@ listen("rows_err", (event: any) => {
       file.errorMessage = csvRowsErr.split("|")[1];
     }
   });
-  isLoading.value = false;
 });
 listen("c2x_msg", (event: any) => {
   const c2xMsg: any = event.payload;
@@ -60,15 +55,13 @@ listen("c2x_msg", (event: any) => {
 
 async function selectFile() {
   selectedFiles.value = [];
-  isLoading.value = false;
-  progress.value = 0;
 
   const selected = await open({
     multiple: true,
     filters: [
       {
         name: "csv",
-        extensions: data.fileFormats
+        extensions: ["*"]
       }
     ]
   });
@@ -88,12 +81,7 @@ async function selectFile() {
 // invoke switch_csv
 async function csvToxlsx() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
 
@@ -103,27 +91,13 @@ async function csvToxlsx() {
     const result: string = await invoke("switch_csv", {
       path: data.path,
       skipRows: data.skipRows,
-      mode: data.mode
+      mode: data.mode,
+      chunkSize: data.chunkSize
     });
 
-    if (result.startsWith("csv to xlsx failed:")) {
-      throw result.toString();
-    }
-
-    ElNotification({
-      message: `Convert done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Csv to xlsx failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -137,22 +111,26 @@ async function csvToxlsx() {
           Open File
         </el-button>
 
-        <el-tooltip
-          content="Polars or Csv engine"
-          placement="top"
-          effect="light"
-        >
+        <el-tooltip content="Polars or Csv engine" effect="light">
           <el-select v-model="data.mode" style="margin-left: 10px; width: 85px">
             <el-option label="Polars" value="polars" />
             <el-option label="Csv" value="csv" />
           </el-select>
         </el-tooltip>
 
-        <el-tooltip content="skip rows" placement="top" effect="light">
+        <el-tooltip
+          content="Split every N rows into a sheet, only used for CSV engine"
+          effect="light"
+        >
+          <el-input
+            v-model="data.chunkSize"
+            style="margin-left: 10px; width: 80px"
+          />
+        </el-tooltip>
+        <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
-            style="margin-left: 10px; width: 80px"
-            placeholder="skip rows"
+            style="margin-left: 10px; width: 50px"
           />
         </el-tooltip>
 
@@ -160,7 +138,6 @@ async function csvToxlsx() {
           @click="csvToxlsx()"
           :loading="isLoading"
           :icon="SwitchFilled"
-          plain
           style="margin-left: 10px"
         >
           Convert
@@ -223,11 +200,5 @@ async function csvToxlsx() {
         </template>
       </el-table-column>
     </el-table>
-
-    <el-progress
-      v-if="isLoading"
-      :percentage="progress"
-      :color="customColors"
-    />
   </el-form>
 </template>

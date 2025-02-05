@@ -47,15 +47,15 @@ const message = (
   } else {
     const {
       icon,
-      type = "info",
+      type = "success",
       dangerouslyUseHTMLString = false,
       customClass = "antd",
-      duration = 2000,
+      duration = 3000,
       showClose = false,
       center = false,
-      offset = 20,
+      offset = 11,
       appendTo = document.body,
-      grouping = false,
+      grouping = true,
       onClose
     } = params;
 
