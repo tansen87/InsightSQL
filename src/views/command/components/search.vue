@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { Search, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewSqlp, viewOpenFile } from "@/utils/view";
+import { message } from "@/utils/message";
 
 const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
   ref(false),
@@ -44,34 +44,18 @@ async function selectFile() {
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke search
 async function searchData() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
   if (columns.value.length === 0) {
-    ElNotification({
-      title: "Column not found",
-      message: "未选择column",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Column not selected", { type: "warning" });
     return;
   }
 
@@ -86,27 +70,15 @@ async function searchData() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("search failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Search done, match rows: 
+    message(
+      `Search done, match rows: 
         ${result[0]}
          lines, elapsed time: 
         ${result[1]} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+      { duration: 5000 }
+    );
   } catch (err) {
-    ElNotification({
-      title: "Search failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -116,7 +88,7 @@ async function searchData() {
   <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
@@ -124,7 +96,6 @@ async function searchData() {
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
-            placeholder="skip rows"
           />
         </el-tooltip>
       </div>
@@ -137,7 +108,7 @@ async function searchData() {
 
     <div class="custom-container1">
       <div class="custom-container2" style="margin-top: 12px">
-        <el-tooltip content="Search mode" placement="bottom" effect="light">
+        <el-tooltip content="Search mode" effect="light">
           <el-select v-model="data.mode" style="width: 112px">
             <el-option label="equal" value="equal" />
             <el-option label="contains" value="contains" />
@@ -165,7 +136,6 @@ async function searchData() {
         @click="searchData()"
         :loading="isLoading"
         :icon="Search"
-        plain
         style="margin-top: 12px"
       >
         Search

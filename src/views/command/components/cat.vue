@@ -6,6 +6,7 @@ import { ElNotification } from "element-plus";
 import { FolderOpened, Connection, Check, Link } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 import { catContent, useMarkdown } from "@/utils/markdown";
+import { message } from "@/utils/message";
 
 const [
   columns,
@@ -18,7 +19,6 @@ const [
 ] = [ref(""), ref([]), ref([]), ref(false), ref(false), ref(null), ref(false)];
 const data = reactive({
   filePath: "",
-  fileFormats: ["*"],
   mode: "Memory",
   skipRows: "0",
   useCols: ""
@@ -30,12 +30,13 @@ async function selectFile() {
   selectedFiles.value = [];
   originalColumns.value = [];
   completed.value = false;
+
   const selected = await open({
     multiple: true,
     filters: [
       {
         name: "",
-        extensions: data.fileFormats
+        extensions: ["*"]
       }
     ]
   });
@@ -69,12 +70,7 @@ async function selectFile() {
 // invoke concat
 async function concatData() {
   if (data.filePath === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("File not selected", { type: "warning" });
     return;
   }
 
@@ -112,20 +108,10 @@ async function concatData() {
       useCols: useCols
     });
 
-    if (JSON.stringify(result).startsWith("cat failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
     result.value = res;
     completed.value = true;
   } catch (err) {
-    ElNotification({
-      title: "Cat failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -142,13 +128,12 @@ const handleDialogOpened = async () => {
     <el-form>
       <div class="custom-container1">
         <div class="custom-container2">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          <el-button @click="selectFile()" :icon="FolderOpened">
             Open File
           </el-button>
 
           <el-tooltip
             content="Polars memory or stream, Csv stream Cat"
-            placement="top"
             effect="light"
           >
             <el-select
@@ -161,11 +146,10 @@ const handleDialogOpened = async () => {
             </el-select>
           </el-tooltip>
 
-          <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-tooltip content="skip rows" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 10px; width: 80px"
-              placeholder="skip rows"
             />
           </el-tooltip>
 
@@ -173,7 +157,6 @@ const handleDialogOpened = async () => {
             @click="concatData()"
             :loading="isLoading"
             :icon="Connection"
-            plain
             style="margin-left: 10px"
           >
             Cat
@@ -211,7 +194,6 @@ const handleDialogOpened = async () => {
     </el-select>
 
     <el-table
-      ref="tableRef"
       :data="selectedFiles"
       :height="formHeight"
       empty-text=""

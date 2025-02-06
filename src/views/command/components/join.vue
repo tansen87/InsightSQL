@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { message } from "@/utils/message";
 
 const [
   isLoading,
@@ -69,34 +69,18 @@ async function selectFile(fileIndex) {
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke join
 async function joinData() {
   if (data.path1 === "" || data.path2 === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("File not selected", { type: "warning" });
     return;
   }
   if (sel1.value.length === 0 || sel2.value.length === 0) {
-    ElNotification({
-      title: "Column not found",
-      message: "未选择column",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Column not selected", { type: "warning" });
     return;
   }
 
@@ -112,24 +96,9 @@ async function joinData() {
       nulls: data.nulls
     });
 
-    if (JSON.stringify(result).startsWith("join failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Join done, elapsed time: ${result} s.`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Join done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Join failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -156,11 +125,11 @@ const viewFileName2 = computed(() => {
   <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile(1)" :icon="FolderOpened" plain>
+        <el-button @click="selectFile(1)" :icon="FolderOpened">
           File 1
         </el-button>
 
-        <el-button @click="selectFile(2)" :icon="FolderOpened" plain>
+        <el-button @click="selectFile(2)" :icon="FolderOpened">
           File 2
         </el-button>
       </div>
@@ -172,7 +141,7 @@ const viewFileName2 = computed(() => {
 
     <div class="custom-container1">
       <div class="custom-container2" style="margin-top: 12px">
-        <el-tooltip content="column of file1" placement="top" effect="light">
+        <el-tooltip content="column of file1" effect="light">
           <el-select
             v-model="sel1"
             filterable
@@ -188,7 +157,7 @@ const viewFileName2 = computed(() => {
           </el-select>
         </el-tooltip>
 
-        <el-tooltip content="column of file2" placement="top" effect="light">
+        <el-tooltip content="column of file2" effect="light">
           <el-select
             v-model="sel2"
             filterable
@@ -206,7 +175,6 @@ const viewFileName2 = computed(() => {
 
         <el-tooltip
           content="When set true, joins will work on empty fields"
-          placement="top"
           effect="light"
         >
           <el-select v-model="data.nulls" style="width: 100px">
@@ -215,7 +183,7 @@ const viewFileName2 = computed(() => {
           </el-select>
         </el-tooltip>
 
-        <el-tooltip content="join type" placement="top" effect="light">
+        <el-tooltip content="join type" effect="light">
           <el-select
             v-model="data.joinType"
             style="width: 100px; margin-left: 10px"
@@ -233,7 +201,6 @@ const viewFileName2 = computed(() => {
         @click="joinData()"
         :loading="isLoading"
         :icon="Connection"
-        plain
         style="margin-top: 12px"
       >
         Join

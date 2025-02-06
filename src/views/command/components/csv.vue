@@ -107,7 +107,7 @@ async function csvToxlsx() {
   <el-form class="page-container" :style="formHeight">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
+import { message } from "@/utils/message";
+import { viewOpenFile } from "@/utils/view";
 
 const [tableData, isLoading, isPath, search] = [
   ref([]),
@@ -14,7 +14,6 @@ const [tableData, isLoading, isPath, search] = [
 ];
 const data = reactive({
   path: "",
-  fileFormats: ["*"],
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(134);
@@ -31,21 +30,9 @@ async function selectFile() {
   isPath.value = false;
   search.value = "";
 
-  const selected = await open({
-    multiple: false,
-    filters: [
-      {
-        name: "csv",
-        extensions: data.fileFormats
-      }
-    ]
-  });
-  if (Array.isArray(selected)) {
-    data.path = selected.toString();
-  } else if (selected === null) {
+  data.path = await viewOpenFile(false, "csv", ["*"]);
+  if (data.path === null) {
     return;
-  } else {
-    data.path = selected;
   }
 
   isPath.value = true;
@@ -56,10 +43,6 @@ async function selectFile() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(headers).startsWith("get header error:")) {
-      throw JSON.stringify(headers).toString();
-    }
-
     for (let i = 0; i < headers.length; i++) {
       const colData = {
         col1: headers[i],
@@ -68,25 +51,14 @@ async function selectFile() {
       tableData.value.push(colData);
     }
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke rename
 async function renameData() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
 
@@ -102,24 +74,9 @@ async function renameData() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("rename failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Rename done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Rename done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Rename failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -134,15 +91,14 @@ async function headerEdit(row: any) {
     <el-form>
       <div class="custom-container1">
         <div class="custom-container2">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          <el-button @click="selectFile()" :icon="FolderOpened">
             Open File
           </el-button>
 
-          <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-tooltip content="skip rows" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 10px; width: 50px"
-              placeholder="skip rows"
             />
           </el-tooltip>
 
@@ -150,7 +106,6 @@ async function headerEdit(row: any) {
             @click="renameData()"
             :loading="isLoading"
             :icon="Refresh"
-            plain
             style="margin-left: 10px"
           >
             Rename

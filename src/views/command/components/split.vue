@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, reactive, nextTick } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
 import { splitContent, useMarkdown } from "@/utils/markdown";
+import { message } from "@/utils/message";
 
 const [isLoading, isPath, tableColumn, tableData, infoDialog] = [
   ref(false),
@@ -37,25 +37,14 @@ async function selectFile() {
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke split
 async function splitData() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
 
@@ -68,24 +57,9 @@ async function splitData() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("split failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Split done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+    message(`Split done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Split failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -101,7 +75,7 @@ const handleDialogOpened = async () => {
   <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
@@ -109,7 +83,6 @@ const handleDialogOpened = async () => {
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
-            placeholder="skip rows"
           />
         </el-tooltip>
       </div>
@@ -125,7 +98,7 @@ const handleDialogOpened = async () => {
 
     <div class="custom-container1">
       <div class="custom-container2" style="margin-top: 10px">
-        <el-tooltip content="Split rows" placement="bottom" effect="light">
+        <el-tooltip content="Split rows" effect="light">
           <el-input-number
             v-model="data.size"
             controls-position="right"
@@ -139,7 +112,6 @@ const handleDialogOpened = async () => {
         @click="splitData()"
         :loading="isLoading"
         :icon="IceCreamRound"
-        plain
       >
         Split
       </el-button>

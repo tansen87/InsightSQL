@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { message } from "@/utils/message";
 
 const [isLoading, isPath, selectColumn, tableHeader, tableColumn, tableData] = [
   ref(false),
@@ -44,34 +44,18 @@ async function selectFile() {
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke replace
 async function replaceData() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
   if (selectColumn.value.length === 0) {
-    ElNotification({
-      title: "Column not found",
-      message: "未选择column",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Column not selected", { type: "warning" });
     return;
   }
 
@@ -86,24 +70,9 @@ async function replaceData() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("replace failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Replace done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Replace done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Replace failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -113,7 +82,7 @@ async function replaceData() {
   <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
@@ -121,7 +90,6 @@ async function replaceData() {
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 78px"
-            placeholder="skip rows"
           />
         </el-tooltip>
       </div>
@@ -160,7 +128,6 @@ async function replaceData() {
         @click="replaceData()"
         :loading="isLoading"
         :icon="Refresh"
-        plain
         style="margin-top: 10px"
       >
         Replace

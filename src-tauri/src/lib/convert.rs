@@ -301,8 +301,6 @@ pub async fn switch_excel(
 
   let skip_rows = skip_rows.parse::<u32>().map_err(|e| e.to_string())?;
   let paths: Vec<&str> = path.split('|').collect();
-  let mut count: usize = 0;
-  let file_len = paths.len();
   let sep = if sep == "\\t" {
     b'\t'
   } else {
@@ -319,11 +317,6 @@ pub async fn switch_excel(
 
     match excel_to_csv(file, skip_rows, sep, sheet_name).await {
       Ok(_) => {
-        count += 1;
-        let progress = ((count as f32) / (file_len as f32)) * 100.0;
-        window
-          .emit("e2c_progress", format!("{progress:.0}"))
-          .map_err(|e| e.to_string())?;
         window
           .emit("e2c_msg", filename)
           .map_err(|e| e.to_string())?;

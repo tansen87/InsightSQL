@@ -2,9 +2,9 @@
 import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
+import { message } from "@/utils/message";
 
 const [isLoading, selectedFiles, tableData] = [ref(false), ref([]), ref([])];
 const data = reactive({
@@ -53,12 +53,7 @@ async function selectFile() {
 // invoke modify
 async function modifyFilename() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("File not selected", { type: "warning" });
     return;
   }
 
@@ -75,24 +70,9 @@ async function modifyFilename() {
       fileName: filename
     });
 
-    if (JSON.stringify(result).startsWith("modify failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Modify done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Modify done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Modify failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -205,7 +185,7 @@ function splitFilename(filename) {
     <el-form>
       <div class="custom-container1">
         <div class="custom-container2">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          <el-button @click="selectFile()" :icon="FolderOpened">
             Open File
           </el-button>
           <el-input
@@ -216,7 +196,6 @@ function splitFilename(filename) {
             @click="modifyFilename()"
             :loading="isLoading"
             :icon="SwitchFilled"
-            plain
             style="margin-left: 10px"
           >
             Modify

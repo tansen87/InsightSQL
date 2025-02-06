@@ -3,7 +3,6 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification } from "element-plus";
 import {
   FolderOpened,
   SwitchFilled,
@@ -11,16 +10,12 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
-import {
-  useDynamicFormHeight,
-  customColors,
-  filterFileStatus
-} from "@/utils/utils";
+import { useDynamicFormHeight, filterFileStatus } from "@/utils/utils";
+import { message } from "@/utils/message";
 
-const [isLoading, selectedFiles, progress] = [ref(false), ref([]), ref(0)];
+const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   filePath: "",
-  fileFormats: ["*"],
   sep: "|"
 });
 const { formHeight } = useDynamicFormHeight(134);
@@ -33,10 +28,6 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("dbf2csv_progress", (event: any) => {
-  const pgs: any = event.payload;
-  progress.value = pgs;
-});
 listen("dbf2csv_msg", (event: any) => {
   const dbf2csvMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
@@ -48,14 +39,12 @@ listen("dbf2csv_msg", (event: any) => {
 
 async function selectFile() {
   selectedFiles.value = [];
-  progress.value = 0;
-
   const selected = await open({
     multiple: true,
     filters: [
       {
         name: "dbf",
-        extensions: data.fileFormats
+        extensions: ["*"]
       }
     ]
   });
@@ -75,12 +64,7 @@ async function selectFile() {
 // invoke dbf
 async function convertData() {
   if (data.filePath === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Fle not selected", { type: "warning" });
     return;
   }
 
@@ -92,24 +76,9 @@ async function convertData() {
       sep: data.sep
     });
 
-    if (JSON.stringify(result).startsWith("dbf failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Convert done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Dbf failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -119,14 +88,10 @@ async function convertData() {
   <el-form class="page-container" :style="formHeight">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip
-          content="Write the delimiter for CSV"
-          placement="top"
-          effect="light"
-        >
+        <el-tooltip content="Write the delimiter for CSV" effect="light">
           <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
             <el-option label="," value="," />
             <el-option label="|" value="|" />
@@ -139,7 +104,6 @@ async function convertData() {
           @click="convertData()"
           :loading="isLoading"
           :icon="SwitchFilled"
-          plain
           style="margin-left: 10px"
         >
           Convert
@@ -173,11 +137,5 @@ async function convertData() {
         </template>
       </el-table-column>
     </el-table>
-
-    <el-progress
-      v-if="isLoading"
-      :percentage="progress"
-      :color="customColors"
-    />
   </el-form>
 </template>

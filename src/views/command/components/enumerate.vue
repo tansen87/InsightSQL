@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { message } from "@/utils/message";
 
 const [isLoading, isPath, tableColumn, tableData] = [
   ref(false),
@@ -34,25 +34,14 @@ async function selectFile() {
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke enumer
 async function enumerate() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("File not selected", { type: "warning" });
     return;
   }
 
@@ -64,24 +53,9 @@ async function enumerate() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("enumerate failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Enumerate done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+    message(`Enumerate done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Enumerate failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -91,15 +65,14 @@ async function enumerate() {
   <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
-        <el-tooltip content="skip rows" placement="top" effect="light">
+        <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
-            placeholder="skip rows"
           />
         </el-tooltip>
 
@@ -107,7 +80,6 @@ async function enumerate() {
           @click="enumerate()"
           :loading="isLoading"
           :icon="IceCreamRound"
-          plain
           style="margin-left: 10px"
         >
           Enumerate

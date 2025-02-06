@@ -3,7 +3,7 @@ import { ref, reactive, watch } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon } from "element-plus";
+import { ElIcon } from "element-plus";
 import {
   CloseBold,
   Select,
@@ -14,18 +14,17 @@ import {
 import {
   shortFileName,
   useDynamicFormHeight,
-  customColors,
   filterFileStatus
 } from "@/utils/utils";
+import { message } from "@/utils/message";
 
-const [
-  selectedFiles,
-  isLoading,
-  progress,
-  sheetsData,
-  sheetOptions,
-  fileSheet
-] = [ref([]), ref(false), ref(0), ref({}), ref([]), ref([])];
+const [selectedFiles, isLoading, sheetsData, sheetOptions, fileSheet] = [
+  ref([]),
+  ref(false),
+  ref({}),
+  ref([]),
+  ref([])
+];
 const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
@@ -50,7 +49,6 @@ listen("switch_excel_err", event => {
       file.errorMessage = excelRowCountErr.split("|")[1];
     }
   });
-  isLoading.value = false;
 });
 listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
@@ -59,10 +57,6 @@ listen("e2c_msg", (event: any) => {
       file.status = "completed";
     }
   });
-});
-listen("e2c_progress", (event: any) => {
-  const pgs: number = event.payload;
-  progress.value = pgs;
 });
 
 const getSheetsForFile = fileName => {
@@ -102,7 +96,6 @@ function updateFileSheet(file) {
 
 async function selectFile() {
   selectedFiles.value = [];
-  progress.value = 0;
   sheetsData.value = [];
   sheetOptions.value = [];
   fileSheet.value = [];
@@ -153,12 +146,7 @@ async function selectFile() {
 // invoke switch_excel
 async function excelToCsv() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择Excel文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
 
@@ -177,24 +165,9 @@ async function excelToCsv() {
       mapFileSheet: mapFileSheet
     });
 
-    if (JSON.stringify(result).startsWith("excel to csv failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Convert done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Excel to csv failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -204,11 +177,11 @@ async function excelToCsv() {
   <el-form class="page-container" :style="formHeight">
     <div class="custom-container1">
       <el-form-item>
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
-        <el-tooltip content="skip rows" placement="top" effect="light">
+        <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; margin-right: 10px; width: 50px"
@@ -216,7 +189,7 @@ async function excelToCsv() {
           />
         </el-tooltip>
 
-        <el-tooltip content="write separator" placement="top" effect="light">
+        <el-tooltip content="write separator" effect="light">
           <el-select v-model="data.sep" style="margin-right: 10px; width: 50px">
             <el-option label="|" value="|" />
             <el-option label="," value="," />
@@ -230,7 +203,6 @@ async function excelToCsv() {
           @click="excelToCsv()"
           :loading="isLoading"
           :icon="SwitchFilled"
-          plain
         >
           Convert
         </el-button>
@@ -303,11 +275,5 @@ async function excelToCsv() {
         </template>
       </el-table-column>
     </el-table>
-
-    <el-progress
-      v-if="isLoading"
-      :percentage="progress"
-      :color="customColors"
-    />
   </el-form>
 </template>

@@ -30,14 +30,6 @@ export function useDynamicFormHeight(fixedHeight: number) {
   };
 }
 
-export const customColors = [
-  { color: "#98FB98", percentage: 20 },
-  { color: "#7CFC00", percentage: 40 },
-  { color: "#7FFF00", percentage: 60 },
-  { color: "#ADFF2F", percentage: 80 },
-  { color: "#9ACD32", percentage: 100 }
-];
-
 interface FileStatus {
   filename: string;
   status: string;

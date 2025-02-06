@@ -3,7 +3,6 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification } from "element-plus";
 import {
   FolderOpened,
   Loading,
@@ -11,16 +10,12 @@ import {
   CloseBold,
   Delete
 } from "@element-plus/icons-vue";
-import {
-  shortFileName,
-  useDynamicFormHeight,
-  customColors
-} from "@/utils/utils";
+import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import { message } from "@/utils/message";
 
-const [isLoading, selectedFiles, progress] = [ref(false), ref([]), ref(0)];
+const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   path: "",
-  fileFormats: ["*"],
   skipRows: "0"
 });
 const { formHeight } = useDynamicFormHeight(134);
@@ -43,10 +38,6 @@ listen("behead_err", (event: any) => {
   });
   isLoading.value = false;
 });
-listen("drop_progress", (event: any) => {
-  const pgs: any = event.payload;
-  progress.value = pgs;
-});
 listen("drop_msg", (event: any) => {
   const dropMsg: string = event.payload;
   selectedFiles.value.forEach(file => {
@@ -58,14 +49,13 @@ listen("drop_msg", (event: any) => {
 
 async function selectFile() {
   selectedFiles.value = [];
-  progress.value = 0;
 
   const selected = await open({
     multiple: true,
     filters: [
       {
         name: "csv",
-        extensions: data.fileFormats
+        extensions: ["*"]
       }
     ]
   });
@@ -85,12 +75,7 @@ async function selectFile() {
 // invoke behead
 async function dropHeaders() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
 
@@ -102,24 +87,9 @@ async function dropHeaders() {
       skipRows: data.skipRows
     });
 
-    if (result.startsWith("behead failed:")) {
-      throw result.toString();
-    }
-
-    ElNotification({
-      message: `Drop done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Drop done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Behead failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -129,15 +99,14 @@ async function dropHeaders() {
   <el-form class="page-container" :style="formHeight">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
-        <el-tooltip content="skip rows" placement="top" effect="light">
+        <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
-            placeholder="skip rows"
           />
         </el-tooltip>
 
@@ -146,7 +115,6 @@ async function dropHeaders() {
           :loading="isLoading"
           :icon="Delete"
           style="margin-left: 10px"
-          plain
         >
           Drop
         </el-button>
@@ -192,11 +160,5 @@ async function dropHeaders() {
         </template>
       </el-table-column>
     </el-table>
-
-    <el-progress
-      v-if="isLoading"
-      :percentage="progress"
-      :color="customColors"
-    />
   </el-form>
 </template>

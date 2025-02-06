@@ -5,6 +5,7 @@ import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { message } from "@/utils/message";
 
 const [
   isLoading,
@@ -62,21 +63,11 @@ async function selectFile() {
 // invoke apply
 async function applyData() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
   if (selectColumns.value.length === 0) {
-    ElNotification({
-      title: "Column not found",
-      message: "未选择column",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Column not selected", { type: "warning" });
     return;
   }
 
@@ -95,24 +86,9 @@ async function applyData() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("apply failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Apply done, elapsed time: ${result} s.`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Apply done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Apply failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -122,7 +98,7 @@ async function applyData() {
   <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
@@ -130,7 +106,6 @@ async function applyData() {
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
-            placeholder="skip rows"
           />
         </el-tooltip>
       </div>
@@ -162,7 +137,7 @@ async function applyData() {
       v-model="operations"
       filterable
       multiple
-      placeholder="operations"
+      placeholder="Operations"
       style="margin-top: 12px; width: 100%"
     >
       <el-option label="Copy" value="copy" />
@@ -180,7 +155,7 @@ async function applyData() {
     <div class="custom-container1">
       <div style="width: 90%; display: flex; align-items: center">
         <div style="flex: 1; margin-top: 12px">
-          <el-tooltip content="apply mode" placement="bottom" effect="light">
+          <el-tooltip content="apply mode" effect="light">
             <el-select v-model="data.applyMode" style="width: 100%">
               <el-option label="Operations" value="operations" />
               <el-option label="CalcConv" value="calcconv" />
@@ -190,11 +165,7 @@ async function applyData() {
         </div>
 
         <div style="flex: 1; margin-left: 5px; margin-top: 12px">
-          <el-tooltip
-            content="replace - from"
-            placement="bottom"
-            effect="light"
-          >
+          <el-tooltip content="replace - from" effect="light">
             <el-input
               v-model="data.comparand"
               style="width: 100%"
@@ -205,7 +176,7 @@ async function applyData() {
         </div>
 
         <div style="flex: 1; margin-left: 5px; margin-top: 12px">
-          <el-tooltip content="replace - to" placement="bottom" effect="light">
+          <el-tooltip content="replace - to" effect="light">
             <el-input
               v-model="data.replacement"
               style="width: 100%"
@@ -218,7 +189,6 @@ async function applyData() {
         <div style="flex: 3; margin-left: 5px; margin-top: 12px">
           <el-tooltip
             content="formatstr with CalcConv or DynFmt"
-            placement="bottom"
             effect="light"
           >
             <el-input
@@ -252,7 +222,6 @@ async function applyData() {
           @click="applyData()"
           :loading="isLoading"
           :icon="Refresh"
-          plain
           style="margin-top: 12px; width: 100%"
         >
           Apply

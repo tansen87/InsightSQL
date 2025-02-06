@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
+import { viewOpenFile } from "@/utils/view";
 
 const isLoading = ref(false);
 const isPath = ref(false);
@@ -12,28 +12,16 @@ const conditonColumns = ref("");
 const originalColumns = ref([]);
 const data = reactive({
   filePath: "",
-  fileFormats: ["*"],
   hasCond: false
 });
 
 async function selectFile() {
   isLoading.value = false;
   isPath.value = false;
-  const selected = await open({
-    multiple: false,
-    filters: [
-      {
-        name: "csv",
-        extensions: data.fileFormats
-      }
-    ]
-  });
-  if (Array.isArray(selected)) {
-    data.filePath = selected.toString();
-  } else if (selected === null) {
+
+  data.filePath = await viewOpenFile(false, "csv", ["*"]);
+  if (data.filePath === null) {
     return;
-  } else {
-    data.filePath = selected;
   }
   isPath.value = true;
 
@@ -42,40 +30,20 @@ async function selectFile() {
       filePath: data.filePath
     });
 
-    if (JSON.stringify(header).startsWith("get header error:")) {
-      throw JSON.stringify(header).toString();
-    }
-
     originalColumns.value = header;
   } catch (err) {
-    ElNotification({
-      title: "Open File error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // net amount
 async function netAmount() {
   if (data.filePath === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("File not selected", { type: "warning" });
     return;
   }
   if (columns.value.length === 0) {
-    ElNotification({
-      title: "Column not defined",
-      message: "未选择columns",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Column not selected", { type: "warning" });
     return;
   }
 
@@ -91,24 +59,9 @@ async function netAmount() {
       hasCond: data.hasCond
     });
 
-    if (JSON.stringify(result).startsWith("offset failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Offset done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Offset done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Invoke offset error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -116,16 +69,9 @@ async function netAmount() {
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: sticky;
-      "
-    >
-      <div style="display: flex; align-items: flex-start">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
         <el-select
@@ -172,11 +118,9 @@ async function netAmount() {
         />
       </el-select>
       <el-button
-        type="success"
         @click="netAmount()"
         :loading="isLoading"
         :icon="IceCreamRound"
-        plain
         style="margin-left: 16px"
       >
         Offset

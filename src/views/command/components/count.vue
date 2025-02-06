@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ElNotification, ElIcon } from "element-plus";
+import { ElIcon } from "element-plus";
 import {
   Loading,
   FolderOpened,
@@ -12,11 +12,11 @@ import {
   Select
 } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import { message } from "@/utils/message";
 
 const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
-  path: "",
-  fileFormats: ["*"]
+  path: ""
 });
 const { formHeight } = useDynamicFormHeight(134);
 
@@ -36,7 +36,6 @@ listen("count_err", (event: any) => {
       file.infoMsg = countErr.split("|")[1];
     }
   });
-  isLoading.value = false;
 });
 listen("count_msg", (event: any) => {
   const countMsg: any = event.payload;
@@ -54,7 +53,7 @@ async function selectFile() {
     filters: [
       {
         name: "csv",
-        extensions: data.fileFormats
+        extensions: ["*"]
       }
     ]
   });
@@ -74,12 +73,7 @@ async function selectFile() {
 // invoke count
 async function countData() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
 
@@ -90,24 +84,9 @@ async function countData() {
       path: data.path
     });
 
-    if (JSON.stringify(result).startsWith("count failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Count done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 5000
-    });
+    message(`Count done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Count failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -117,7 +96,7 @@ async function countData() {
   <el-form class="page-container" :style="formHeight">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened" plain>
+        <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
 
@@ -125,7 +104,6 @@ async function countData() {
           @click="countData()"
           :loading="isLoading"
           :icon="Grape"
-          plain
           style="margin-left: 10px"
         >
           Count
@@ -177,9 +155,9 @@ async function countData() {
         style="flex: 0 0 60%"
       >
         <template #default="scope">
-          <span v-if="scope.row.status === 'error'">{{
-            scope.row.infoMsg
-          }}</span>
+          <span v-if="scope.row.status === 'error'">
+            {{ scope.row.infoMsg }}
+          </span>
         </template>
       </el-table-column>
     </el-table>

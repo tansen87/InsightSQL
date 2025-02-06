@@ -3,8 +3,8 @@ import { ref, reactive } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { appConfigDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
 
 const [isLoading, isPath] = [ref(false), ref(false)];
 const data = reactive({
@@ -33,12 +33,7 @@ async function selectFolder() {
 // invoke traverse
 async function traverseDirectory() {
   if (data.folderPath === "") {
-    ElNotification({
-      title: "Folder not found",
-      message: "未选择文件夹",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("No folder selected", { type: "warning" });
     return;
   }
 
@@ -48,12 +43,7 @@ async function traverseDirectory() {
     filters: [{ name: "Excel", extensions: ["xlsx"] }]
   });
   if (output === "" || output === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择保存文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("No file saved selected", { type: "warning" });
     return;
   }
 
@@ -65,24 +55,9 @@ async function traverseDirectory() {
       output: output
     });
 
-    if (JSON.stringify(result).startsWith("traverse failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: result,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`${result}`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Traverse failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -92,14 +67,13 @@ async function traverseDirectory() {
   <el-form class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-button @click="selectFolder()" :icon="FolderOpened" plain>
+        <el-button @click="selectFolder()" :icon="FolderOpened">
           Open Folder
         </el-button>
         <el-button
           @click="traverseDirectory()"
           :loading="isLoading"
           :icon="SwitchFilled"
-          plain
         >
           Traverse
         </el-button>

@@ -16,9 +16,6 @@ async fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Re
     .map(|path| path.to_string_lossy())
     .unwrap();
 
-  let mut count: usize = 0;
-  let file_len = vec_path.len();
-
   for fp in vec_path.iter() {
     window.emit("start_convert", fp)?;
 
@@ -62,10 +59,6 @@ async fn dbf_to_csv(file_path: String, sep: String, window: tauri::Window) -> Re
       wtr.write_record(&row)?;
     }
     wtr.flush()?;
-
-    count += 1;
-    let progress = ((count as f32) / (file_len as f32)) * 100.0;
-    window.emit("dbf2csv_progress", format!("{progress:.0}"))?;
 
     window.emit("dbf2csv_msg", fp)?;
   }

@@ -44,33 +44,21 @@ pub async fn behead(path: String, skip_rows: String, window: Window) -> Result<S
   let paths: Vec<&str> = path.split('|').collect();
   let parent_path = Path::new(&paths[0]).parent().unwrap().to_str().unwrap();
   let skip_rows = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
-  let mut count: usize = 0;
-  let file_len = paths.len();
 
   for fp in paths.iter() {
-    let filename = Path::new(fp)
-      .file_name()
-      .unwrap()
-      .to_str()
-      .unwrap()
-      .to_string();
+    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
     window
-      .emit("start_convert", &filename)
+      .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
     match drop_headers(fp, skip_rows, parent_path).await {
       Ok(_) => {
-        count += 1;
-        let progress = ((count as f32) / (file_len as f32)) * 100.0;
         window
-          .emit("drop_progress", format!("{progress:.0}"))
-          .map_err(|e| e.to_string())?;
-        window
-          .emit("drop_msg", &filename)
+          .emit("drop_msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("behead_err", format!("{}|{err}", &filename))
+          .emit("behead_err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
         continue;
       }

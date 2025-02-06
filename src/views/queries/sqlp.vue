@@ -2,12 +2,12 @@
 import { ref, reactive, watch, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
 import { useDark } from "@pureadmin/utils";
 import "./ace-config";
 import { useDynamicFormHeight } from "@/utils/utils";
+import { message } from "@/utils/message";
 
 const tableColumn = ref([]);
 const treeHeaders = ref([]);
@@ -21,7 +21,6 @@ const headersByFile = reactive({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const data = reactive({
   path: "",
-  fileFormats: ["*"],
   write: false,
   writeFormat: "xlsx",
   lowMemory: false,
@@ -73,21 +72,11 @@ async function queryData() {
   tableData.value = [];
 
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择CSV, Excel or Parquet文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("File not selected", { type: "warning" });
     return false;
   }
   if (sqlQuery.value === "") {
-    ElNotification({
-      title: "Warning",
-      message: "SQL script is empty",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("SQL script is empty", { type: "warning" });
     return false;
   }
 
@@ -118,23 +107,11 @@ async function queryData() {
     }));
     tableData.value = arrayData;
 
-    ElNotification({
-      message: `Query done, elapsed time: ${result[1]} s`,
-      position: "top-left",
-      type: "success",
-      duration: 5000
-    });
+    message(`Query done, elapsed time: ${result} s`, { duration: 5000 });
 
-    isLoading.value = false;
     return true;
   } catch (err) {
-    ElNotification({
-      title: "SQL failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 
   isLoading.value = false;
@@ -160,7 +137,7 @@ async function selectFile() {
     filters: [
       {
         name: "",
-        extensions: data.fileFormats
+        extensions: ["*"]
       }
     ]
   });
@@ -207,13 +184,7 @@ async function selectFile() {
           [basename]: headersByFile[basename]
         };
       } catch (err) {
-        ElNotification({
-          title: "Open file error",
-          message: err.toString(),
-          position: "bottom-right",
-          type: "error",
-          duration: 10000
-        });
+        message(err.toString(), { type: "error", duration: 10000 });
       }
     })
   );

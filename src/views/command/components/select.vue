@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { Cherry, FolderOpened } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
+import { viewOpenFile } from "@/utils/view";
 
 const [originalList, selectList, isLoading, isPath, searchText] = [
   ref([]),
@@ -15,7 +15,6 @@ const [originalList, selectList, isLoading, isPath, searchText] = [
 ];
 const data = reactive({
   path: "",
-  fileFormats: ["*"],
   skipRows: "0"
 });
 
@@ -34,21 +33,9 @@ async function selectFile() {
   isPath.value = false;
   searchText.value = "";
 
-  const selected = await open({
-    multiple: false,
-    filters: [
-      {
-        name: "csv",
-        extensions: data.fileFormats
-      }
-    ]
-  });
-  if (Array.isArray(selected)) {
-    data.path = selected.toString();
-  } else if (selected === null) {
+  data.path = await viewOpenFile(false, "csv", ["*"]);
+  if (data.path === null) {
     return;
-  } else {
-    data.path = selected;
   }
 
   isPath.value = true;
@@ -64,34 +51,18 @@ async function selectFile() {
       throw JSON.stringify(headers).toString();
     }
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
 // invoke select
 async function selectColumns() {
   if (data.path === "") {
-    ElNotification({
-      title: "File not found",
-      message: "未选择csv文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("CSV file not selected", { type: "warning" });
     return;
   }
   if (selectList.value.length === 0) {
-    ElNotification({
-      title: "Column not found",
-      message: "未选择columns",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Column not selected", { type: "warning" });
     return;
   }
 
@@ -109,24 +80,9 @@ async function selectColumns() {
       skipRows: data.skipRows
     });
 
-    if (JSON.stringify(result).startsWith("select failed:")) {
-      throw JSON.stringify(result).toString();
-    }
-
-    ElNotification({
-      message: `Select done, elapsed time: ${result} s`,
-      position: "bottom-right",
-      type: "success",
-      duration: 10000
-    });
+    message(`Select done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
-    ElNotification({
-      title: "Select failed",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
   isLoading.value = false;
 }
@@ -137,15 +93,14 @@ async function selectColumns() {
     <el-form>
       <div class="custom-container1">
         <div class="custom-container2">
-          <el-button @click="selectFile()" :icon="FolderOpened" plain>
+          <el-button @click="selectFile()" :icon="FolderOpened">
             Open File
           </el-button>
 
-          <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-tooltip content="skip rows" effect="light">
             <el-input
               v-model="data.skipRows"
               style="margin-left: 10px; width: 50px"
-              placeholder="skip rows"
             />
           </el-tooltip>
 
@@ -153,7 +108,6 @@ async function selectColumns() {
             @click="selectColumns()"
             :loading="isLoading"
             :icon="Cherry"
-            plain
             style="margin-left: 10px"
           >
             Select
