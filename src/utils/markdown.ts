@@ -77,15 +77,9 @@ export function useMarkdown(initialMarkdownFn: () => string) {
     await highlightCode();
   });
 
-  const manualHighlight = async () => {
-    await nextTick();
-    Prism.highlightAll();
-  };
-
   return {
     markdownContent,
     compiledMarkdown,
-    manualHighlight,
     updateMarkdownContent: (newMarkdownFn: () => string) => {
       markdownContent.value = newMarkdownFn();
     }
@@ -94,67 +88,17 @@ export function useMarkdown(initialMarkdownFn: () => string) {
 
 export function catContent() {
   return `
-### What happens when running cat
-For example, let's say we have two file **data1.csv**, **data2.csv** with the following contents:
-
-**data1.csv**
-\`\`\`sql
-name,age,gender
-Tom,18,male
-Jerry,19,male
-\`\`\`
-
-**data2.csv**
-\`\`\`sql
-age,gender,name
-4,male,Patrick
-24,female,Sandy
-\`\`\`
-
-Then, we will receive the following files and with the following contents:
-
-**cat_xxx.csv**
-\`\`\`sql
-name,age,gender,FileName
-Tom,18,male,data1.csv
-Jerry,19,male,data1.csv
-Patrick,4,male,data2.csv
-Sandy,24,female,data2.csv
-\`\`\`
+  Merge **file1.csv** and **file2.csv**, then we get **cat.csv**.
+  As shown in the figure:
+  ![cat.png](/demo/cat.png)
 `;
 }
 
 export function splitContent() {
   return `
-### What happens when running split
-
-For example, let's say we have a file **data.csv** with the following contents:
-
-\`\`\`sql
-name,age,gender
-Tom,18,male
-Jerry,19,male
-Patrick,4,male
-Sandy,24,female
-\`\`\`
-
-Then, we set the **Split rows** to 3, we will receive the following two files and with the following contents:
-
-**data.split_0.csv**
-
-\`\`\`sql
-name,age,gender
-Tom,18,male
-Jerry,19,male
-Patrick,4,male
-\`\`\`
-
-**data.split_1.csv**
-
-\`\`\`sql
-name,age,gender
-Sandy,24,female
-\`\`\`
+  Split **file.csv**, set the **Split rows** to \`2\`,
+  then we get two files, As show in the figure:
+  ![split.png](/demo/split.png)
 `;
 }
 

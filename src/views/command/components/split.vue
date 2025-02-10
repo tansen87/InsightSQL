@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, nextTick } from "vue";
+import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
@@ -64,11 +64,7 @@ async function splitData() {
   isLoading.value = false;
 }
 
-const { compiledMarkdown, manualHighlight } = useMarkdown(splitContent);
-const handleDialogOpened = async () => {
-  await nextTick();
-  manualHighlight();
-};
+const { compiledMarkdown } = useMarkdown(splitContent);
 </script>
 
 <template>
@@ -90,8 +86,8 @@ const handleDialogOpened = async () => {
       <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="isPath">{{ data.path }}</span>
         <span v-else>
-          How to use
-          <span style="color: skyblue; font-weight: bold">split</span>
+          About
+          <span style="color: skyblue; font-weight: bold">Split</span>
         </span>
       </el-link>
     </div>
@@ -136,7 +132,6 @@ const handleDialogOpened = async () => {
       v-model="infoDialog"
       title="Split - Split one CSV file into many CSV files"
       width="800"
-      @opened="handleDialogOpened"
     >
       <el-scrollbar :height="formHeight * 0.8">
         <div v-html="compiledMarkdown" />
