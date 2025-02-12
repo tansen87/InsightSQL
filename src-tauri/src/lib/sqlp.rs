@@ -161,16 +161,16 @@ async fn prepare_query(
 
   let mut opt_state = OptFlags::from_bits_truncate(0);
   if low_memory {
-    opt_state |= OptFlags::PROJECTION_PUSHDOWN
-      | OptFlags::PREDICATE_PUSHDOWN
-      | OptFlags::CLUSTER_WITH_COLUMNS
-      | OptFlags::SIMPLIFY_EXPR
-      | OptFlags::FILE_CACHING
-      | OptFlags::SLICE_PUSHDOWN
-      | OptFlags::COMM_SUBPLAN_ELIM
-      | OptFlags::COMM_SUBEXPR_ELIM
-      | OptFlags::ROW_ESTIMATE
-      | OptFlags::FAST_PROJECTION;
+  opt_state |= OptFlags::PROJECTION_PUSHDOWN
+    | OptFlags::PREDICATE_PUSHDOWN
+    | OptFlags::CLUSTER_WITH_COLUMNS
+    | OptFlags::SIMPLIFY_EXPR
+    | OptFlags::FILE_CACHING
+    | OptFlags::SLICE_PUSHDOWN
+    | OptFlags::COMM_SUBPLAN_ELIM
+    | OptFlags::COMM_SUBEXPR_ELIM
+    | OptFlags::ROW_ESTIMATE
+    | OptFlags::FAST_PROJECTION;
   } else {
     opt_state |= OptFlags::default();
   };
@@ -359,7 +359,7 @@ pub async fn query(
     &write_format,
     low_memory,
     skip_rows,
-    schema_length.as_str()
+    schema_length.as_str(),
   )
   .await
   {

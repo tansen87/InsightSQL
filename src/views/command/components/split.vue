@@ -17,7 +17,8 @@ const [isLoading, isPath, tableColumn, tableData, infoDialog] = [
 const data = reactive({
   path: "",
   size: 1000000,
-  skipRows: "0"
+  skipRows: "0",
+  mode: "Rows"
 });
 const { formHeight } = useDynamicFormHeight(188);
 
@@ -54,7 +55,8 @@ async function splitData() {
     const result: string = await invoke("split", {
       path: data.path,
       size: data.size,
-      skipRows: data.skipRows
+      skipRows: data.skipRows,
+      mode: data.mode
     });
 
     message(`Split done, elapsed time: ${result} s`, { duration: 5000 });
@@ -100,6 +102,12 @@ const { compiledMarkdown } = useMarkdown(splitContent);
             controls-position="right"
             style="width: 172px"
           />
+        </el-tooltip>
+        <el-tooltip content="Split mode" effect="light">
+          <el-select v-model="data.mode" style="margin-left: 10px; width: 80px">
+            <el-option label="Rows" value="rows" />
+            <el-option label="Lines" value="lines" />
+          </el-select>
         </el-tooltip>
       </div>
 

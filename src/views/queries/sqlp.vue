@@ -25,7 +25,7 @@ const data = reactive({
   writeFormat: "xlsx",
   lowMemory: false,
   skipRows: "0",
-  schemaLength: "100"
+  schemaLength: "0"
 });
 const { formHeight } = useDynamicFormHeight(102);
 const { isDark } = useDark();
@@ -107,14 +107,14 @@ async function queryData() {
     }));
     tableData.value = arrayData;
 
-    message(`Query done, elapsed time: ${result} s`, { duration: 5000 });
-
+    message(`Query done, elapsed time: ${result[1]} s`, { duration: 5000 });
+    isLoading.value = false;
     return true;
   } catch (err) {
+    isLoading.value = false;
     message(err.toString(), { type: "error", duration: 10000 });
   }
 
-  isLoading.value = false;
   return false;
 }
 
@@ -161,7 +161,7 @@ async function selectFile() {
           writeFormat: "csv",
           lowMemory: false,
           skipRows: data.skipRows,
-          schemaLength: data.schemaLength
+          schemaLength: "0"
         });
 
         const q = Array.isArray(result[0]) ? result[0][0] : null;
@@ -244,7 +244,7 @@ const handleNodeClick = async data => {
       await navigator.clipboard.writeText(textToCopy);
     }
   } catch (err) {
-    console.error("Failed to copy to clipboard: ", err);
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 };
 

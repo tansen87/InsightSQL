@@ -29,12 +29,7 @@ async fn test_split() -> Result<()> {
 
   let size: usize = 2;
 
-  split::split_csv(
-    file_path.to_str().unwrap(),
-    size.try_into()?,
-    "0".to_string(),
-  )
-  .await?;
+  split::split_csv(file_path.to_str().unwrap(), size.try_into()?, 0).await?;
 
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
