@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::Path, time::Instant};
+use std::{
+  collections::{HashMap, HashSet},
+  path::{Path, PathBuf},
+  time::Instant,
+};
 
 use anyhow::{anyhow, Result};
 use calamine::{open_workbook_auto, Data, HeaderRow, Range, Reader};
@@ -20,10 +24,9 @@ async fn excel_to_csv<P: AsRef<Path>>(
   skip_rows: u32,
   sep: u8,
   sheet_name: Option<String>,
+  output_path: &PathBuf,
 ) -> Result<()> {
-  let dest = &path.as_ref().with_extension("csv");
-
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(dest)?;
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   let mut workbook = open_workbook_auto(&path)?;
 
@@ -260,6 +263,19 @@ fn get_sheetname_by_filename(
   None
 }
 
+async fn get_all_sheetnames<P: AsRef<Path>>(path: P) -> HashSet<String> {
+  let (sheets, _) = map_excel_sheets(path.as_ref().to_str().unwrap().to_string()).await;
+  let mut sheetnames = HashSet::new();
+
+  for (_, sheet_list) in sheets.iter() {
+    for sheet_name in sheet_list.iter() {
+      sheetnames.insert(sheet_name.clone());
+    }
+  }
+
+  sheetnames
+}
+
 #[tauri::command]
 pub async fn map_excel_sheets(
   path: String,
@@ -295,6 +311,8 @@ pub async fn switch_excel(
   skip_rows: String,
   sep: String,
   map_file_sheet: Vec<HashMap<String, String>>,
+  all_sheets: bool,
+  write_sheetname: bool,
   window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -313,19 +331,61 @@ pub async fn switch_excel(
       .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
 
-    let sheet_name = get_sheetname_by_filename(&map_file_sheet, filename);
+    let path = Path::new(file);
+    let file_stem = path.file_stem().unwrap().to_str().unwrap();
 
-    match excel_to_csv(file, skip_rows, sep, sheet_name).await {
-      Ok(_) => {
-        window
-          .emit("e2c_msg", filename)
-          .map_err(|e| e.to_string())?;
+    if !all_sheets {
+      let sheet_name = get_sheetname_by_filename(&map_file_sheet, filename);
+      let sheetname = match sheet_name.clone() {
+        Some(sheet) => sheet,
+        None => "None".to_string(),
+      };
+
+      let output_path = match write_sheetname {
+        true => {
+          let output = path.with_file_name(format!("{}_{}.csv", file_stem, sheetname));
+          output
+        }
+        false => Path::new(file).with_extension("csv"),
+      };
+
+      match excel_to_csv(file, skip_rows, sep, sheet_name, &output_path).await {
+        Ok(_) => {
+          window
+            .emit("e2c_msg", filename)
+            .map_err(|e| e.to_string())?;
+        }
+        Err(err) => {
+          window
+            .emit("switch_excel_err", format!("{filename}|{err}"))
+            .map_err(|e| e.to_string())?;
+          continue;
+        }
       }
-      Err(err) => {
+    } else {
+      let sheet_names = get_all_sheetnames(file).await;
+      if sheet_names.is_empty() {
         window
-          .emit("switch_excel_err", format!("{}|{err}", filename))
+          .emit("switch_excel_err", format!("{filename}|It's not an Excel file"))
           .map_err(|e| e.to_string())?;
         continue;
+      }
+      for sheet in sheet_names.iter() {
+        let output_path = path.with_file_name(format!("{}_{}.csv", file_stem, sheet));
+
+        match excel_to_csv(file, skip_rows, sep, Some(sheet.to_string()), &output_path).await {
+          Ok(_) => {
+            window
+              .emit("e2c_msg", filename)
+              .map_err(|e| e.to_string())?;
+          }
+          Err(err) => {
+            window
+              .emit("switch_excel_err", format!("{filename}|{err}"))
+              .map_err(|e| e.to_string())?;
+            continue;
+          }
+        }
       }
     }
   }

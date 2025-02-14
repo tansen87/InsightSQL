@@ -29,9 +29,11 @@ const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
   skipRows: "0",
-  sep: "|"
+  sep: "|",
+  allSheets: false,
+  writeSheetname: false
 });
-const { formHeight } = useDynamicFormHeight(167);
+const { formHeight } = useDynamicFormHeight(184);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;
@@ -162,7 +164,9 @@ async function excelToCsv() {
       path: data.path,
       skipRows: data.skipRows,
       sep: data.sep,
-      mapFileSheet: mapFileSheet
+      mapFileSheet: mapFileSheet,
+      allSheets: data.allSheets,
+      writeSheetname: data.writeSheetname
     });
 
     message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
@@ -185,10 +189,15 @@ async function excelToCsv() {
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; margin-right: 10px; width: 50px"
-            placeholder="skip rows"
           />
         </el-tooltip>
+      </el-form-item>
 
+      <el-text> Batch convert excel to csv </el-text>
+    </div>
+
+    <div class="custom-container1">
+      <div class="custom-container2">
         <el-tooltip content="write separator" effect="light">
           <el-select v-model="data.sep" style="margin-right: 10px; width: 50px">
             <el-option label="|" value="|" />
@@ -198,17 +207,32 @@ async function excelToCsv() {
             <el-option label="\t" value="\t" />
           </el-select>
         </el-tooltip>
-
-        <el-button
-          @click="excelToCsv()"
-          :loading="isLoading"
-          :icon="SwitchFilled"
-        >
-          Convert
-        </el-button>
-      </el-form-item>
-
-      <el-text> Batch convert excel to csv </el-text>
+        <el-tooltip content="convert all sheets" effect="light">
+          <el-select
+            v-model="data.allSheets"
+            style="margin-right: 10px; width: 80px"
+          >
+            <el-option label="True" :value="true" />
+            <el-option label="False" :value="false" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="write sheetname or not" effect="light">
+          <el-select
+            v-model="data.writeSheetname"
+            style="margin-right: 10px; width: 80px"
+          >
+            <el-option label="True" :value="true" />
+            <el-option label="False" :value="false" />
+          </el-select>
+        </el-tooltip>
+      </div>
+      <el-button
+        @click="excelToCsv()"
+        :loading="isLoading"
+        :icon="SwitchFilled"
+      >
+        Convert
+      </el-button>
     </div>
 
     <el-table
