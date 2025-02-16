@@ -16,7 +16,7 @@ import { message } from "@/utils/message";
 const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   path: "",
-  skipRows: "0"
+  skipRows: "1"
 });
 const { formHeight } = useDynamicFormHeight(134);
 
@@ -28,7 +28,7 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("behead_err", (event: any) => {
+listen("skip_err", (event: any) => {
   const beheadErr: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === beheadErr.split("|")[0]) {
@@ -38,10 +38,10 @@ listen("behead_err", (event: any) => {
   });
   isLoading.value = false;
 });
-listen("drop_msg", (event: any) => {
-  const dropMsg: string = event.payload;
+listen("skip_msg", (event: any) => {
+  const skipMsg: string = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === dropMsg) {
+    if (file.filename === skipMsg) {
       file.status = "completed";
     }
   });
@@ -73,7 +73,7 @@ async function selectFile() {
 }
 
 // invoke behead
-async function dropHeaders() {
+async function skipLines() {
   if (data.path === "") {
     message("CSV file not selected", { type: "warning" });
     return;
@@ -82,12 +82,12 @@ async function dropHeaders() {
   isLoading.value = true;
 
   try {
-    const result: string = await invoke("behead", {
+    const result: string = await invoke("skip", {
       path: data.path,
       skipRows: data.skipRows
     });
 
-    message(`Drop done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Skip done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -102,26 +102,24 @@ async function dropHeaders() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
           />
         </el-tooltip>
-
         <el-button
-          @click="dropHeaders()"
+          @click="skipLines()"
           :loading="isLoading"
           :icon="Delete"
           style="margin-left: 10px"
         >
-          Drop
+          Skip
         </el-button>
       </div>
 
       <el-text>
-        <span>Drop headers from CSV</span>
+        <span>Skip rows from CSV</span>
       </el-text>
     </div>
 

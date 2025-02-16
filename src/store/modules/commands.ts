@@ -66,9 +66,9 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/dbf"
       },
       {
-        title: "Drop headers",
-        description: "Drop headers from CSV.",
-        route: "/command/components/behead"
+        title: "Skip",
+        description: "Skip rows from CSV.",
+        route: "/command/components/skip"
       },
       {
         title: "Offset",

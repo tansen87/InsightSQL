@@ -124,11 +124,11 @@ export default {
       }
     },
     {
-      path: "/command/components/behead",
-      name: "behead",
-      component: () => import("@/views/command/components/behead.vue"),
+      path: "/command/components/skip",
+      name: "skip",
+      component: () => import("@/views/command/components/skip.vue"),
       meta: {
-        title: "drop headers",
+        title: "skip",
         showLink: false
       }
     },

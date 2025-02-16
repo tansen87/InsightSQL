@@ -6,7 +6,7 @@
 #[cfg(target_os = "windows")]
 use lib::access;
 use lib::apply;
-use lib::behead;
+use lib::skip;
 use lib::cat;
 use lib::convert;
 use lib::count;
@@ -42,7 +42,7 @@ fn main() {
       #[cfg(target_os = "windows")]
       access::access,
       apply::apply,
-      behead::behead,
+      skip::skip,
       cat::get_cat_headers,
       cat::concat,
       convert::switch_excel,

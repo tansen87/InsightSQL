@@ -1,7 +1,7 @@
 #[cfg(target_os = "windows")]
 pub mod access;
 pub mod apply;
-pub mod behead;
+pub mod skip;
 pub mod cat;
 pub mod convert;
 pub mod count;

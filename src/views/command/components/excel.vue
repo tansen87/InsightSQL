@@ -148,7 +148,7 @@ async function selectFile() {
 // invoke switch_excel
 async function excelToCsv() {
   if (data.path === "") {
-    message("CSV file not selected", { type: "warning" });
+    message("Excel file not selected", { type: "warning" });
     return;
   }
 
