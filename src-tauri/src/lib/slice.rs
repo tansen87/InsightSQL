@@ -5,7 +5,7 @@ use std::{
   time::Instant,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
 
 use crate::utils::{CsvOptions, Selection};
@@ -14,6 +14,7 @@ use crate::utils::{CsvOptions, Selection};
 pub enum SliceMode {
   Left,
   Right,
+  StartStop,
   Nth,
   Nmax,
   None,
@@ -24,6 +25,7 @@ impl From<&str> for SliceMode {
     match mode {
       "left" => SliceMode::Left,
       "right" => SliceMode::Right,
+      "ss" => SliceMode::StartStop,
       "nth" => SliceMode::Nth,
       "nmax" => SliceMode::Nmax,
       _ => SliceMode::None,
@@ -36,6 +38,7 @@ impl SliceMode {
     match self {
       SliceMode::Left => "left",
       SliceMode::Right => "right",
+      SliceMode::StartStop => "ss",
       SliceMode::Nth => "nth",
       SliceMode::Nmax => "nmax",
       SliceMode::None => "none",
@@ -79,6 +82,46 @@ pub async fn slice_column_with_nchar(
 
       let mut new_record = record.clone();
       new_record.push_field(&slice_n);
+
+      wtr.write_record(&new_record)?;
+    }
+  }
+
+  Ok(wtr.flush()?)
+}
+
+pub async fn slice_column_with_ss(
+  mut rdr: Reader<BufReader<File>>,
+  mut wtr: Writer<BufWriter<File>>,
+  select_column: &str,
+  start: usize,
+  stop: usize,
+) -> Result<()> {
+  let headers = rdr.headers()?.clone();
+
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
+
+  let mut new_headers = headers.clone();
+  let new_column_name = format!("{}_ss", select_column);
+  new_headers.push_field(&new_column_name);
+
+  wtr.write_record(&new_headers)?;
+
+  for result in rdr.records() {
+    let record = result?;
+
+    if let Some(value) = record.get(sel.first_indices()?) {
+      let start_index = start - 1;
+      let end_index = stop.min(value.chars().count());
+
+      let slice_nm = value
+        .chars()
+        .skip(start_index)
+        .take(end_index - start_index)
+        .collect::<String>();
+
+      let mut new_record = record.clone();
+      new_record.push_field(&slice_nm);
 
       wtr.write_record(&new_record)?;
     }
@@ -166,9 +209,16 @@ pub async fn perform_slice<P: AsRef<Path>>(
   skip_rows: usize,
   select_column: &str,
   n: usize,
+  m: usize,
   slice_sep: &str,
   mode: SliceMode,
 ) -> Result<()> {
+  if n < 1 {
+    return Err(anyhow!("slice/start must be greater than 1"));
+  } else if n > m && mode.to_str() == "ss" {
+    return Err(anyhow!("stop must be greater than or equal to start"));
+  }
+
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
 
@@ -195,6 +245,7 @@ pub async fn perform_slice<P: AsRef<Path>>(
     SliceMode::Right => {
       slice_column_with_nchar(rdr, wtr, select_column, n, SliceMode::Right.to_str()).await?
     }
+    SliceMode::StartStop => slice_column_with_ss(rdr, wtr, select_column, n, m).await?,
     SliceMode::Nth => slice_column_with_nth(rdr, wtr, select_column, n, slice_sep).await?,
     SliceMode::Nmax => slice_column_with_nmax(rdr, wtr, select_column, n, slice_sep).await?,
     SliceMode::None => {}
@@ -209,6 +260,7 @@ pub async fn slice(
   skip_rows: String,
   select_column: String,
   n: String,
+  m: String,
   slice_sep: String,
   mode: String,
 ) -> Result<String, String> {
@@ -221,6 +273,7 @@ pub async fn slice(
     skip_rows.parse::<usize>().map_err(|e| e.to_string())?,
     select_column.as_str(),
     n.parse::<usize>().map_err(|e| e.to_string())?,
+    m.parse::<usize>().map_err(|e| e.to_string())?,
     slice_sep.as_str(),
     slice_mode,
   )
@@ -231,6 +284,6 @@ pub async fn slice(
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("slice failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }

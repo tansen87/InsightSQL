@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, nextTick } from "vue";
+import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
@@ -20,6 +20,7 @@ const data = reactive({
   path: "",
   skipRows: "0",
   n: "4",
+  m: "5",
   sliceSep: "-",
   mode: "left"
 });
@@ -70,6 +71,7 @@ async function sliceData() {
       skipRows: data.skipRows,
       selectColumn: selectColumn.value,
       n: data.n,
+      m: data.m,
       sliceSep: data.sliceSep,
       mode: data.mode
     });
@@ -81,11 +83,7 @@ async function sliceData() {
   isLoading.value = false;
 }
 
-const { compiledMarkdown, manualHighlight } = useMarkdown(sliceContent);
-const handleDialogOpened = async () => {
-  await nextTick();
-  manualHighlight();
-};
+const { compiledMarkdown } = useMarkdown(sliceContent);
 </script>
 
 <template>
@@ -96,7 +94,7 @@ const handleDialogOpened = async () => {
           Open File
         </el-button>
 
-        <el-tooltip content="skip rows" placement="top" effect="light">
+        <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 78px"
@@ -107,8 +105,8 @@ const handleDialogOpened = async () => {
       <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="isPath">{{ data.path }}</span>
         <span v-else>
-          How to use
-          <span style="color: skyblue; font-weight: bold">slice</span>
+          About
+          <span style="color: skyblue; font-weight: bold">Slice</span>
         </span>
       </el-link>
     </div>
@@ -129,19 +127,23 @@ const handleDialogOpened = async () => {
           />
         </el-select>
 
-        <el-tooltip content="Numer of slice" placement="top" effect="light">
+        <el-tooltip content="Numer of slice/start" effect="light">
           <el-input v-model="data.n" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
-        <el-tooltip content="Slice separator" placement="top" effect="light">
+        <el-tooltip content="Numer of stop" effect="light">
+          <el-input v-model="data.m" style="margin-left: 10px; width: 50px" />
+        </el-tooltip>
+        <el-tooltip content="Slice separator" effect="light">
           <el-input
             v-model="data.sliceSep"
             style="margin-left: 10px; width: 50px"
           />
         </el-tooltip>
-        <el-tooltip content="Slice mode" placement="top" effect="light">
+        <el-tooltip content="Slice mode" effect="light">
           <el-select v-model="data.mode" style="margin-left: 10px; width: 84px">
             <el-option label="Left" value="left" />
             <el-option label="Right" value="right" />
+            <el-option label="StartStop" value="ss" />
             <el-option label="Nth" value="nth" />
             <el-option label="Nmax" value="nmax" />
           </el-select>
@@ -177,7 +179,6 @@ const handleDialogOpened = async () => {
       v-model="infoDialog"
       title="Slice - Slicing of csv column"
       width="800"
-      @opened="handleDialogOpened"
     >
       <el-scrollbar :height="formHeight * 0.8">
         <div v-html="compiledMarkdown" />
