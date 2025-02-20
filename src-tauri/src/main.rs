@@ -6,7 +6,6 @@
 #[cfg(target_os = "windows")]
 use lib::access;
 use lib::apply;
-use lib::skip;
 use lib::cat;
 use lib::convert;
 use lib::count;
@@ -21,6 +20,7 @@ use lib::rename;
 use lib::replace;
 use lib::search;
 use lib::select;
+use lib::skip;
 use lib::slice;
 use lib::sort;
 use lib::split;

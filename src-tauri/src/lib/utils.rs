@@ -1,14 +1,14 @@
 use std::{
   collections::{HashMap, HashSet},
-  fs::File,
-  io::{BufRead, BufReader},
-  path::Path,
+  fs::{File, Metadata},
+  io::{BufRead, BufReader, Read},
+  path::{Path, PathBuf},
 };
 
 use anyhow::{anyhow, Result};
 use csv::{ByteRecord, ReaderBuilder};
 
-use crate::excel_reader::ExcelReader;
+use crate::{excel_reader::ExcelReader, index::Indexed};
 
 type ByteString = Vec<u8>;
 
@@ -149,6 +149,7 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   pub async fn map_headers(&self) -> Result<Vec<HashMap<String, String>>> {
     let mut csv_options = CsvOptions::new(&self.path);
     csv_options.set_skip_rows(self.skip_rows);
+
     let sep = match csv_options.detect_separator() {
       Some(separator) => separator as u8,
       None => b',',
@@ -171,6 +172,51 @@ impl<P: AsRef<Path>> CsvOptions<P> {
       .collect();
 
     Ok(headers)
+  }
+
+  pub fn from_reader<R: Read>(&self, rdr: R) -> csv::Reader<R> {
+    let sep = match self.detect_separator() {
+      Some(separator) => separator as u8,
+      None => b',',
+    };
+
+    ReaderBuilder::new().delimiter(sep).from_reader(rdr)
+  }
+
+  pub fn idx_path(&self) -> PathBuf {
+    let mut p = self
+      .path
+      .as_ref()
+      .to_path_buf()
+      .into_os_string()
+      .into_string()
+      .unwrap();
+    p.push_str(".idx");
+    PathBuf::from(&p)
+  }
+
+  pub fn index_files(&self) -> Result<Option<(csv::Reader<File>, File)>> {
+    let (csv_file, idx_file) = (File::open(&self.path)?, File::open(&self.idx_path())?);
+    // If the CSV data was last modified after the index file was last
+    // modified, then return an error and demand the user regenerate the
+    // index.
+    let data_modified = last_modified(&csv_file.metadata()?);
+    let idx_modified = last_modified(&idx_file.metadata()?);
+    if data_modified > idx_modified {
+      return Err(anyhow!(
+        "The CSV file was modified after the index file.
+        Please re-create the index."
+      ));
+    }
+    let csv_rdr = self.from_reader(csv_file);
+    Ok(Some((csv_rdr, idx_file)))
+  }
+
+  pub fn indexed(&self) -> Result<Option<Indexed<File, File>>> {
+    match self.index_files()? {
+      None => Ok(None),
+      Some((r, i)) => Ok(Some(Indexed::open(r, i)?)),
+    }
   }
 }
 
@@ -219,5 +265,9 @@ impl Selection {
 
 #[inline]
 pub fn num_cpus() -> usize {
-    num_cpus::get()
+  num_cpus::get()
+}
+
+pub fn last_modified(md: &Metadata) -> u64 {
+  filetime::FileTime::from_last_modification_time(md).seconds_relative_to_1970()
 }

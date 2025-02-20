@@ -16,7 +16,8 @@ import { message } from "@/utils/message";
 
 const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
-  path: ""
+  path: "",
+  mode: "count"
 });
 const { formHeight } = useDynamicFormHeight(134);
 
@@ -81,7 +82,8 @@ async function countData() {
 
   try {
     const result: string = await invoke("count", {
-      path: data.path
+      path: data.path,
+      mode: data.mode
     });
 
     message(`Count done, elapsed time: ${result} s`, { duration: 5000 });
@@ -99,7 +101,12 @@ async function countData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
+        <el-tooltip content="add index or not" effect="light">
+          <el-select v-model="data.mode" style="margin-left: 10px; width: 90px">
+            <el-option label="Index" value="index" />
+            <el-option label="Count" value="count" />
+          </el-select>
+        </el-tooltip>
         <el-button
           @click="countData()"
           :loading="isLoading"

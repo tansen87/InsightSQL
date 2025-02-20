@@ -1,7 +1,6 @@
 #[cfg(target_os = "windows")]
 pub mod access;
 pub mod apply;
-pub mod skip;
 pub mod cat;
 pub mod convert;
 pub mod count;
@@ -9,6 +8,7 @@ pub mod dbf;
 pub mod enumerate;
 pub mod excel_reader;
 pub mod fill;
+pub mod idx;
 pub mod index;
 pub mod join;
 pub mod modify;
@@ -18,6 +18,7 @@ pub mod rename;
 pub mod replace;
 pub mod search;
 pub mod select;
+pub mod skip;
 pub mod slice;
 pub mod sort;
 pub mod split;
