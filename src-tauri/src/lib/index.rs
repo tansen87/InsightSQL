@@ -33,14 +33,9 @@ impl<R: io::Read + io::Seek, I: io::Read + io::Seek> Indexed<R, I> {
     })
   }
 
-  /// Return the number of records (not including the header record) in this
-  /// index.
+  /// Return the number of records in this index.
   pub fn count(&self) -> u64 {
-    if self.csv_rdr.has_headers() && !self.idx.is_empty() {
-      self.idx.len() - 1
-    } else {
-      self.idx.len()
-    }
+    self.idx.len()
   }
 
   /// Seek to the starting position of record `i`.

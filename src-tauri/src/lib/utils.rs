@@ -196,20 +196,27 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   }
 
   pub fn index_files(&self) -> Result<Option<(csv::Reader<File>, File)>> {
-    let (csv_file, idx_file) = (File::open(&self.path)?, File::open(&self.idx_path())?);
-    // If the CSV data was last modified after the index file was last
-    // modified, then return an error and demand the user regenerate the
-    // index.
-    let data_modified = last_modified(&csv_file.metadata()?);
-    let idx_modified = last_modified(&idx_file.metadata()?);
-    if data_modified > idx_modified {
-      return Err(anyhow!(
-        "The CSV file was modified after the index file.
-        Please re-create the index."
-      ));
+    let csv_file_result = File::open(&self.path);
+    let idx_file_result = File::open(&self.idx_path());
+
+    match (csv_file_result, idx_file_result) {
+      (Ok(csv_file), Ok(idx_file)) => {
+        let data_modified = csv_file.metadata()?.modified()?;
+        let idx_modified = idx_file.metadata()?.modified()?;
+        if data_modified > idx_modified {
+          return Err(anyhow!(
+            "The CSV file was modified after the index file. Please re-create the index."
+          ));
+        }
+        let csv_rdr = self.from_reader(csv_file);
+        Ok(Some((csv_rdr, idx_file)))
+      }
+      (Err(_), Err(_)) => Ok(None),
+      (Ok(_), Err(_)) => {
+        Ok(None)
+      }
+      _ => Ok(None),
     }
-    let csv_rdr = self.from_reader(csv_file);
-    Ok(Some((csv_rdr, idx_file)))
   }
 
   pub fn indexed(&self) -> Result<Option<Indexed<File, File>>> {
