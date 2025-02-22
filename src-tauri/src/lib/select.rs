@@ -114,7 +114,7 @@ pub async fn get_select_headers(
 ) -> Result<Vec<HashMap<String, String>>, String> {
   match get_header(path, skip_rows).await {
     Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }
 
@@ -128,6 +128,6 @@ pub async fn select(path: String, cols: String, skip_rows: String) -> Result<Str
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("select failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }
