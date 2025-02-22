@@ -58,7 +58,6 @@ async function selectFile(fileIndex) {
   if (data[path] === null) {
     return;
   }
-  isPath.value = true;
 
   try {
     const { headerView, columnView, dataView } = await viewSqlp(
@@ -68,6 +67,7 @@ async function selectFile(fileIndex) {
     tableHeader.value = headerView;
     tableColumn.value = columnView;
     tableData.value = dataView;
+    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -84,9 +84,9 @@ async function joinData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("join", {
       path1: data.path1,
       path2: data.path2,

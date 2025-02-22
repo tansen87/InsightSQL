@@ -31,12 +31,13 @@ async function selectFile() {
   if (data.path === null) {
     return;
   }
-  isPath.value = true;
 
   try {
     const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+
     tableColumn.value = columnView;
     tableData.value = dataView;
+    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -49,9 +50,9 @@ async function splitData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("split", {
       path: data.path,
       size: data.size,

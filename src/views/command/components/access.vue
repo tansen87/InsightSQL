@@ -46,9 +46,9 @@ async function accessData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("access", {
       path: data.path,
       sep: data.sep

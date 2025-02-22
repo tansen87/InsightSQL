@@ -152,14 +152,13 @@ async function excelToCsv() {
     return;
   }
 
-  isLoading.value = true;
-
-  const mapFileSheet = fileSheet.value.map(item => ({
-    filename: item.filename,
-    sheetname: item.sheetname
-  }));
-
   try {
+    isLoading.value = true;
+
+    const mapFileSheet = fileSheet.value.map(item => ({
+      filename: item.filename,
+      sheetname: item.sheetname
+    }));
     const result: string = await invoke("switch_excel", {
       path: data.path,
       skipRows: data.skipRows,
@@ -246,7 +245,6 @@ async function excelToCsv() {
       <el-table-column
         prop="filename"
         label="File"
-        class-name="file-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 30%"
       />
@@ -258,7 +256,6 @@ async function excelToCsv() {
           { text: '√', value: 'completed' }
         ]"
         :filter-method="filterFileStatus"
-        class-name="status-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 10%"
       >

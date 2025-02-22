@@ -26,7 +26,6 @@ async function selectFolder() {
   } else {
     data.folderPath = selected;
   }
-
   isPath.value = true;
 }
 
@@ -47,9 +46,9 @@ async function traverseDirectory() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("traverse", {
       folderPath: data.folderPath,
       output: output

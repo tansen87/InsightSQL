@@ -78,9 +78,8 @@ async function countData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
     const result: string = await invoke("count", {
       path: data.path,
       mode: data.mode
@@ -131,14 +130,12 @@ async function countData() {
       <el-table-column
         prop="filename"
         label="File"
-        class-name="file-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 30%"
       />
       <el-table-column
         prop="status"
         label="Status"
-        class-name="status-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 10%"
       >
@@ -157,7 +154,6 @@ async function countData() {
       <el-table-column
         prop="infoMsg"
         label="Info"
-        class-name="info-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >

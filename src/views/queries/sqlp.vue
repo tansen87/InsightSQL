@@ -80,9 +80,9 @@ async function queryData() {
     return false;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string[] = await invoke("query", {
       path: data.path,
       sqlQuery: sqlQuery.value,

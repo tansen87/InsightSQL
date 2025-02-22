@@ -64,14 +64,12 @@ async function selectColumns() {
     return;
   }
 
-  const names = computed(() => {
-    return selectList.value.map(item => item.name).join("|");
-  });
-
-  isLoading.value = true;
-  isPath.value = true;
-
   try {
+    isLoading.value = true;
+
+    const names = computed(() => {
+      return selectList.value.map(item => item.name).join("|");
+    });
     const result: string = await invoke("select", {
       path: data.path,
       cols: names.value,

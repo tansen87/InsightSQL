@@ -33,16 +33,17 @@ async function selectFile() {
   if (data.path === null) {
     return;
   }
-  isPath.value = true;
 
   try {
     const { headerView, columnView, dataView } = await viewSqlp(
       data.path,
       data.skipRows
     );
+
     tableHeader.value = headerView;
     tableColumn.value = columnView;
     tableData.value = dataView;
+    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -59,9 +60,9 @@ async function replaceData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("replace", {
       path: data.path,
       selectColumn: selectColumn.value,

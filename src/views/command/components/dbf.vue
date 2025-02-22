@@ -68,9 +68,9 @@ async function convertData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("dbf", {
       filePath: data.filePath,
       sep: data.sep

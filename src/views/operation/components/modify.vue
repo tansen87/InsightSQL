@@ -57,14 +57,13 @@ async function modifyFilename() {
     return;
   }
 
-  const filenameArray = tableData.value.map(
-    (row: any) => row.col2 + "." + row.col3
-  );
-  const filename = filenameArray.join("|");
-
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
+    const filenameArray = tableData.value.map(
+      (row: any) => row.col2 + "." + row.col3
+    );
+    const filename = filenameArray.join("|");
     const result: string = await invoke("modify", {
       path: data.path,
       fileName: filename

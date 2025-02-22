@@ -2,7 +2,6 @@
 import { ref, reactive } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { FolderOpened, Connection, Link } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
 import { catContent, useMarkdown } from "@/utils/markdown";
@@ -80,21 +79,15 @@ async function concatData() {
   });
 
   if (outputPath === "" || outputPath === null) {
-    ElNotification({
-      title: "File not found",
-      message: "未选择保存文件",
-      position: "bottom-right",
-      type: "warning"
-    });
+    message("Save file not selected", { type: "warning" });
     return;
   }
 
-  isLoading.value = true;
-
-  const saveFileType = outputPath.split(".").pop();
-  const useCols = Object.values(columns.value).join("|");
-
   try {
+    isLoading.value = true;
+
+    const saveFileType = outputPath.split(".").pop();
+    const useCols = Object.values(columns.value).join("|");
     const res: string = await invoke("concat", {
       filePath: data.filePath,
       outputPath: outputPath,

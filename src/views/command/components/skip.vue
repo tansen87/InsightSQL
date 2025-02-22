@@ -79,9 +79,9 @@ async function skipLines() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("skip", {
       path: data.path,
       skipRows: data.skipRows
@@ -147,7 +147,6 @@ async function skipLines() {
       <el-table-column
         prop="errorMessage"
         label="Info"
-        class-name="info-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >

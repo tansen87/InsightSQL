@@ -16,14 +16,12 @@ const data = reactive({
 });
 
 async function selectFile() {
-  isLoading.value = false;
   isPath.value = false;
 
   data.filePath = await viewOpenFile(false, "csv", ["*"]);
   if (data.filePath === null) {
     return;
   }
-  isPath.value = true;
 
   try {
     const header: any = await invoke("get_offset_headers", {
@@ -31,6 +29,7 @@ async function selectFile() {
     });
 
     originalColumns.value = header;
+    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -47,11 +46,10 @@ async function netAmount() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
-    const cols = Object.values(conditonColumns.value).join("|");
+    isLoading.value = true;
 
+    const cols = Object.values(conditonColumns.value).join("|");
     const result: string = await invoke("offset", {
       filePath: data.filePath,
       amount: columns.value,

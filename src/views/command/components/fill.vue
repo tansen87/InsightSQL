@@ -32,7 +32,6 @@ async function selectFile() {
   if (data.path === null) {
     return;
   }
-  isPath.value = true;
 
   try {
     const { headerView, columnView, dataView } = await viewSqlp(
@@ -42,6 +41,7 @@ async function selectFile() {
     tableHeader.value = headerView;
     tableColumn.value = columnView;
     tableData.value = dataView;
+    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -58,11 +58,10 @@ async function fillData() {
     return;
   }
 
-  const cols = Object.values(columns.value).join("|");
-
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
+    const cols = Object.values(columns.value).join("|");
     const result: string = await invoke("fill", {
       path: data.path,
       columns: cols,
@@ -117,11 +116,7 @@ async function fillData() {
 
     <div class="custom-container1">
       <div clas="custom-container2" style="margin-top: 12px">
-        <el-tooltip
-          content="The value of fill"
-          placement="bottom"
-          effect="light"
-        >
+        <el-tooltip content="The value of fill" effect="light">
           <el-input v-model="data.value" style="width: 120px" clearable />
         </el-tooltip>
       </div>

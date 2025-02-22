@@ -35,8 +35,6 @@ async function selectFile() {
     return;
   }
 
-  isPath.value = true;
-
   try {
     const headers: string[] = await invoke("get_rename_headers", {
       path: data.path,
@@ -50,6 +48,8 @@ async function selectFile() {
       };
       tableData.value.push(colData);
     }
+
+    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -62,12 +62,11 @@ async function renameData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const headersStringArray = tableData.value.map((row: any) => row.col2);
     const headersString = headersStringArray.join(",");
-
     const result: string = await invoke("rename", {
       path: data.path,
       headers: headersString,
@@ -130,7 +129,6 @@ async function headerEdit(row: any) {
             <el-input
               v-model="row.col2"
               placeholder="new header"
-              class="custom-header-input"
               @blur="headerEdit(row)"
             />
           </template>

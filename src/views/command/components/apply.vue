@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { ElNotification } from "element-plus";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
@@ -39,7 +38,6 @@ async function selectFile() {
   if (data.path === null) {
     return;
   }
-  isPath.value = true;
 
   try {
     const { headerView, columnView, dataView } = await viewSqlp(
@@ -49,14 +47,9 @@ async function selectFile() {
     tableHeader.value = headerView;
     tableColumn.value = columnView;
     tableData.value = dataView;
+    isPath.value = true;
   } catch (err) {
-    ElNotification({
-      title: "Open file error",
-      message: err.toString(),
-      position: "bottom-right",
-      type: "error",
-      duration: 10000
-    });
+    message(err.toString(), { type: "error", duration: 10000 });
   }
 }
 
@@ -71,9 +64,8 @@ async function applyData() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
     const result: string = await invoke("apply", {
       path: data.path,
       selectColumns: selectColumns.value.join("|"),
@@ -101,7 +93,6 @@ async function applyData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"

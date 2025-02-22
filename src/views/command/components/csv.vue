@@ -85,9 +85,9 @@ async function csvToxlsx() {
     return;
   }
 
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     const result: string = await invoke("switch_csv", {
       path: data.path,
       skipRows: data.skipRows,
@@ -158,7 +158,6 @@ async function csvToxlsx() {
       <el-table-column
         prop="filename"
         label="File"
-        class-name="file-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 30%"
       />
@@ -170,7 +169,6 @@ async function csvToxlsx() {
           { text: '√', value: 'completed' }
         ]"
         :filter-method="filterFileStatus"
-        class-name="status-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 10%"
       >
@@ -189,7 +187,6 @@ async function csvToxlsx() {
       <el-table-column
         prop="errorMessage"
         label="Info"
-        class-name="info-column"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
