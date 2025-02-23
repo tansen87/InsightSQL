@@ -1,7 +1,4 @@
-use std::fs;
-use std::fs::File;
-use std::io;
-use std::path::Path;
+use std::{fs::File, io::BufWriter, path::Path};
 
 use anyhow::Result;
 use csv::ReaderBuilder;
@@ -24,7 +21,7 @@ pub async fn create_index<P: AsRef<Path>>(path: P) -> Result<()> {
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(File::open(&path)?);
-  let mut wtr = io::BufWriter::new(fs::File::create(&output_path)?);
+  let mut wtr = BufWriter::new(File::create(&output_path)?);
   RandomAccessSimple::create(&mut rdr, &mut wtr)?;
 
   Ok(())

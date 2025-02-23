@@ -1,12 +1,12 @@
 use std::{
   fs::{self, File},
-  io::{BufRead, BufReader, BufWriter, Write},
+  io::{BufRead, BufReader, BufWriter, Write}
 };
 
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::split;
+use lib::{split, utils::CsvOptions};
 
 #[tokio::test]
 async fn test_split_rows() -> Result<()> {
@@ -29,7 +29,11 @@ async fn test_split_rows() -> Result<()> {
 
   let size: usize = 2;
 
-  split::split_rows(file_path.to_str().unwrap(), size.try_into()?, 0).await?;
+  let csv_options = CsvOptions::new(file_path.to_str().unwrap());
+  let parent_path = file_path.parent().unwrap().to_str().unwrap();
+  let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}");
+  split::sequential_split_rows(csv_options, size.try_into()?, &output_path).await?;
 
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
@@ -82,7 +86,11 @@ async fn test_split_lines() -> Result<()> {
   }
   wtr.flush()?;
 
-  split::split_lines(file_path.to_str().unwrap(), 2, 0).await?;
+  let csv_options = CsvOptions::new(file_path.to_str().unwrap());
+  let parent_path = file_path.parent().unwrap().to_str().unwrap();
+  let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}");
+  split::split_lines(csv_options, 2, &output_path).await?;
 
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)

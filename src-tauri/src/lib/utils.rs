@@ -32,6 +32,11 @@ impl<P: AsRef<Path>> CsvOptions<P> {
     self.skip_rows
   }
 
+  /// Get the path
+  pub fn get_path(&self) -> Option<&str> {
+    self.path.as_ref().to_str()
+  }
+
   /// Check the delimiter of CSV
   pub fn detect_separator(&self) -> Option<char> {
     let file = File::open(&self.path).expect("Failed to open file");
@@ -85,6 +90,10 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   pub fn skip_csv_rows(&self) -> Result<BufReader<File>> {
     let mut reader = BufReader::new(File::open(&self.path)?);
     let mut line = String::new();
+
+    if self.skip_rows == 0 {
+      return Ok(reader);
+    }
 
     for _ in 0..self.skip_rows {
       if reader.read_line(&mut line)? == 0 {
@@ -212,9 +221,7 @@ impl<P: AsRef<Path>> CsvOptions<P> {
         Ok(Some((csv_rdr, idx_file)))
       }
       (Err(_), Err(_)) => Ok(None),
-      (Ok(_), Err(_)) => {
-        Ok(None)
-      }
+      (Ok(_), Err(_)) => Ok(None),
       _ => Ok(None),
     }
   }
@@ -277,4 +284,15 @@ pub fn num_cpus() -> usize {
 
 pub fn last_modified(md: &Metadata) -> u64 {
   filetime::FileTime::from_last_modification_time(md).seconds_relative_to_1970()
+}
+
+pub fn num_of_chunks(nitems: usize, chunk_size: usize) -> usize {
+  if chunk_size == 0 {
+    return nitems;
+  }
+  let mut n = nitems / chunk_size;
+  if nitems % chunk_size != 0 {
+    n += 1;
+  }
+  n
 }

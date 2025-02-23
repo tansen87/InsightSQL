@@ -17,7 +17,6 @@ const [isLoading, isPath, tableColumn, tableData, infoDialog] = [
 const data = reactive({
   path: "",
   size: 1000000,
-  skipRows: "0",
   mode: "Rows"
 });
 const { formHeight } = useDynamicFormHeight(188);
@@ -33,7 +32,7 @@ async function selectFile() {
   }
 
   try {
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    const { columnView, dataView } = await viewSqlp(data.path, "0");
 
     tableColumn.value = columnView;
     tableData.value = dataView;
@@ -56,7 +55,6 @@ async function splitData() {
     const result: string = await invoke("split", {
       path: data.path,
       size: data.size,
-      skipRows: data.skipRows,
       mode: data.mode
     });
 
@@ -77,13 +75,6 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
-        <el-tooltip content="skip rows" placement="top" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
       </div>
 
       <el-link @click="infoDialog = true" :icon="Link">
@@ -108,6 +99,7 @@ const { compiledMarkdown } = useMarkdown(splitContent);
           <el-select v-model="data.mode" style="margin-left: 10px; width: 80px">
             <el-option label="Rows" value="rows" />
             <el-option label="Lines" value="lines" />
+            <el-option label="Index" value="index" />
           </el-select>
         </el-tooltip>
       </div>
