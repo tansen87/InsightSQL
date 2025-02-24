@@ -13,7 +13,6 @@ use lib::dbf;
 use lib::enumerate;
 use lib::fill;
 use lib::join;
-use lib::modify;
 use lib::offset;
 use lib::pinyin;
 use lib::rename;
@@ -53,7 +52,6 @@ fn main() {
       enumerate::enumer,
       fill::fill,
       join::join,
-      modify::modify,
       offset::get_offset_headers,
       offset::offset,
       pinyin::pinyin,

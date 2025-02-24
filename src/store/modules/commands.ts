@@ -106,11 +106,6 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/slice"
       },
       {
-        title: "Modify",
-        description: "Batch modify filenames.",
-        route: "/operation/components/modify"
-      },
-      {
         title: "Traverse",
         description: "Traverse the directory to obtain filenames.",
         route: "/operation/components/traverse"

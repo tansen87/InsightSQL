@@ -16,15 +16,6 @@ export default {
       }
     },
     {
-      path: "/operation/components/modify",
-      name: "modify",
-      component: () => import("@/views/operation/components/modify.vue"),
-      meta: {
-        title: "modify",
-        showLink: false
-      }
-    },
-    {
       path: "/operation/components/traverse",
       name: "traverse",
       component: () => import("@/views/operation/components/traverse.vue"),
