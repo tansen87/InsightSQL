@@ -5,24 +5,6 @@ use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-async fn get_header<P: AsRef<Path>>(path: P, skip_rows: String) -> Result<Vec<String>> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
-
-  let headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();
-
-  Ok(headers)
-}
-
 pub async fn rename_headers<P: AsRef<Path>>(
   path: P,
   r_header: String,
@@ -62,10 +44,10 @@ pub async fn rename_headers<P: AsRef<Path>>(
 
 #[tauri::command]
 pub async fn get_rename_headers(path: String, skip_rows: String) -> Result<Vec<String>, String> {
-  match get_header(path, skip_rows).await {
-    Ok(headers) => Ok(headers),
-    Err(err) => Err(format!("get header error: {err}")),
-  }
+  let mut csv_options = CsvOptions::new(path);
+  csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+
+  async { csv_options.from_headers().map_err(|e| e.to_string()) }.await
 }
 
 #[tauri::command]
@@ -78,6 +60,6 @@ pub async fn rename(path: String, headers: String, skip_rows: String) -> Result<
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("rename failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }

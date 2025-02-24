@@ -1,6 +1,6 @@
 use std::{
   collections::{HashMap, HashSet},
-  fs::{File, Metadata},
+  fs::File,
   io::{BufRead, BufReader, Read},
   path::{Path, PathBuf},
 };
@@ -54,24 +54,24 @@ impl<P: AsRef<Path>> CsvOptions<P> {
       }
     }
 
+    let seg_symbols = [';', ',', '\t', '|', '^'];
     let mut line = String::new();
-    let mut separators_count = HashMap::new();
+    let mut separators_count: HashMap<char, usize> = seg_symbols.iter().map(|&c| (c, 0)).collect();
     let mut max_count = 0;
     let mut separator = None;
-    let seg_symbols = [';', ',', '\t', '|', '^'];
 
     // read next line after skipping
     if let Some(Ok(next_line)) = lines_iter.next() {
       line.push_str(&next_line);
-
-      // count all possible occurrences of segmentation symbols
-      for c in seg_symbols {
-        let count = line.matches(c).count();
-        if count > max_count {
-          max_count = count;
-          separator = Some(c);
+      for c in line.chars() {
+        // traverse every character in the line
+        if let Some(count) = separators_count.get_mut(&c) {
+          *count += 1;
+          if *count > max_count {
+            max_count = *count;
+            separator = Some(c);
+          }
         }
-        separators_count.insert(c, count);
       }
     }
 
@@ -232,6 +232,21 @@ impl<P: AsRef<Path>> CsvOptions<P> {
       Some((r, i)) => Ok(Some(Indexed::open(r, i)?)),
     }
   }
+
+  pub fn from_headers(&self) -> Result<Vec<String>> {
+    let sep = match self.detect_separator() {
+      Some(separator) => separator as u8,
+      None => b',',
+    };
+
+    let mut rdr = ReaderBuilder::new()
+      .delimiter(sep)
+      .from_reader(self.skip_csv_rows()?);
+
+    let headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();
+
+    Ok(headers)
+  }
 }
 
 pub struct Selection {
@@ -280,10 +295,6 @@ impl Selection {
 #[inline]
 pub fn num_cpus() -> usize {
   num_cpus::get()
-}
-
-pub fn last_modified(md: &Metadata) -> u64 {
-  filetime::FileTime::from_last_modification_time(md).seconds_relative_to_1970()
 }
 
 pub fn num_of_chunks(nitems: usize, chunk_size: usize) -> usize {
