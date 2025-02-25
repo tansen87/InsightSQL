@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { shortFileName } from "./utils";
 
 export async function viewOpenFile(
   multiple: boolean,
@@ -15,13 +16,53 @@ export async function viewOpenFile(
       }
     ]
   });
-
   if (Array.isArray(selected)) {
     return selected.toString();
   } else if (selected === null) {
     return null;
   } else {
     return selected;
+  }
+}
+
+export async function trimOpenFile(
+  multiple: boolean,
+  name: string,
+  extensions: string[],
+  options?: { includeStatus?: boolean }
+): Promise<{
+  filePath: string;
+  fileInfo: { filename: string; status?: string }[];
+}> {
+  const selected = await open({
+    multiple: multiple,
+    filters: [
+      {
+        name: name,
+        extensions: extensions
+      }
+    ]
+  });
+  if (Array.isArray(selected)) {
+    const filePath = selected.join("|").toString();
+    const rows = selected.filter((row: any) => row.trim() !== "");
+    const fileInfo = rows.map((file: any) => ({
+      filename: shortFileName(file),
+      ...(options?.includeStatus ? { status: "" } : {})
+    }));
+    return { filePath, fileInfo };
+  } else if (selected === null) {
+    return { filePath: "", fileInfo: [] };
+  } else {
+    return {
+      filePath: selected !== null ? selected : selected,
+      fileInfo: [
+        {
+          filename: shortFileName(selected !== null ? selected : selected),
+          status: ""
+        }
+      ]
+    };
   }
 }
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElIcon } from "element-plus";
@@ -11,12 +10,9 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
-import {
-  shortFileName,
-  useDynamicFormHeight,
-  filterFileStatus
-} from "@/utils/utils";
+import { useDynamicFormHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
+import { trimOpenFile } from "@/utils/view";
 
 const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
@@ -56,26 +52,11 @@ listen("c2x_msg", (event: any) => {
 async function selectFile() {
   selectedFiles.value = [];
 
-  const selected = await open({
-    multiple: true,
-    filters: [
-      {
-        name: "csv",
-        extensions: ["*"]
-      }
-    ]
+  const result = await trimOpenFile(true, "csv", ["*"], {
+    includeStatus: true
   });
-  if (Array.isArray(selected)) {
-    data.path = selected.join("|").toString();
-    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: shortFileName(file), status: "" };
-    });
-  } else if (selected === null) {
-    return;
-  } else {
-    data.path = selected;
-  }
+  data.path = result.filePath;
+  selectedFiles.value = result.fileInfo;
 }
 
 // invoke switch_csv
@@ -87,14 +68,12 @@ async function csvToxlsx() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("switch_csv", {
       path: data.path,
       skipRows: data.skipRows,
       mode: data.mode,
       chunkSize: data.chunkSize
     });
-
     message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });

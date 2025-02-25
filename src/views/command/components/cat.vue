@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Connection, Link } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicFormHeight } from "@/utils/utils";
 import { catContent, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
+import { trimOpenFile } from "@/utils/view";
 
 const [
   columns,
@@ -30,32 +31,13 @@ async function selectFile() {
   originalColumns.value = [];
   completed.value = false;
 
-  const selected = await open({
-    multiple: true,
-    filters: [
-      {
-        name: "",
-        extensions: ["*"]
-      }
-    ]
-  });
-  if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
-    const rows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = rows.map((file: any) => {
-      return { filename: shortFileName(file) };
-    });
-  } else if (selected === null) {
-    return;
-  } else {
-    data.filePath = selected;
-  }
-
+  const result = await trimOpenFile(true, "", ["*"], { includeStatus: false });
+  data.filePath = result.filePath;
+  selectedFiles.value = result.fileInfo;
   const headers: string[] = await invoke("get_cat_headers", {
     path: data.filePath,
     skipRows: data.skipRows
   });
-
   originalColumns.value = headers.map(header => ({
     label: header,
     value: header
@@ -85,7 +67,6 @@ async function concatData() {
 
   try {
     isLoading.value = true;
-
     const saveFileType = outputPath.split(".").pop();
     const useCols = Object.values(columns.value).join("|");
     const res: string = await invoke("concat", {
@@ -96,7 +77,6 @@ async function concatData() {
       skipRows: data.skipRows,
       useCols: useCols
     });
-
     result.value = res;
     completed.value = true;
   } catch (err) {

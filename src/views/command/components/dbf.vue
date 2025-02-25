@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@element-plus/icons-vue";
 import { useDynamicFormHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
+import { trimOpenFile } from "@/utils/view";
 
 const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
@@ -39,26 +39,12 @@ listen("dbf2csv_msg", (event: any) => {
 
 async function selectFile() {
   selectedFiles.value = [];
-  const selected = await open({
-    multiple: true,
-    filters: [
-      {
-        name: "dbf",
-        extensions: ["*"]
-      }
-    ]
+
+  const result = await trimOpenFile(true, "dbf", ["*"], {
+    includeStatus: true
   });
-  if (Array.isArray(selected)) {
-    data.filePath = selected.join("|").toString();
-    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: file, status: "" };
-    });
-  } else if (selected === null) {
-    return;
-  } else {
-    data.filePath = selected;
-  }
+  data.filePath = result.filePath;
+  selectedFiles.value = result.fileInfo;
 }
 
 // invoke dbf
@@ -70,12 +56,10 @@ async function convertData() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("dbf", {
       filePath: data.filePath,
       sep: data.sep
     });
-
     message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
