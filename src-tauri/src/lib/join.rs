@@ -167,15 +167,9 @@ fn new_io_state<P: AsRef<Path>>(
   nulls: bool,
 ) -> Result<IoState<fs::File, Box<dyn io::Write + 'static>>> {
   let csv_options1 = CsvOptions::new(&path1);
-  let sep1 = match csv_options1.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+  let sep1 = csv_options1.detect_separator()?;
   let csv_options2 = CsvOptions::new(&path2);
-  let sep2 = match csv_options2.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+  let sep2 = csv_options2.detect_separator()?;
   let mut rdr1 = ReaderBuilder::new()
     .delimiter(sep1)
     .from_reader(File::open(&path1)?);

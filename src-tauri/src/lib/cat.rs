@@ -58,11 +58,7 @@ async fn cat_with_polars(
       _ => {
         let mut csv_options = CsvOptions::new(file);
         csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-        let sep = match csv_options.detect_separator() {
-          Some(separator) => separator as u8,
-          None => b',',
-        };
-        vec_sep.push(sep);
+        vec_sep.push(csv_options.detect_separator()?);
       }
     }
 
@@ -165,10 +161,7 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
   for p in &paths {
     let mut csv_options = CsvOptions::new(p);
     csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-    let sep = match csv_options.detect_separator() {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
+    let sep = csv_options.detect_separator()?;
     vec_sep.push(sep);
     let skip_rows_reader = csv_options.skip_csv_rows()?;
     let mut rdr = ReaderBuilder::new()
@@ -262,7 +255,7 @@ pub async fn concat(
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
         Ok(format!("{elapsed_time:.2}"))
       }
-      Err(err) => Err(format!("cat failed: {err}")),
+      Err(err) => Err(format!("{err}")),
     },
     _ => {
       match cat_with_polars(file_path, output_path, file_type, mode, skip_rows, use_cols).await {
@@ -271,7 +264,7 @@ pub async fn concat(
           let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
           Ok(format!("{elapsed_time:.2}"))
         }
-        Err(err) => Err(format!("cat failed: {err}")),
+        Err(err) => Err(format!("{err}")),
       }
     }
   }

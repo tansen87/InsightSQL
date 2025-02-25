@@ -137,8 +137,7 @@ async fn prepare_query(
   schema_length: &str,
 ) -> Result<Vec<String>> {
   let infer_schema_length = match schema_length {
-    "0" => Some(0),
-    _ => Some(100),
+    schema_legth => Some(schema_legth.parse::<usize>()?),
   };
 
   let mut ctx = SQLContext::new();
@@ -161,16 +160,16 @@ async fn prepare_query(
 
   let mut opt_state = OptFlags::from_bits_truncate(0);
   if low_memory {
-  opt_state |= OptFlags::PROJECTION_PUSHDOWN
-    | OptFlags::PREDICATE_PUSHDOWN
-    | OptFlags::CLUSTER_WITH_COLUMNS
-    | OptFlags::SIMPLIFY_EXPR
-    | OptFlags::FILE_CACHING
-    | OptFlags::SLICE_PUSHDOWN
-    | OptFlags::COMM_SUBPLAN_ELIM
-    | OptFlags::COMM_SUBEXPR_ELIM
-    | OptFlags::ROW_ESTIMATE
-    | OptFlags::FAST_PROJECTION;
+    opt_state |= OptFlags::PROJECTION_PUSHDOWN
+      | OptFlags::PREDICATE_PUSHDOWN
+      | OptFlags::CLUSTER_WITH_COLUMNS
+      | OptFlags::SIMPLIFY_EXPR
+      | OptFlags::FILE_CACHING
+      | OptFlags::SLICE_PUSHDOWN
+      | OptFlags::COMM_SUBPLAN_ELIM
+      | OptFlags::COMM_SUBEXPR_ELIM
+      | OptFlags::ROW_ESTIMATE
+      | OptFlags::FAST_PROJECTION;
   } else {
     opt_state |= OptFlags::default();
   };
@@ -205,11 +204,7 @@ async fn prepare_query(
       _ => {
         let mut csv_options = CsvOptions::new(table);
         csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-        let sep = match csv_options.detect_separator() {
-          Some(separator) => separator as u8,
-          None => b',',
-        };
-        vec_sep.push(sep);
+        vec_sep.push(csv_options.detect_separator()?);
       }
     }
 

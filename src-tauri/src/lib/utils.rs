@@ -38,8 +38,8 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   }
 
   /// Check the delimiter of CSV
-  pub fn detect_separator(&self) -> Option<char> {
-    let file = File::open(&self.path).expect("Failed to open file");
+  pub fn detect_separator(&self) -> Result<u8> {
+    let file = File::open(&self.path)?;
     let reader = BufReader::new(file);
 
     let mut lines_iter = reader.lines();
@@ -49,33 +49,31 @@ impl<P: AsRef<Path>> CsvOptions<P> {
       if let Some(Ok(_)) = lines_iter.next() {
         // Line skipped
       } else {
-        // If there are not enough lines to skip, return None or handle as you see fit
-        return None;
+        // If there are not enough lines to skip, return Err
+        return Err(anyhow!("there are not enough lines to skip"));
       }
     }
 
-    let seg_symbols = [';', ',', '\t', '|', '^'];
-    let mut line = String::new();
-    let mut separators_count: HashMap<char, usize> = seg_symbols.iter().map(|&c| (c, 0)).collect();
+    let seg_symbols = [b';', b',', b'\t', b'|', b'^'];
+    let mut separators_count: HashMap<u8, usize> = seg_symbols.iter().map(|&c| (c, 0)).collect();
     let mut max_count = 0;
-    let mut separator = None;
+    let mut separator = b',';
 
     // read next line after skipping
-    if let Some(Ok(next_line)) = lines_iter.next() {
-      line.push_str(&next_line);
-      for c in line.chars() {
-        // traverse every character in the line
-        if let Some(count) = separators_count.get_mut(&c) {
+    if let Some(next_line) = lines_iter.next() {
+      let line = next_line?;
+      for c in line.as_bytes() {
+        if let Some(count) = separators_count.get_mut(c) {
           *count += 1;
           if *count > max_count {
             max_count = *count;
-            separator = Some(c);
+            separator = *c;
           }
         }
       }
     }
 
-    separator
+    Ok(separator)
   }
 
   /// Count csv rows
@@ -122,12 +120,8 @@ impl<P: AsRef<Path>> CsvOptions<P> {
         let header_set: HashSet<String> = column_names.into_iter().collect();
         header_sets.push(header_set);
       } else {
-        let sep = match csv_options.detect_separator() {
-          Some(separator) => separator as u8,
-          None => b',',
-        };
         let mut rdr = ReaderBuilder::new()
-          .delimiter(sep)
+          .delimiter(csv_options.detect_separator()?)
           .from_reader(csv_options.skip_csv_rows()?);
         if let Ok(headers) = rdr.headers() {
           let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
@@ -153,13 +147,8 @@ impl<P: AsRef<Path>> CsvOptions<P> {
 
   /// Get csv headers {key: label, value: value}
   pub fn map_headers(&self) -> Result<Vec<HashMap<String, String>>> {
-    let sep = match self.detect_separator() {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
-
     let mut rdr = ReaderBuilder::new()
-      .delimiter(sep)
+      .delimiter(self.detect_separator()?)
       .from_reader(self.skip_csv_rows()?);
 
     let headers: Vec<HashMap<String, String>> = rdr
@@ -177,12 +166,9 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   }
 
   pub fn from_reader<R: Read>(&self, rdr: R) -> csv::Reader<R> {
-    let sep = match self.detect_separator() {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
-
-    ReaderBuilder::new().delimiter(sep).from_reader(rdr)
+    ReaderBuilder::new()
+      .delimiter(self.detect_separator().expect("no detect separator"))
+      .from_reader(rdr)
   }
 
   pub fn idx_path(&self) -> PathBuf {
@@ -227,13 +213,8 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   }
 
   pub fn from_headers(&self) -> Result<Vec<String>> {
-    let sep = match self.detect_separator() {
-      Some(separator) => separator as u8,
-      None => b',',
-    };
-
     let mut rdr = ReaderBuilder::new()
-      .delimiter(sep)
+      .delimiter(self.detect_separator()?)
       .from_reader(self.skip_csv_rows()?);
 
     let headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();

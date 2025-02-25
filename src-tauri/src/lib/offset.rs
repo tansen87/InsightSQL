@@ -30,11 +30,7 @@ async fn get_header(file_path: String) -> Result<Vec<HashMap<String, String>>> {
     }
     _ => {
       let csv_options = CsvOptions::new(&file_path);
-      let sep = match csv_options.detect_separator() {
-        Some(separator) => separator as u8,
-        None => b',',
-      };
-      vec_sep.push(sep);
+      vec_sep.push(csv_options.detect_separator()?);
     }
   }
 
@@ -101,11 +97,7 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
     }
     _ => {
       let csv_options = CsvOptions::new(&file_path);
-      let sep = match csv_options.detect_separator() {
-        Some(separator) => separator as u8,
-        None => b',',
-      };
-      vec_sep.push(sep);
+      vec_sep.push(csv_options.detect_separator()?);
     }
   }
 
@@ -362,11 +354,7 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
     }
     _ => {
       let csv_options = CsvOptions::new(file_path);
-      let sep = match csv_options.detect_separator() {
-        Some(separator) => separator as u8,
-        None => b',',
-      };
-      vec_sep.push(sep);
+      vec_sep.push(csv_options.detect_separator()?);
     }
   }
 

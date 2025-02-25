@@ -206,10 +206,8 @@ async fn apply_perform<P: AsRef<Path>>(
   let select_columns: Vec<&str> = select_columns.split('|').collect();
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+
+  let sep = csv_options.detect_separator()?;
 
   let new_column: Option<String> = if new_column {
     Some(

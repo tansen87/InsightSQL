@@ -9,16 +9,11 @@ use crate::utils::CsvOptions;
 pub async fn count_rows<P: AsRef<Path>>(path: P) -> Result<u64> {
   let csv_options = CsvOptions::new(&path);
 
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
-
   let count = match csv_options.indexed()? {
     Some(idx) => idx.count(),
     None => {
       let mut rdr = ReaderBuilder::new()
-        .delimiter(sep)
+        .delimiter(csv_options.detect_separator()?)
         .from_reader(File::open(&path)?);
 
       let mut record = ByteRecord::new();

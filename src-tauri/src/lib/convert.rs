@@ -178,10 +178,7 @@ async fn csv_to_xlsx<P: AsRef<Path>>(
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
 
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+  let sep = csv_options.detect_separator()?;
 
   if use_polars {
     let row_count = csv_options.count_csv_rows()?;

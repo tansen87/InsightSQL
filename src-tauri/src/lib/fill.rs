@@ -14,10 +14,7 @@ pub async fn fill_values<P: AsRef<Path>>(
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
 
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+  let sep = csv_options.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -66,6 +63,6 @@ pub async fn fill(
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("fill failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }

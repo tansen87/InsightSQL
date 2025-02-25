@@ -164,10 +164,7 @@ async fn perform_search<P: AsRef<Path>>(
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
 
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+  let sep = csv_options.detect_separator()?;
 
   let vec_conditions: Vec<String> = conditions
     .split('|')
@@ -245,6 +242,6 @@ pub async fn search(
       let runtime = format!("{elapsed_time:.2}");
       Ok((result, runtime))
     }
-    Err(err) => Err(format!("search failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }

@@ -14,10 +14,7 @@ pub async fn skip_csv<P: AsRef<Path>>(path: P, skip_rows: usize, parent_path: &s
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows - 1);
 
-  let sep = match csv_options.detect_separator() {
-    Some(separator) => separator as u8,
-    None => b',',
-  };
+  let sep = csv_options.detect_separator()?;
 
   let filename = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{filename}.skiprows.csv");
