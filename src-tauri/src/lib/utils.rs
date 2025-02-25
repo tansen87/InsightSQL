@@ -114,24 +114,21 @@ impl<P: AsRef<Path>> CsvOptions<P> {
     let excel_extension = ["xls", "xlsx", "xlsm", "xlsb", "ods"];
 
     for f in ff {
+      let mut csv_options = CsvOptions::new(f);
+      csv_options.set_skip_rows(self.skip_rows);
       if excel_extension.iter().any(|&ext| f.ends_with(ext)) {
-        let mut opt = CsvOptions::new(f);
-        opt.set_skip_rows(self.skip_rows);
         let column_names =
-          ExcelReader::new(f).get_column_names(0, opt.get_skip_rows().try_into()?)?;
+          ExcelReader::new(f).get_column_names(0, csv_options.get_skip_rows().try_into()?)?;
         let header_set: HashSet<String> = column_names.into_iter().collect();
         header_sets.push(header_set);
       } else {
-        let mut csv_options = CsvOptions::new(f);
-        csv_options.set_skip_rows(self.skip_rows);
-        let skip_rows_reader = csv_options.skip_csv_rows()?;
         let sep = match csv_options.detect_separator() {
           Some(separator) => separator as u8,
           None => b',',
         };
         let mut rdr = ReaderBuilder::new()
           .delimiter(sep)
-          .from_reader(skip_rows_reader);
+          .from_reader(csv_options.skip_csv_rows()?);
         if let Ok(headers) = rdr.headers() {
           let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
           header_sets.push(header_set);
@@ -155,19 +152,15 @@ impl<P: AsRef<Path>> CsvOptions<P> {
   }
 
   /// Get csv headers {key: label, value: value}
-  pub async fn map_headers(&self) -> Result<Vec<HashMap<String, String>>> {
-    let mut csv_options = CsvOptions::new(&self.path);
-    csv_options.set_skip_rows(self.skip_rows);
-
-    let sep = match csv_options.detect_separator() {
+  pub fn map_headers(&self) -> Result<Vec<HashMap<String, String>>> {
+    let sep = match self.detect_separator() {
       Some(separator) => separator as u8,
       None => b',',
     };
 
-    let skip_rows_reader = csv_options.skip_csv_rows()?;
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(skip_rows_reader);
+      .from_reader(self.skip_csv_rows()?);
 
     let headers: Vec<HashMap<String, String>> = rdr
       .headers()?

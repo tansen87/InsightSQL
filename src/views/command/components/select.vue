@@ -1,28 +1,54 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from "vue";
-import { VueDraggable } from "vue-draggable-plus";
+import { ref, reactive, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
-import { viewOpenFile } from "@/utils/view";
+import { viewOpenFile, mapHeaders, viewSqlp } from "@/utils/view";
+import { CheckboxValueType } from "element-plus";
+import { useDynamicFormHeight } from "@/utils/utils";
 
-const [originalList, selectList, displayedList, isLoading, isPath, searchText] =
-  [ref([]), ref([]), ref([]), ref(false), ref(false), ref("")];
+const [
+  originalColumns,
+  isLoading,
+  isPath,
+  checkAll,
+  indeterminate,
+  tableColumn,
+  tableData
+] = [ref([]), ref(false), ref(false), ref(false), ref(false), ref([]), ref([])];
+const selColumns = ref<CheckboxValueType[]>([]);
 const data = reactive({
   path: "",
   skipRows: "0"
 });
-const onDragEnd = () => {
-  originalList.value = originalList.value.filter(
-    item => !selectList.value.includes(item)
-  );
+
+watch(selColumns, val => {
+  if (val.length === 0) {
+    checkAll.value = false;
+    indeterminate.value = false;
+  } else if (val.length === originalColumns.value.length) {
+    checkAll.value = true;
+    indeterminate.value = false;
+  } else {
+    indeterminate.value = true;
+  }
+});
+const { formHeight } = useDynamicFormHeight(190);
+const handleCheckAll = (val: CheckboxValueType) => {
+  indeterminate.value = false;
+  if (val) {
+    selColumns.value = originalColumns.value.map(_ => _.value);
+  } else {
+    selColumns.value = [];
+  }
 };
 
 async function selectFile() {
-  originalList.value = [];
-  selectList.value = [];
+  originalColumns.value = [];
   isPath.value = false;
-  searchText.value = "";
+  selColumns.value = [];
+  tableColumn.value = [];
+  tableData.value = [];
 
   data.path = await viewOpenFile(false, "csv", ["*"]);
   if (data.path === null) {
@@ -30,23 +56,12 @@ async function selectFile() {
   }
 
   try {
-    const headers: string[] = await invoke("get_select_headers", {
-      path: data.path,
-      skipRows: data.skipRows
-    });
-    originalList.value = headers;
+    const { headers } = await mapHeaders(data.path, data.skipRows);
+    originalColumns.value = headers;
+    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
 
-    const updateDisplayedList = () => {
-      if (!searchText.value) {
-        displayedList.value = [...originalList.value];
-      } else {
-        displayedList.value = originalList.value.filter(item =>
-          item.name.toLowerCase().includes(searchText.value.toLowerCase())
-        );
-      }
-    };
-    watch(searchText, updateDisplayedList);
-    updateDisplayedList();
+    tableColumn.value = columnView;
+    tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
@@ -59,7 +74,7 @@ async function selectColumns() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (selectList.value.length === 0) {
+  if (selColumns.value.length === 0) {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -67,12 +82,10 @@ async function selectColumns() {
   try {
     isLoading.value = true;
 
-    const names = computed(() => {
-      return selectList.value.map(item => item.name).join("|");
-    });
+    const useCols = Object.values(selColumns.value).join("|");
     const result: string = await invoke("select", {
       path: data.path,
-      cols: names.value,
+      cols: useCols,
       skipRows: data.skipRows
     });
 
@@ -86,108 +99,69 @@ async function selectColumns() {
 
 <template>
   <div class="page-container">
-    <div class="flex flex-col">
-      <el-form>
-        <div class="custom-container1">
-          <div class="custom-container2">
-            <el-button @click="selectFile()" :icon="FolderOpened">
-              Open File
-            </el-button>
-            <el-tooltip content="skip rows" effect="light">
-              <el-input
-                v-model="data.skipRows"
-                style="margin-left: 10px; width: 50px"
-              />
-            </el-tooltip>
-            <el-button
-              @click="selectColumns()"
-              :loading="isLoading"
-              :icon="Cherry"
-              style="margin-left: 10px"
-            >
-              Select
-            </el-button>
-          </div>
-          <el-text>
-            <span v-if="isPath">{{ data.path }}</span>
-            <span v-else>Select, re-order columns</span>
-          </el-text>
-        </div>
-      </el-form>
-
-      <el-input
-        v-model="searchText"
-        style="margin-top: 12px"
-        placeholder="Type to search original headers"
-      />
-
-      <el-form
-        class="flex grow mt-4"
-        :style="{ height: '466px', overflowY: 'auto' }"
-      >
-        <div class="w-full">
-          <div class="text-center mb-2">Original Columns</div>
-          <div
-            class="flex-grow mr-4"
-            style="
-              display: flex;
-              flex-direction: column;
-              align-items: flex-start;
-            "
-          >
-            <VueDraggable
-              class="flex flex-col gap-2 p-4 w-full h-full bg-gray-500/5 rounded overflow-auto"
-              v-model="displayedList"
-              animation="150"
-              ghostClass="ghost"
-              group="selectGroup"
-              @end="onDragEnd"
-            >
-              <div
-                v-for="item in displayedList"
-                :key="item.id"
-                class="cursor-move h-30 bg-gray-500/5 rounded p-3"
-              >
-                {{ item.name }}
-              </div>
-            </VueDraggable>
-          </div>
-        </div>
-
-        <div class="w-full">
-          <div class="text-center mb-2">Select Columns</div>
-          <div
-            class="flex-grow"
-            style="
-              display: flex;
-              flex-direction: column;
-              align-items: flex-start;
-            "
-          >
-            <VueDraggable
-              class="flex flex-col gap-2 p-4 w-full h-full bg-gray-500/5 rounded overflow-auto"
-              v-model="selectList"
-              animation="150"
-              group="selectGroup"
-              @end="onDragEnd"
-            >
-              <div
-                v-for="item in selectList"
-                :key="item.id"
-                class="cursor-move h-30 bg-gray-500/5 rounded p-3"
-              >
-                {{ item.name }}
-              </div>
-            </VueDraggable>
-          </div>
-        </div>
-      </el-form>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened">
+          Open File
+        </el-button>
+        <el-tooltip content="skip rows" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 50px"
+          />
+        </el-tooltip>
+        <el-button
+          @click="selectColumns()"
+          :loading="isLoading"
+          :icon="Cherry"
+          style="margin-left: 10px"
+        >
+          Select
+        </el-button>
+      </div>
+      <el-text>
+        <span v-if="isPath">{{ data.path }}</span>
+        <span v-else>Select, re-order columns</span>
+      </el-text>
     </div>
+
+    <el-select
+      v-model="selColumns"
+      multiple
+      filterable
+      style="margin-top: 12px; width: 100%"
+      placeholder="Select columns"
+    >
+      <template #header>
+        <el-checkbox
+          v-model="checkAll"
+          :indeterminate="indeterminate"
+          @change="handleCheckAll"
+        >
+          All
+        </el-checkbox>
+      </template>
+      <el-option
+        v-for="item in originalColumns"
+        :key="item.value"
+        :label="item.label"
+        :value="item.value"
+      />
+    </el-select>
+
+    <el-table
+      :data="tableData"
+      :height="formHeight"
+      border
+      empty-text=""
+      style="margin-top: 12px; width: 100%"
+    >
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
   </div>
 </template>
-
-<style lang="scss">
-.flex {
-  overflow: hidden;
-}
-</style>

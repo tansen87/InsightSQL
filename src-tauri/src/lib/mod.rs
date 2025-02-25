@@ -2,6 +2,7 @@
 pub mod access;
 pub mod apply;
 pub mod cat;
+pub mod cmd;
 pub mod convert;
 pub mod count;
 pub mod dbf;

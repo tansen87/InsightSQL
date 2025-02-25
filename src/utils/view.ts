@@ -57,3 +57,12 @@ export async function viewSqlp(path: string, skipRows: string) {
     dataView: arrayData
   };
 }
+
+export async function mapHeaders(path: string, skipRows: string) {
+  const headers: string[] = await invoke("map_headers", {
+    path: path,
+    skipRows: skipRows
+  });
+
+  return { headers };
+}

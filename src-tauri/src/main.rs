@@ -7,6 +7,7 @@
 use lib::access;
 use lib::apply;
 use lib::cat;
+use lib::cmd;
 use lib::convert;
 use lib::count;
 use lib::dbf;
@@ -44,6 +45,7 @@ fn main() {
       skip::skip,
       cat::get_cat_headers,
       cat::concat,
+      cmd::map_headers,
       convert::switch_excel,
       convert::map_excel_sheets,
       convert::switch_csv,
