@@ -1,5 +1,6 @@
 use std::{
   collections::{HashMap, HashSet},
+  ffi::OsStr,
   path::{Path, PathBuf},
   time::Instant,
 };
@@ -279,14 +280,18 @@ pub async fn map_excel_sheets(
 ) -> (HashMap<String, Vec<String>>, HashMap<String, String>) {
   let mut map_sheets = HashMap::new();
   let mut errors = HashMap::new();
-  let paths: Vec<&str> = path.split('|').collect();
+
+  let paths: Vec<&str> = path.split('|').filter(|&x| !x.is_empty()).collect();
+  if paths.is_empty() {
+    return (map_sheets, errors);
+  }
 
   for file in paths.iter() {
     let filename = Path::new(file)
       .file_name()
-      .unwrap()
+      .unwrap_or_else(|| OsStr::new(""))
       .to_str()
-      .unwrap()
+      .unwrap_or("")
       .to_string();
     match open_workbook_auto(file).map_err(|e| e.to_string()) {
       Ok(workbook) => {
@@ -363,22 +368,28 @@ pub async fn switch_excel(
       let sheet_names = get_all_sheetnames(file).await;
       if sheet_names.is_empty() {
         window
-          .emit("switch_excel_err", format!("{filename}|It's not an Excel file"))
+          .emit(
+            "switch_excel_err",
+            format!("{filename}|It's not an Excel file"),
+          )
           .map_err(|e| e.to_string())?;
         continue;
       }
-      for sheet in sheet_names.iter() {
+      for (index, sheet) in sheet_names.iter().enumerate() {
         let output_path = path.with_file_name(format!("{}_{}.csv", file_stem, sheet));
 
         match excel_to_csv(file, skip_rows, sep, Some(sheet.to_string()), &output_path).await {
           Ok(_) => {
-            window
-              .emit("e2c_msg", filename)
-              .map_err(|e| e.to_string())?;
+            // check if it is the last sheet
+            if index == sheet_names.len() - 1 {
+              window
+                .emit("e2c_msg", filename)
+                .map_err(|e| e.to_string())?;
+            }
           }
           Err(err) => {
             window
-              .emit("switch_excel_err", format!("{filename}|{err}"))
+              .emit("switch_excel_err", format!("{filename}|{sheet}:{err}"))
               .map_err(|e| e.to_string())?;
             continue;
           }
