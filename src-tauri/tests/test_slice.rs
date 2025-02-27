@@ -208,3 +208,53 @@ async fn test_slice_column_nmax_mode() -> Result<()> {
 
   Ok(temp_dir.close()?)
 }
+
+#[tokio::test]
+async fn test_slice_column_ss_mode() -> Result<()> {
+  let data = vec![
+    "Patrick,4,male",
+    "name,age,gender",
+    "汤-姆-1,18,男",
+    "杰-瑞-2,19,male",
+    "Sa-n-dy,24,female",
+  ];
+
+  let temp_dir = TempDir::new()?;
+  let file_path = temp_dir.path().join("input.csv");
+
+  let mut wtr = WriterBuilder::new().from_path(&file_path)?;
+  for line in &data {
+    wtr.write_record(line.split(','))?;
+  }
+  wtr.flush()?;
+
+  let output_file_name = format!(
+    "{}.slice.csv",
+    file_path.file_stem().unwrap().to_str().unwrap()
+  );
+  let output_path = temp_dir.path().join(output_file_name);
+
+  let mut csv_options = CsvOptions::new(file_path);
+  csv_options.set_skip_rows(1);
+  let rdr = ReaderBuilder::new().from_reader(csv_options.skip_csv_rows()?);
+
+  let output_file = File::create(&output_path)?;
+  let buf_writer = BufWriter::with_capacity(256_000, output_file);
+  let wtr = WriterBuilder::new().from_writer(buf_writer);
+
+  slice::slice_column_with_ss(rdr, wtr, "name", 2, 3).await?;
+
+  let binding = read_to_string(&output_path)?;
+  let slice_data = binding.trim().split('\n').collect::<Vec<_>>();
+
+  let expected_data = vec![
+    "name,age,gender,name_ss",
+    "汤-姆-1,18,男,-姆",
+    "杰-瑞-2,19,male,-瑞",
+    "Sa-n-dy,24,female,a-",
+  ];
+
+  assert_eq!(slice_data, expected_data);
+
+  Ok(temp_dir.close()?)
+}
