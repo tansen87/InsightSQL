@@ -7,7 +7,7 @@ use anyhow::Result;
 use self::Number::{Float, Int};
 use crate::utils::{CsvOptions, Selection};
 
-async fn sort_csv<P: AsRef<Path>>(
+pub async fn sort_csv<P: AsRef<Path>>(
   path: P,
   skip_rows: String,
   select_column: String,
@@ -71,6 +71,7 @@ async fn sort_csv<P: AsRef<Path>>(
   for r in all.into_iter() {
     wtr.write_byte_record(&r)?;
   }
+
   Ok(wtr.flush()?)
 }
 
@@ -165,6 +166,6 @@ pub async fn sort(
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("sort failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }
