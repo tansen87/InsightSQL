@@ -2,9 +2,13 @@
 
 English | [中文](./README_CN.md)
 
-> A tool that can quickly view Excel, CSV and Parquet using polars SQL, base on Tauri.
+> Rust Data Processing Toolbox, base on Tauri.
 
 ### screenshot
+
+* command
+ ![cmd.png](/demo/cmd.png)
+
 * polars SQL for query
 
   ![sqlp.gif](/demo/sqlp.gif)
@@ -25,28 +29,28 @@ English | [中文](./README_CN.md)
 
   ![rename.gif](/demo/rename.gif)
 
-* select
-
-  ![select.gif](/demo/select.gif)
-
-
 ## ✨Features
 
-- [x] Use Polars SQL for querying, allows to load Excel, CSV and Parquet files, support saving as csv, xlsx or paquet files
-- [x] Merge multiple CSV or Excel files into one CSV or xlsx file (use Polars **concat_lf_diagonal**)
-- [x] Batch convert Excel to CSV
-- [x] Count the rows of CSV files
-- [x] Batch convert CSV to Excel
-- [x] Rename the columns of a CSV
-- [x] Select, re-order columns
-- [x] Select fields matching rows
-- [x] Fill empty fields in selected columns of a CSV
-- [x] Split one CSV file into many CSV files
-- [x] Add an index for a CSV
-- [x] Drop headers from CSVs
-- [x] Convert Chinese to Pinyin for specific column in CSV
-- [x] Replace CSV data using a regex
-- [x] Apply series of string, math transformations to given CSV column/s
+| Function | Description |
+| ------- | ----------- |
+| Sqlp | Execute Polars SQL queries against several files (Support Excel, CSV, Parquet) |
+| Apply | Apply series of string, math transformations to given CSV column/s |
+| Cat | Merge multiple CSV or Excel files into one CSV or xlsx file (Support Polars and CSV engine) |
+| Excel  to CSV | Batch convert Excel to CSV (Support converting all sheets or specifying sheets) |
+| Count | Count the rows of CSV files (Instantaneous with an index) |
+| CSV to xlsx | Batch convert CSV to xlsx |
+| Rename | Rename the columns of a CSV |
+| Select | Select, re-order columns |
+| Search | Match the corresponding row in a column (equal, contains, startswith, regex) |
+| Fill | Fill empty fields in selected columns of a CSV |
+| Split | Split one CSV file into many CSV files (by rows or by lines, uses multithreading to go faster if an index is present when splitting by rows) |
+| Skip | Skip rows form CSV |
+| Enumerate | Add a new column enumerating the lines of a CSV file |
+| Chinese to Pinyin | Convert Chinese to Pinyin for specific column in CSV. |
+| Replace | Replace CSV data using a regex |
+| Join | Joins two sets of CSV data on the specified columns |
+| Sort | Sorts CSV data lexicographically |
+| Slice | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
 
 
 ### 🍖How to use?
@@ -96,6 +100,6 @@ English | [中文](./README_CN.md)
 
 * [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c)
 
-### Thanks
+### See also
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)
 * [qsv](https://github.com/jqnatividad/qsv)
