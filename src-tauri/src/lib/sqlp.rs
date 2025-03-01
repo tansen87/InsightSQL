@@ -34,97 +34,105 @@ fn execute_query(
 ) -> Result<String, Box<PolarsError>> {
   let mut df = DataFrame::default();
 
-  let execute_inner = || -> Result<(), PolarsError> {
-    if low_memory {
-      let lf = ctx.execute(query)?;
-      let output_path = format!("{}.csv", output.unwrap());
-      lf.sink_csv(
-        output_path,
-        CsvWriterOptions {
-          include_bom: false,
-          include_header: true,
-          batch_size: NonZeroUsize::new(1024).unwrap(),
-          maintain_order: false,
-          serialize_options: SerializeOptions {
-            date_format: None,
-            time_format: None,
-            datetime_format: None,
-            float_scientific: None,
-            float_precision: None,
-            separator: sep,
-            quote_char: b'"',
-            null: String::new(),
-            line_terminator: "\n".into(),
-            quote_style: Default::default(),
-          },
-        },
-        Default::default(),
-      )?;
-      // let re = regex::Regex::new(r"(?m)limit.*")?;
-      // let cleaned_sql = re.replace_all(query, "");
-      // let q = format!("{cleaned_sql} limit 100");
-      // df = ctx.execute(&q).and_then(LazyFrame::collect)?;
-      Ok(())
-    } else {
-      df = ctx.execute(query).and_then(LazyFrame::collect)?;
-      match (write, df.shape().0 < 104_0000, &write_format) {
-        (false, _, _) => Ok(()),
-        (true, true, &"xlsx") => {
-          // write to xlsx
-          let output_path = output.map_or_else(
-            || PathBuf::from("default_output.xlsx"),
-            |s| PathBuf::from(format!("{}.xlsx", s)),
-          );
-          let mut xlsx_writer = XlsxWriter::new();
-          xlsx_writer
-            .write_dataframe(&df, output_path)
-            .expect("Writing to xlsx failed");
-          Ok(())
-        }
-        (true, _, &"parquet") => {
-          // write to parquet
-          let output_path = Some(format!("{}.parquet", output.unwrap()));
-          let w = match output_path {
-            Some(path) => Box::new(File::create(path)?) as Box<dyn Write>,
-            None => Box::new(std::io::stdout()) as Box<dyn Write>,
-          };
-          let mut w = BufWriter::with_capacity(256_000, w);
-          let out_result = {
-            ParquetWriter::new(&mut w)
-              .with_row_group_size(Some(768 ^ 2))
-              .finish(&mut df)
-              .map(|_| ())
-          };
-          w.flush()?;
-          out_result
-        }
-        (true, _, _) => {
-          // write to csv
-          let output_path = Some(format!("{}.csv", output.unwrap()));
-          let w = match output_path {
-            Some(path) => Box::new(File::create(path)?) as Box<dyn Write>,
-            None => Box::new(std::io::stdout()) as Box<dyn Write>,
-          };
-          let mut w = BufWriter::with_capacity(256_000, w);
-          let out_result = {
-            CsvWriter::new(&mut w)
-              .with_separator(sep)
-              .with_float_precision(Some(2))
-              .finish(&mut df)
-          };
-          w.flush()?;
-          out_result
-        }
-      }
-    }
-  };
+  if low_memory {
+    // Low memory path: direct streaming write to CSV
+    let lf = ctx.execute(query)?;
+    let output_path = format!("{}.csv", output.unwrap());
+    write_lazy_frame_to_csv(lf, &output_path, sep)?;
+  } else {
+    // Normal execution path
+    df = ctx.execute(query).and_then(LazyFrame::collect)?;
 
-  match execute_inner() {
-    Ok(()) => Ok(query_df_to_json(df)?),
-    Err(e) => {
-      return Ok(format!("Query failed: {e}"));
+    if write {
+      // Handle different write formats
+      write_dataframe(&mut df, output.clone(), write_format, sep)?;
     }
   }
+
+  let result = query_df_to_json(df.head(Some(500)))?;
+  Ok(result)
+}
+
+/// write LazyFrame directly to CSV (low memory mode)
+fn write_lazy_frame_to_csv(lf: LazyFrame, output_path: &str, sep: u8) -> Result<(), PolarsError> {
+  lf.sink_csv(
+    output_path,
+    CsvWriterOptions {
+      include_bom: false,
+      include_header: true,
+      batch_size: NonZeroUsize::new(1024).unwrap(),
+      maintain_order: false,
+      serialize_options: SerializeOptions {
+        date_format: None,
+        time_format: None,
+        datetime_format: None,
+        float_scientific: None,
+        float_precision: None,
+        separator: sep,
+        quote_char: b'"',
+        null: String::new(),
+        line_terminator: "\n".into(),
+        quote_style: Default::default(),
+      },
+    },
+    Default::default(),
+  )
+}
+
+/// Unified dataframe writing handler
+fn write_dataframe(
+  df: &DataFrame,
+  output: Option<String>,
+  format: &str,
+  sep: u8,
+) -> Result<(), PolarsError> {
+  match (df.shape().0 < 104_0000, format) {
+    (true, "xlsx") => write_xlsx(df, output),
+    (_, "parquet") => write_parquet(df.clone(), output),
+    _ => write_csv(df.clone(), output, sep),
+  }
+}
+
+/// XLSX writing implementation
+fn write_xlsx(df: &DataFrame, output: Option<String>) -> Result<(), PolarsError> {
+  let output_path = output.map_or_else(
+    || PathBuf::from("default_output.xlsx"),
+    |s| PathBuf::from(format!("{}.xlsx", s)),
+  );
+  let mut xlsx_writer = XlsxWriter::new();
+  xlsx_writer
+    .write_dataframe(&df, output_path)
+    .expect("write to xlsx failed");
+  Ok(())
+}
+
+/// Parquet writing implementation
+fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<(), PolarsError> {
+  let output_path = output.map_or_else(
+    || PathBuf::from("default_output.parquet"),
+    |s| PathBuf::from(format!("{}.parquet", s)),
+  );
+  let file = File::create(output_path)?;
+  let writer = BufWriter::new(file);
+  ParquetWriter::new(writer)
+    .with_row_group_size(Some(768 ^ 2))
+    .finish(&mut df)?;
+  Ok(drop(df))
+}
+
+/// CSV writing implementation
+fn write_csv(mut df: DataFrame, output: Option<String>, sep: u8) -> Result<(), PolarsError> {
+  let w: Box<dyn Write> = match output {
+    Some(path) => Box::new(File::create(format!("{}.csv", path))?),
+    None => Box::new(std::io::stdout()),
+  };
+  let mut w = BufWriter::with_capacity(256_000, w);
+  CsvWriter::new(&mut w)
+    .with_separator(sep)
+    .with_float_precision(Some(2))
+    .finish(&mut df)?;
+  w.flush()?;
+  Ok(drop(df))
 }
 
 async fn prepare_query(

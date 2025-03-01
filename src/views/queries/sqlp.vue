@@ -284,16 +284,6 @@ watch(
           <el-tooltip content="open file" placement="top" effect="light">
             <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
           </el-tooltip>
-          <el-tooltip
-            content="infer schema length"
-            placement="top"
-            effect="light"
-          >
-            <el-input
-              v-model="data.schemaLength"
-              style="margin-left: 10px; width: 50px"
-            />
-          </el-tooltip>
           <el-tooltip content="skip rows" placement="top" effect="light">
             <el-input
               v-model="data.skipRows"
