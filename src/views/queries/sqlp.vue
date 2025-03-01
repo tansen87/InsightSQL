@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from "vue";
+import { ref, reactive, watch, computed, markRaw, shallowRef } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
@@ -9,9 +9,12 @@ import "./ace-config";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
-const tableColumn = ref([]);
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const tableColumn = shallowRef<any[]>([]);
 const treeHeaders = ref([]);
-const tableData = ref([]);
+const tableData = shallowRef<any[]>([]);
 const isLoading = ref(false);
 const viewTable = ref(false);
 const counter = ref(0);
@@ -66,6 +69,20 @@ const queryViewData = async () => {
   }
 };
 
+const pagedTableData = computed(() => {
+  return tableData.value.slice(
+    (currentPage.value - 1) * pageSize.value,
+    currentPage.value * pageSize.value
+  );
+});
+const handleSizeChange = (newSize: number) => {
+  pageSize.value = newSize;
+  currentPage.value = 1;
+};
+const handleCurrentChange = (newPage: number) => {
+  currentPage.value = newPage;
+};
+
 // invoke query
 async function queryData() {
   tableColumn.value = [];
@@ -105,7 +122,8 @@ async function queryData() {
       label: key,
       prop: key
     }));
-    tableData.value = arrayData;
+    tableData.value = markRaw(arrayData);
+    total.value = arrayData.length;
 
     message(`Query done, elapsed time: ${result[1]} s`, { duration: 5000 });
     isLoading.value = false;
@@ -176,7 +194,7 @@ async function selectFile() {
           label: key,
           prop: key
         }));
-        tableData.value = arrayData;
+        tableData.value = markRaw(arrayData);
 
         headersByFile[basename] = Object.keys(arrayData[0]);
         treeHeaders.value = {
@@ -406,11 +424,11 @@ watch(
     >
       <el-scrollbar :height="formHeight * 0.8">
         <el-table
-          :data="tableData"
+          :data="pagedTableData"
           border
           empty-text=""
           style="width: 100%"
-          :height="formHeight * 0.8"
+          :height="formHeight * 0.72"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -419,6 +437,17 @@ watch(
             :key="column.prop"
           />
         </el-table>
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="total"
+            layout="total, sizes, prev, pager, next"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
       </el-scrollbar>
     </el-drawer>
   </el-form>

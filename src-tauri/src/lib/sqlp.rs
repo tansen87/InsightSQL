@@ -9,13 +9,11 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use indexmap::IndexMap;
 use polars::{
-  datatypes::AnyValue,
   error::PolarsError,
   prelude::{
-    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, LazyCsvReader, LazyFileListReader, LazyFrame,
-    OptFlags, ParquetWriter, SerWriter, SerializeOptions,
+    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, JsonFormat, JsonWriter, LazyCsvReader,
+    LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, SerWriter, SerializeOptions,
   },
   sql::SQLContext,
 };
@@ -41,13 +39,12 @@ fn execute_query(
     write_lazy_frame_to_csv(lf, &output_path, sep)?;
   } else {
     // Normal execution path
-    df = ctx.execute(query).and_then(LazyFrame::collect)?;
-
+    df = ctx.execute(query)?.collect()?;
     if write {
       // Handle different write formats
       write_dataframe(&mut df, output.clone(), write_format, sep)?;
     }
-  }
+  };
 
   let result = query_df_to_json(df.head(Some(500)))?;
   Ok(result)
@@ -289,56 +286,18 @@ async fn prepare_query(
   Ok(vec_result)
 }
 
-fn query_df_to_json(df: DataFrame) -> Result<String, PolarsError> {
+fn query_df_to_json(mut df: DataFrame) -> Result<String, PolarsError> {
   if df.is_empty() {
-    let column_names = df.get_column_names();
-    let empty_row = column_names
-      .iter()
-      .map(|column_name| (column_name.to_string(), serde_json::Value::Null))
-      .collect::<IndexMap<_, _>>();
-    return serde_json::to_string(&empty_row)
-      .map_err(|e| PolarsError::ComputeError(e.to_string().into()));
+    let empty_json = serde_json::json!({});
+    return Ok(empty_json.to_string());
   }
 
-  let column_names = df.get_column_names();
-  let max_height = if df.height() > 500 { 500 } else { df.height() };
+  let mut buffer = Vec::new();
+  JsonWriter::new(&mut buffer)
+    .with_json_format(JsonFormat::Json)
+    .finish(&mut df)?;
 
-  let rows = (0..max_height)
-    .map(|i| {
-      let row = df.get_row(i)?;
-      let object = column_names
-        .iter()
-        .zip(row.0.iter())
-        .map(|(column_name, data)| {
-          let formatted_value = match data {
-            AnyValue::Float64(f) => format!("{:.2}", f),
-            AnyValue::Float32(f) => format!("{:.2}", f),
-            AnyValue::Int64(i) => i.to_string().trim_matches('"').to_string(),
-            AnyValue::Int32(i) => i.to_string().trim_matches('"').to_string(),
-            AnyValue::Int16(i) => i.to_string().trim_matches('"').to_string(),
-            AnyValue::UInt64(u) => u.to_string().trim_matches('"').to_string(),
-            AnyValue::UInt32(u) => u.to_string().trim_matches('"').to_string(),
-            AnyValue::Boolean(b) => b.to_string().trim_matches('"').to_string(),
-            _ => data.to_string().trim_matches('"').to_string(),
-          };
-          (column_name.to_string(), formatted_value)
-        })
-        .collect::<IndexMap<_, _>>();
-      Ok(object)
-    })
-    .collect::<Result<Vec<_>, PolarsError>>()?;
-
-  let json_rows = if max_height > 1 || rows.len() > 1 {
-    serde_json::to_string(&rows).map_err(|e| PolarsError::ComputeError(e.to_string().into()))
-  } else if let Some(single_row) = rows.into_iter().next() {
-    serde_json::to_string(&single_row).map_err(|e| PolarsError::ComputeError(e.to_string().into()))
-  } else {
-    unreachable!(
-      "This branch should not be reached because the empty DataFrame case is handled earlier."
-    )
-  }?;
-
-  Ok(json_rows)
+  Ok(String::from_utf8(buffer).unwrap())
 }
 
 #[tauri::command]
