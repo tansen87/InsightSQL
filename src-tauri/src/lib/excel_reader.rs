@@ -1,7 +1,7 @@
-use std::{collections::HashMap, fmt::Display, fs::File, io::BufReader, path::Path};
+use std::{collections::HashMap, fs::File, io::BufReader, path::Path};
 
 use anyhow::{anyhow, Result};
-use calamine::{CellType, Data, DataType, HeaderRow, Range, Reader};
+use calamine::{Data, HeaderRow, Range, Reader};
 use polars::{frame::DataFrame, prelude::Column};
 
 pub struct ExcelReader {
@@ -12,14 +12,9 @@ pub trait ToPolarsDataFrame {
   fn to_df(&mut self) -> Result<DataFrame>;
 }
 
-impl<T> ToPolarsDataFrame for Range<T>
-where
-  T: DataType + CellType + Display,
-{
+impl ToPolarsDataFrame for Range<Data> {
   fn to_df(&mut self) -> Result<DataFrame> {
-    let mut columns = Vec::new();
-
-    // iterating and writing headers or duplicate headers
+    // iterating headers or duplicate headers
     let mut header_counts = HashMap::<String, usize>::new();
     let headers: Vec<String> = match self.rows().next() {
       Some(first_row) => first_row
@@ -39,23 +34,36 @@ where
       None => return Err(anyhow!("No data")),
     };
 
-    // Vec<String> for each column
-    for _ in 0..headers.len() {
-      columns.push(Vec::<String>::new());
-    }
+    let mut columns = vec![Vec::new(); headers.len()];
 
-    // iterating through all rows
     for row in self.rows().skip(1) {
       for (col_idx, cell) in row.iter().enumerate() {
-        columns[col_idx].push(cell.to_string());
+        let value = match cell {
+          Data::DateTime(dt) => dt
+            .as_datetime()
+            .map(|d| d.to_string())
+            .unwrap_or_else(|| String::from("<Invalid DateTime>")),
+          Data::Float(f) => f.to_string(),
+          Data::Int(i) => i.to_string(),
+          Data::Bool(b) => b.to_string(),
+          Data::String(s) => s.to_string(),
+          Data::DateTimeIso(dt) => dt.to_string(),
+          Data::DurationIso(dur) => dur.to_string(),
+          Data::Empty => String::new(),
+          Data::Error(e) => format!("Error({:?})", e),
+        };
+
+        if col_idx < columns.len() {
+          columns[col_idx].push(value);
+        }
       }
     }
 
     // list of `Series`s
-    let series: Vec<Column> = columns
+    let series: Vec<Column> = headers
       .into_iter()
-      .zip(headers)
-      .map(|(col, name)| Column::new((&name).into(), col))
+      .zip(columns)
+      .map(|(col, data)| Column::new(col.into(), data))
       .collect();
 
     // constructing DataFrame
