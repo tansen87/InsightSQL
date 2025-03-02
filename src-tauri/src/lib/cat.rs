@@ -233,7 +233,7 @@ pub async fn get_cat_headers(path: String, skip_rows: String) -> Result<HashSet<
   csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
   match csv_options.inter_headers() {
     Ok(result) => Ok(result),
-    Err(err) => Err(format!("get header error: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }
 

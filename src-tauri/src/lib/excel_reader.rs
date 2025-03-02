@@ -116,3 +116,28 @@ impl ExcelReader {
     Ok(column_names)
   }
 }
+
+/// Get the first n rows of xlsx
+/// It's very fast
+pub fn n_rows(path: &str, n: usize) -> Result<Vec<String>> {
+  let mut workbook = match xl::Workbook::new(path) {
+    Ok(wb) => wb,
+    Err(e) => {
+      return Err(anyhow!("failed to open xlsx: {e}"));
+    }
+  };
+  let worksheets = workbook.sheets();
+  let first_sheet_name = match worksheets.by_name().get(0) {
+    Some(sheet) => *sheet,
+    None => "Sheet1",
+  };
+  let sheet = worksheets
+    .get(first_sheet_name)
+    .expect("worksheet is empty");
+  let nrows: Vec<String> = sheet
+    .rows(&mut workbook)
+    .take(n)
+    .map(|row| row.to_string().replace(",", "|"))
+    .collect();
+  Ok(nrows)
+}

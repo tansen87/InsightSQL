@@ -8,7 +8,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use csv::{ByteRecord, ReaderBuilder};
 
-use crate::{excel_reader::ExcelReader, index::Indexed};
+use crate::{excel_reader, index::Indexed};
 
 type ByteString = Vec<u8>;
 
@@ -115,9 +115,19 @@ impl<P: AsRef<Path>> CsvOptions<P> {
       let mut csv_options = CsvOptions::new(f);
       csv_options.set_skip_rows(self.skip_rows);
       if excel_extension.iter().any(|&ext| f.ends_with(ext)) {
-        let column_names =
-          ExcelReader::new(f).get_column_names(0, csv_options.get_skip_rows().try_into()?)?;
-        let header_set: HashSet<String> = column_names.into_iter().collect();
+        let mut n: usize = 1;
+        if self.skip_rows >= n {
+          n = n + self.skip_rows
+        }
+        let n_rows = excel_reader::n_rows(f, n)?;
+        if n_rows.is_empty() {
+          return Err(anyhow!("worksheet is empty"));
+        }
+        let column_names = n_rows.get(self.skip_rows).expect("failed to get headers");
+        let header_set: HashSet<String> = column_names
+          .split('|')
+          .map(|s| s.trim_matches('"').to_string())
+          .collect();
         header_sets.push(header_set);
       } else {
         let mut rdr = ReaderBuilder::new()

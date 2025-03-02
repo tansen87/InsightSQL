@@ -2,10 +2,15 @@
 import { ref, reactive } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Connection, Link } from "@element-plus/icons-vue";
+import {
+  FolderOpened,
+  Connection,
+  Link,
+  Loading
+} from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
 import { catContent, useMarkdown } from "@/utils/markdown";
-import { message } from "@/utils/message";
+import { message, closeAllMessage } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
 const [
@@ -30,18 +35,31 @@ async function selectFile() {
   selectedFiles.value = [];
   originalColumns.value = [];
   completed.value = false;
-
-  const result = await trimOpenFile(true, "", ["*"], { includeStatus: false });
-  data.filePath = result.filePath;
-  selectedFiles.value = result.fileInfo;
-  const headers: string[] = await invoke("get_cat_headers", {
-    path: data.filePath,
-    skipRows: data.skipRows
-  });
-  originalColumns.value = headers.map(header => ({
-    label: header,
-    value: header
-  }));
+  try {
+    const result = await trimOpenFile(true, "", ["*"], {
+      includeStatus: false
+    });
+    data.filePath = result.filePath;
+    selectedFiles.value = result.fileInfo;
+    message("fetching headers...", {
+      type: "info",
+      duration: 0,
+      icon: Loading
+    });
+    const headers: string[] = await invoke("get_cat_headers", {
+      path: data.filePath,
+      skipRows: data.skipRows
+    });
+    originalColumns.value = headers.map(header => ({
+      label: header,
+      value: header
+    }));
+    closeAllMessage();
+    message("headers fetched successfully", { type: "success" });
+  } catch (err) {
+    closeAllMessage();
+    message(err.toString(), { type: "error" });
+  }
 }
 
 // invoke concat
@@ -114,7 +132,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
           <el-tooltip content="skip rows" effect="light">
             <el-input
               v-model="data.skipRows"
-              style="margin-left: 10px; width: 80px"
+              style="margin-left: 10px; width: 50px"
             />
           </el-tooltip>
 
