@@ -159,7 +159,7 @@ impl<R: io::Read + io::Seek, W: io::Write> IoState<R, W> {
   }
 }
 
-fn new_io_state<P: AsRef<Path>>(
+fn new_io_state<P: AsRef<Path> + Send + Sync>(
   path1: P,
   path2: P,
   sel1: String,
@@ -286,7 +286,7 @@ impl<R> fmt::Debug for ValueIndex<R> {
   }
 }
 
-async fn run_join<P: AsRef<Path>>(
+async fn run_join<P: AsRef<Path> + Send + Sync>(
   path1: P,
   path2: P,
   sel1: String,

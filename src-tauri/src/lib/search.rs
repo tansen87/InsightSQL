@@ -36,7 +36,7 @@ async fn generic_search<F, P>(
 ) -> Result<String>
 where
   F: Fn(&str, &[String]) -> bool + Send + Sync,
-  P: AsRef<Path>,
+  P: AsRef<Path> + Send + Sync,
 {
   let mut match_rows: usize = 0;
 
@@ -68,7 +68,7 @@ where
   Ok(match_rows.to_string())
 }
 
-pub async fn equal_search<P: AsRef<Path>>(
+pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -88,7 +88,7 @@ pub async fn equal_search<P: AsRef<Path>>(
   .await
 }
 
-pub async fn contains_search<P: AsRef<Path>>(
+pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -112,7 +112,7 @@ pub async fn contains_search<P: AsRef<Path>>(
   .await
 }
 
-pub async fn startswith_search<P: AsRef<Path>>(
+pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -132,7 +132,7 @@ pub async fn startswith_search<P: AsRef<Path>>(
   .await
 }
 
-pub async fn regex_search<P: AsRef<Path>>(
+pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -154,7 +154,7 @@ pub async fn regex_search<P: AsRef<Path>>(
   .await
 }
 
-async fn perform_search<P: AsRef<Path>>(
+async fn perform_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   select_column: String,
   conditions: String,

@@ -6,7 +6,7 @@ use tauri::{Emitter, Window};
 
 use crate::utils::CsvOptions;
 
-pub async fn count_rows<P: AsRef<Path>>(path: P) -> Result<u64> {
+pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
   let csv_options = CsvOptions::new(&path);
 
   let count = match csv_options.indexed()? {

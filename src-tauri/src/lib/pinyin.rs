@@ -6,7 +6,7 @@ use pinyin::ToPinyin;
 
 use crate::utils::{CsvOptions, Selection};
 
-pub async fn chinese_to_pinyin<P: AsRef<Path>>(
+pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
   path: P,
   columns: String,
   skip_rows: String,

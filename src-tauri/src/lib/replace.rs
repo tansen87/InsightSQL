@@ -6,7 +6,7 @@ use regex::bytes::RegexBuilder;
 
 use crate::utils::{CsvOptions, Selection};
 
-pub async fn regex_replace<P: AsRef<Path>>(
+pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
   path: P,
   sel: String,
   regex_pattern: String,

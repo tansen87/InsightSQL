@@ -204,7 +204,7 @@ pub async fn slice_column_with_nmax(
   Ok(wtr.flush()?)
 }
 
-pub async fn perform_slice<P: AsRef<Path>>(
+pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   path: P,
   skip_rows: usize,
   select_column: &str,

@@ -7,7 +7,7 @@ use anyhow::Result;
 use self::Number::{Float, Int};
 use crate::utils::{CsvOptions, Selection};
 
-pub async fn sort_csv<P: AsRef<Path>>(
+pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
   skip_rows: String,
   select_column: String,

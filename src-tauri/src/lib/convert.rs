@@ -168,7 +168,7 @@ async fn excel_to_csv<P: AsRef<Path>>(
 }
 
 /// convert csv to xlsx
-async fn csv_to_xlsx<P: AsRef<Path>>(
+async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   path: P,
   skip_rows: usize,
   use_polars: bool,

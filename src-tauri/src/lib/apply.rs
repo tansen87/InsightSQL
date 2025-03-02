@@ -192,7 +192,7 @@ fn apply_operations(
   }
 }
 
-async fn apply_perform<P: AsRef<Path>>(
+async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   path: P,
   select_columns: String,
   apply_mode: String,

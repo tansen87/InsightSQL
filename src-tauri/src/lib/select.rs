@@ -11,7 +11,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-async fn get_header<P: AsRef<Path>>(
+async fn get_header<P: AsRef<Path> + Send + Sync>(
   path: P,
   skip_rows: String,
 ) -> Result<Vec<HashMap<String, String>>> {
@@ -38,7 +38,7 @@ async fn get_header<P: AsRef<Path>>(
   Ok(hs)
 }
 
-pub async fn select_columns<P: AsRef<Path>>(
+pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
   path: P,
   cols: String,
   skip_rows: String,

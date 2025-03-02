@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::File, num::NonZeroUsize, path::Path, time::Instant};
+use std::{fs::File, num::NonZeroUsize, path::Path, time::Instant};
 
 use anyhow::{anyhow, Result};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -225,16 +225,6 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
   }
 
   Ok(())
-}
-
-#[tauri::command]
-pub async fn get_cat_headers(path: String, skip_rows: String) -> Result<HashSet<String>, String> {
-  let mut csv_options = CsvOptions::new(path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
-  match csv_options.inter_headers() {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("{err}")),
-  }
 }
 
 #[tauri::command]

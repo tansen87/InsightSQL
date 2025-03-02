@@ -6,7 +6,7 @@ use csv_index::RandomAccessSimple;
 
 use crate::utils::CsvOptions;
 
-pub async fn create_index<P: AsRef<Path>>(path: P) -> Result<()> {
+pub async fn create_index<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
 
   let file_name = path.as_ref().file_name().unwrap().to_str().unwrap();

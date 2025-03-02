@@ -5,7 +5,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-pub async fn add_index<P: AsRef<Path>>(path: P, skip_rows: String) -> Result<()> {
+pub async fn add_index<P: AsRef<Path> + Send + Sync>(path: P, skip_rows: String) -> Result<()> {
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
 

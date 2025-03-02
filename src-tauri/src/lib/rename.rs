@@ -5,7 +5,7 @@ use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-pub async fn rename_headers<P: AsRef<Path>>(
+pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
   path: P,
   r_header: String,
   skip_rows: String,

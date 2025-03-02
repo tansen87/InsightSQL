@@ -18,10 +18,10 @@ const [
   selectedFiles,
   originalColumns,
   isLoading,
-  completed,
-  result,
+  backendCompleted,
+  backendInfo,
   infoDialog
-] = [ref(""), ref([]), ref([]), ref(false), ref(false), ref(null), ref(false)];
+] = [ref(""), ref([]), ref([]), ref(false), ref(false), ref(""), ref(false)];
 const data = reactive({
   filePath: "",
   mode: "Memory",
@@ -34,19 +34,20 @@ async function selectFile() {
   columns.value = "";
   selectedFiles.value = [];
   originalColumns.value = [];
-  completed.value = false;
+  backendInfo.value = "";
+  backendCompleted.value = false;
   try {
-    const result = await trimOpenFile(true, "", ["*"], {
+    const trimFile = await trimOpenFile(true, "", ["*"], {
       includeStatus: false
     });
-    data.filePath = result.filePath;
-    selectedFiles.value = result.fileInfo;
+    data.filePath = trimFile.filePath;
+    selectedFiles.value = trimFile.fileInfo;
     message("fetching headers...", {
       type: "info",
       duration: 0,
       icon: Loading
     });
-    const headers: string[] = await invoke("get_cat_headers", {
+    const headers: string[] = await invoke("inter_headers", {
       path: data.filePath,
       skipRows: data.skipRows
     });
@@ -55,7 +56,8 @@ async function selectFile() {
       value: header
     }));
     closeAllMessage();
-    message("headers fetched successfully", { type: "success" });
+    backendInfo.value = "headers fetched successfully";
+    backendCompleted.value = true;
   } catch (err) {
     closeAllMessage();
     message(err.toString(), { type: "error" });
@@ -95,8 +97,8 @@ async function concatData() {
       skipRows: data.skipRows,
       useCols: useCols
     });
-    result.value = res;
-    completed.value = true;
+    backendInfo.value = `Cat done, elapsed time: ${res} s`;
+    backendCompleted.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -147,7 +149,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
         </div>
 
         <el-link @click="infoDialog = true" :icon="Link">
-          <span v-if="completed"> Cat done, elapsed time: {{ result }} s </span>
+          <span v-if="backendCompleted"> {{ backendInfo }} </span>
           <span v-else>
             About
             <span style="color: skyblue; font-weight: bold">Cat</span>
@@ -161,7 +163,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
       multiple
       filterable
       style="margin-top: 12px; width: 100%"
-      placeholder="Choose columns if you need to cat specific column"
+      placeholder="Cat specific column (If column is empty, files have no common headers)"
     >
       <el-option
         v-for="item in originalColumns"

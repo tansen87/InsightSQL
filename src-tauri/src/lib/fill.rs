@@ -5,7 +5,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::{CsvOptions, Selection};
 
-pub async fn fill_values<P: AsRef<Path>>(
+pub async fn fill_values<P: AsRef<Path> + Send + Sync>(
   path: P,
   fill_column: String,
   fill_value: String,

@@ -6,7 +6,11 @@ use tauri::{Emitter, Window};
 
 use crate::utils::CsvOptions;
 
-pub async fn skip_csv<P: AsRef<Path>>(path: P, skip_rows: usize, parent_path: &str) -> Result<()> {
+pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  skip_rows: usize,
+  parent_path: &str,
+) -> Result<()> {
   if skip_rows < 1 {
     return Err(anyhow!("The skip rows must be greater than or equal to 1"));
   }

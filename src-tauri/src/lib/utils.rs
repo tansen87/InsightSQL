@@ -7,17 +7,18 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use csv::{ByteRecord, ReaderBuilder};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{excel_reader, index::Indexed};
 
 type ByteString = Vec<u8>;
 
-pub struct CsvOptions<P: AsRef<Path>> {
+pub struct CsvOptions<P: AsRef<Path> + Send + Sync> {
   path: P,
   skip_rows: usize,
 }
 
-impl<P: AsRef<Path>> CsvOptions<P> {
+impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   pub fn new(path: P) -> CsvOptions<P> {
     CsvOptions { path, skip_rows: 0 }
   }
@@ -106,48 +107,76 @@ impl<P: AsRef<Path>> CsvOptions<P> {
 
   /// The intersection of all headers between many csv or excel files
   pub fn inter_headers(&self) -> Result<HashSet<String>> {
-    let path4split = &self.path.as_ref().to_string_lossy();
-    let ff: Vec<&str> = path4split.split('|').collect();
-    let mut header_sets: Vec<HashSet<String>> = vec![];
-    let excel_extension = ["xls", "xlsx", "xlsm", "xlsb", "ods"];
+    let excel_extensions: HashSet<&str> = ["xls", "xlsx", "xlsm", "xlsb", "ods"]
+      .iter()
+      .cloned()
+      .collect();
+    let path4split = self.path.as_ref().to_string_lossy().to_lowercase();
+    let file_paths: Vec<&str> = path4split.split('|').collect();
 
-    for f in ff {
-      let mut csv_options = CsvOptions::new(f);
-      csv_options.set_skip_rows(self.skip_rows);
-      if excel_extension.iter().any(|&ext| f.ends_with(ext)) {
-        let mut n: usize = 1;
-        if self.skip_rows >= n {
-          n = n + self.skip_rows
+    let header_sets: Vec<HashSet<String>> = file_paths
+      .par_iter()
+      .filter_map(|f| {
+        if f.is_empty() {
+          return None;
         }
-        let n_rows = excel_reader::n_rows(f, n)?;
-        if n_rows.is_empty() {
-          return Err(anyhow!("worksheet is empty"));
+        let file_extension = if let Some(ext) = f.split('.').last() {
+          if ext.is_empty() {
+            return None;
+          }
+          ext.to_lowercase()
+        } else {
+          return None;
+        };
+
+        if excel_extensions.contains(file_extension.as_str()) {
+          let mut n: usize = 1;
+          if self.skip_rows >= n {
+            n = self.skip_rows + 1;
+          }
+          let column_names = if file_extension == "xlsx" {
+            // use `xl` to get the headers
+            let n_rows = excel_reader::n_rows(f, n).unwrap_or_else(|_| vec![]);
+            if n_rows.is_empty() {
+              return None;
+            }
+
+            n_rows.get(self.skip_rows)?.to_string()
+          } else {
+            // use `calamine` to get the headers
+            let columns: Vec<String> = excel_reader::ExcelReader::new(f)
+              .get_column_names(0, self.skip_rows as u32)
+              .ok()?;
+
+            columns.join("|")
+          };
+          Some(
+            column_names
+              .split('|')
+              .map(|s| s.trim_matches('"').to_string())
+              .collect::<HashSet<String>>(),
+          )
+        } else {
+          // use `csv` to get the headers
+          let mut csv_options = CsvOptions::new(f);
+          csv_options.set_skip_rows(self.skip_rows);
+          let mut rdr = csv::ReaderBuilder::new()
+            .delimiter(csv_options.detect_separator().ok()?)
+            .from_reader(csv_options.skip_csv_rows().ok()?);
+
+          rdr
+            .headers()
+            .ok()
+            .map(|headers| headers.iter().map(|s| s.to_string()).collect())
         }
-        let column_names = n_rows.get(self.skip_rows).expect("failed to get headers");
-        let header_set: HashSet<String> = column_names
-          .split('|')
-          .map(|s| s.trim_matches('"').to_string())
-          .collect();
-        header_sets.push(header_set);
-      } else {
-        let mut rdr = ReaderBuilder::new()
-          .delimiter(csv_options.detect_separator()?)
-          .from_reader(csv_options.skip_csv_rows()?);
-        if let Ok(headers) = rdr.headers() {
-          let header_set: HashSet<String> = headers.iter().map(|s| s.to_string()).collect();
-          header_sets.push(header_set);
-        }
-      }
-    }
+      })
+      .collect::<Vec<_>>();
 
     // start with the assumption that all headers are common
-    let mut common_headers: HashSet<String> = if let Some(first_set) = header_sets.first() {
-      first_set.clone()
-    } else {
-      HashSet::new()
+    let mut common_headers: HashSet<String> = match header_sets.first() {
+      Some(first_set) => first_set.clone(),
+      None => return Ok(HashSet::new()),
     };
-
-    // find intersection of all sets
     for headers in header_sets.iter().skip(1) {
       common_headers = common_headers.intersection(headers).cloned().collect();
     }
