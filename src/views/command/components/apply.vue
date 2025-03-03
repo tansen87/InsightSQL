@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicFormHeight } from "@/utils/utils";
-import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
 const [
@@ -40,11 +40,8 @@ async function selectFile() {
   }
 
   try {
-    const { headerView, columnView, dataView } = await viewSqlp(
-      data.path,
-      data.skipRows
-    );
-    tableHeader.value = headerView;
+    tableHeader.value = await mapHeaders(data.path, data.skipRows);
+    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;

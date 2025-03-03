@@ -56,8 +56,7 @@ async function selectFile() {
   }
 
   try {
-    const { headers } = await mapHeaders(data.path, data.skipRows);
-    originalColumns.value = headers;
+    originalColumns.value = await mapHeaders(data.path, data.skipRows);
     const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
 
     tableColumn.value = columnView;

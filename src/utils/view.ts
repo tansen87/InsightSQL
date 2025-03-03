@@ -86,10 +86,6 @@ export async function viewSqlp(path: string, skipRows: string) {
   const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
 
   return {
-    headerView: Object.keys(arrayData[0]).map(header => ({
-      label: header,
-      value: header
-    })),
     columnView: Object.keys(arrayData[0]).map(key => ({
       name: key,
       label: key,
@@ -105,5 +101,5 @@ export async function mapHeaders(path: string, skipRows: string) {
     skipRows: skipRows
   });
 
-  return { headers };
+  return headers;
 }
