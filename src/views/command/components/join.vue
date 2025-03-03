@@ -2,7 +2,7 @@
 import { ref, reactive, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Connection } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
@@ -38,7 +38,7 @@ const data = reactive({
   nulls: false
 });
 
-const { formHeight } = useDynamicFormHeight(215);
+const { dynamicHeight } = useDynamicHeight(215);
 
 async function selectFile(fileIndex) {
   const isPath = fileIndex === 1 ? isPath1 : isPath2;
@@ -60,8 +60,7 @@ async function selectFile(fileIndex) {
   }
 
   try {
-    const { headers } = await mapHeaders(data[path], "0");
-    tableHeader.value = headers;
+    tableHeader.value = await mapHeaders(data[path], "0");
     const { columnView, dataView } = await viewSqlp(data[path], "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
@@ -84,7 +83,6 @@ async function joinData() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("join", {
       path1: data.path1,
       path2: data.path2,
@@ -93,8 +91,7 @@ async function joinData() {
       joinType: data.joinType,
       nulls: data.nulls
     });
-
-    message(`Join done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Join done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -214,7 +211,7 @@ const viewFileName2 = computed(() => {
         </div>
         <el-table
           :data="tableData1"
-          :height="formHeight"
+          :height="dynamicHeight"
           border
           empty-text=""
           style="width: 100%"
@@ -236,7 +233,7 @@ const viewFileName2 = computed(() => {
         </div>
         <el-table
           :data="tableData2"
-          :height="formHeight"
+          :height="dynamicHeight"
           border
           empty-text=""
           style="width: 100%"

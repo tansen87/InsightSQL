@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
@@ -24,7 +24,7 @@ const data = reactive({
   newColumn: false,
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(278);
+const { dynamicHeight } = useDynamicHeight(278);
 
 async function selectFile() {
   isPath.value = false;
@@ -75,7 +75,7 @@ async function applyData() {
       skipRows: data.skipRows
     });
 
-    message(`Apply done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Apply done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -90,7 +90,7 @@ async function applyData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" placement="top" effect="light">
+        <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
@@ -99,7 +99,11 @@ async function applyData() {
       </div>
 
       <el-text>
-        <span v-if="isPath">{{ data.path }}</span>
+        <span v-if="isPath">
+          <el-tooltip :content="data.path" effect="light">
+            <span>{{ shortFileName(data.path) }}</span>
+          </el-tooltip>
+        </span>
         <span v-else>
           Apply a series of transformation functions to given CSV column/s
         </span>
@@ -220,7 +224,7 @@ async function applyData() {
     <div class="custom-container1">
       <el-table
         :data="tableData"
-        :height="formHeight"
+        :height="dynamicHeight"
         border
         empty-text=""
         style="margin-top: 12px; width: 100%"

@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
 import { splitContent, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
@@ -19,7 +19,7 @@ const data = reactive({
   size: 1000000,
   mode: "Rows"
 });
-const { formHeight } = useDynamicFormHeight(188);
+const { dynamicHeight } = useDynamicHeight(188);
 
 async function selectFile() {
   isPath.value = false;
@@ -51,14 +51,12 @@ async function splitData() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("split", {
       path: data.path,
       size: data.size,
       mode: data.mode
     });
-
-    message(`Split done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Split done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -76,7 +74,6 @@ const { compiledMarkdown } = useMarkdown(splitContent);
           Open File
         </el-button>
       </div>
-
       <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="isPath">{{ data.path }}</span>
         <span v-else>
@@ -116,7 +113,7 @@ const { compiledMarkdown } = useMarkdown(splitContent);
 
     <el-table
       :data="tableData"
-      :height="formHeight"
+      :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
@@ -128,15 +125,15 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         :key="column.prop"
       />
     </el-table>
-
-    <el-dialog
-      v-model="infoDialog"
-      title="Split - Split one CSV file into many CSV files"
-      width="800"
-    >
-      <el-scrollbar :height="formHeight * 0.8">
-        <div v-html="compiledMarkdown" />
-      </el-scrollbar>
-    </el-dialog>
   </div>
+
+  <el-dialog
+    v-model="infoDialog"
+    title="Split - Split one CSV file into many CSV files"
+    width="800"
+  >
+    <el-scrollbar :height="dynamicHeight * 0.8">
+      <div v-html="compiledMarkdown" />
+    </el-scrollbar>
+  </el-dialog>
 </template>

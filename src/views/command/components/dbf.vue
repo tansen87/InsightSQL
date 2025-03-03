@@ -9,7 +9,7 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
-import { useDynamicFormHeight, filterFileStatus } from "@/utils/utils";
+import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
@@ -18,7 +18,7 @@ const data = reactive({
   filePath: "",
   sep: "|"
 });
-const { formHeight } = useDynamicFormHeight(134);
+const { dynamicHeight } = useDynamicHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
@@ -60,7 +60,7 @@ async function convertData() {
       filePath: data.filePath,
       sep: data.sep
     });
-    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Convert done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -69,7 +69,7 @@ async function convertData() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="formHeight">
+  <el-form class="page-container" :style="dynamicHeight">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -96,7 +96,7 @@ async function convertData() {
       <el-text> Convert dbf file to CSV </el-text>
     </div>
 
-    <el-table :data="selectedFiles" :height="formHeight" style="width: 100%">
+    <el-table :data="selectedFiles" :height="dynamicHeight" style="width: 100%">
       <el-table-column prop="filename" label="file" style="width: 80%" />
       <el-table-column
         prop="status"

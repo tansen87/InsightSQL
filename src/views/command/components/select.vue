@@ -5,7 +5,7 @@ import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, viewSqlp } from "@/utils/view";
 import { CheckboxValueType } from "element-plus";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 
 const [
   originalColumns,
@@ -33,7 +33,7 @@ watch(selColumns, val => {
     indeterminate.value = true;
   }
 });
-const { formHeight } = useDynamicFormHeight(190);
+const { dynamicHeight } = useDynamicHeight(190);
 const handleCheckAll = (val: CheckboxValueType) => {
   indeterminate.value = false;
   if (val) {
@@ -119,7 +119,11 @@ async function selectColumns() {
         </el-button>
       </div>
       <el-text>
-        <span v-if="isPath">{{ data.path }}</span>
+        <span v-if="isPath">
+          <el-tooltip :content="data.path" effect="light">
+            <span>{{ shortFileName(data.path) }}</span>
+          </el-tooltip>
+        </span>
         <span v-else>Select, re-order columns</span>
       </el-text>
     </div>
@@ -150,7 +154,7 @@ async function selectColumns() {
 
     <el-table
       :data="tableData"
-      :height="formHeight"
+      :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"

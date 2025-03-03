@@ -11,7 +11,7 @@ import {
   CloseBold,
   Select
 } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicFormHeight } from "@/utils/utils";
+import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
 const [isLoading, selectedFiles] = [ref(false), ref([])];
@@ -19,7 +19,7 @@ const data = reactive({
   path: "",
   mode: "count"
 });
-const { formHeight } = useDynamicFormHeight(134);
+const { dynamicHeight } = useDynamicHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: string = event.payload;
@@ -94,7 +94,7 @@ async function countData() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="formHeight">
+  <el-form class="page-container" :style="dynamicHeight">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -121,7 +121,7 @@ async function countData() {
 
     <el-table
       :data="selectedFiles"
-      :height="formHeight"
+      :height="dynamicHeight"
       style="width: 100%"
       show-overflow-tooltip
       empty-text=""

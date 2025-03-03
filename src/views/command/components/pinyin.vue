@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
@@ -18,7 +18,7 @@ const data = reactive({
   path: "",
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(190);
+const { dynamicHeight } = useDynamicHeight(190);
 
 async function selectFile() {
   isPath.value = false;
@@ -33,8 +33,7 @@ async function selectFile() {
   }
 
   try {
-    const { headers } = await mapHeaders(data.path, data.skipRows);
-    tableHeader.value = headers;
+    tableHeader.value = await mapHeaders(data.path, data.skipRows);
     const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
     tableColumn.value = columnView;
     tableData.value = dataView;
@@ -57,15 +56,13 @@ async function chineseToPinyin() {
 
   try {
     isLoading.value = true;
-
     const cols = Object.values(columns.value).join("|");
     const result: string = await invoke("pinyin", {
       path: data.path,
       columns: cols,
       skipRows: data.skipRows
     });
-
-    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Convert done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -80,7 +77,6 @@ async function chineseToPinyin() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -99,7 +95,11 @@ async function chineseToPinyin() {
       </div>
 
       <el-text>
-        <span v-if="isPath">{{ data.path }}</span>
+        <span v-if="isPath">
+          <el-tooltip :content="data.path" effect="light">
+            <span>{{ shortFileName(data.path) }}</span>
+          </el-tooltip>
+        </span>
         <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>
     </div>
@@ -121,7 +121,7 @@ async function chineseToPinyin() {
 
     <el-table
       :data="tableData"
-      :height="formHeight"
+      :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"

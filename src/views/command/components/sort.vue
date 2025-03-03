@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
@@ -20,7 +20,7 @@ const data = reactive({
   numeric: false,
   reverse: false
 });
-const { formHeight } = useDynamicFormHeight(190);
+const { dynamicHeight } = useDynamicHeight(190);
 
 async function selectFile() {
   isPath.value = false;
@@ -58,7 +58,6 @@ async function sortData() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("sort", {
       path: data.path,
       skipRows: data.skipRows,
@@ -66,8 +65,7 @@ async function sortData() {
       numeric: data.numeric,
       reverse: data.reverse
     });
-
-    message(`Sort done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Sort done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -82,7 +80,6 @@ async function sortData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -92,7 +89,11 @@ async function sortData() {
       </div>
 
       <el-text>
-        <span v-if="isPath">{{ data.path }}</span>
+        <span v-if="isPath">
+          <el-tooltip :content="data.path" placement="top" effect="light">
+            <span>{{ shortFileName(data.path) }}</span>
+          </el-tooltip>
+        </span>
         <span v-else>Sorts CSV data lexicographically</span>
       </el-text>
     </div>
@@ -146,7 +147,7 @@ async function sortData() {
 
     <el-table
       :data="tableData"
-      :height="formHeight"
+      :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"

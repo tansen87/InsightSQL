@@ -10,7 +10,7 @@ import {
   SwitchFilled,
   Loading
 } from "@element-plus/icons-vue";
-import { useDynamicFormHeight, filterFileStatus } from "@/utils/utils";
+import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
@@ -29,7 +29,7 @@ const data = reactive({
   allSheets: false,
   writeSheetname: false
 });
-const { formHeight } = useDynamicFormHeight(184);
+const { dynamicHeight } = useDynamicHeight(184);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;
@@ -146,7 +146,7 @@ async function excelToCsv() {
       allSheets: data.allSheets,
       writeSheetname: data.writeSheetname
     });
-    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Convert done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -155,7 +155,7 @@ async function excelToCsv() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="formHeight">
+  <el-form class="page-container" :style="dynamicHeight">
     <div class="custom-container1">
       <el-form-item>
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -212,7 +212,7 @@ async function excelToCsv() {
 
     <el-table
       :data="selectedFiles"
-      :height="formHeight"
+      :height="dynamicHeight"
       style="width: 100%"
       show-overflow-tooltip
       empty-text=""

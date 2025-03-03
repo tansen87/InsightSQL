@@ -10,7 +10,7 @@ import {
   Select,
   CloseBold
 } from "@element-plus/icons-vue";
-import { useDynamicFormHeight, filterFileStatus } from "@/utils/utils";
+import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
@@ -18,10 +18,10 @@ const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   path: "",
   skipRows: "0",
-  mode: "Polars",
+  mode: "Csv",
   chunkSize: "1000000"
 });
-const { formHeight } = useDynamicFormHeight(134);
+const { dynamicHeight } = useDynamicHeight(134);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
@@ -74,7 +74,7 @@ async function csvToxlsx() {
       mode: data.mode,
       chunkSize: data.chunkSize
     });
-    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Convert done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -83,20 +83,18 @@ async function csvToxlsx() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="formHeight">
+  <el-form class="page-container" :style="dynamicHeight">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-tooltip content="Polars or Csv engine" effect="light">
           <el-select v-model="data.mode" style="margin-left: 10px; width: 85px">
             <el-option label="Polars" value="polars" />
             <el-option label="Csv" value="csv" />
           </el-select>
         </el-tooltip>
-
         <el-tooltip
           content="Split every N rows into a sheet, only used for CSV engine"
           effect="light"
@@ -128,7 +126,7 @@ async function csvToxlsx() {
 
     <el-table
       :data="selectedFiles"
-      :height="formHeight"
+      :height="dynamicHeight"
       style="width: 100%"
       show-overflow-tooltip
       empty-text=""

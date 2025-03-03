@@ -48,7 +48,6 @@ async function netAmount() {
 
   try {
     isLoading.value = true;
-
     const cols = Object.values(conditonColumns.value).join("|");
     const result: string = await invoke("offset", {
       filePath: data.filePath,
@@ -56,8 +55,7 @@ async function netAmount() {
       cond: cols,
       hasCond: data.hasCond
     });
-
-    message(`Offset done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Offset done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

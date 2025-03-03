@@ -5,10 +5,10 @@ export function shortFileName(path: string) {
   return path.split("\\").pop().split("/").pop();
 }
 
-export function useDynamicFormHeight(fixedHeight: number) {
+export function useDynamicHeight(fixedHeight: number) {
   const windowHeight = ref(0);
 
-  const formHeight = computed(() => {
+  const dynamicHeight = computed(() => {
     return windowHeight.value - fixedHeight;
   });
 
@@ -26,7 +26,7 @@ export function useDynamicFormHeight(fixedHeight: number) {
   });
 
   return {
-    formHeight
+    dynamicHeight
   };
 }
 

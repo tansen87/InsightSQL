@@ -58,5 +58,5 @@ const { compiledMarkdown } = useMarkdown(content);
 </script>
 
 <template>
-  <div v-html="compiledMarkdown" class="page-container" />
+  <div v-html="compiledMarkdown" />
 </template>

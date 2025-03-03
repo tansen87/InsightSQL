@@ -2,7 +2,7 @@
 import { ref, reactive, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 
@@ -16,7 +16,7 @@ const data = reactive({
   path: "",
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(134);
+const { dynamicHeight } = useDynamicHeight(134);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -64,7 +64,6 @@ async function renameData() {
 
   try {
     isLoading.value = true;
-
     const headersStringArray = tableData.value.map((row: any) => row.col2);
     const headersString = headersStringArray.join(",");
     const result: string = await invoke("rename", {
@@ -72,8 +71,7 @@ async function renameData() {
       headers: headersString,
       skipRows: data.skipRows
     });
-
-    message(`Rename done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Rename done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -86,63 +84,64 @@ async function headerEdit(row: any) {
 </script>
 
 <template>
-  <el-form class="page-container" :style="formHeight">
-    <el-form>
-      <div class="custom-container1">
-        <div class="custom-container2">
-          <el-button @click="selectFile()" :icon="FolderOpened">
-            Open File
-          </el-button>
+  <el-form class="page-container" :style="dynamicHeight">
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened">
+          Open File
+        </el-button>
+        <el-tooltip content="skip rows" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 50px"
+          />
+        </el-tooltip>
 
-          <el-tooltip content="skip rows" effect="light">
-            <el-input
-              v-model="data.skipRows"
-              style="margin-left: 10px; width: 50px"
-            />
-          </el-tooltip>
-
-          <el-button
-            @click="renameData()"
-            :loading="isLoading"
-            :icon="Refresh"
-            style="margin-left: 10px"
-          >
-            Rename
-          </el-button>
-        </div>
-
-        <el-text>
-          <span v-if="isPath">{{ data.path }}</span>
-          <span v-else>Rename the columns of a CSV</span>
-        </el-text>
+        <el-button
+          @click="renameData()"
+          :loading="isLoading"
+          :icon="Refresh"
+          style="margin-left: 10px"
+        >
+          Rename
+        </el-button>
       </div>
 
-      <el-table
-        :data="filterTableData"
-        :height="formHeight"
-        style="width: 100%"
-        empty-text=""
-      >
-        <el-table-column prop="col1" label="headers" style="width: 50%" />
-        <el-table-column prop="col2" label="new headers" width="300">
-          <template #default="{ row }">
-            <el-input
-              v-model="row.col2"
-              placeholder="new header"
-              @blur="headerEdit(row)"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column>
-          <template #header>
-            <el-input
-              v-model="search"
-              size="small"
-              placeholder="Type to search headers"
-            />
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-form>
+      <el-text>
+        <span v-if="isPath">
+          <el-tooltip :content="data.path" effect="light">
+            <span>{{ shortFileName(data.path) }}</span>
+          </el-tooltip>
+        </span>
+        <span v-else>Rename the columns of a CSV</span>
+      </el-text>
+    </div>
+
+    <el-table
+      :data="filterTableData"
+      :height="dynamicHeight"
+      style="width: 100%"
+      empty-text=""
+    >
+      <el-table-column prop="col1" label="headers" style="width: 50%" />
+      <el-table-column prop="col2" label="new headers" width="300">
+        <template #default="{ row }">
+          <el-input
+            v-model="row.col2"
+            placeholder="new header"
+            @blur="headerEdit(row)"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column>
+        <template #header>
+          <el-input
+            v-model="search"
+            size="small"
+            placeholder="Type to search headers"
+          />
+        </template>
+      </el-table-column>
+    </el-table>
   </el-form>
 </template>

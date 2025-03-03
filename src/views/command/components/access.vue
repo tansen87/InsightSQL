@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
@@ -11,7 +11,7 @@ const data = reactive({
   path: "",
   sep: "|"
 });
-const { formHeight } = useDynamicFormHeight(134);
+const { dynamicHeight } = useDynamicHeight(134);
 
 async function selectFile() {
   selectedFiles.value = [];
@@ -32,13 +32,11 @@ async function accessData() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("access", {
       path: data.path,
       sep: data.sep
     });
-
-    message(`Convert done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Convert done, elapsed time: ${result} s`);
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -47,13 +45,12 @@ async function accessData() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="formHeight">
+  <el-form class="page-container" :style="dynamicHeight">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-select v-model="data.sep" style="margin-left: 10px; width: 100px">
           <el-option label="," value="," />
           <el-option label="|" value="|" />
@@ -76,7 +73,7 @@ async function accessData() {
 
     <el-table
       :data="selectedFiles"
-      :height="formHeight"
+      :height="dynamicHeight"
       style="width: 100%"
       empty-text=""
     >

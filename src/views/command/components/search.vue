@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Search, FolderOpened } from "@element-plus/icons-vue";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewSqlp, viewOpenFile, mapHeaders } from "@/utils/view";
 import { message } from "@/utils/message";
 
@@ -20,7 +20,7 @@ const data = reactive({
   condition: "",
   skipRows: "0"
 });
-const { formHeight } = useDynamicFormHeight(233);
+const { dynamicHeight } = useDynamicHeight(233);
 
 async function selectFile() {
   isPath.value = false;
@@ -58,7 +58,6 @@ async function searchData() {
 
   try {
     isLoading.value = true;
-
     const result: string[] = await invoke("search", {
       path: data.path,
       selectColumn: columns.value,
@@ -66,7 +65,6 @@ async function searchData() {
       condition: data.condition,
       skipRows: data.skipRows
     });
-
     message(
       `Search done, match rows: 
         ${result[0]}
@@ -88,7 +86,6 @@ async function searchData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-
         <el-tooltip content="skip rows" placement="top" effect="light">
           <el-input
             v-model="data.skipRows"
@@ -98,7 +95,11 @@ async function searchData() {
       </div>
 
       <el-text>
-        <span v-if="isPath">{{ data.path }}</span>
+        <span v-if="isPath">
+          <el-tooltip :content="data.path" placement="top" effect="light">
+            <span>{{ shortFileName(data.path) }}</span>
+          </el-tooltip>
+        </span>
         <span v-else>Select fields matching rows</span>
       </el-text>
     </div>
@@ -150,7 +151,7 @@ async function searchData() {
 
     <el-table
       :data="tableData"
-      :height="formHeight"
+      :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
