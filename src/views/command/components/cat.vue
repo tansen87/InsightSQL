@@ -179,15 +179,15 @@ const { compiledMarkdown } = useMarkdown(catContent);
       <el-table-column type="index" width="50" />
       <el-table-column prop="filename" />
     </el-table>
-  </el-form>
 
-  <el-dialog
-    v-model="infoDialog"
-    title="Cat - Merge multiple CSV or Excel files into one CSV or xlsx file"
-    width="800"
-  >
-    <el-scrollbar :height="dynamicHeight * 0.8">
-      <div v-html="compiledMarkdown" />
-    </el-scrollbar>
-  </el-dialog>
+    <el-dialog
+      v-model="infoDialog"
+      title="Cat - Merge multiple CSV or Excel files into one CSV or xlsx file"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
+  </el-form>
 </template>

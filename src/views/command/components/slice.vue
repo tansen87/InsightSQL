@@ -171,15 +171,15 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
         :key="column.prop"
       />
     </el-table>
-  </div>
 
-  <el-dialog
-    v-model="infoDialog"
-    title="Slice - Slicing of csv column"
-    width="800"
-  >
-    <el-scrollbar :height="dynamicHeight * 0.8">
-      <div v-html="compiledMarkdown" />
-    </el-scrollbar>
-  </el-dialog>
+    <el-dialog
+      v-model="infoDialog"
+      title="Slice - Slicing of csv column"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
+  </div>
 </template>

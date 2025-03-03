@@ -125,15 +125,15 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         :key="column.prop"
       />
     </el-table>
-  </div>
 
-  <el-dialog
-    v-model="infoDialog"
-    title="Split - Split one CSV file into many CSV files"
-    width="800"
-  >
-    <el-scrollbar :height="dynamicHeight * 0.8">
-      <div v-html="compiledMarkdown" />
-    </el-scrollbar>
-  </el-dialog>
+    <el-dialog
+      v-model="infoDialog"
+      title="Split - Split one CSV file into many CSV files"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
+  </div>
 </template>

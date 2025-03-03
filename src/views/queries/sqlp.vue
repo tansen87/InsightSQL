@@ -6,7 +6,7 @@ import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
 import { useDark } from "@pureadmin/utils";
 import "./ace-config";
-import { useDynamicFormHeight } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
 const currentPage = ref(1);
@@ -30,7 +30,7 @@ const data = reactive({
   skipRows: "0",
   schemaLength: "0"
 });
-const { formHeight } = useDynamicFormHeight(102);
+const { dynamicHeight } = useDynamicHeight(102);
 const { isDark } = useDark();
 const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
 const initializeEditor = editor => {
@@ -296,7 +296,7 @@ watch(
 
 <template>
   <el-form class="page-container">
-    <el-form :style="{ height: formHeight + 'px' }">
+    <el-form :style="{ height: dynamicHeight + 'px' }">
       <div class="custom-container1">
         <div class="custom-container2">
           <el-tooltip content="open file" placement="top" effect="light">
@@ -422,13 +422,13 @@ watch(
       :direction="'btt'"
       size="75%"
     >
-      <el-scrollbar :height="formHeight * 0.8">
+      <el-scrollbar :height="dynamicHeight * 0.8">
         <el-table
           :data="pagedTableData"
           border
           empty-text=""
           style="width: 100%"
-          :height="formHeight * 0.72"
+          :height="dynamicHeight * 0.72"
         >
           <el-table-column
             v-for="column in tableColumn"
