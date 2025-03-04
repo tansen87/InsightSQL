@@ -183,7 +183,7 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
 
   if use_polars {
     let row_count = csv_options.count_csv_rows()?;
-    if row_count > 104_0000 {
+    if row_count > 104_8576 {
       return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
     }
 
@@ -196,7 +196,6 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
 
     XlsxWriter::new().write_dataframe(&df, dest)?;
   } else {
-    println!("use csv");
     let rdr = ReaderBuilder::new()
       .delimiter(sep)
       .from_reader(csv_options.skip_csv_rows()?);

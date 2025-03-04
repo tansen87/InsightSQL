@@ -42,7 +42,7 @@ impl ToPolarsDataFrame for Range<Data> {
           Data::DateTime(dt) => dt
             .as_datetime()
             .map(|d| d.to_string())
-            .unwrap_or_else(|| String::from("<Invalid DateTime>")),
+            .unwrap_or_else(|| String::new()),
           Data::Float(f) => f.to_string(),
           Data::Int(i) => i.to_string(),
           Data::Bool(b) => b.to_string(),
@@ -59,7 +59,7 @@ impl ToPolarsDataFrame for Range<Data> {
       }
     }
 
-    // list of `Series`s
+    // list of `Column`s
     let series: Vec<Column> = headers
       .into_iter()
       .zip(columns)

@@ -6,14 +6,15 @@ import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewSqlp, viewOpenFile, mapHeaders } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
-  ref(false),
-  ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([])
-];
+const [
+  isLoading,
+  isPath,
+  columns,
+  tableHeader,
+  tableColumn,
+  tableData,
+  searchBtn
+] = [ref(false), ref(false), ref(""), ref([]), ref([]), ref([]), ref("Search")];
 const data = reactive({
   path: "",
   mode: "equal",
@@ -65,13 +66,8 @@ async function searchData() {
       condition: data.condition,
       skipRows: data.skipRows
     });
-    message(
-      `Search done, match rows: 
-        ${result[0]}
-         lines, elapsed time: 
-        ${result[1]} s`,
-      { duration: 5000 }
-    );
+    message(`Search done, elapsed time: ${result[1]} s`, { type: "success" });
+    searchBtn.value = `${result[0]} rows`;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -136,7 +132,7 @@ async function searchData() {
         :icon="Search"
         style="margin-top: 12px"
       >
-        Search
+        {{ searchBtn }}
       </el-button>
     </div>
 
