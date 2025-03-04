@@ -146,7 +146,7 @@ async function excelToCsv() {
       allSheets: data.allSheets,
       writeSheetname: data.writeSheetname
     });
-    message(`Convert done, elapsed time: ${result} s`);
+    message(`Convert done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

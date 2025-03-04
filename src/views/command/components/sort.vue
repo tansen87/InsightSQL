@@ -65,7 +65,7 @@ async function sortData() {
       numeric: data.numeric,
       reverse: data.reverse
     });
-    message(`Sort done, elapsed time: ${result} s`);
+    message(`Sort done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

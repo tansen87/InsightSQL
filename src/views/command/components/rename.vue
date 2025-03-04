@@ -71,7 +71,7 @@ async function renameData() {
       headers: headersString,
       skipRows: data.skipRows
     });
-    message(`Rename done, elapsed time: ${result} s`);
+    message(`Rename done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

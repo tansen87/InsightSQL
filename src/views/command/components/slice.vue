@@ -71,7 +71,7 @@ async function sliceData() {
       sliceSep: data.sliceSep,
       mode: data.mode
     });
-    message(`Slice done, elapsed time: ${result} s`);
+    message(`Slice done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

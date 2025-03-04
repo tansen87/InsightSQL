@@ -6,7 +6,7 @@ type messageStyle = "el" | "antd";
 type messageTypes = "info" | "success" | "warning" | "error";
 
 interface MessageParams {
-  /** 消息类型, 可选 `info` 、`success` 、`warning` 、`error` , 默认 `success` */
+  /** 消息类型, 可选 `info` 、`success` 、`warning` 、`error` , 默认 `info` */
   type?: messageTypes;
   /** 自定义图标, 该属性会覆盖 `type` 的图标 */
   icon?: any;
@@ -47,7 +47,7 @@ const message = (
   } else {
     const {
       icon,
-      type = "success",
+      type = "info",
       dangerouslyUseHTMLString = false,
       customClass = "antd",
       duration = 5000,

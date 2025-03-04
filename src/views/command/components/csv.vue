@@ -18,7 +18,7 @@ const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   path: "",
   skipRows: "0",
-  mode: "Csv",
+  mode: "csv",
   chunkSize: "1000000"
 });
 const { dynamicHeight } = useDynamicHeight(134);
@@ -74,7 +74,7 @@ async function csvToxlsx() {
       mode: data.mode,
       chunkSize: data.chunkSize
     });
-    message(`Convert done, elapsed time: ${result} s`);
+    message(`Convert done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

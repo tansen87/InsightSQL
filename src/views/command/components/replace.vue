@@ -65,7 +65,7 @@ async function replaceData() {
       replacement: data.replacement,
       skipRows: data.skipRows
     });
-    message(`Replace done, elapsed time: ${result} s`);
+    message(`Replace done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

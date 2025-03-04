@@ -66,7 +66,7 @@ async function fillData() {
       skipRows: data.skipRows
     });
 
-    message(`Fill done, elapsed time: ${result} s`);
+    message(`Fill done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

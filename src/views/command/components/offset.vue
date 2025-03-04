@@ -55,7 +55,7 @@ async function netAmount() {
       cond: cols,
       hasCond: data.hasCond
     });
-    message(`Offset done, elapsed time: ${result} s`);
+    message(`Offset done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

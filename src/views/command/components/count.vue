@@ -85,7 +85,7 @@ async function countData() {
       mode: data.mode
     });
 
-    message(`Count done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Count done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

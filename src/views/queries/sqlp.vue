@@ -125,7 +125,7 @@ async function queryData() {
     tableData.value = markRaw(arrayData);
     total.value = arrayData.length;
 
-    message(`Query done, elapsed time: ${result[1]} s`, { duration: 5000 });
+    message(`Query done, elapsed time: ${result[1]} s`, { type: "success" });
     isLoading.value = false;
     return true;
   } catch (err) {

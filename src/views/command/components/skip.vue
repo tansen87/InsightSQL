@@ -87,7 +87,7 @@ async function skipLines() {
       skipRows: data.skipRows
     });
 
-    message(`Skip done, elapsed time: ${result} s`, { duration: 5000 });
+    message(`Skip done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

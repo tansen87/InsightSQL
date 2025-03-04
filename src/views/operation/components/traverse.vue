@@ -54,7 +54,7 @@ async function traverseDirectory() {
       output: output
     });
 
-    message(`${result}`, { duration: 5000 });
+    message(`${result}`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

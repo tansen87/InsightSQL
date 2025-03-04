@@ -75,7 +75,7 @@ async function applyData() {
       skipRows: data.skipRows
     });
 
-    message(`Apply done, elapsed time: ${result} s`);
+    message(`Apply done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

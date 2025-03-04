@@ -91,7 +91,7 @@ async function joinData() {
       joinType: data.joinType,
       nulls: data.nulls
     });
-    message(`Join done, elapsed time: ${result} s`);
+    message(`Join done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }

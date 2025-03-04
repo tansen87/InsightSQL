@@ -51,7 +51,7 @@ async function enumerate() {
       path: data.path,
       skipRows: data.skipRows
     });
-    message(`Enumerate done, elapsed time: ${result} s`);
+    message(`Enumerate done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
