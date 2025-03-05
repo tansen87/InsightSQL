@@ -104,6 +104,7 @@ async function countData() {
           <el-select v-model="data.mode" style="margin-left: 10px; width: 90px">
             <el-option label="Index" value="index" />
             <el-option label="Count" value="count" />
+            <el-option label="Check" value="check" />
           </el-select>
         </el-tooltip>
         <el-button
