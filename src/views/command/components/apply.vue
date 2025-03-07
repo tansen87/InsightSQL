@@ -1,20 +1,31 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
+import { CheckboxValueType } from "element-plus";
 
 const [
   isLoading,
   isPath,
-  selectColumns,
   operations,
   tableHeader,
   tableColumn,
-  tableData
-] = [ref(false), ref(false), ref([]), ref([]), ref([]), ref([]), ref([])];
+  tableData,
+  checkAll,
+  indeterminate
+] = [
+  ref(false),
+  ref(false),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref(false),
+  ref(false)
+];
 const data = reactive({
   path: "",
   applyMode: "Operations",
@@ -24,11 +35,31 @@ const data = reactive({
   newColumn: false,
   skipRows: "0"
 });
+const selColumns = ref<CheckboxValueType[]>([]);
 const { dynamicHeight } = useDynamicHeight(278);
+watch(selColumns, val => {
+  if (val.length === 0) {
+    checkAll.value = false;
+    indeterminate.value = false;
+  } else if (val.length === tableHeader.value.length) {
+    checkAll.value = true;
+    indeterminate.value = false;
+  } else {
+    indeterminate.value = true;
+  }
+});
+const handleCheckAll = (val: CheckboxValueType) => {
+  indeterminate.value = false;
+  if (val) {
+    selColumns.value = tableHeader.value.map(_ => _.value);
+  } else {
+    selColumns.value = [];
+  }
+};
 
 async function selectFile() {
   isPath.value = false;
-  selectColumns.value = [];
+  selColumns.value = [];
   operations.value = [];
   tableHeader.value = [];
   tableColumn.value = [];
@@ -56,7 +87,7 @@ async function applyData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (selectColumns.value.length === 0) {
+  if (selColumns.value.length === 0) {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -65,7 +96,7 @@ async function applyData() {
     isLoading.value = true;
     const result: string = await invoke("apply", {
       path: data.path,
-      selectColumns: selectColumns.value.join("|"),
+      selectColumns: Object.values(selColumns.value).join("|"),
       applyMode: data.applyMode,
       operations: operations.value.join("|"),
       comparand: data.comparand,
@@ -111,12 +142,21 @@ async function applyData() {
     </div>
 
     <el-select
-      v-model="selectColumns"
+      v-model="selColumns"
       filterable
       multiple
       placeholder="Apply by column(s)"
       style="width: 100%; margin-top: 12px"
     >
+      <template #header>
+        <el-checkbox
+          v-model="checkAll"
+          :indeterminate="indeterminate"
+          @change="handleCheckAll"
+        >
+          All
+        </el-checkbox>
+      </template>
       <el-option
         v-for="item in tableHeader"
         :key="item.value"
