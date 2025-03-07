@@ -20,11 +20,11 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 /// Used to check for counting errors caused by double quotation marks in CSV files
 pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
   let csv_options = CsvOptions::new(&path);
-  let count_count_record_true = count_record(&path, true, &csv_options)?;
-  let count_count_record_false = count_record(&path, false, &csv_options)?;
+  let quoting_true = count_record(&path, true, &csv_options)?;
+  let quoting_false = count_record(&path, false, &csv_options)?;
 
-  let max_count = std::cmp::max(count_count_record_true, count_count_record_false);
-  let min_count = std::cmp::min(count_count_record_true, count_count_record_false);
+  let max_count = std::cmp::max(quoting_true, quoting_false);
+  let min_count = std::cmp::min(quoting_true, quoting_false);
 
   Ok(max_count - min_count)
 }

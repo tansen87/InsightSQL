@@ -90,16 +90,13 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     let mut reader = BufReader::new(File::open(&self.path)?);
     let mut line = String::new();
 
-    if self.skip_rows == 0 {
-      return Ok(reader);
-    }
-
-    for _ in 0..self.skip_rows {
-      if reader.read_line(&mut line)? == 0 {
-        // reached the end of the file before skipping all lines
-        break;
+    if self.skip_rows > 0 {
+      for _ in 0..self.skip_rows {
+        line.clear();
+        if reader.read_line(&mut line)? == 0 {
+          break;
+        }
       }
-      line.clear();
     }
 
     Ok(reader)
@@ -162,6 +159,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
           csv_options.set_skip_rows(self.skip_rows);
           let mut rdr = csv::ReaderBuilder::new()
             .delimiter(csv_options.detect_separator().ok()?)
+            .has_headers(false)
             .from_reader(csv_options.skip_csv_rows().ok()?);
 
           rdr
@@ -188,6 +186,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   pub fn map_headers(&self) -> Result<Vec<HashMap<String, String>>> {
     let mut rdr = ReaderBuilder::new()
       .delimiter(self.detect_separator()?)
+      .has_headers(false)
       .from_reader(self.skip_csv_rows()?);
 
     let headers: Vec<HashMap<String, String>> = rdr

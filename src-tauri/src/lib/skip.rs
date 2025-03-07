@@ -16,7 +16,7 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   }
 
   let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows - 1);
+  csv_options.set_skip_rows(skip_rows);
 
   let sep = csv_options.detect_separator()?;
 
@@ -24,6 +24,7 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   let output_path = format!("{parent_path}/{filename}.skiprows.csv");
 
   let mut rdr = ReaderBuilder::new()
+    .has_headers(false)
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
 
