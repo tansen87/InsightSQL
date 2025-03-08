@@ -10,7 +10,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
 const currentPage = ref(1);
-const pageSize = ref(20);
+const pageSize = ref(10);
 const total = ref(0);
 const tableColumn = shallowRef<any[]>([]);
 const treeHeaders = ref([]);
@@ -30,7 +30,7 @@ const data = reactive({
   skipRows: "0",
   schemaLength: "0"
 });
-const { dynamicHeight } = useDynamicHeight(102);
+const { dynamicHeight } = useDynamicHeight(92);
 const { isDark } = useDark();
 const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
 const initializeEditor = editor => {
@@ -87,6 +87,8 @@ const handleCurrentChange = (newPage: number) => {
 async function queryData() {
   tableColumn.value = [];
   tableData.value = [];
+  currentPage.value = 1;
+  total.value = 0;
 
   if (data.path === "") {
     message("File not selected", { type: "warning" });
@@ -149,6 +151,8 @@ async function selectFile() {
   tableData.value = [];
   data.path = "";
   viewTable.value = false;
+  currentPage.value = 1;
+  total.value = 0;
 
   const selected = await open({
     multiple: true,
@@ -295,160 +299,165 @@ watch(
 </script>
 
 <template>
-  <el-form class="page-container">
-    <el-form :style="{ height: dynamicHeight + 'px' }">
-      <div class="custom-container1">
-        <div class="custom-container2">
-          <el-tooltip content="open file" placement="top" effect="light">
-            <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
-          </el-tooltip>
-          <el-tooltip content="skip rows" placement="top" effect="light">
-            <el-input
-              v-model="data.skipRows"
-              style="margin-left: 10px; width: 50px"
-            />
-          </el-tooltip>
-          <el-form-item style="margin-left: 10px; width: 95px">
-            <el-tooltip
-              content="Memory or stream query"
-              placement="top"
-              effect="light"
-            >
-              <el-select v-model="data.lowMemory">
-                <el-option label="Memory" :value="false" />
-                <el-option label="Stream" :value="true" />
-              </el-select>
-            </el-tooltip>
-          </el-form-item>
-        </div>
-
-        <el-button @click="viewTable = true" :icon="View" circle />
-
-        <el-form-item>
+  <el-form class="page-container" :style="{ height: dynamicHeight + 'px' }">
+    <div class="custom-container1" style="margin-bottom: -10px">
+      <div class="custom-container2">
+        <el-tooltip content="open file" placement="top" effect="light">
+          <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
+        </el-tooltip>
+        <el-tooltip content="skip rows" placement="top" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 30px"
+          />
+        </el-tooltip>
+        <el-form-item style="margin-left: 10px; width: 95px">
           <el-tooltip
-            content="Export data or not"
+            content="Memory or stream query"
             placement="top"
             effect="light"
           >
-            <el-switch
-              v-model="data.write"
-              inline-prompt
-              style="
-                --el-switch-on-color: #43cd80;
-                --el-switch-off-color: #b0c4de;
-              "
-              active-text="Y"
-              inactive-text="N"
-              :active-action-icon="Download"
-              :inactive-action-icon="View"
-            />
-          </el-tooltip>
-          <el-tooltip content="Export type" placement="top" effect="light">
-            <el-select
-              v-model="data.writeFormat"
-              style="margin-left: 10px; width: 70px"
-            >
-              <el-option label="csv" value="csv" />
-              <el-option label="xlsx" value="xlsx" />
-              <el-option label="parquet" value="parquet" />
+            <el-select v-model="data.lowMemory">
+              <el-option label="Memory" :value="false" />
+              <el-option label="Stream" :value="true" />
             </el-select>
-          </el-tooltip>
-          <el-tooltip content="execute" placement="top" effect="light">
-            <el-button
-              @click="queryViewData"
-              :loading="isLoading"
-              :icon="Search"
-              style="margin-left: 10px"
-              circle
-            />
           </el-tooltip>
         </el-form-item>
       </div>
 
-      <div style="display: flex; height: calc(100% - 60px)">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :pager-count="3"
+        :total="total"
+        layout="pager"
+        hide-on-single-page
+        :simplified="true"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+
+      <el-form-item>
+        <el-tooltip content="Export data or not" placement="top" effect="light">
+          <el-switch
+            v-model="data.write"
+            inline-prompt
+            style="
+              --el-switch-on-color: #43cd80;
+              --el-switch-off-color: #b0c4de;
+            "
+            active-text="Y"
+            inactive-text="N"
+            :active-action-icon="Download"
+            :inactive-action-icon="View"
+          />
+        </el-tooltip>
+        <el-tooltip content="Export type" placement="top" effect="light">
+          <el-select
+            v-model="data.writeFormat"
+            style="margin-left: 10px; width: 70px"
+          >
+            <el-option label="csv" value="csv" />
+            <el-option label="xlsx" value="xlsx" />
+            <el-option label="parquet" value="parquet" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="execute" placement="top" effect="light">
+          <el-button
+            @click="queryViewData"
+            :loading="isLoading"
+            :icon="Search"
+            style="margin-left: 10px"
+            circle
+          />
+        </el-tooltip>
+      </el-form-item>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 35px);
+        overflow: hidden;
+      "
+    >
+      <div style="flex: 0 0 50%; display: flex; overflow: hidden">
         <div
           style="
-            flex: 7.5 0 0%;
-            padding: 10px;
+            flex: 3;
             box-sizing: border-box;
             height: 100%;
+            overflow: hidden;
           "
         >
-          <el-form-item style="width: 100%; height: 100%">
-            <VAceEditor
-              v-model:value="sqlQuery"
-              ref="editor"
-              lang="sql"
-              :options="{
-                useWorker: true,
-                enableBasicAutocompletion: true,
-                enableSnippets: true,
-                enableLiveAutocompletion: true,
-                customScrollbar: true,
-                showPrintMargin: false,
-                fontSize: '1.0rem'
-              }"
-              :key="counter"
-              @init="initializeEditor"
-              :theme="theme"
-              style="flex: 1 1 0%; height: 100%"
-            />
-          </el-form-item>
+          <VAceEditor
+            v-model:value="sqlQuery"
+            ref="editor"
+            lang="sql"
+            :options="{
+              useWorker: true,
+              enableBasicAutocompletion: true,
+              enableSnippets: true,
+              enableLiveAutocompletion: true,
+              customScrollbar: true,
+              showPrintMargin: false,
+              fontSize: '1.0rem'
+            }"
+            :key="counter"
+            @init="initializeEditor"
+            :theme="theme"
+            style="height: 100%"
+          />
         </div>
         <div
           style="
-            flex: 2.5 0 0%;
-            padding: 10px;
+            flex: 1;
             box-sizing: border-box;
             height: 100%;
+            overflow: hidden;
           "
         >
-          <el-scrollbar style="height: 100%">
+          <el-scrollbar style="height: 100%; overflow: auto">
             <el-tree
               :data="fileTreeData"
               :props="defaultProps"
               @node-click="handleNodeClick"
               empty-text=""
-              style="height: 100%; overflow-y: auto"
+              style="max-height: 100%; overflow-y: auto"
             />
           </el-scrollbar>
         </div>
       </div>
-    </el-form>
 
-    <el-drawer
-      v-model="viewTable"
-      :with-header="false"
-      :direction="'btt'"
-      size="75%"
-    >
-      <el-scrollbar :height="dynamicHeight * 0.8">
+      <div
+        style="
+          flex: 0 0 50%;
+          box-sizing: border-box;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        "
+      >
         <el-table
           :data="pagedTableData"
           border
           empty-text=""
           style="width: 100%"
-          :height="dynamicHeight * 0.72"
+          show-overflow-tooltip
+          :height="dynamicHeight * 0.45"
         >
+          >
           <el-table-column
             v-for="column in tableColumn"
             :prop="column.prop"
             :label="column.label"
             :key="column.prop"
+            width="150px"
           />
         </el-table>
-        <div class="pagination-container">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50]"
-            :total="total"
-            layout="total, sizes, prev, pager, next"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
-        </div>
-      </el-scrollbar>
-    </el-drawer>
+      </div>
+    </div>
   </el-form>
 </template>
