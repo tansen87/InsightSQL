@@ -203,6 +203,38 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(headers)
   }
 
+  /// find the same headers and different headers in csv
+  pub fn dupli_headers(&self) -> Result<(HashSet<String>, HashSet<String>)> {
+    let mut headers_counter: HashMap<String, usize> = HashMap::new();
+    let mut duplicate_headers: HashSet<String> = HashSet::new();
+    let mut unique_headers: HashSet<String> = HashSet::new();
+
+    let mut rdr = ReaderBuilder::new()
+      .delimiter(self.detect_separator()?)
+      .from_reader(self.skip_csv_rows()?);
+
+    match rdr.headers() {
+      Ok(headers) => {
+        for header in headers.iter() {
+          let count = headers_counter.entry(header.to_string()).or_insert(0);
+          *count += 1;
+        }
+      }
+      Err(e) => return Err(anyhow!("{e}")),
+    }
+
+    // classify headers into duplicate_headers and unique_ceaders
+    for (header, count) in headers_counter {
+      if count > 1 {
+        duplicate_headers.insert(header);
+      } else {
+        unique_headers.insert(header);
+      }
+    }
+
+    Ok((duplicate_headers, unique_headers))
+  }
+
   pub fn from_reader<R: Read>(&self, rdr: R) -> csv::Reader<R> {
     ReaderBuilder::new()
       .delimiter(self.detect_separator().expect("no detect separator"))

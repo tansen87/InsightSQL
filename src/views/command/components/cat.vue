@@ -2,6 +2,7 @@
 import { ref, reactive } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   FolderOpened,
   Connection,
@@ -29,6 +30,23 @@ const data = reactive({
   useCols: ""
 });
 const { dynamicHeight } = useDynamicHeight(181);
+
+listen("dupler_msg", (event: any) => {
+  const duplerMsg: any = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === duplerMsg.split("|")[0]) {
+      file.infoMsg = duplerMsg.split("|")[2];
+    }
+  });
+});
+listen("dupler_err", (event: any) => {
+  const duplerErr: string = event.payload;
+  selectedFiles.value.forEach(file => {
+    if (file.filename === duplerErr.split("|")[0]) {
+      file.infoMsg = duplerErr.split("|")[1];
+    }
+  });
+});
 
 async function selectFile() {
   columns.value = "";
@@ -68,6 +86,20 @@ async function selectFile() {
 async function concatData() {
   if (data.filePath === "") {
     message("File not selected", { type: "warning" });
+    return;
+  }
+
+  if (data.mode === "duplicate") {
+    message("find duplicate headers...", {
+      type: "info",
+      duration: 0,
+      icon: Loading
+    });
+    await invoke("dupli_headers", {
+      path: data.filePath,
+      skipRows: data.skipRows
+    });
+    closeAllMessage();
     return;
   }
 
@@ -126,6 +158,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
             <el-option label="Memory" value="memory" />
             <el-option label="Stream" value="stream" />
             <el-option label="Csv" value="csv" />
+            <el-option label="Duplicate" value="duplicate" />
           </el-select>
         </el-tooltip>
 
@@ -174,10 +207,26 @@ const { compiledMarkdown } = useMarkdown(catContent);
       :data="selectedFiles"
       :height="dynamicHeight"
       empty-text=""
+      show-overflow-tooltip
       style="width: 100%"
     >
       <el-table-column type="index" width="50" />
-      <el-table-column prop="filename" />
+      <el-table-column
+        prop="filename"
+        label="file"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 60%"
+      />
+      <el-table-column
+        prop="infoMsg"
+        label="duplicate headers"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 40%"
+      >
+        <template #default="scope">
+          {{ scope.row.infoMsg }}
+        </template>
+      </el-table-column>
     </el-table>
 
     <el-dialog

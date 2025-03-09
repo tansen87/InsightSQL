@@ -1,6 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+  collections::{HashMap, HashSet},
+  path::Path,
+};
 
 use anyhow::Result;
+use tauri::{Emitter, Window};
 
 use crate::utils::CsvOptions;
 
@@ -24,4 +28,49 @@ pub async fn inter_headers(path: String, skip_rows: String) -> Result<HashSet<St
     Ok(result) => Ok(result),
     Err(err) => Err(format!("{err}")),
   }
+}
+
+#[tauri::command]
+pub async fn dupli_headers(
+  path: String,
+  skip_rows: String,
+  window: Window,
+) -> Result<(HashSet<String>, HashSet<String>), String> {
+  let paths: Vec<&str> = path.split('|').collect();
+  let mut all_unique_headers: HashSet<String> = HashSet::new();
+  let mut all_duplicate_headers: HashSet<String> = HashSet::new();
+
+  for p in paths.iter() {
+    let filename = Path::new(p)
+      .file_name()
+      .and_then(|f| f.to_str())
+      .unwrap_or("None");
+
+    window.emit("dupler", filename).map_err(|e| e.to_string())?;
+
+    let mut csv_options = CsvOptions::new(p);
+    csv_options.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+
+    match csv_options.dupli_headers() {
+      Ok((duplicate_headers, unique_headers)) => {
+        window
+          .emit(
+            "dupler_msg",
+            format!("{filename}|{:?}|{:?}", &unique_headers, &duplicate_headers),
+          )
+          .map_err(|e| e.to_string())?;
+
+        all_unique_headers.extend(unique_headers);
+        all_duplicate_headers.extend(duplicate_headers);
+      }
+      Err(err) => {
+        window
+          .emit("dupler_err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+        continue;
+      }
+    }
+  }
+
+  Ok((all_unique_headers, all_duplicate_headers))
 }

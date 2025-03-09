@@ -46,6 +46,7 @@ fn main() {
       cat::concat,
       cmd::map_headers,
       cmd::inter_headers,
+      cmd::dupli_headers,
       convert::switch_excel,
       convert::map_excel_sheets,
       convert::switch_csv,
