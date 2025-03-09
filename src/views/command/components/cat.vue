@@ -33,9 +33,10 @@ const { dynamicHeight } = useDynamicHeight(181);
 
 listen("dupler_msg", (event: any) => {
   const duplerMsg: any = event.payload;
+  const dupler = duplerMsg.split("|")[2];
   selectedFiles.value.forEach(file => {
     if (file.filename === duplerMsg.split("|")[0]) {
-      file.infoMsg = duplerMsg.split("|")[2];
+      file.infoMsg = dupler === "{}" ? "" : dupler;
     }
   });
 });
