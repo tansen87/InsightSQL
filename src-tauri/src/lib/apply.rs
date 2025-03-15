@@ -36,6 +36,7 @@ enum Operations {
   Replace,
   Round,
   Squeeze,
+  Strip,
 }
 
 impl Operations {
@@ -51,6 +52,7 @@ impl Operations {
       "replace" => Ok(Operations::Replace),
       "round" => Ok(Operations::Round),
       "squeeze" => Ok(Operations::Squeeze),
+      "strip" => Ok(Operations::Strip),
       _ => Err(anyhow!("Unknown '{op}' operation")),
     }
   }
@@ -186,6 +188,10 @@ fn apply_operations(
       Operations::Squeeze => {
         let squeezer: &'static Regex = regex_oncelock!(r"\s+");
         *cell = squeezer.replace_all(cell, " ").into_owned();
+      }
+      Operations::Strip => {
+        let striper: &'static Regex = regex_oncelock!(r"[\r\n]+");
+        *cell = striper.replace_all(cell, " ").into_owned();
       }
       Operations::Copy => {} // copy is a noop
     }

@@ -182,6 +182,7 @@ async function applyData() {
       <el-option label="Replace" value="replace" />
       <el-option label="Round" value="round" />
       <el-option label="Squeeze" value="squeeze" />
+      <el-option label="Strip" value="strip" />
     </el-select>
 
     <div class="custom-container1">
