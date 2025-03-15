@@ -11,16 +11,18 @@ import {
   Loading
 } from "@element-plus/icons-vue";
 import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
-import { message } from "@/utils/message";
+import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [selectedFiles, isLoading, sheetsData, sheetOptions, fileSheet] = [
-  ref([]),
-  ref(false),
-  ref({}),
-  ref([]),
-  ref([])
-];
+const [
+  selectedFiles,
+  isLoading,
+  sheetsData,
+  sheetOptions,
+  fileSheet,
+  backendCompleted,
+  backendInfo
+] = [ref([]), ref(false), ref({}), ref([]), ref([]), ref(false), ref("")];
 const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
@@ -52,7 +54,7 @@ listen("e2c_msg", (event: any) => {
   const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === e2cMsg) {
-      file.status = "completed";
+      file.status = "success";
     }
   });
 });
@@ -97,32 +99,43 @@ async function selectFile() {
   sheetsData.value = [];
   sheetOptions.value = [];
   fileSheet.value = [];
-
-  const result = await trimOpenFile(true, "Excel", ["*"], {
-    includeStatus: true
-  });
-  data.path = result.filePath;
-  selectedFiles.value = result.fileInfo;
-
-  const mapSheets: string[] = await invoke("map_excel_sheets", {
-    path: data.path
-  });
-  sheetsData.value = mapSheets[0];
-
-  for (const fileName in sheetsData.value) {
-    sheetsData.value[fileName].forEach(sheet => {
-      sheetOptions.value.push({
-        label: `${fileName} - ${sheet}`,
-        value: sheet
-      });
+  backendCompleted.value = false;
+  backendInfo.value = "";
+  try {
+    const trimFile = await trimOpenFile(true, "Excel", ["*"], {
+      includeStatus: true
     });
-  }
-
-  selectedFiles.value.forEach(file => {
-    if (!file.selectedSheet && getSheetsForFile(file.filename).length > 0) {
-      file.selectedSheet = getSheetsForFile(file.filename)[0];
+    data.path = trimFile.filePath;
+    selectedFiles.value = trimFile.fileInfo;
+    message("get excel sheets...", {
+      type: "info",
+      duration: 0,
+      icon: Loading
+    });
+    const mapSheets: string[] = await invoke("map_excel_sheets", {
+      path: data.path
+    });
+    sheetsData.value = mapSheets[0];
+    for (const fileName in sheetsData.value) {
+      sheetsData.value[fileName].forEach(sheet => {
+        sheetOptions.value.push({
+          label: `${fileName} - ${sheet}`,
+          value: sheet
+        });
+      });
     }
-  });
+    selectedFiles.value.forEach(file => {
+      if (!file.selectedSheet && getSheetsForFile(file.filename).length > 0) {
+        file.selectedSheet = getSheetsForFile(file.filename)[0];
+      }
+    });
+    closeAllMessage();
+    backendInfo.value = "get excel sheets done";
+    backendCompleted.value = true;
+  } catch (err) {
+    closeAllMessage();
+    message(err.toString(), { type: "error" });
+  }
 }
 
 // invoke switch_excel
@@ -131,7 +144,6 @@ async function excelToCsv() {
     message("Excel file not selected", { type: "warning" });
     return;
   }
-
   try {
     isLoading.value = true;
     const mapFileSheet = fileSheet.value.map(item => ({
@@ -148,7 +160,7 @@ async function excelToCsv() {
     });
     message(`Convert done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -168,7 +180,8 @@ async function excelToCsv() {
           />
         </el-tooltip>
       </el-form-item>
-      <el-text> Batch convert excel to csv </el-text>
+      <span v-if="backendCompleted"> {{ backendInfo }} </span>
+      <span v-else> Batch convert excel to csv </span>
     </div>
 
     <div class="custom-container1">
@@ -229,7 +242,7 @@ async function excelToCsv() {
         label="Status"
         :filters="[
           { text: 'x', value: 'error' },
-          { text: '√', value: 'completed' }
+          { text: '√', value: 'success' }
         ]"
         :filter-method="filterFileStatus"
         :class="{ 'custom-width': true }"
@@ -239,7 +252,7 @@ async function excelToCsv() {
           <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
             <Loading />
           </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
+          <ElIcon v-else-if="scope.row.status === 'success'" color="#00CD66">
             <Select />
           </ElIcon>
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
