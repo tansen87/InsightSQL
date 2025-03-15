@@ -30,7 +30,7 @@ const data = reactive({
   skipRows: "0",
   schemaLength: "0"
 });
-const { dynamicHeight } = useDynamicHeight(92);
+const { dynamicHeight } = useDynamicHeight(84);
 const { isDark } = useDark();
 const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
 const initializeEditor = editor => {
@@ -300,68 +300,6 @@ watch(
 
 <template>
   <el-form class="page-container" :style="{ height: dynamicHeight + 'px' }">
-    <div class="custom-container1" style="margin-bottom: -10px">
-      <div class="custom-container2">
-        <el-tooltip content="open file" placement="top" effect="light">
-          <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
-        </el-tooltip>
-        <el-tooltip content="skip rows" placement="top" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 30px"
-          />
-        </el-tooltip>
-        <el-form-item style="margin-left: 10px; width: 95px">
-          <el-tooltip
-            content="Memory or stream query"
-            placement="top"
-            effect="light"
-          >
-            <el-select v-model="data.lowMemory">
-              <el-option label="Memory" :value="false" />
-              <el-option label="Stream" :value="true" />
-            </el-select>
-          </el-tooltip>
-        </el-form-item>
-      </div>
-
-      <el-form-item>
-        <el-tooltip content="Export data or not" placement="top" effect="light">
-          <el-switch
-            v-model="data.write"
-            inline-prompt
-            style="
-              --el-switch-on-color: #43cd80;
-              --el-switch-off-color: #b0c4de;
-            "
-            active-text="Y"
-            inactive-text="N"
-            :active-action-icon="Download"
-            :inactive-action-icon="View"
-          />
-        </el-tooltip>
-        <el-tooltip content="Export type" placement="top" effect="light">
-          <el-select
-            v-model="data.writeFormat"
-            style="margin-left: 10px; width: 70px"
-          >
-            <el-option label="csv" value="csv" />
-            <el-option label="xlsx" value="xlsx" />
-            <el-option label="parquet" value="parquet" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="execute" placement="top" effect="light">
-          <el-button
-            @click="queryViewData"
-            :loading="isLoading"
-            :icon="Search"
-            style="margin-left: 10px"
-            circle
-          />
-        </el-tooltip>
-      </el-form-item>
-    </div>
-
     <div
       style="
         display: flex;
@@ -447,18 +385,76 @@ watch(
         </el-table>
       </div>
     </div>
-
-    <el-pagination
-      v-model:current-page="currentPage"
-      v-model:page-size="pageSize"
-      :pager-count="5"
-      :total="total"
-      layout="total, prev, pager, next, jumper"
-      hide-on-single-page
-      :simplified="true"
-      @size-change="handleSizeChange"
-      @current-change="handleCurrentChange"
-      size="small"
-    />
+    <div class="custom-container1" style="margin-bottom: -10px">
+      <div class="custom-container2">
+        <el-tooltip content="open file" effect="light">
+          <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
+        </el-tooltip>
+        <el-tooltip content="skip rows" effect="light">
+          <el-input
+            v-model="data.skipRows"
+            style="margin-left: 10px; width: 30px"
+          />
+        </el-tooltip>
+        <el-form-item style="margin-left: 10px; width: 95px">
+          <el-tooltip
+            content="Memory or stream query"
+            placement="top"
+            effect="light"
+          >
+            <el-select v-model="data.lowMemory">
+              <el-option label="Memory" :value="false" />
+              <el-option label="Stream" :value="true" />
+            </el-select>
+          </el-tooltip>
+        </el-form-item>
+      </div>
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :pager-count="5"
+        :total="total"
+        layout="pager"
+        hide-on-single-page
+        :simplified="true"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+      <el-form-item>
+        <el-tooltip content="Export data or not" effect="light">
+          <el-switch
+            v-model="data.write"
+            inline-prompt
+            style="
+              --el-switch-on-color: #43cd80;
+              --el-switch-off-color: #b0c4de;
+            "
+            active-text="Y"
+            inactive-text="N"
+            :active-action-icon="Download"
+            :inactive-action-icon="View"
+          />
+        </el-tooltip>
+        <el-tooltip content="Export type" effect="light">
+          <el-select
+            v-model="data.writeFormat"
+            style="margin-left: 10px; width: 70px"
+          >
+            <el-option label="csv" value="csv" />
+            <el-option label="xlsx" value="xlsx" />
+            <el-option label="parquet" value="parquet" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="execute" effect="light">
+          <el-button
+            @click="queryViewData"
+            :loading="isLoading"
+            :icon="Search"
+            style="margin-left: 10px"
+            circle
+          />
+        </el-tooltip>
+      </el-form-item>
+    </div>
   </el-form>
 </template>
