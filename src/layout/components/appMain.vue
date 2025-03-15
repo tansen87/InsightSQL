@@ -26,10 +26,10 @@ const layout = computed(() => {
 
 const getSectionStyle = computed(() => {
   return [
-    layout.value ? "padding-top: 44px;" : "",
-    layout.value ? "padding-top: 44px;" : "",
-    !layout.value ? "padding-top: 44px" : "",
-    !layout.value ? "padding-top: 44px;" : "",
+    layout.value ? "padding-top: 36px;" : "",
+    layout.value ? "padding-top: 36px;" : "",
+    !layout.value ? "padding-top: 36px" : "",
+    !layout.value ? "padding-top: 36px;" : "",
     props.fixedHeader ? "" : "padding-top: 0;"
   ];
 });

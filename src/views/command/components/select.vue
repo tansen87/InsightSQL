@@ -33,7 +33,7 @@ watch(selColumns, val => {
     indeterminate.value = true;
   }
 });
-const { dynamicHeight } = useDynamicHeight(190);
+const { dynamicHeight } = useDynamicHeight(178);
 const handleCheckAll = (val: CheckboxValueType) => {
   indeterminate.value = false;
   if (val) {

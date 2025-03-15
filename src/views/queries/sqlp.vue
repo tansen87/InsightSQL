@@ -325,18 +325,6 @@ watch(
         </el-form-item>
       </div>
 
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :pager-count="3"
-        :total="total"
-        layout="pager"
-        hide-on-single-page
-        :simplified="true"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-
       <el-form-item>
         <el-tooltip content="Export data or not" placement="top" effect="light">
           <el-switch
@@ -459,5 +447,18 @@ watch(
         </el-table>
       </div>
     </div>
+
+    <el-pagination
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      :pager-count="5"
+      :total="total"
+      layout="total, prev, pager, next, jumper"
+      hide-on-single-page
+      :simplified="true"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      size="small"
+    />
   </el-form>
 </template>

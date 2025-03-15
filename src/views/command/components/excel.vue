@@ -31,7 +31,7 @@ const data = reactive({
   allSheets: false,
   writeSheetname: false
 });
-const { dynamicHeight } = useDynamicHeight(184);
+const { dynamicHeight } = useDynamicHeight(172);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;

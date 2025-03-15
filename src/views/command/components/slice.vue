@@ -24,7 +24,7 @@ const data = reactive({
   sliceSep: "-",
   mode: "left"
 });
-const { dynamicHeight } = useDynamicHeight(190);
+const { dynamicHeight } = useDynamicHeight(178);
 
 async function selectFile() {
   isPath.value = false;

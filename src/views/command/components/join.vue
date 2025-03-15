@@ -38,7 +38,7 @@ const data = reactive({
   nulls: false
 });
 
-const { dynamicHeight } = useDynamicHeight(215);
+const { dynamicHeight } = useDynamicHeight(200);
 
 async function selectFile(fileIndex) {
   const isPath = fileIndex === 1 ? isPath1 : isPath2;

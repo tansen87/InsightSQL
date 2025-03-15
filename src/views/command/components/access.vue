@@ -11,7 +11,7 @@ const data = reactive({
   path: "",
   sep: "|"
 });
-const { dynamicHeight } = useDynamicHeight(134);
+const { dynamicHeight } = useDynamicHeight(122);
 
 async function selectFile() {
   selectedFiles.value = [];

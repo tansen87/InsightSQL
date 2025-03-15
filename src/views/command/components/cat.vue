@@ -29,7 +29,7 @@ const data = reactive({
   skipRows: "0",
   useCols: ""
 });
-const { dynamicHeight } = useDynamicHeight(181);
+const { dynamicHeight } = useDynamicHeight(166);
 
 listen("dupler_msg", (event: any) => {
   const duplerMsg: any = event.payload;

@@ -147,13 +147,13 @@ function handleCloseDialog() {
 <style lang="scss" scoped>
 .navbar {
   width: 100%;
-  height: 48px;
+  height: 40px;
   overflow: hidden;
 
   .hamburger-container {
     float: left;
     height: 100%;
-    line-height: 48px;
+    line-height: 40px;
     cursor: pointer;
   }
 
@@ -162,14 +162,14 @@ function handleCloseDialog() {
     align-items: center;
     justify-content: flex-end;
     min-width: 280px;
-    height: 48px;
+    height: 40px;
     color: #000000d9;
 
     .el-dropdown-link {
       display: flex;
       align-items: center;
       justify-content: space-around;
-      height: 48px;
+      height: 40px;
       padding: 10px;
       color: #000000d9;
       cursor: pointer;

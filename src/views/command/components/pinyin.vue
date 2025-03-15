@@ -18,7 +18,7 @@ const data = reactive({
   path: "",
   skipRows: "0"
 });
-const { dynamicHeight } = useDynamicHeight(190);
+const { dynamicHeight } = useDynamicHeight(178);
 
 async function selectFile() {
   isPath.value = false;

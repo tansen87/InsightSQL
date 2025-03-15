@@ -21,7 +21,7 @@ const data = reactive({
   mode: "csv",
   chunkSize: "1000000"
 });
-const { dynamicHeight } = useDynamicHeight(134);
+const { dynamicHeight } = useDynamicHeight(123);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;

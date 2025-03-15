@@ -8,7 +8,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { ElConfigProvider } from "element-plus";
-import zhCn from "element-plus/dist/locale/zh-cn";
+import en from "element-plus/dist/locale/en";
 export default defineComponent({
   name: "app",
   components: {
@@ -16,7 +16,7 @@ export default defineComponent({
   },
   computed: {
     currentLocale() {
-      return zhCn;
+      return en;
     }
   }
 });

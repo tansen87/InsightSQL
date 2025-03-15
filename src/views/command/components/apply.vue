@@ -36,7 +36,7 @@ const data = reactive({
   skipRows: "0"
 });
 const selColumns = ref<CheckboxValueType[]>([]);
-const { dynamicHeight } = useDynamicHeight(278);
+const { dynamicHeight } = useDynamicHeight(266);
 watch(selColumns, val => {
   if (val.length === 0) {
     checkAll.value = false;

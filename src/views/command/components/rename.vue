@@ -16,7 +16,7 @@ const data = reactive({
   path: "",
   skipRows: "0"
 });
-const { dynamicHeight } = useDynamicHeight(134);
+const { dynamicHeight } = useDynamicHeight(122);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>

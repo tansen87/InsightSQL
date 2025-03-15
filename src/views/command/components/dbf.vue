@@ -18,7 +18,7 @@ const data = reactive({
   filePath: "",
   sep: "|"
 });
-const { dynamicHeight } = useDynamicHeight(134);
+const { dynamicHeight } = useDynamicHeight(122);
 
 listen("start_convert", (event: any) => {
   const startConvert: any = event.payload;
