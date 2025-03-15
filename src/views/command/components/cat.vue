@@ -100,6 +100,8 @@ async function concatData() {
       path: data.filePath,
       skipRows: data.skipRows
     });
+    backendInfo.value = "find duplicate headers done";
+    backendCompleted.value = true;
     closeAllMessage();
     return;
   }
