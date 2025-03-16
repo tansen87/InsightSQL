@@ -105,6 +105,7 @@ async function searchData() {
         <el-tooltip content="Search mode" effect="light">
           <el-select v-model="data.mode" style="width: 112px">
             <el-option label="equal" value="equal" />
+            <el-option label="equalmulti" value="equalmulti" />
             <el-option label="contains" value="contains" />
             <el-option label="startswith" value="startswith" />
             <el-option label="regex" value="regex" />

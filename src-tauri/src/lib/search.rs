@@ -1,6 +1,6 @@
-use std::{path::Path, time::Instant};
+use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use csv::{ReaderBuilder, WriterBuilder};
 use regex::bytes::RegexBuilder;
 
@@ -9,6 +9,7 @@ use crate::utils::{CsvOptions, Selection};
 #[derive(Debug)]
 enum SearchMode {
   Equal,
+  EqualMulti(Vec<String>),
   Contains,
   StartsWith,
   Regex,
@@ -80,12 +81,85 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
     path,
     sep,
     select_column,
-    conditions.clone(),
+    conditions,
     skip_rows,
     output_path,
     |value, conditions| conditions.contains(&value.to_string()),
   )
   .await
+}
+
+fn sanitize_condition(condition: &str) -> String {
+  condition
+    .chars()
+    .map(|c| match c {
+      '/' | '\\' | '|' | ',' | '.' | '"' => '-',
+      _ => c,
+    })
+    .collect()
+}
+
+pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  skip_rows: usize,
+) -> Result<String> {
+  let mut match_rows: usize = 0;
+  let mut writers: HashMap<&str, csv::Writer<File>> = HashMap::new();
+
+  // prepare writers for each condition with sanitized output paths
+  for condition in &conditions {
+    let sanitized_condition = sanitize_condition(condition);
+    let output_path = format!(
+      "{}/{}_{}.csv",
+      path.as_ref().parent().unwrap().to_str().unwrap(),
+      path.as_ref().file_stem().unwrap().to_str().unwrap(),
+      sanitized_condition
+    );
+    let file = File::create(&output_path)?;
+    writers.insert(
+      &condition,
+      WriterBuilder::new().delimiter(sep).from_writer(file),
+    );
+  }
+
+  let mut csv_options = CsvOptions::new(&path);
+  csv_options.set_skip_rows(skip_rows);
+
+  let mut rdr = ReaderBuilder::new()
+    .delimiter(sep)
+    .from_reader(csv_options.skip_csv_rows()?);
+
+  let headers = rdr.headers()?.clone();
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
+
+  // write headers to all output files
+  for writer in writers.values_mut() {
+    writer.write_record(&headers)?;
+  }
+
+  for result in rdr.records() {
+    let record = result?;
+    if let Some(value) = record.get(sel.first_indices()?) {
+      for condition in &conditions {
+        if value == condition {
+          if let Some(writer) = writers.get_mut(condition.as_str()) {
+            writer.write_record(&record)?;
+            match_rows += 1;
+          }
+        }
+      }
+    }
+  }
+
+  // flush all writers
+  for writer in writers.values_mut() {
+    writer.flush()?;
+  }
+
+  Ok(match_rows.to_string())
 }
 
 pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
@@ -100,7 +174,7 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
     path,
     sep,
     select_column,
-    conditions.clone(),
+    conditions,
     skip_rows,
     output_path,
     |value, conditions| {
@@ -124,7 +198,7 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
     path,
     sep,
     select_column,
-    conditions.clone(),
+    conditions,
     skip_rows,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
@@ -158,7 +232,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   select_column: String,
   conditions: String,
-  mode: SearchMode,
+  mode: &str,
   skip_rows: usize,
 ) -> Result<String> {
   let mut csv_options = CsvOptions::new(&path);
@@ -166,51 +240,69 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
   let sep = csv_options.detect_separator()?;
 
-  let vec_conditions: Vec<String> = conditions
-    .split('|')
-    .map(|s| s.trim().to_string())
-    .collect();
+  let search_mode = match mode {
+    "equalmulti" => {
+      let conditions: Vec<String> = conditions
+        .split('|')
+        .map(|s| s.trim().to_string())
+        .collect();
+      SearchMode::EqualMulti(conditions)
+    }
+    _ => mode.into(),
+  };
 
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_name}.search.csv");
+  match search_mode {
+    SearchMode::EqualMulti(conditions) => {
+      equal_multi_search(path, sep, select_column.clone(), conditions, skip_rows).await
+    }
+    _ => {
+      let vec_conditions: Vec<String> = conditions
+        .split('|')
+        .map(|s| s.trim().to_string())
+        .collect();
+      let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+      let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
+      let output_path = format!("{}/{}.search.csv", parent_path, file_name);
 
-  match mode {
-    SearchMode::Equal => {
-      equal_search(
-        path,
-        sep,
-        select_column,
-        vec_conditions,
-        skip_rows,
-        output_path,
-      )
-      .await
-    }
-    SearchMode::Contains => {
-      contains_search(
-        path,
-        sep,
-        select_column,
-        vec_conditions,
-        skip_rows,
-        output_path,
-      )
-      .await
-    }
-    SearchMode::StartsWith => {
-      startswith_search(
-        path,
-        sep,
-        select_column,
-        vec_conditions,
-        skip_rows,
-        output_path,
-      )
-      .await
-    }
-    SearchMode::Regex => {
-      regex_search(path, sep, select_column, conditions, skip_rows, output_path).await
+      match search_mode {
+        SearchMode::Equal => {
+          equal_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            skip_rows,
+            output_path,
+          )
+          .await
+        }
+        SearchMode::Contains => {
+          contains_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            skip_rows,
+            output_path,
+          )
+          .await
+        }
+        SearchMode::StartsWith => {
+          startswith_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            skip_rows,
+            output_path,
+          )
+          .await
+        }
+        SearchMode::Regex => {
+          regex_search(path, sep, select_column, conditions, skip_rows, output_path).await
+        }
+        _ => Err(anyhow!("Unsupported search mode")),
+      }
     }
   }
 }
@@ -225,13 +317,11 @@ pub async fn search(
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
-  let search_mode: SearchMode = mode.as_str().into();
-
   match perform_search(
     path,
     select_column,
     condition,
-    search_mode,
+    mode.as_str(),
     skip_rows.parse::<usize>().map_err(|e| e.to_string())?,
   )
   .await
