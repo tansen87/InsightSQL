@@ -164,26 +164,6 @@ function handleCloseDialog() {
     min-width: 280px;
     height: 40px;
     color: #000000d9;
-
-    .el-dropdown-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      height: 40px;
-      padding: 10px;
-      color: #000000d9;
-      cursor: pointer;
-
-      p {
-        font-size: 14px;
-      }
-
-      img {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-      }
-    }
   }
 
   .breadcrumb-container {

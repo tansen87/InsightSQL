@@ -253,7 +253,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
-      equal_multi_search(path, sep, select_column.clone(), conditions, skip_rows).await
+      equal_multi_search(path, sep, select_column, conditions, skip_rows).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions

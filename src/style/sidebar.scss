@@ -440,39 +440,10 @@
 
       /* 搜索 */
       .search-container,
-      /* 告警 */
-      .dropdown-badge,
-      /* 用户名 */
-      .el-dropdown-link,
       /* 设置 */
       .set-icon {
         &:hover {
           background: $menuHover;
-        }
-      }
-
-      .dropdown-badge {
-        height: 36px;
-        color: $subMenuActiveText;
-      }
-
-      .el-dropdown-link {
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        height: 36px;
-        padding: 10px;
-        color: $subMenuActiveText;
-        cursor: pointer;
-
-        p {
-          font-size: 14px;
-        }
-
-        img {
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
         }
       }
     }
@@ -611,10 +582,6 @@ body[layout="vertical"] {
 
   /* 搜索 */
   .search-container,
-  /* 告警 */
-  .dropdown-badge,
-  /* 用户名 */
-  .el-dropdown-link,
   /* 设置 */
   .set-icon {
     &:hover {
