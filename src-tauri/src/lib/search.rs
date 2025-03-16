@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
 use anyhow::{anyhow, Result};
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::{ReaderBuilder, Writer, WriterBuilder};
 use regex::bytes::RegexBuilder;
 
 use crate::utils::{CsvOptions, Selection};
@@ -12,6 +12,7 @@ enum SearchMode {
   EqualMulti(Vec<String>),
   Contains,
   StartsWith,
+  StartsWithMulti(Vec<String>),
   Regex,
 }
 
@@ -24,6 +25,16 @@ impl From<&str> for SearchMode {
       _ => SearchMode::Regex,
     }
   }
+}
+
+fn sanitize_condition(condition: &str) -> String {
+  condition
+    .chars()
+    .map(|c| match c {
+      '/' | '\\' | '|' | ',' | '.' | '"' | ':' => '-',
+      _ => c,
+    })
+    .collect()
 }
 
 async fn generic_search<F, P>(
@@ -69,6 +80,74 @@ where
   Ok(match_rows.to_string())
 }
 
+async fn generic_multi_search<F, P>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  skip_rows: usize,
+  match_fn: F,
+) -> Result<String>
+where
+  F: Fn(&str, &String) -> bool + Send + Sync,
+  P: AsRef<Path> + Send + Sync,
+{
+  let mut match_rows: usize = 0;
+  let mut writers: HashMap<String, Writer<File>> = HashMap::new();
+
+  // prepare writers for each condition with sanitized output paths
+  for condition in &conditions {
+    let sanitized_condition = sanitize_condition(condition);
+    let output_path = format!(
+      "{}/{}_{}.csv",
+      path.as_ref().parent().unwrap().to_str().unwrap(),
+      path.as_ref().file_stem().unwrap().to_str().unwrap(),
+      sanitized_condition
+    );
+    let file = File::create(&output_path)?;
+    writers.insert(
+      condition.clone(),
+      WriterBuilder::new().delimiter(sep).from_writer(file),
+    );
+  }
+
+  let mut csv_options = CsvOptions::new(&path);
+  csv_options.set_skip_rows(skip_rows);
+
+  let mut rdr = ReaderBuilder::new()
+    .delimiter(sep)
+    .from_reader(csv_options.skip_csv_rows()?);
+
+  let headers = rdr.headers()?.clone();
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
+
+  // write headers to all output files
+  for wtr in writers.values_mut() {
+    wtr.write_record(&headers)?;
+  }
+
+  for result in rdr.records() {
+    let record = result?;
+    if let Some(value) = record.get(sel.first_indices()?) {
+      for condition in &conditions {
+        if match_fn(value, condition) {
+          if let Some(wtr) = writers.get_mut(condition) {
+            wtr.write_record(&record)?;
+            match_rows += 1;
+          }
+        }
+      }
+    }
+  }
+
+  // flush all writers
+  for wtr in writers.values_mut() {
+    wtr.flush()?;
+  }
+
+  Ok(match_rows.to_string())
+}
+
 pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
@@ -89,16 +168,6 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-fn sanitize_condition(condition: &str) -> String {
-  condition
-    .chars()
-    .map(|c| match c {
-      '/' | '\\' | '|' | ',' | '.' | '"' => '-',
-      _ => c,
-    })
-    .collect()
-}
-
 pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
@@ -106,60 +175,15 @@ pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   skip_rows: usize,
 ) -> Result<String> {
-  let mut match_rows: usize = 0;
-  let mut writers: HashMap<&str, csv::Writer<File>> = HashMap::new();
-
-  // prepare writers for each condition with sanitized output paths
-  for condition in &conditions {
-    let sanitized_condition = sanitize_condition(condition);
-    let output_path = format!(
-      "{}/{}_{}.csv",
-      path.as_ref().parent().unwrap().to_str().unwrap(),
-      path.as_ref().file_stem().unwrap().to_str().unwrap(),
-      sanitized_condition
-    );
-    let file = File::create(&output_path)?;
-    writers.insert(
-      &condition,
-      WriterBuilder::new().delimiter(sep).from_writer(file),
-    );
-  }
-
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
-
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
-
-  let headers = rdr.headers()?.clone();
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
-
-  // write headers to all output files
-  for writer in writers.values_mut() {
-    writer.write_record(&headers)?;
-  }
-
-  for result in rdr.records() {
-    let record = result?;
-    if let Some(value) = record.get(sel.first_indices()?) {
-      for condition in &conditions {
-        if value == condition {
-          if let Some(writer) = writers.get_mut(condition.as_str()) {
-            writer.write_record(&record)?;
-            match_rows += 1;
-          }
-        }
-      }
-    }
-  }
-
-  // flush all writers
-  for writer in writers.values_mut() {
-    writer.flush()?;
-  }
-
-  Ok(match_rows.to_string())
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    skip_rows,
+    |value, condition| value == condition,
+  )
+  .await
 }
 
 pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
@@ -206,6 +230,24 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
+pub async fn startswith_multi_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  skip_rows: usize,
+) -> Result<String> {
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    skip_rows,
+    |value, condition| value.starts_with(condition),
+  )
+  .await
+}
+
 pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
@@ -240,20 +282,23 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
   let sep = csv_options.detect_separator()?;
 
+  let multi_conditions: Vec<String> = conditions
+    .split('|')
+    .map(|s| s.trim().to_string())
+    .collect();
+
   let search_mode = match mode {
-    "equalmulti" => {
-      let conditions: Vec<String> = conditions
-        .split('|')
-        .map(|s| s.trim().to_string())
-        .collect();
-      SearchMode::EqualMulti(conditions)
-    }
+    "equalmulti" => SearchMode::EqualMulti(multi_conditions),
+    "startswithmulti" => SearchMode::StartsWithMulti(multi_conditions),
     _ => mode.into(),
   };
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
       equal_multi_search(path, sep, select_column, conditions, skip_rows).await
+    }
+    SearchMode::StartsWithMulti(conditions) => {
+      startswith_multi_search(path, sep, select_column, conditions, skip_rows).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions
