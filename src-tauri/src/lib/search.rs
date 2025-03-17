@@ -11,6 +11,7 @@ enum SearchMode {
   Equal,
   EqualMulti(Vec<String>),
   Contains,
+  ContainsMulti(Vec<String>),
   StartsWith,
   StartsWithMulti(Vec<String>),
   Regex,
@@ -59,13 +60,11 @@ where
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
 
-  let headers = rdr.headers()?.clone();
-
   let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
-  wtr.write_record(&headers)?;
+  wtr.write_record(rdr.headers()?)?;
 
   for result in rdr.records() {
     let record = result?;
@@ -93,7 +92,7 @@ where
   P: AsRef<Path> + Send + Sync,
 {
   let mut match_rows: usize = 0;
-  let mut writers: HashMap<String, Writer<File>> = HashMap::new();
+  let mut writers: HashMap<&str, Writer<File>> = HashMap::new();
 
   // prepare writers for each condition with sanitized output paths
   for condition in &conditions {
@@ -106,7 +105,7 @@ where
     );
     let file = File::create(&output_path)?;
     writers.insert(
-      condition.clone(),
+      condition,
       WriterBuilder::new().delimiter(sep).from_writer(file),
     );
   }
@@ -131,7 +130,7 @@ where
     if let Some(value) = record.get(sel.first_indices()?) {
       for condition in &conditions {
         if match_fn(value, condition) {
-          if let Some(wtr) = writers.get_mut(condition) {
+          if let Some(wtr) = writers.get_mut(condition.as_str()) {
             wtr.write_record(&record)?;
             match_rows += 1;
           }
@@ -201,11 +200,25 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
     conditions,
     skip_rows,
     output_path,
-    |value, conditions| {
-      conditions
-        .iter()
-        .any(|cond| value.to_lowercase().contains(&cond.to_lowercase()))
-    },
+    |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
+  )
+  .await
+}
+
+pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  skip_rows: usize,
+) -> Result<String> {
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    skip_rows,
+    |value, condition| value.contains(condition),
   )
   .await
 }
@@ -290,6 +303,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
   let search_mode = match mode {
     "equalmulti" => SearchMode::EqualMulti(multi_conditions),
     "startswithmulti" => SearchMode::StartsWithMulti(multi_conditions),
+    "containsmulti" => SearchMode::ContainsMulti(multi_conditions),
     _ => mode.into(),
   };
 
@@ -299,6 +313,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
     }
     SearchMode::StartsWithMulti(conditions) => {
       startswith_multi_search(path, sep, select_column, conditions, skip_rows).await
+    }
+    SearchMode::ContainsMulti(conditions) => {
+      contains_multi_search(path, sep, select_column, conditions, skip_rows).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions

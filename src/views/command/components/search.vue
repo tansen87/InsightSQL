@@ -107,6 +107,7 @@ async function searchData() {
             <el-option label="Equal" value="equal" />
             <el-option label="EqualMulti" value="equalmulti" />
             <el-option label="Contains" value="contains" />
+            <el-option label="ContainsMulti" value="containsmulti" />
             <el-option label="StartsWtih" value="startswith" />
             <el-option label="StartsWithMulti" value="startswithmulti" />
             <el-option label="Regex" value="regex" />
