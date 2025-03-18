@@ -9,7 +9,6 @@ use lib::fill;
 #[tokio::test]
 async fn test_fill() -> Result<()> {
   let data = vec![
-    "Tom,,",
     "name,age,gender",
     "Jerry,19,",
     "Patrick,4,male",
@@ -26,11 +25,11 @@ async fn test_fill() -> Result<()> {
 
   let fill_column = "gender|age".to_string();
   let fill_value = "unknown".to_string();
-  fill::fill_values(
+  fill::fill_null(
     file_path.to_str().unwrap(),
     fill_column,
     fill_value,
-    "1".to_string(),
+    "fill"
   )
   .await?;
 

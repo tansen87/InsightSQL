@@ -1,45 +1,61 @@
-use std::{fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Instant};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::{CsvOptions, Selection};
 
-pub async fn fill_values<P: AsRef<Path> + Send + Sync>(
+pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
   path: P,
   fill_column: String,
   fill_value: String,
-  skip_rows: String,
+  mode: &str,
 ) -> Result<()> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
 
-  let headers = rdr.headers()?.clone();
-
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
 
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_name}.fill.csv");
+  let output_path = format!("{}/{}.fill.csv", parent_path, file_name);
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)
     .from_writer(BufWriter::new(File::create(output_path)?));
 
-  wtr.write_record(&headers)?;
+  wtr.write_record(rdr.headers()?)?;
+
+  // initialize forward filled cache if needed
+  let mut forward_fill_cache: HashMap<usize, String> = HashMap::new();
 
   for record in rdr.deserialize() {
     let mut row: Vec<String> = record?;
     for &index in sel.get_indices() {
-      if row.get(index).map_or(true, |s| s.is_empty()) {
-        row[index] = fill_value.clone();
+      match mode {
+        // Fill null values
+        "fill" => {
+          if row.get(index).map_or(true, |s| s.is_empty()) {
+            row[index] = fill_value.clone();
+          }
+        }
+        // Fill null values by propagating the last valid observation to next valid
+        // just like `pandas.Series.ffill`
+        "ffill" => {
+          if row.get(index).map_or(true, |s| s.is_empty()) {
+            if let Some(fill_val) = forward_fill_cache.get(&index) {
+              row[index] = fill_val.clone();
+            }
+          } else {
+            forward_fill_cache.insert(index, row[index].clone());
+          }
+        }
+        _ => return Err(anyhow!("Not supported fill mode")),
       }
     }
     wtr.write_record(&row)?;
@@ -53,11 +69,11 @@ pub async fn fill(
   path: String,
   columns: String,
   values: String,
-  skip_rows: String,
+  mode: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match fill_values(path, columns, values, skip_rows).await {
+  match fill_null(path, columns, values, mode.as_str()).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

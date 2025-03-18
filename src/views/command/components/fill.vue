@@ -17,7 +17,7 @@ const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
 const data = reactive({
   path: "",
   value: "0",
-  skipRows: "0"
+  mode: "fill"
 });
 const { dynamicHeight } = useDynamicHeight(222);
 
@@ -34,8 +34,8 @@ async function selectFile() {
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    tableHeader.value = await mapHeaders(data.path, "0");
+    const { columnView, dataView } = await viewSqlp(data.path, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
@@ -57,15 +57,13 @@ async function fillData() {
 
   try {
     isLoading.value = true;
-
     const cols = Object.values(columns.value).join("|");
     const result: string = await invoke("fill", {
       path: data.path,
       columns: cols,
       values: data.value,
-      skipRows: data.skipRows
+      mode: data.mode
     });
-
     message(`Fill done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
@@ -81,12 +79,6 @@ async function fillData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
       </div>
 
       <el-text>
@@ -119,6 +111,12 @@ async function fillData() {
         <el-tooltip content="The value of fill" effect="light">
           <el-input v-model="data.value" style="width: 120px" clearable />
         </el-tooltip>
+        <el-tooltip content="fill mode" effect="light">
+          <el-select v-model="data.mode" style="width: 80px; margin-left: 10px">
+            <el-option label="fill" value="fill" />
+            <el-option label="f-fill" value="ffill" />
+          </el-select>
+        </el-tooltip>
       </div>
       <el-button
         style="margin-top: 12px"
@@ -136,6 +134,7 @@ async function fillData() {
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"
