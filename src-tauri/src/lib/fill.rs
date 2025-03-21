@@ -22,8 +22,8 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
 
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{}/{}.fill.csv", parent_path, file_name);
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.fill.csv");
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)

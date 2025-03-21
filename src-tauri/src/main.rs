@@ -18,6 +18,7 @@ use lib::offset;
 use lib::pinyin;
 use lib::rename;
 use lib::replace;
+use lib::reverse;
 use lib::search;
 use lib::select;
 use lib::skip;
@@ -61,6 +62,7 @@ fn main() {
       rename::get_rename_headers,
       rename::rename,
       replace::replace,
+      reverse::reverse,
       search::search,
       select::get_select_headers,
       select::select,

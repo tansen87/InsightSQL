@@ -194,6 +194,15 @@ export default {
         title: "slice",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/reverse",
+      name: "reverse",
+      component: () => import("@/views/command/components/reverse.vue"),
+      meta: {
+        title: "reverse",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;
