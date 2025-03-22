@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::Path, sync::OnceLock, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use cpc::{eval, units::Unit};
 use csv::{ReaderBuilder, WriterBuilder};
 use dynfmt::Format;
@@ -142,9 +142,9 @@ fn validate_operations(
     ops_vec.push(operation);
   }
   if copy_invokes > 1 || replace_invokes > 1 {
-    return Err(
-            anyhow!("you can only use copy({copy_invokes}), replace({replace_invokes}), ONCE per operation series.")
-        );
+    return Err(anyhow!(
+      "you can only use copy({copy_invokes}), replace({replace_invokes}), ONCE per operation series."
+    ));
   };
 
   Ok(ops_vec) // no validation errors
@@ -207,12 +207,9 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   replacement: String,
   formatstr: String,
   new_column: bool,
-  skip_rows: String,
 ) -> Result<()> {
   let select_columns: Vec<&str> = select_columns.split('|').collect();
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let new_column: Option<String> = if new_column {
@@ -229,13 +226,9 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|path| path.to_string_lossy())
-    .unwrap();
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{}/{}.apply.csv", parent_path, file_name);
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.apply.csv");
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   let headers = rdr.byte_headers()?;
@@ -453,7 +446,6 @@ pub async fn apply(
   replacement: String,
   formatstr: String,
   new_column: bool,
-  skip_rows: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -466,7 +458,6 @@ pub async fn apply(
     replacement,
     formatstr,
     new_column,
-    skip_rows,
   )
   .await
   {

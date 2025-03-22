@@ -24,6 +24,20 @@
   border-radius: 5px;
   background-color: #fff;
 }
+.page-container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+.page-container th,
+.page-container td {
+  border: 1px solid #ebeef5;
+  padding: 8px 12px;
+  text-align: left;
+}
+.page-container th {
+  background-color: #f5f7fa;
+}
 .custom-container1 {
   display: flex;
   justify-content: space-between;

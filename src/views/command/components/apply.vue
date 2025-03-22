@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from "vue";
+import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Refresh, FolderOpened } from "@element-plus/icons-vue";
+import { Refresh, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 import { CheckboxValueType } from "element-plus";
+import { applyContent, useMarkdown } from "@/utils/markdown";
 
 const [
   isLoading,
@@ -15,7 +16,16 @@ const [
   tableColumn,
   tableData,
   checkAll,
-  indeterminate
+  indeterminate,
+  path,
+  applyMode,
+  comparand,
+  replacement,
+  formatstr,
+  newColumn,
+  infoDialog,
+  backendCompleted,
+  backendInfo
 ] = [
   ref(false),
   ref(false),
@@ -24,17 +34,17 @@ const [
   ref([]),
   ref([]),
   ref(false),
-  ref(false)
+  ref(false),
+  ref(""),
+  ref("Operations"),
+  ref(""),
+  ref(""),
+  ref(""),
+  ref(false),
+  ref(false),
+  ref(false),
+  ref("")
 ];
-const data = reactive({
-  path: "",
-  applyMode: "Operations",
-  comparand: "",
-  replacement: "",
-  formatstr: "",
-  newColumn: false,
-  skipRows: "0"
-});
 const selColumns = ref<CheckboxValueType[]>([]);
 const { dynamicHeight } = useDynamicHeight(266);
 watch(selColumns, val => {
@@ -56,6 +66,7 @@ const handleCheckAll = (val: CheckboxValueType) => {
     selColumns.value = [];
   }
 };
+const { compiledMarkdown } = useMarkdown(applyContent);
 
 async function selectFile() {
   isPath.value = false;
@@ -65,25 +76,26 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    tableHeader.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke apply
 async function applyData() {
-  if (data.path === "") {
+  console.log(applyContent());
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -95,20 +107,18 @@ async function applyData() {
   try {
     isLoading.value = true;
     const result: string = await invoke("apply", {
-      path: data.path,
+      path: path.value,
       selectColumns: Object.values(selColumns.value).join("|"),
-      applyMode: data.applyMode,
+      applyMode: applyMode.value,
       operations: operations.value.join("|"),
-      comparand: data.comparand,
-      replacement: data.replacement,
-      formatstr: data.formatstr,
-      newColumn: data.newColumn,
-      skipRows: data.skipRows
+      comparand: comparand.value,
+      replacement: replacement.value,
+      formatstr: formatstr.value,
+      newColumn: newColumn.value
     });
-
     message(`Apply done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -121,24 +131,19 @@ async function applyData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
       </div>
-
-      <el-text>
+      <el-link @click="infoDialog = true" :icon="Link">
+        <span v-if="backendCompleted"> {{ backendInfo }} </span>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>
-          Apply a series of transformation functions to given CSV column/s
+          About
+          <span style="color: skyblue; font-weight: bold">Apply</span>
         </span>
-      </el-text>
+      </el-link>
     </div>
 
     <el-select
@@ -189,7 +194,7 @@ async function applyData() {
       <div style="width: 90%; display: flex; align-items: center">
         <div style="flex: 1; margin-top: 12px">
           <el-tooltip content="apply mode" effect="light">
-            <el-select v-model="data.applyMode" style="width: 100%">
+            <el-select v-model="applyMode" style="width: 100%">
               <el-option label="Operations" value="operations" />
               <el-option label="CalcConv" value="calcconv" />
               <el-option label="DynFmt" value="dynfmt" />
@@ -200,7 +205,7 @@ async function applyData() {
         <div style="flex: 1; margin-left: 5px; margin-top: 12px">
           <el-tooltip content="replace - from" effect="light">
             <el-input
-              v-model="data.comparand"
+              v-model="comparand"
               style="width: 100%"
               placeholder="replace - from"
               clearable
@@ -211,7 +216,7 @@ async function applyData() {
         <div style="flex: 1; margin-left: 5px; margin-top: 12px">
           <el-tooltip content="replace - to" effect="light">
             <el-input
-              v-model="data.replacement"
+              v-model="replacement"
               style="width: 100%"
               placeholder="replace - to"
               clearable
@@ -225,7 +230,7 @@ async function applyData() {
             effect="light"
           >
             <el-input
-              v-model="data.formatstr"
+              v-model="formatstr"
               style="width: 100%"
               placeholder="{col1} + {col2}"
               clearable
@@ -235,7 +240,7 @@ async function applyData() {
 
         <div style="flex: 1; margin-left: 5px">
           <el-switch
-            v-model="data.newColumn"
+            v-model="newColumn"
             class="ml-2"
             inline-prompt
             style="
@@ -269,6 +274,7 @@ async function applyData() {
         border
         empty-text=""
         style="margin-top: 12px; width: 100%"
+        show-overflow-tooltip
       >
         <el-table-column
           v-for="column in tableColumn"
@@ -278,5 +284,15 @@ async function applyData() {
         />
       </el-table>
     </div>
+
+    <el-dialog
+      v-model="infoDialog"
+      title="Apply - Apply a series of transformation functions to given CSV column/s"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

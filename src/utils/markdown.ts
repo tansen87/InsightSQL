@@ -86,6 +86,32 @@ export function useMarkdown(initialMarkdownFn: () => string) {
   };
 }
 
+export function applyContent() {
+  return `
+  ### OPERATIONS
+  | Operations | Description                                       |
+  | :--------- | :------------------------------------------------ |
+  | Copy       | mark a column for copying                         |
+  | Len        | return string length                              |
+  | Lower      | transform to lowercase                            |
+  | Upper      | transform to uppercase                            |
+  | Trim       | trim (drop whitespace left & right of the string) |
+  | Ltrim      | left trim whitespace                              |
+  | Rtrim      | right trim whitespace                             |
+  | Replace    | replace all matches of a pattern                  |
+  | Round      | round off, AKA "Bankers Rounding"                 |
+  | Squeeze    | compress consecutive whitespaces                  |
+  | Strip      | replace \\ r and \\ n with whitespaces            |
+  
+  ### DYNFMT
+  Dynamically constructs a new column from other columns using the <--formatstr> template.
+
+  ### CALCCONV
+  Parse and evaluate math expressions into a new column, with support for units and conversions.
+  The math expression is built dynamically using the <--formatstr> template, similar to the DYNFMT.
+`;
+}
+
 export function catContent() {
   return `
   Merge **file1.csv** and **file2.csv**, then we get **cat.csv**.
