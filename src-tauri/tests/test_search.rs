@@ -37,7 +37,7 @@ async fn test_equal_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::equal_search(file_path, sep, column, conditions, 0, output_path).await?;
+  let result = search::equal_search(file_path, sep, column, conditions, output_path).await?;
 
   // Expect 1 row matched, matched ("Tom")
   assert_eq!(result, "1");
@@ -58,7 +58,7 @@ async fn test_contains_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::contains_search(file_path, sep, column, conditions, 0, output_path).await?;
+  let result = search::contains_search(file_path, sep, column, conditions, output_path).await?;
 
   // Expect 2 rows matched, matched ("Patrick", "Sandy")
   assert_eq!(result, "2");
@@ -79,8 +79,7 @@ async fn test_startswith_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result =
-    search::startswith_search(file_path, sep, column, conditions, 0, output_path).await?;
+  let result = search::startswith_search(file_path, sep, column, conditions, output_path).await?;
 
   // Expect 1 row matched, matched ("Jerry")
   assert_eq!(result, "1");
@@ -101,7 +100,7 @@ async fn test_regex_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::regex_search(file_path, sep, column, regex_char, 0, output_path).await?;
+  let result = search::regex_search(file_path, sep, column, regex_char, output_path).await?;
 
   // Expect 1 row matched, matched ("Jerry")
   assert_eq!(result, "1");

@@ -13,7 +13,6 @@ async fn test_rename() -> Result<()> {
 
   let data = vec![
     "name,age,gender",
-    "Tom,18,male",
     "Jerry,19,male",
     "Patrick,4,male",
     "Sandy,24,female",
@@ -29,7 +28,6 @@ async fn test_rename() -> Result<()> {
   rename::rename_headers(
     file_path.to_str().unwrap(),
     new_header.to_string(),
-    "1".to_string(),
   )
   .await?;
 

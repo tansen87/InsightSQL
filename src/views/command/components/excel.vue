@@ -150,7 +150,7 @@ async function excelToCsv() {
       filename: item.filename,
       sheetname: item.sheetname
     }));
-    const result: string = await invoke("switch_excel", {
+    const rtime: string = await invoke("switch_excel", {
       path: data.path,
       skipRows: data.skipRows,
       sep: data.sep,
@@ -158,7 +158,7 @@ async function excelToCsv() {
       allSheets: data.allSheets,
       writeSheetname: data.writeSheetname
     });
-    message(`Convert done, elapsed time: ${result} s`, { type: "success" });
+    message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }

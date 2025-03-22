@@ -1,23 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
-  ref(false),
-  ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([])
-];
-const data = reactive({
-  path: "",
-  skipRows: "0"
-});
+const [isLoading, isPath, columns, tableHeader, tableColumn, tableData, path] =
+  [ref(false), ref(false), ref(""), ref([]), ref([]), ref([]), ref("")];
 const { dynamicHeight } = useDynamicHeight(178);
 
 async function selectFile() {
@@ -27,25 +17,25 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    tableHeader.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke pinyin
 async function chineseToPinyin() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("File not selected", { type: "warning" });
     return;
   }
@@ -57,14 +47,13 @@ async function chineseToPinyin() {
   try {
     isLoading.value = true;
     const cols = Object.values(columns.value).join("|");
-    const result: string = await invoke("pinyin", {
-      path: data.path,
-      columns: cols,
-      skipRows: data.skipRows
+    const rtime: string = await invoke("pinyin", {
+      path: path.value,
+      columns: cols
     });
-    message(`Convert done, elapsed time: ${result} s`, { type: "success" });
+    message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -77,13 +66,6 @@ async function chineseToPinyin() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
-
         <el-button
           @click="chineseToPinyin()"
           :loading="isLoading"
@@ -93,17 +75,15 @@ async function chineseToPinyin() {
           Convert
         </el-button>
       </div>
-
       <el-text>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>Convert Chinese to Pinyin in CSV</span>
       </el-text>
     </div>
-
     <el-select
       v-model="columns"
       multiple
@@ -118,13 +98,13 @@ async function chineseToPinyin() {
         :value="item.value"
       />
     </el-select>
-
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -14,11 +14,12 @@ import {
 import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
-const [isLoading, selectedFiles] = [ref(false), ref([])];
-const data = reactive({
-  path: "",
-  mode: "count"
-});
+const [isLoading, selectedFiles, path, mode] = [
+  ref(false),
+  ref([]),
+  ref(""),
+  ref("count")
+];
 const { dynamicHeight } = useDynamicHeight(122);
 
 listen("start_convert", (event: any) => {
@@ -59,7 +60,7 @@ async function selectFile() {
     ]
   });
   if (Array.isArray(selected)) {
-    data.path = selected.join("|").toString();
+    path.value = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
     selectedFiles.value = nonEmptyRows.map((file: any) => {
       return { filename: shortFileName(file), status: " " };
@@ -67,27 +68,26 @@ async function selectFile() {
   } else if (selected === null) {
     return;
   } else {
-    data.path = selected;
+    path.value = selected;
   }
 }
 
 // invoke count
 async function countData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
 
   try {
     isLoading.value = true;
-    const result: string = await invoke("count", {
-      path: data.path,
-      mode: data.mode
+    const rtime: string = await invoke("count", {
+      path: path.value,
+      mode: mode.value
     });
-
-    message(`Count done, elapsed time: ${result} s`, { type: "success" });
+    message(`Count done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -100,8 +100,8 @@ async function countData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="add index or not" effect="light">
-          <el-select v-model="data.mode" style="margin-left: 10px; width: 90px">
+        <el-tooltip content="count mode" effect="light">
+          <el-select v-model="mode" style="margin-left: 10px; width: 90px">
             <el-option label="Index" value="index" />
             <el-option label="Count" value="count" />
             <el-option label="Check" value="check" />
@@ -116,10 +116,8 @@ async function countData() {
           Count
         </el-button>
       </div>
-
       <el-text> Count the rows of CSV files </el-text>
     </div>
-
     <el-table
       :data="selectedFiles"
       :height="dynamicHeight"

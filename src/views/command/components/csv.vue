@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElIcon } from "element-plus";
@@ -14,13 +14,13 @@ import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [isLoading, selectedFiles] = [ref(false), ref([])];
-const data = reactive({
-  path: "",
-  skipRows: "0",
-  mode: "csv",
-  chunkSize: "1000000"
-});
+const [isLoading, selectedFiles, path, chunkSize, mode] = [
+  ref(false),
+  ref([]),
+  ref(""),
+  ref("700000"),
+  ref("csv")
+];
 const { dynamicHeight } = useDynamicHeight(123);
 
 listen("start_convert", (event: any) => {
@@ -55,28 +55,27 @@ async function selectFile() {
   const result = await trimOpenFile(true, "csv", ["*"], {
     includeStatus: true
   });
-  data.path = result.filePath;
+  path.value = result.filePath;
   selectedFiles.value = result.fileInfo;
 }
 
 // invoke switch_csv
 async function csvToxlsx() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
 
   try {
     isLoading.value = true;
-    const result: string = await invoke("switch_csv", {
-      path: data.path,
-      skipRows: data.skipRows,
-      mode: data.mode,
-      chunkSize: data.chunkSize
+    const rtime: string = await invoke("switch_csv", {
+      path: path.value,
+      mode: mode.value,
+      chunkSize: chunkSize.value
     });
-    message(`Convert done, elapsed time: ${result} s`, { type: "success" });
+    message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -90,9 +89,9 @@ async function csvToxlsx() {
           Open File
         </el-button>
         <el-tooltip content="Polars or Csv engine" effect="light">
-          <el-select v-model="data.mode" style="margin-left: 10px; width: 85px">
-            <el-option label="Polars" value="polars" />
+          <el-select v-model="mode" style="margin-left: 10px; width: 85px">
             <el-option label="Csv" value="csv" />
+            <el-option label="Polars" value="polars" />
           </el-select>
         </el-tooltip>
         <el-tooltip
@@ -100,17 +99,10 @@ async function csvToxlsx() {
           effect="light"
         >
           <el-input
-            v-model="data.chunkSize"
+            v-model="chunkSize"
             style="margin-left: 10px; width: 80px"
           />
         </el-tooltip>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
-
         <el-button
           @click="csvToxlsx()"
           :loading="isLoading"
@@ -120,10 +112,8 @@ async function csvToxlsx() {
           Convert
         </el-button>
       </div>
-
       <el-text> Batch convert csv to xlsx </el-text>
     </div>
-
     <el-table
       :data="selectedFiles"
       :height="dynamicHeight"

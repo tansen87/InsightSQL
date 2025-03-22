@@ -9,11 +9,8 @@ use crate::utils::{CsvOptions, Selection};
 pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
   path: P,
   columns: String,
-  skip_rows: String,
 ) -> Result<()> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
@@ -24,15 +21,13 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
   let sel = Selection::from_headers(rdr.byte_headers()?, &cols[..])?;
 
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_name}.pinyin.csv");
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.pinyin.csv");
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
-  let headers = rdr.headers()?;
-
-  wtr.write_record(headers)?;
+  wtr.write_record(rdr.headers()?)?;
 
   for result in rdr.records() {
     let record = result?;
@@ -62,15 +57,15 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
 }
 
 #[tauri::command]
-pub async fn pinyin(path: String, columns: String, skip_rows: String) -> Result<String, String> {
+pub async fn pinyin(path: String, columns: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(path, columns, skip_rows).await {
+  match chinese_to_pinyin(path, columns).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("pinyin failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }

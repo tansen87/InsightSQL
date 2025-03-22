@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Search, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
@@ -13,14 +13,22 @@ const [
   tableHeader,
   tableColumn,
   tableData,
-  searchBtn
-] = [ref(false), ref(false), ref(""), ref([]), ref([]), ref([]), ref("Search")];
-const data = reactive({
-  path: "",
-  mode: "equal",
-  condition: "",
-  skipRows: "0"
-});
+  searchBtn,
+  path,
+  mode,
+  condition
+] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref("Search"),
+  ref(""),
+  ref("equal"),
+  ref("")
+];
 const { dynamicHeight } = useDynamicHeight(221);
 
 async function selectFile() {
@@ -30,25 +38,25 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    tableHeader.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke search
 async function searchData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -60,16 +68,15 @@ async function searchData() {
   try {
     isLoading.value = true;
     const result: string[] = await invoke("search", {
-      path: data.path,
+      path: path.value,
       selectColumn: columns.value,
-      mode: data.mode,
-      condition: data.condition,
-      skipRows: data.skipRows
+      mode: mode.value,
+      condition: condition.value
     });
     message(`Search done, elapsed time: ${result[1]} s`, { type: "success" });
     searchBtn.value = `${result[0]} rows`;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -82,28 +89,20 @@ async function searchData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" placement="top" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
       </div>
-
       <el-text>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" placement="top" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" placement="top" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>Select fields matching rows</span>
       </el-text>
     </div>
-
     <div class="custom-container1">
       <div class="custom-container2" style="margin-top: 12px">
         <el-tooltip content="Search mode" effect="light">
-          <el-select v-model="data.mode" style="width: 112px">
+          <el-select v-model="mode" style="width: 112px">
             <el-option label="Equal" value="equal" />
             <el-option label="EqualMulti" value="equalmulti" />
             <el-option label="Contains" value="contains" />
@@ -113,7 +112,6 @@ async function searchData() {
             <el-option label="Regex" value="regex" />
           </el-select>
         </el-tooltip>
-
         <el-select
           v-model="columns"
           filterable
@@ -128,7 +126,6 @@ async function searchData() {
           />
         </el-select>
       </div>
-
       <el-button
         @click="searchData()"
         :loading="isLoading"
@@ -138,22 +135,21 @@ async function searchData() {
         {{ searchBtn }}
       </el-button>
     </div>
-
     <div style="margin-top: 12px">
       <el-input
-        v-model="data.condition"
+        v-model="condition"
         autosize
         type="textarea"
         placeholder="Search rows with text...Example: tom|jack|world"
       />
     </div>
-
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"

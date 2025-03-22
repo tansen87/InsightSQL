@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, Writer, WriterBuilder};
 use regex::bytes::RegexBuilder;
 
@@ -43,7 +43,6 @@ async fn generic_search<F, P>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
   output_path: String,
   match_fn: F,
 ) -> Result<String>
@@ -53,8 +52,7 @@ where
 {
   let mut match_rows: usize = 0;
 
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
+  let csv_options = CsvOptions::new(&path);
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -84,7 +82,6 @@ async fn generic_multi_search<F, P>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
   match_fn: F,
 ) -> Result<String>
 where
@@ -110,8 +107,7 @@ where
     );
   }
 
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
+  let csv_options = CsvOptions::new(&path);
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -152,7 +148,6 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
   output_path: String,
 ) -> Result<String> {
   generic_search(
@@ -160,7 +155,6 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
     sep,
     select_column,
     conditions,
-    skip_rows,
     output_path,
     |value, conditions| conditions.contains(&value.to_string()),
   )
@@ -172,16 +166,10 @@ pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
 ) -> Result<String> {
-  generic_multi_search(
-    path,
-    sep,
-    select_column,
-    conditions,
-    skip_rows,
-    |value, condition| value == condition,
-  )
+  generic_multi_search(path, sep, select_column, conditions, |value, condition| {
+    value == condition
+  })
   .await
 }
 
@@ -190,7 +178,6 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
   output_path: String,
 ) -> Result<String> {
   generic_search(
@@ -198,7 +185,6 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
     sep,
     select_column,
     conditions,
-    skip_rows,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
   )
@@ -210,16 +196,10 @@ pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
 ) -> Result<String> {
-  generic_multi_search(
-    path,
-    sep,
-    select_column,
-    conditions,
-    skip_rows,
-    |value, condition| value.contains(condition),
-  )
+  generic_multi_search(path, sep, select_column, conditions, |value, condition| {
+    value.contains(condition)
+  })
   .await
 }
 
@@ -228,7 +208,6 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
   output_path: String,
 ) -> Result<String> {
   generic_search(
@@ -236,7 +215,6 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
     sep,
     select_column,
     conditions,
-    skip_rows,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
   )
@@ -248,16 +226,10 @@ pub async fn startswith_multi_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  skip_rows: usize,
 ) -> Result<String> {
-  generic_multi_search(
-    path,
-    sep,
-    select_column,
-    conditions,
-    skip_rows,
-    |value, condition| value.starts_with(condition),
-  )
+  generic_multi_search(path, sep, select_column, conditions, |value, condition| {
+    value.starts_with(condition)
+  })
   .await
 }
 
@@ -266,7 +238,6 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   regex_char: String,
-  skip_rows: usize,
   output_path: String,
 ) -> Result<String> {
   let pattern = RegexBuilder::new(&regex_char).build()?;
@@ -276,7 +247,6 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
     sep,
     select_column,
     vec![regex_char],
-    skip_rows,
     output_path,
     move |value, _| pattern.is_match(value.as_bytes()),
   )
@@ -288,11 +258,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
   select_column: String,
   conditions: String,
   mode: &str,
-  skip_rows: usize,
 ) -> Result<String> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
-
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let multi_conditions: Vec<String> = conditions
@@ -309,13 +276,13 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
-      equal_multi_search(path, sep, select_column, conditions, skip_rows).await
+      equal_multi_search(path, sep, select_column, conditions).await
     }
     SearchMode::StartsWithMulti(conditions) => {
-      startswith_multi_search(path, sep, select_column, conditions, skip_rows).await
+      startswith_multi_search(path, sep, select_column, conditions).await
     }
     SearchMode::ContainsMulti(conditions) => {
-      contains_multi_search(path, sep, select_column, conditions, skip_rows).await
+      contains_multi_search(path, sep, select_column, conditions).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions
@@ -328,41 +295,15 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
       match search_mode {
         SearchMode::Equal => {
-          equal_search(
-            path,
-            sep,
-            select_column,
-            vec_conditions,
-            skip_rows,
-            output_path,
-          )
-          .await
+          equal_search(path, sep, select_column, vec_conditions, output_path).await
         }
         SearchMode::Contains => {
-          contains_search(
-            path,
-            sep,
-            select_column,
-            vec_conditions,
-            skip_rows,
-            output_path,
-          )
-          .await
+          contains_search(path, sep, select_column, vec_conditions, output_path).await
         }
         SearchMode::StartsWith => {
-          startswith_search(
-            path,
-            sep,
-            select_column,
-            vec_conditions,
-            skip_rows,
-            output_path,
-          )
-          .await
+          startswith_search(path, sep, select_column, vec_conditions, output_path).await
         }
-        SearchMode::Regex => {
-          regex_search(path, sep, select_column, conditions, skip_rows, output_path).await
-        }
+        SearchMode::Regex => regex_search(path, sep, select_column, conditions, output_path).await,
         _ => Err(anyhow!("Unsupported search mode")),
       }
     }
@@ -375,19 +316,10 @@ pub async fn search(
   select_column: String,
   mode: String,
   condition: String,
-  skip_rows: String,
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
-  match perform_search(
-    path,
-    select_column,
-    condition,
-    mode.as_str(),
-    skip_rows.parse::<usize>().map_err(|e| e.to_string())?,
-  )
-  .await
-  {
+  match perform_search(path, select_column, condition, mode.as_str()).await {
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

@@ -170,26 +170,22 @@ async fn excel_to_csv<P: AsRef<Path>>(
 /// convert csv to xlsx
 async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   path: P,
-  skip_rows: usize,
   use_polars: bool,
   chunk_size: usize,
 ) -> Result<()> {
   let dest = path.as_ref().with_extension("xlsx");
 
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
-
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   if use_polars {
     let row_count = csv_options.count_csv_rows()?;
-    if row_count > 104_8576 {
+    if row_count > 104_8575 {
       return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
     }
 
     let df = CsvReadOptions::default()
       .with_parse_options(CsvParseOptions::default().with_separator(sep))
-      .with_skip_rows(skip_rows)
       .with_infer_schema_length(Some(0))
       .try_into_reader_with_file_path(Some((&path.as_ref()).to_path_buf()))?
       .finish()?;
@@ -209,7 +205,6 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
 #[tauri::command]
 pub async fn switch_csv(
   path: String,
-  skip_rows: String,
   mode: String,
   chunk_size: String,
   window: Window,
@@ -217,7 +212,6 @@ pub async fn switch_csv(
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  let skip_rows = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
   let chunk_size = chunk_size.parse::<usize>().map_err(|e| e.to_string())?;
   let use_polars = mode != "csv";
 
@@ -227,7 +221,7 @@ pub async fn switch_csv(
       .emit("start_convert", filename)
       .map_err(|e| e.to_string())?;
 
-    match csv_to_xlsx(file, skip_rows, use_polars, chunk_size).await {
+    match csv_to_xlsx(file, use_polars, chunk_size).await {
       Ok(_) => {
         window
           .emit("c2x_msg", filename)

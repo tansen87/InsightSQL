@@ -11,7 +11,6 @@ async fn test_replace() -> Result<()> {
   let file_path = temp_dir.path().join("input.csv");
 
   let data = vec![
-    "Tom,18,male",
     "name,age,gender",
     "Jerry,19,male",
     "Patrick,4,male",
@@ -29,7 +28,6 @@ async fn test_replace() -> Result<()> {
     "age".to_string(),
     r"^\d+$".to_string(),
     "XX".to_string(),
-    "1".to_string(),
   )
   .await?;
 

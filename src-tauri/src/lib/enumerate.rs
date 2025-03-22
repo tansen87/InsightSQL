@@ -5,15 +5,13 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-pub async fn add_index<P: AsRef<Path> + Send + Sync>(path: P, skip_rows: String) -> Result<()> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-
+pub async fn add_index<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_name}.enumerate.csv");
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.enumerate.csv");
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -23,7 +21,7 @@ pub async fn add_index<P: AsRef<Path> + Send + Sync>(path: P, skip_rows: String)
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
   let headers = rdr.headers()?;
-  let mut new_headers = vec![String::from("unique_index")];
+  let mut new_headers = vec![String::from("enumerate_idx")];
   new_headers.extend(headers.into_iter().map(String::from));
   wtr.write_record(&new_headers)?;
 
@@ -38,10 +36,10 @@ pub async fn add_index<P: AsRef<Path> + Send + Sync>(path: P, skip_rows: String)
 }
 
 #[tauri::command]
-pub async fn enumer(path: String, skip_rows: String) -> Result<String, String> {
+pub async fn enumer(path: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match add_index(path, skip_rows).await {
+  match add_index(path).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

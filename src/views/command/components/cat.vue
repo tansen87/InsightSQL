@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -21,14 +21,22 @@ const [
   isLoading,
   backendCompleted,
   backendInfo,
-  infoDialog
-] = [ref(""), ref([]), ref([]), ref(false), ref(false), ref(""), ref(false)];
-const data = reactive({
-  filePath: "",
-  mode: "Memory",
-  skipRows: "0",
-  useCols: ""
-});
+  infoDialog,
+  path,
+  mode,
+  skipRows
+] = [
+  ref(""),
+  ref([]),
+  ref([]),
+  ref(false),
+  ref(false),
+  ref(""),
+  ref(false),
+  ref(""),
+  ref("Memory"),
+  ref("0")
+];
 const { dynamicHeight } = useDynamicHeight(166);
 
 listen("dupler_msg", (event: any) => {
@@ -59,7 +67,7 @@ async function selectFile() {
     const trimFile = await trimOpenFile(true, "", ["*"], {
       includeStatus: false
     });
-    data.filePath = trimFile.filePath;
+    path.value = trimFile.filePath;
     selectedFiles.value = trimFile.fileInfo;
     message("fetching headers...", {
       type: "info",
@@ -67,8 +75,8 @@ async function selectFile() {
       icon: Loading
     });
     const headers: string[] = await invoke("inter_headers", {
-      path: data.filePath,
-      skipRows: data.skipRows
+      path: path.value,
+      skipRows: skipRows.value
     });
     originalColumns.value = headers.map(header => ({
       label: header,
@@ -85,20 +93,19 @@ async function selectFile() {
 
 // invoke concat
 async function concatData() {
-  if (data.filePath === "") {
+  if (path.value === "") {
     message("File not selected", { type: "warning" });
     return;
   }
-
-  if (data.mode === "duplicate") {
+  if (mode.value === "duplicate") {
     message("find duplicate headers...", {
       type: "info",
       duration: 0,
       icon: Loading
     });
     await invoke("dupli_headers", {
-      path: data.filePath,
-      skipRows: data.skipRows
+      path: path.value,
+      skipRows: skipRows.value
     });
     backendInfo.value = "find duplicate headers done";
     backendCompleted.value = true;
@@ -124,18 +131,18 @@ async function concatData() {
     isLoading.value = true;
     const saveFileType = outputPath.split(".").pop();
     const useCols = Object.values(columns.value).join("|");
-    const res: string = await invoke("concat", {
-      filePath: data.filePath,
+    const rtime: string = await invoke("concat", {
+      filePath: path.value,
       outputPath: outputPath,
       fileType: saveFileType,
-      mode: data.mode,
-      skipRows: data.skipRows,
+      mode: mode.value,
+      skipRows: skipRows.value,
       useCols: useCols
     });
-    backendInfo.value = `Cat done, elapsed time: ${res} s`;
+    backendInfo.value = `Cat done, elapsed time: ${rtime} s`;
     backendCompleted.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -154,24 +161,16 @@ const { compiledMarkdown } = useMarkdown(catContent);
           content="Polars memory or stream, Csv stream Cat"
           effect="light"
         >
-          <el-select
-            v-model="data.mode"
-            style="margin-left: 10px; width: 100px"
-          >
+          <el-select v-model="mode" style="margin-left: 10px; width: 100px">
             <el-option label="Memory" value="memory" />
             <el-option label="Stream" value="stream" />
             <el-option label="Csv" value="csv" />
             <el-option label="Duplicate" value="duplicate" />
           </el-select>
         </el-tooltip>
-
         <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
+          <el-input v-model="skipRows" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
-
         <el-button
           @click="concatData()"
           :loading="isLoading"
@@ -181,7 +180,6 @@ const { compiledMarkdown } = useMarkdown(catContent);
           Cat
         </el-button>
       </div>
-
       <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="backendCompleted"> {{ backendInfo }} </span>
         <span v-else>
@@ -190,7 +188,6 @@ const { compiledMarkdown } = useMarkdown(catContent);
         </span>
       </el-link>
     </div>
-
     <el-select
       v-model="columns"
       multiple
@@ -205,7 +202,6 @@ const { compiledMarkdown } = useMarkdown(catContent);
         :value="item.value"
       />
     </el-select>
-
     <el-table
       :data="selectedFiles"
       :height="dynamicHeight"
@@ -231,7 +227,6 @@ const { compiledMarkdown } = useMarkdown(catContent);
         </template>
       </el-table-column>
     </el-table>
-
     <el-dialog
       v-model="infoDialog"
       title="Cat - Merge multiple CSV or Excel files into one CSV or xlsx file"

@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 
-const [tableData, isLoading, isPath, search] = [
+const [tableData, isLoading, isPath, search, path] = [
   ref([]),
   ref(false),
   ref(false),
+  ref(""),
   ref("")
 ];
-const data = reactive({
-  path: "",
-  skipRows: "0"
-});
 const { dynamicHeight } = useDynamicHeight(122);
 const filterTableData = computed(() =>
   tableData.value.filter(
@@ -30,15 +27,14 @@ async function selectFile() {
   isPath.value = false;
   search.value = "";
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
     const headers: string[] = await invoke("get_rename_headers", {
-      path: data.path,
-      skipRows: data.skipRows
+      path: path.value
     });
 
     for (let i = 0; i < headers.length; i++) {
@@ -51,13 +47,13 @@ async function selectFile() {
 
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke rename
 async function renameData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -66,14 +62,13 @@ async function renameData() {
     isLoading.value = true;
     const headersStringArray = tableData.value.map((row: any) => row.col2);
     const headersString = headersStringArray.join(",");
-    const result: string = await invoke("rename", {
-      path: data.path,
-      headers: headersString,
-      skipRows: data.skipRows
+    const rtime: string = await invoke("rename", {
+      path: path.value,
+      headers: headersString
     });
-    message(`Rename done, elapsed time: ${result} s`, { type: "success" });
+    message(`Rename done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -90,13 +85,6 @@ async function headerEdit(row: any) {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
-
         <el-button
           @click="renameData()"
           :loading="isLoading"
@@ -106,17 +94,15 @@ async function headerEdit(row: any) {
           Rename
         </el-button>
       </div>
-
       <el-text>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>Rename the columns of a CSV</span>
       </el-text>
     </div>
-
     <el-table
       :data="filterTableData"
       :height="dynamicHeight"

@@ -17,7 +17,9 @@ const [
   tableColumn1,
   tableColumn2,
   tableData1,
-  tableData2
+  tableData2,
+  joinType,
+  nulls
 ] = [
   ref(false),
   ref(false),
@@ -29,13 +31,13 @@ const [
   ref([]),
   ref([]),
   ref([]),
-  ref([])
+  ref([]),
+  ref("left"),
+  ref(false)
 ];
 const data = reactive({
   path1: "",
-  path2: "",
-  joinType: "left",
-  nulls: false
+  path2: ""
 });
 
 const { dynamicHeight } = useDynamicHeight(200);
@@ -83,17 +85,17 @@ async function joinData() {
 
   try {
     isLoading.value = true;
-    const result: string = await invoke("join", {
+    const rtime: string = await invoke("join", {
       path1: data.path1,
       path2: data.path2,
       sel1: sel1.value,
       sel2: sel2.value,
-      joinType: data.joinType,
-      nulls: data.nulls
+      joinType: joinType.value,
+      nulls: nulls.value
     });
-    message(`Join done, elapsed time: ${result} s`, { type: "success" });
+    message(`Join done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -123,12 +125,10 @@ const viewFileName2 = computed(() => {
         <el-button @click="selectFile(1)" :icon="FolderOpened">
           File 1
         </el-button>
-
         <el-button @click="selectFile(2)" :icon="FolderOpened">
           File 2
         </el-button>
       </div>
-
       <el-text>
         <span>Joins two sets of CSV data on the specified columns</span>
       </el-text>
@@ -151,7 +151,6 @@ const viewFileName2 = computed(() => {
             />
           </el-select>
         </el-tooltip>
-
         <el-tooltip content="column of file2" effect="light">
           <el-select
             v-model="sel2"
@@ -167,22 +166,17 @@ const viewFileName2 = computed(() => {
             />
           </el-select>
         </el-tooltip>
-
         <el-tooltip
           content="When set true, joins will work on empty fields"
           effect="light"
         >
-          <el-select v-model="data.nulls" style="width: 100px">
+          <el-select v-model="nulls" style="width: 100px">
             <el-option label="true" :value="true" />
             <el-option label="false" :value="false" />
           </el-select>
         </el-tooltip>
-
         <el-tooltip content="join type" effect="light">
-          <el-select
-            v-model="data.joinType"
-            style="width: 100px; margin-left: 10px"
-          >
+          <el-select v-model="joinType" style="width: 100px; margin-left: 10px">
             <el-option label="left" value="left" />
             <el-option label="right" value="right" />
             <el-option label="full" value="full" />
@@ -191,7 +185,6 @@ const viewFileName2 = computed(() => {
           </el-select>
         </el-tooltip>
       </div>
-
       <el-button
         @click="joinData()"
         :loading="isLoading"
@@ -224,7 +217,6 @@ const viewFileName2 = computed(() => {
           />
         </el-table>
       </div>
-
       <div style="display: flex; flex-direction: column; width: 49%">
         <div style="margin-bottom: 10px">
           <el-text>

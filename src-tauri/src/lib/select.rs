@@ -6,17 +6,13 @@ use std::{
   time::Instant,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
 
-async fn get_header<P: AsRef<Path> + Send + Sync>(
-  path: P,
-  skip_rows: String,
-) -> Result<Vec<HashMap<String, String>>> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+async fn get_header<P: AsRef<Path> + Send + Sync>(path: P) -> Result<Vec<HashMap<String, String>>> {
+  let csv_options = CsvOptions::new(&path);
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(csv_options.detect_separator()?)
@@ -38,21 +34,15 @@ async fn get_header<P: AsRef<Path> + Send + Sync>(
   Ok(hs)
 }
 
-pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
-  path: P,
-  cols: String,
-  skip_rows: String,
-) -> Result<()> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-
+pub async fn select_columns<P: AsRef<Path> + Send + Sync>(path: P, cols: String) -> Result<()> {
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let cols_select: Vec<&str> = cols.split('|').collect();
 
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_name}.select.csv");
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.select.csv");
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -99,21 +89,18 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
 }
 
 #[tauri::command]
-pub async fn get_select_headers(
-  path: String,
-  skip_rows: String,
-) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(path, skip_rows).await {
+pub async fn get_select_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
+  match get_header(path).await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("{err}")),
   }
 }
 
 #[tauri::command]
-pub async fn select(path: String, cols: String, skip_rows: String) -> Result<String, String> {
+pub async fn select(path: String, cols: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match select_columns(path, cols, skip_rows).await {
+  match select_columns(path, cols).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

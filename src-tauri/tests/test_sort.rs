@@ -7,8 +7,6 @@ use lib::sort;
 #[tokio::test]
 async fn test_sort() -> Result<()> {
   let data = vec![
-    "2,3,AE",
-    "4,4,AB",
     "index,age,name",
     "1,18,AC",
     "3,19,AD",
@@ -60,7 +58,6 @@ async fn test_sort() -> Result<()> {
   for (numeric, reverse, select_column, expected) in test_cases {
     sort::sort_csv(
       &path,
-      "2".to_string(),
       select_column.to_string(),
       numeric,
       reverse,

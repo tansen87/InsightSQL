@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from "vue";
+import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cherry, FolderOpened } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
@@ -14,13 +14,19 @@ const [
   checkAll,
   indeterminate,
   tableColumn,
-  tableData
-] = [ref([]), ref(false), ref(false), ref(false), ref(false), ref([]), ref([])];
+  tableData,
+  path
+] = [
+  ref([]),
+  ref(false),
+  ref(false),
+  ref(false),
+  ref(false),
+  ref([]),
+  ref([]),
+  ref("")
+];
 const selColumns = ref<CheckboxValueType[]>([]);
-const data = reactive({
-  path: "",
-  skipRows: "0"
-});
 
 watch(selColumns, val => {
   if (val.length === 0) {
@@ -50,26 +56,25 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    originalColumns.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
-
+    originalColumns.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke select
 async function selectColumns() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -80,17 +85,14 @@ async function selectColumns() {
 
   try {
     isLoading.value = true;
-
     const useCols = Object.values(selColumns.value).join("|");
-    const result: string = await invoke("select", {
-      path: data.path,
-      cols: useCols,
-      skipRows: data.skipRows
+    const rtime: string = await invoke("select", {
+      path: path.value,
+      cols: useCols
     });
-
-    message(`Select done, elapsed time: ${result} s`, { type: "success" });
+    message(`Select done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -103,12 +105,6 @@ async function selectColumns() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
-        </el-tooltip>
         <el-button
           @click="selectColumns()"
           :loading="isLoading"
@@ -120,14 +116,13 @@ async function selectColumns() {
       </div>
       <el-text>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>Select, re-order columns</span>
       </el-text>
     </div>
-
     <el-select
       v-model="selColumns"
       multiple
@@ -151,13 +146,13 @@ async function selectColumns() {
         :value="item.value"
       />
     </el-select>
-
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"

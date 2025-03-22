@@ -26,7 +26,7 @@ async fn test_select() -> Result<()> {
 
   let cols = "name|age".to_string();
 
-  select::select_columns(file_path.to_str().unwrap(), cols, "0".to_string()).await?;
+  select::select_columns(file_path.to_str().unwrap(), cols).await?;
 
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)

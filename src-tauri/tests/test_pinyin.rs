@@ -13,7 +13,6 @@ async fn test_pinyin() -> Result<()> {
   let file_path = temp_dir.path().join("data.csv");
 
   let data = vec![
-    "Patrick,4,male",
     "name,age,gender",
     "汤姆,18,男",
     "杰瑞,19,male",
@@ -28,7 +27,6 @@ async fn test_pinyin() -> Result<()> {
   pinyin::chinese_to_pinyin(
     file_path.to_str().unwrap(),
     "name|gender".to_string(),
-    "1".to_string(),
   )
   .await?;
 

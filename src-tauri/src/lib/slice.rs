@@ -5,7 +5,7 @@ use std::{
   time::Instant,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
 
 use crate::utils::{CsvOptions, Selection};
@@ -206,7 +206,6 @@ pub async fn slice_column_with_nmax(
 
 pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   path: P,
-  skip_rows: usize,
   select_column: &str,
   n: usize,
   m: usize,
@@ -219,14 +218,12 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
     return Err(anyhow!("stop must be greater than or equal to start"));
   }
 
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
-
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_name}.slice.csv");
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.slice.csv");
 
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -254,7 +251,6 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
 #[tauri::command]
 pub async fn slice(
   path: String,
-  skip_rows: String,
   select_column: String,
   n: String,
   m: String,
@@ -267,7 +263,6 @@ pub async fn slice(
 
   match perform_slice(
     path,
-    skip_rows.parse::<usize>().map_err(|e| e.to_string())?,
     select_column.as_str(),
     n.parse::<usize>().map_err(|e| e.to_string())?,
     m.parse::<usize>().map_err(|e| e.to_string())?,

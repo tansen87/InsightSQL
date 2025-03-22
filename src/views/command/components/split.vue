@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
@@ -7,18 +7,25 @@ import { viewOpenFile, viewSqlp } from "@/utils/view";
 import { splitContent, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 
-const [isLoading, isPath, tableColumn, tableData, infoDialog] = [
+const [
+  isLoading,
+  isPath,
+  tableColumn,
+  tableData,
+  infoDialog,
+  path,
+  size,
+  mode
+] = [
   ref(false),
   ref(false),
   ref([]),
   ref([]),
-  ref(false)
+  ref(false),
+  ref(""),
+  ref(1000000),
+  ref("Rows")
 ];
-const data = reactive({
-  path: "",
-  size: 1000000,
-  mode: "Rows"
-});
 const { dynamicHeight } = useDynamicHeight(176);
 
 async function selectFile() {
@@ -26,39 +33,38 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    const { columnView, dataView } = await viewSqlp(data.path, "0");
-
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke split
 async function splitData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
 
   try {
     isLoading.value = true;
-    const result: string = await invoke("split", {
-      path: data.path,
-      size: data.size,
-      mode: data.mode
+    const rtime: string = await invoke("split", {
+      path: path.value,
+      size: size.value,
+      mode: mode.value
     });
-    message(`Split done, elapsed time: ${result} s`, { type: "success" });
+    message(`Split done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -75,32 +81,30 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         </el-button>
       </div>
       <el-link @click="infoDialog = true" :icon="Link">
-        <span v-if="isPath">{{ data.path }}</span>
+        <span v-if="isPath">{{ path }}</span>
         <span v-else>
           About
           <span style="color: skyblue; font-weight: bold">Split</span>
         </span>
       </el-link>
     </div>
-
     <div class="custom-container1">
       <div class="custom-container2" style="margin-top: 10px">
         <el-tooltip content="Split rows" effect="light">
           <el-input-number
-            v-model="data.size"
+            v-model="size"
             controls-position="right"
             style="width: 172px"
           />
         </el-tooltip>
         <el-tooltip content="Split mode" effect="light">
-          <el-select v-model="data.mode" style="margin-left: 10px; width: 80px">
+          <el-select v-model="mode" style="margin-left: 10px; width: 80px">
             <el-option label="Rows" value="rows" />
             <el-option label="Lines" value="lines" />
             <el-option label="Index" value="index" />
           </el-select>
         </el-tooltip>
       </div>
-
       <el-button
         style="margin-top: 10px"
         @click="splitData()"
@@ -110,13 +114,13 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         Split
       </el-button>
     </div>
-
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
@@ -14,16 +14,26 @@ const [
   tableHeader,
   tableColumn,
   tableData,
-  infoDialog
-] = [ref(false), ref(false), ref(""), ref([]), ref([]), ref([]), ref(false)];
-const data = reactive({
-  path: "",
-  skipRows: "0",
-  n: "4",
-  m: "5",
-  sliceSep: "-",
-  mode: "left"
-});
+  infoDialog,
+  path,
+  n,
+  m,
+  sliceSep,
+  mode
+] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref(false),
+  ref(""),
+  ref("4"),
+  ref("5"),
+  ref("-"),
+  ref("left")
+];
 const { dynamicHeight } = useDynamicHeight(178);
 
 async function selectFile() {
@@ -33,25 +43,25 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    tableHeader.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke slice
 async function sliceData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -62,18 +72,17 @@ async function sliceData() {
 
   try {
     isLoading.value = true;
-    const result: string = await invoke("slice", {
-      path: data.path,
-      skipRows: data.skipRows,
+    const rtime: string = await invoke("slice", {
+      path: path.value,
       selectColumn: selectColumn.value,
-      n: data.n,
-      m: data.m,
-      sliceSep: data.sliceSep,
-      mode: data.mode
+      n: n.value,
+      m: m.value,
+      sliceSep: sliceSep.value,
+      mode: mode.value
     });
-    message(`Slice done, elapsed time: ${result} s`, { type: "success" });
+    message(`Slice done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -88,18 +97,11 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 78px"
-          />
-        </el-tooltip>
       </div>
-
       <el-link @click="infoDialog = true" :icon="Link">
         <span v-if="isPath">
-          <el-tooltip :content="data.path" placement="top" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" placement="top" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>
@@ -125,19 +127,16 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
           />
         </el-select>
         <el-tooltip content="Numer of slice/start" effect="light">
-          <el-input v-model="data.n" style="margin-left: 10px; width: 50px" />
+          <el-input v-model="n" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
         <el-tooltip content="Numer of stop" effect="light">
-          <el-input v-model="data.m" style="margin-left: 10px; width: 50px" />
+          <el-input v-model="m" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
         <el-tooltip content="Slice separator" effect="light">
-          <el-input
-            v-model="data.sliceSep"
-            style="margin-left: 10px; width: 50px"
-          />
+          <el-input v-model="sliceSep" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
         <el-tooltip content="Slice mode" effect="light">
-          <el-select v-model="data.mode" style="margin-left: 10px; width: 84px">
+          <el-select v-model="mode" style="margin-left: 10px; width: 84px">
             <el-option label="Left" value="left" />
             <el-option label="Right" value="right" />
             <el-option label="StartStop" value="ss" />
@@ -146,7 +145,6 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
           </el-select>
         </el-tooltip>
       </div>
-
       <el-button
         @click="sliceData()"
         :loading="isLoading"
@@ -163,6 +161,7 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"

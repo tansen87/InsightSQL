@@ -1,24 +1,32 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Refresh, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [isLoading, isPath, columns, tableHeader, tableColumn, tableData] = [
+const [
+  isLoading,
+  isPath,
+  columns,
+  tableHeader,
+  tableColumn,
+  tableData,
+  path,
+  fillValue,
+  mode
+] = [
   ref(false),
   ref(false),
   ref(""),
   ref([]),
   ref([]),
-  ref([])
+  ref([]),
+  ref(""),
+  ref("0"),
+  ref("fill")
 ];
-const data = reactive({
-  path: "",
-  value: "0",
-  mode: "fill"
-});
 const { dynamicHeight } = useDynamicHeight(222);
 
 async function selectFile() {
@@ -28,25 +36,25 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, "0");
-    const { columnView, dataView } = await viewSqlp(data.path, "0");
+    tableHeader.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke fill
 async function fillData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("File not selected", { type: "warning" });
     return;
   }
@@ -58,15 +66,15 @@ async function fillData() {
   try {
     isLoading.value = true;
     const cols = Object.values(columns.value).join("|");
-    const result: string = await invoke("fill", {
-      path: data.path,
+    const rtime: string = await invoke("fill", {
+      path: path.value,
       columns: cols,
-      values: data.value,
-      mode: data.mode
+      values: fillValue.value,
+      mode: mode.value
     });
-    message(`Fill done, elapsed time: ${result} s`, { type: "success" });
+    message(`Fill done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -80,17 +88,15 @@ async function fillData() {
           Open File
         </el-button>
       </div>
-
       <el-text>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>Fill empty fields in selected columns of a CSV</span>
       </el-text>
     </div>
-
     <el-select
       v-model="columns"
       multiple
@@ -105,14 +111,13 @@ async function fillData() {
         :value="item.value"
       />
     </el-select>
-
     <div class="custom-container1">
       <div clas="custom-container2" style="margin-top: 12px">
         <el-tooltip content="The value of fill" effect="light">
-          <el-input v-model="data.value" style="width: 120px" clearable />
+          <el-input v-model="fillValue" style="width: 120px" clearable />
         </el-tooltip>
         <el-tooltip content="fill mode" effect="light">
-          <el-select v-model="data.mode" style="width: 80px; margin-left: 10px">
+          <el-select v-model="mode" style="width: 80px; margin-left: 10px">
             <el-option label="fill" value="fill" />
             <el-option label="f-fill" value="ffill" />
           </el-select>
@@ -127,7 +132,6 @@ async function fillData() {
         Fill
       </el-button>
     </div>
-
     <el-table
       :data="tableData"
       :height="dynamicHeight"

@@ -3,26 +3,27 @@ use std::str::from_utf8;
 use std::{cmp, time::Instant};
 
 use anyhow::Result;
+use csv::{ReaderBuilder, WriterBuilder};
 
 use self::Number::{Float, Int};
 use crate::utils::{CsvOptions, Selection};
 
 pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
-  skip_rows: String,
   select_column: String,
   numeric: bool,
   reverse: bool,
 ) -> Result<()> {
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+  let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
-  let mut rdr = csv::ReaderBuilder::new()
+
+  let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
 
   let headers = rdr.byte_headers()?.clone();
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
+
+  let sel = Selection::from_headers(&headers, &[select_column.as_str()][..])?;
 
   let mut all = rdr.byte_records().collect::<Result<Vec<_>, _>>()?;
   match (numeric, reverse) {
@@ -54,17 +55,11 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
     }),
   }
 
-  let parent_path = &path
-    .as_ref()
-    .parent()
-    .map(|path| path.to_string_lossy())
-    .unwrap();
-  let file_name = &path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{}/{}.sort.csv", parent_path, file_name);
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.sort.csv");
 
-  let mut wtr = csv::WriterBuilder::new()
-    .delimiter(sep)
-    .from_path(output_path)?;
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   wtr.write_record(&headers)?;
 
@@ -153,14 +148,13 @@ where
 #[tauri::command]
 pub async fn sort(
   path: String,
-  skip_rows: String,
   select_column: String,
   numeric: bool,
   reverse: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match sort_csv(path, skip_rows, select_column, numeric, reverse).await {
+  match sort_csv(path, select_column, numeric, reverse).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

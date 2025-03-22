@@ -1,25 +1,32 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [isLoading, isPath, selectColumn, tableHeader, tableColumn, tableData] = [
+const [
+  isLoading,
+  isPath,
+  selectColumn,
+  tableHeader,
+  tableColumn,
+  tableData,
+  path,
+  numeric,
+  reverse
+] = [
   ref(false),
   ref(false),
   ref(""),
   ref([]),
   ref([]),
-  ref([])
+  ref([]),
+  ref(""),
+  ref(false),
+  ref(false)
 ];
-const data = reactive({
-  path: "",
-  skipRows: "0",
-  numeric: false,
-  reverse: false
-});
 const { dynamicHeight } = useDynamicHeight(178);
 
 async function selectFile() {
@@ -29,25 +36,25 @@ async function selectFile() {
   tableColumn.value = [];
   tableData.value = [];
 
-  data.path = await viewOpenFile(false, "csv", ["*"]);
-  if (data.path === null) {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
     return;
   }
 
   try {
-    tableHeader.value = await mapHeaders(data.path, data.skipRows);
-    const { columnView, dataView } = await viewSqlp(data.path, data.skipRows);
+    tableHeader.value = await mapHeaders(path.value, "0");
+    const { columnView, dataView } = await viewSqlp(path.value, "0");
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
 }
 
 // invoke sort
 async function sortData() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -58,16 +65,15 @@ async function sortData() {
 
   try {
     isLoading.value = true;
-    const result: string = await invoke("sort", {
-      path: data.path,
-      skipRows: data.skipRows,
+    const rtime: string = await invoke("sort", {
+      path: path.value,
       selectColumn: selectColumn.value,
-      numeric: data.numeric,
-      reverse: data.reverse
+      numeric: numeric.value,
+      reverse: reverse.value
     });
-    message(`Sort done, elapsed time: ${result} s`, { type: "success" });
+    message(`Sort done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error" });
   }
   isLoading.value = false;
 }
@@ -80,24 +86,16 @@ async function sortData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" placement="top" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 78px"
-          />
-        </el-tooltip>
       </div>
-
       <el-text>
         <span v-if="isPath">
-          <el-tooltip :content="data.path" placement="top" effect="light">
-            <span>{{ shortFileName(data.path) }}</span>
+          <el-tooltip :content="path" placement="top" effect="light">
+            <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
         <span v-else>Sorts CSV data lexicographically</span>
       </el-text>
     </div>
-
     <div class="custom-container1">
       <div class="custom-container1" style="margin-top: 12px">
         <el-select
@@ -113,28 +111,19 @@ async function sortData() {
             :value="item.value"
           />
         </el-select>
-
         <el-tooltip content="Numeric" placement="top" effect="light">
-          <el-select
-            v-model="data.numeric"
-            style="margin-left: 10px; width: 80px"
-          >
+          <el-select v-model="numeric" style="margin-left: 10px; width: 80px">
             <el-option label="true" :value="true" />
             <el-option label="false" :value="false" />
           </el-select>
         </el-tooltip>
-
         <el-tooltip content="Reverse" placement="top" effect="light">
-          <el-select
-            v-model="data.reverse"
-            style="margin-left: 10px; width: 80px"
-          >
+          <el-select v-model="reverse" style="margin-left: 10px; width: 80px">
             <el-option label="true" :value="true" />
             <el-option label="false" :value="false" />
           </el-select>
         </el-tooltip>
       </div>
-
       <el-button
         @click="sortData()"
         :loading="isLoading"
@@ -144,13 +133,13 @@ async function sortData() {
         Sort
       </el-button>
     </div>
-
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
       style="margin-top: 12px; width: 100%"
+      show-overflow-tooltip
     >
       <el-table-column
         v-for="column in tableColumn"
