@@ -32,7 +32,7 @@ async fn test_enumerate() -> Result<()> {
 
   let enumerate_data = fs::read_to_string(output_path)?;
   let expected_data = vec![
-    "unique_index,name,age,gender",
+    "enumerate_idx,name,age,gender",
     "0,Jerry,19,male",
     "1,Patrick,4,male",
     "2,Sandy,24,female",

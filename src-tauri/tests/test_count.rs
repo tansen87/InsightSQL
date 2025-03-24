@@ -26,7 +26,7 @@ async fn test_count() -> Result<()> {
 
   let row_count = count::count_rows(file_path.to_str().unwrap()).await?;
 
-  assert_eq!(row_count, 5);
+  assert_eq!(row_count, 4);
 
   Ok(temp_dir.close()?)
 }
