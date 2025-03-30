@@ -1269,11 +1269,13 @@ checksum = "5c297a1c74b71ae29df00c3e22dd9534821d60eb9af5a0192823fa2acea70c2a"
 
 [[package]]
 name = "dbase"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "847c0b5d4f3a3d80f9c64db3cb60eb00304b3ea1262c7299dd6274a83e714d24"
+checksum = "fbad7f18af09b304e8eb37cede7327d13d7bf6f787e11eef2dc093e26ac30c23"
 dependencies = [
  "byteorder",
+ "codepage",
+ "encoding_rs",
  "time 0.3.40",
 ]
 
