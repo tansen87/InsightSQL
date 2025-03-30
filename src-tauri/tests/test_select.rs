@@ -3,7 +3,7 @@ use std::fs::{self};
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::select;
+use lib::command::select;
 
 #[tokio::test]
 async fn test_select() -> Result<()> {

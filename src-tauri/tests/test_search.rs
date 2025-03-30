@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::search;
+use lib::command::search;
 
 fn create_temp_csv() -> Result<(TempDir, String)> {
   let data = vec![

@@ -3,7 +3,7 @@ use std::fs;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::replace;
+use lib::command::replace;
 
 #[tokio::test]
 async fn test_replace() -> Result<()> {

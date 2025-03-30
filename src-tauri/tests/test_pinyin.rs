@@ -5,7 +5,7 @@ use anyhow::Result;
 use csv::ReaderBuilder;
 use tempfile::TempDir;
 
-use lib::pinyin;
+use lib::command::pinyin;
 
 #[tokio::test]
 async fn test_pinyin() -> Result<()> {

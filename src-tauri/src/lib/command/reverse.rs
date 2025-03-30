@@ -29,7 +29,9 @@ pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
     while idx_file.seek(pos).is_ok() {
       idx_file.read_byte_record(&mut record)?;
       wtr.write_byte_record(&record)?;
-      if pos == 0 { break; }
+      if pos == 0 {
+        break;
+      }
       pos -= 1;
     }
   } else {
@@ -61,7 +63,7 @@ pub async fn reverse(path: String, mode: String) -> Result<String, String> {
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match crate::idx::create_index(path).await {
+    _ => match crate::command::idx::create_index(path).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

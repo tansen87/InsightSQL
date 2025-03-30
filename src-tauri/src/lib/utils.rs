@@ -194,8 +194,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
       .iter()
       .map(|header| {
         let mut map = HashMap::new();
-        map.insert("value".to_string(), header.to_string());
         map.insert("label".to_string(), header.to_string());
+        map.insert("value".to_string(), header.to_string());
         map
       })
       .collect();

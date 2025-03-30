@@ -1,14 +1,14 @@
 use std::{fs::File, num::NonZeroUsize, path::Path, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use indexmap::IndexSet;
 use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    cols, CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter,
-    UnionArgs,
+    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter, UnionArgs,
+    cols,
   },
 };
 

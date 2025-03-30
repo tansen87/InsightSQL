@@ -60,7 +60,7 @@ pub async fn count(path: String, mode: String, window: Window) -> Result<String,
       .map_err(|e| e.to_string())?;
     let inner_time = Instant::now();
     match mode.as_str() {
-      "index" => match crate::idx::create_index(file).await {
+      "index" => match crate::command::idx::create_index(file).await {
         Ok(_) => {
           let end_time = Instant::now();
           let elapsed_time = end_time.duration_since(inner_time).as_secs_f64();

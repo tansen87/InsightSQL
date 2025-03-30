@@ -11,7 +11,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   index::Indexed,
-  utils::{num_of_chunks, CsvOptions},
+  utils::{CsvOptions, num_of_chunks},
 };
 
 fn new_writer(
@@ -178,7 +178,7 @@ pub async fn split(path: String, size: u32, mode: String) -> Result<String, Stri
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    "index" => match crate::idx::create_index(path).await {
+    "index" => match crate::command::idx::create_index(path).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

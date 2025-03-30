@@ -3,30 +3,31 @@
   windows_subsystem = "windows"
 )]
 
-#[cfg(target_os = "windows")]
-use lib::access;
-use lib::apply;
-use lib::cat;
 use lib::cmd;
-use lib::convert;
-use lib::count;
-use lib::dbf;
-use lib::enumerate;
-use lib::fill;
-use lib::join;
-use lib::offset;
-use lib::pinyin;
-use lib::rename;
-use lib::replace;
-use lib::reverse;
-use lib::search;
-use lib::select;
-use lib::skip;
-use lib::slice;
-use lib::sort;
-use lib::split;
-use lib::sqlp;
-use lib::traverse;
+
+#[cfg(target_os = "windows")]
+use lib::command::access;
+use lib::command::apply;
+use lib::command::cat;
+use lib::command::convert;
+use lib::command::count;
+use lib::command::dbf;
+use lib::command::enumerate;
+use lib::command::fill;
+use lib::command::join;
+use lib::command::offset;
+use lib::command::pinyin;
+use lib::command::rename;
+use lib::command::replace;
+use lib::command::reverse;
+use lib::command::search;
+use lib::command::select;
+use lib::command::skip;
+use lib::command::slice;
+use lib::command::sort;
+use lib::command::split;
+use lib::command::sqlp;
+use lib::command::traverse;
 
 fn main() {
   tauri::Builder::default()
@@ -40,14 +41,15 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
+      cmd::map_headers,
+      cmd::inter_headers,
+      cmd::dupli_headers,
+
       #[cfg(target_os = "windows")]
       access::access,
       apply::apply,
       skip::skip,
       cat::concat,
-      cmd::map_headers,
-      cmd::inter_headers,
-      cmd::dupli_headers,
       convert::switch_excel,
       convert::map_excel_sheets,
       convert::switch_csv,

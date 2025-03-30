@@ -6,7 +6,8 @@ use std::{
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::{split, utils::CsvOptions};
+use lib::command::split;
+use lib::utils::CsvOptions;
 
 #[tokio::test]
 async fn test_split_rows() -> Result<()> {

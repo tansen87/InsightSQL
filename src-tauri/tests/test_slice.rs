@@ -7,7 +7,8 @@ use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 use tempfile::TempDir;
 
-use lib::{slice, utils::CsvOptions};
+use lib::command::slice;
+use lib::utils::CsvOptions;
 
 #[tokio::test]
 async fn test_slice_column_left_mode() -> Result<()> {
