@@ -7,8 +7,8 @@ use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter, UnionArgs,
-    cols,
+    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter,
+    SerializeOptions, UnionArgs, cols,
   },
 };
 
@@ -64,7 +64,7 @@ async fn cat_with_polars(
 
     let lf = match file_extension.as_str() {
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
-        let df: DataFrame = ExcelReader::new(file)
+        let df: DataFrame = ExcelReader::from_path(file)?
           .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
           .to_df()?;
 
@@ -131,7 +131,7 @@ async fn cat_with_polars(
         include_header: true,
         batch_size: NonZeroUsize::new(1024).unwrap(),
         maintain_order: false,
-        serialize_options: polars::prelude::SerializeOptions {
+        serialize_options: SerializeOptions {
           date_format: None,
           time_format: None,
           datetime_format: None,

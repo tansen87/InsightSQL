@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File, io::BufReader, path::Path};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use calamine::{Data, HeaderRow, Range, Reader};
 use polars::{frame::DataFrame, prelude::Column};
 
@@ -75,16 +75,9 @@ impl ToPolarsDataFrame for Range<Data> {
 
 impl ExcelReader {
   /// Opens a workbook and define the file type at runtime.
-  pub fn open_workbook_auto<P: AsRef<Path>>(path: P) -> calamine::Sheets<BufReader<File>> {
-    let workbook = calamine::open_workbook_auto(path).expect("Could not open workbook");
-
-    workbook
-  }
-
-  pub fn new<P: AsRef<Path>>(path: P) -> Self {
-    Self {
-      workbook: ExcelReader::open_workbook_auto(path),
-    }
+  pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+    let workbook = calamine::open_workbook_auto(path)?;
+    Ok(ExcelReader { workbook })
   }
 
   /// Get the nth worksheet. Shortcut for getting the nth
@@ -131,9 +124,11 @@ pub fn n_rows(path: &str, n: usize) -> Result<Vec<String>> {
     Some(sheet) => *sheet,
     None => "Sheet1",
   };
-  let sheet = worksheets
-    .get(first_sheet_name)
-    .expect("worksheet is empty");
+  let sheet = if let Some(s) = worksheets.get(first_sheet_name) {
+    s
+  } else {
+    return Err(anyhow!("worksheet is empty"));
+  };
   let nrows: Vec<String> = sheet
     .rows(&mut workbook)
     .take(n)

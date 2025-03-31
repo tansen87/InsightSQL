@@ -5,7 +5,7 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -141,7 +141,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
             n_rows.get(self.skip_rows)?.to_string()
           } else {
             // use `calamine` to get the headers
-            let columns: Vec<String> = excel_reader::ExcelReader::new(f)
+            let columns: Vec<String> = excel_reader::ExcelReader::from_path(f)
+              .ok()?
               .get_column_names(0, self.skip_rows as u32)
               .ok()?;
 

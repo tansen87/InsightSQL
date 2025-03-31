@@ -8,7 +8,7 @@ use std::{
   time::Instant,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use polars::{
   error::PolarsError,
   prelude::{
@@ -216,8 +216,7 @@ async fn prepare_query(
     let lf = match file_extension.as_str() {
       "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
-        let mut excel_reader: ExcelReader = ExcelReader::new(table);
-        let df: DataFrame = excel_reader
+        let df: DataFrame = ExcelReader::from_path(table)?
           .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
           .to_df()?;
         df.lazy()

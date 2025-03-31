@@ -1,13 +1,13 @@
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use calamine::Reader;
 use polars::{
   frame::DataFrame,
   io::SerWriter,
   prelude::{
-    col, concat_lf_diagonal, concat_str, lit, when, CsvWriter, DataType, IntoLazy, JoinArgs,
-    JoinType, LazyCsvReader, LazyFileListReader, LazyFrame, SortMultipleOptions, UnionArgs,
+    CsvWriter, DataType, IntoLazy, JoinArgs, JoinType, LazyCsvReader, LazyFileListReader,
+    LazyFrame, SortMultipleOptions, UnionArgs, col, concat_lf_diagonal, concat_str, lit, when,
   },
 };
 
@@ -103,8 +103,9 @@ async fn offset_no_condition(file_path: &str, amount: String) -> Result<()> {
 
   let lf = match file_extension.as_str() {
     "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
-      let mut excel_reader = ExcelReader::new(file_path);
-      let df: DataFrame = excel_reader.worksheet_range_at(0, 0)?.to_df()?;
+      let df: DataFrame = ExcelReader::from_path(file_path)?
+        .worksheet_range_at(0, 0)?
+        .to_df()?;
       df.lazy()
     }
     _ => {
@@ -361,8 +362,9 @@ async fn offset_condition(file_path: &str, amount: String, cond: String) -> Resu
   let lf = match file_extension.as_str() {
     "parquet" => LazyFrame::scan_parquet(file_path, Default::default())?,
     "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
-      let mut excel_reader = ExcelReader::new(file_path);
-      let df: DataFrame = excel_reader.worksheet_range_at(0, 0)?.to_df()?;
+      let df: DataFrame = ExcelReader::from_path(file_path)?
+        .worksheet_range_at(0, 0)?
+        .to_df()?;
       df.lazy()
     }
     _ => {
@@ -627,7 +629,7 @@ pub async fn offset(
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
         Ok(format!("{elapsed_time:.2}"))
       }
-      Err(err) => Err(format!("offset failed: {err}")),
+      Err(err) => Err(format!("{err}")),
     }
   } else {
     match offset_no_condition(file_path.as_str(), amount).await {
@@ -636,7 +638,7 @@ pub async fn offset(
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
         Ok(format!("{elapsed_time:.2}"))
       }
-      Err(err) => Err(format!("offset failed: {err}")),
+      Err(err) => Err(format!("{err}")),
     }
   }
 }
