@@ -69,7 +69,8 @@ tauri-plugin-notification = "2.2.2"
 tauri-plugin-clipboard-manager = "2.2.2"
 tauri-plugin-http = "2.4.2"
 tauri-plugin-os = "2.2.1"
-xl = "0.1.7"
+
+xl = { git = "https://github.com/tansen87/xl.git", branch = "main" }
 
 [features]
 # by default Tauri runs in production mode

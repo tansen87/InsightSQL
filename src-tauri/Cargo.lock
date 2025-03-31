@@ -8098,9 +8098,8 @@ checksum = "b9cc00251562a284751c9973bace760d86c0276c471b4be569fe6b068ee97a56"
 
 [[package]]
 name = "xl"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d23713ba7ff4a326e71e174226e68b0520405066c6e9017e831385137f4a26c"
+version = "0.1.8"
+source = "git+https://github.com/tansen87/xl.git?branch=main#468630afd558d15ff84abed8650efa7270f8e572"
 dependencies = [
  "chrono",
  "quick-xml 0.22.0",
