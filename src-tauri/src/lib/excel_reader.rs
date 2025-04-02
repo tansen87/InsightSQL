@@ -16,23 +16,22 @@ impl ToPolarsDataFrame for Range<Data> {
   fn to_df(&mut self) -> Result<DataFrame> {
     // iterating headers or duplicate headers
     let mut header_counts = HashMap::<String, usize>::new();
-    let headers: Vec<String> = match self.rows().next() {
-      Some(first_row) => first_row
-        .iter()
-        .map(|cell| {
-          let cell_str = cell.to_string();
-          let count = header_counts.entry(cell_str.clone()).or_insert(0);
-          let current_count = *count;
-          *count += 1;
-          if current_count > 0 {
-            format!("{}_duplicated_{}", cell_str, current_count - 1)
-          } else {
-            cell_str
-          }
-        })
-        .collect(),
-      None => return Err(anyhow!("No data")),
-    };
+    let headers: Vec<String> = self
+      .rows()
+      .next()
+      .ok_or(anyhow!("No data"))?
+      .iter()
+      .map(|cell| {
+        let count = header_counts.entry(cell.to_string()).or_insert(0);
+        let name = if *count > 0 {
+          format!("{}_duplicated_{}", cell, count)
+        } else {
+          cell.to_string()
+        };
+        *count += 1;
+        name
+      })
+      .collect();
 
     let mut columns = vec![Vec::new(); headers.len()];
 

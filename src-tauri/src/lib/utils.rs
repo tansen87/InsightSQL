@@ -158,7 +158,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
           // use `csv` to get the headers
           let mut csv_options = CsvOptions::new(f);
           csv_options.set_skip_rows(self.skip_rows);
-          let mut rdr = csv::ReaderBuilder::new()
+          let mut rdr = ReaderBuilder::new()
             .delimiter(csv_options.detect_separator().ok()?)
             .has_headers(false)
             .from_reader(csv_options.skip_csv_rows().ok()?);
