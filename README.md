@@ -4,7 +4,7 @@ English | [中文](./README_CN.md)
 
 > Rust Data Processing Toolbox, base on Tauri.
 
-### screenshot
+### ScreenShot
 
 * command
  ![cmd.png](/demo/cmd.png)
@@ -55,14 +55,14 @@ English | [中文](./README_CN.md)
 
 ### 🍖How to use?
 
-* Download [InsightSQL.7z](https://github.com/tansen87/sqlp/releases/), extract and run InsightSQL.exe
+* For more details, please refer to [release](https://github.com/tansen87/sqlp/releases/)
 
 
 ### 🏃‍Runtime Environment
 
 * Node.js 18+
 * pnpm 9.9.0+
-* 🦀Rust 1.82.0+
+* 🦀Rust 1.85.0+
 
 ## 🚀Development
 
@@ -98,7 +98,7 @@ English | [中文](./README_CN.md)
 
 ### video
 
-* [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c)
+* [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c) (The video hasn't been updated for a long time)
 
 ### See also
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)
