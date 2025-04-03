@@ -27,7 +27,7 @@ const [
   ref(""),
   ref(false),
   ref(false),
-  ref("sort")
+  ref("Sort")
 ];
 const { dynamicHeight } = useDynamicHeight(178);
 
@@ -68,25 +68,27 @@ async function sortData() {
   try {
     isLoading.value = true;
     let rtime: string;
-    if (mode.value == "sort") {
+    if (mode.value == "Sort") {
       rtime = await invoke("sort", {
         path: path.value,
         selectColumn: selectColumn.value,
         numeric: numeric.value,
         reverse: reverse.value
       });
-    } else if (mode.value == "extsort") {
+    } else if (mode.value == "ExtSort") {
       rtime = await invoke("extsort", {
         path: path.value,
         selectColumn: selectColumn.value,
         reverse: reverse.value
       });
-    } else if (mode.value == "index") {
+    } else if (mode.value == "Index") {
       rtime = await invoke("idx", {
         path: path.value
       });
     }
-    message(`Sort done, elapsed time: ${rtime} s`, { type: "success" });
+    message(`${mode.value} done, elapsed time: ${rtime} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -128,9 +130,9 @@ async function sortData() {
         </el-select>
         <el-tooltip content="Sort, ExtSort or create index" effect="light">
           <el-select v-model="mode" style="margin-left: 10px; width: 90px">
-            <el-option label="Sort" value="sort" />
-            <el-option label="ExtSort" value="extsort" />
-            <el-option label="Index" value="index" />
+            <el-option label="Sort" value="Sort" />
+            <el-option label="ExtSort" value="ExtSort" />
+            <el-option label="Index" value="Index" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="Numeric" effect="light">
@@ -155,7 +157,7 @@ async function sortData() {
         :icon="Refresh"
         style="margin-top: 10px"
       >
-        Sort
+        {{ mode }}
       </el-button>
     </div>
     <el-table
