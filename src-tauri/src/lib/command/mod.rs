@@ -6,6 +6,7 @@ pub mod convert;
 pub mod count;
 pub mod dbf;
 pub mod enumerate;
+pub mod extsort;
 pub mod fill;
 pub mod idx;
 pub mod join;

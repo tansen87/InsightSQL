@@ -13,7 +13,9 @@ use lib::command::convert;
 use lib::command::count;
 use lib::command::dbf;
 use lib::command::enumerate;
+use lib::command::extsort;
 use lib::command::fill;
+use lib::command::idx;
 use lib::command::join;
 use lib::command::offset;
 use lib::command::pinyin;
@@ -44,7 +46,6 @@ fn main() {
       cmd::map_headers,
       cmd::inter_headers,
       cmd::dupli_headers,
-
       #[cfg(target_os = "windows")]
       access::access,
       apply::apply,
@@ -56,7 +57,9 @@ fn main() {
       count::count,
       dbf::dbf,
       enumerate::enumer,
+      extsort::extsort,
       fill::fill,
+      idx::idx,
       join::join,
       offset::get_offset_headers,
       offset::offset,
