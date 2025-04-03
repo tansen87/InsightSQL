@@ -85,7 +85,9 @@ async function countData() {
       path: path.value,
       mode: mode.value
     });
-    message(`Count done, elapsed time: ${rtime} s`, { type: "success" });
+    message(`${mode.value} done, elapsed time: ${rtime} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -113,7 +115,7 @@ async function countData() {
           :icon="Grape"
           style="margin-left: 10px"
         >
-          Count
+          {{ mode }}
         </el-button>
       </div>
       <el-text> Count the rows of CSV files </el-text>

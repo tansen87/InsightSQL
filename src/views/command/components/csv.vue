@@ -73,7 +73,9 @@ async function csvToxlsx() {
       mode: mode.value,
       chunkSize: chunkSize.value
     });
-    message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
+    message(`${mode.value} done, elapsed time: ${rtime} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -109,7 +111,7 @@ async function csvToxlsx() {
           :icon="SwitchFilled"
           style="margin-left: 10px"
         >
-          Convert
+          {{ mode }}
         </el-button>
       </div>
       <el-text> Batch convert csv to xlsx </el-text>

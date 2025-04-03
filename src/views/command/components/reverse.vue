@@ -76,7 +76,7 @@ async function reverseData() {
           :icon="SwitchFilled"
           style="margin-left: 10px"
         >
-          Reverse
+          {{ mode }}
         </el-button>
       </div>
 

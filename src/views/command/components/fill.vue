@@ -129,7 +129,7 @@ async function fillData() {
         :loading="isLoading"
         :icon="Refresh"
       >
-        Fill
+        {{ mode }}
       </el-button>
     </div>
     <el-table

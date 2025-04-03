@@ -24,7 +24,7 @@ const [
   ref(false),
   ref(""),
   ref(1000000),
-  ref("Rows")
+  ref("rows")
 ];
 const { dynamicHeight } = useDynamicHeight(176);
 
@@ -111,7 +111,7 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         :loading="isLoading"
         :icon="IceCreamRound"
       >
-        Split
+        {{ mode }}-Split
       </el-button>
     </div>
     <el-table

@@ -34,7 +34,7 @@ const [
   ref(""),
   ref(false),
   ref(""),
-  ref("Memory"),
+  ref("memory"),
   ref("0")
 ];
 const { dynamicHeight } = useDynamicHeight(166);
@@ -139,7 +139,7 @@ async function concatData() {
       skipRows: skipRows.value,
       useCols: useCols
     });
-    backendInfo.value = `Cat done, elapsed time: ${rtime} s`;
+    backendInfo.value = `${mode.value} done, elapsed time: ${rtime} s`;
     backendCompleted.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
@@ -158,7 +158,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
           Open File
         </el-button>
         <el-tooltip
-          content="Polars memory or stream, Csv stream Cat"
+          content="Polars memory or stream, Csv stream Cat, or find duplicate headers"
           effect="light"
         >
           <el-select v-model="mode" style="margin-left: 10px; width: 100px">
@@ -177,7 +177,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
           :icon="Connection"
           style="margin-left: 10px"
         >
-          Cat
+          {{ mode }}
         </el-button>
       </div>
       <el-link @click="infoDialog = true" :icon="Link">

@@ -21,8 +21,18 @@ const [
   sheetOptions,
   fileSheet,
   backendCompleted,
-  backendInfo
-] = [ref([]), ref(false), ref({}), ref([]), ref([]), ref(false), ref("")];
+  backendInfo,
+  btnShow
+] = [
+  ref([]),
+  ref(false),
+  ref({}),
+  ref([]),
+  ref([]),
+  ref(false),
+  ref(""),
+  ref("Convert")
+];
 const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
@@ -32,6 +42,16 @@ const data = reactive({
   writeSheetname: false
 });
 const { dynamicHeight } = useDynamicHeight(172);
+watch(
+  () => data.allSheets,
+  val => {
+    if (val === true) {
+      btnShow.value = "Convert-all";
+    } else if (val === false) {
+      btnShow.value = "Convert";
+    }
+  }
+);
 
 listen("start_convert", event => {
   const startConvert: any = event.payload;
@@ -219,7 +239,7 @@ async function excelToCsv() {
         :loading="isLoading"
         :icon="SwitchFilled"
       >
-        Convert
+        {{ btnShow }}
       </el-button>
     </div>
 
