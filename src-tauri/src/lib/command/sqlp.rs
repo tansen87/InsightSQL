@@ -10,7 +10,6 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use polars::{
-  error::PolarsError,
   prelude::{
     CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, JsonFormat, JsonWriter, LazyCsvReader,
     LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, SerWriter, SerializeOptions,
@@ -29,7 +28,7 @@ fn execute_query(
   write: bool,
   write_format: &str,
   low_memory: bool,
-) -> Result<String, Box<PolarsError>> {
+) -> Result<String> {
   let mut df = DataFrame::default();
 
   if low_memory {
@@ -51,8 +50,8 @@ fn execute_query(
 }
 
 /// write LazyFrame directly to CSV (low memory mode)
-fn write_lazy_frame_to_csv(lf: LazyFrame, output_path: &str, sep: u8) -> Result<(), PolarsError> {
-  lf.sink_csv(
+fn write_lazy_frame_to_csv(lf: LazyFrame, output_path: &str, sep: u8) -> Result<()> {
+  Ok(lf.sink_csv(
     output_path,
     CsvWriterOptions {
       include_bom: false,
@@ -73,38 +72,30 @@ fn write_lazy_frame_to_csv(lf: LazyFrame, output_path: &str, sep: u8) -> Result<
       },
     },
     Default::default(),
-  )
+  )?)
 }
 
 /// Unified dataframe writing handler
-fn write_dataframe(
-  df: &DataFrame,
-  output: Option<String>,
-  format: &str,
-  sep: u8,
-) -> Result<(), PolarsError> {
+fn write_dataframe(df: &DataFrame, output: Option<String>, format: &str, sep: u8) -> Result<()> {
   match (df.shape().0 < 104_0000, format) {
-    (true, "xlsx") => write_xlsx(df, output),
+    (true, "xlsx") => write_xlsx(&df, output),
     (_, "parquet") => write_parquet(df.clone(), output),
     _ => write_csv(df.clone(), output, sep),
   }
 }
 
 /// XLSX writing implementation
-fn write_xlsx(df: &DataFrame, output: Option<String>) -> Result<(), PolarsError> {
+fn write_xlsx(df: &DataFrame, output: Option<String>) -> Result<()> {
   let output_path = output.map_or_else(
     || PathBuf::from("default_output.xlsx"),
     |s| PathBuf::from(format!("{}.xlsx", s)),
   );
-  let mut xlsx_writer = XlsxWriter::new();
-  xlsx_writer
-    .write_dataframe(&df, output_path)
-    .expect("write to xlsx failed");
+  XlsxWriter::new().write_dataframe(&df, output_path)?;
   Ok(())
 }
 
 /// Parquet writing implementation
-fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<(), PolarsError> {
+fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<()> {
   let output_path = output.map_or_else(
     || PathBuf::from("default_output.parquet"),
     |s| PathBuf::from(format!("{}.parquet", s)),
@@ -118,7 +109,7 @@ fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<(), Polars
 }
 
 /// CSV writing implementation
-fn write_csv(mut df: DataFrame, output: Option<String>, sep: u8) -> Result<(), PolarsError> {
+fn write_csv(mut df: DataFrame, output: Option<String>, sep: u8) -> Result<()> {
   let w: Box<dyn Write> = match output {
     Some(path) => Box::new(File::create(format!("{}.csv", path))?),
     None => Box::new(std::io::stdout()),
@@ -285,7 +276,7 @@ async fn prepare_query(
   Ok(vec_result)
 }
 
-fn query_df_to_json(mut df: DataFrame) -> Result<String, PolarsError> {
+fn query_df_to_json(mut df: DataFrame) -> Result<String> {
   if df.is_empty() {
     let empty_json = serde_json::json!({});
     return Ok(empty_json.to_string());

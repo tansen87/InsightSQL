@@ -186,10 +186,9 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
   for (idx, p) in paths.iter().enumerate() {
     let mut csv_options = CsvOptions::new(p);
     csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-    let skip_rows_reader = csv_options.skip_csv_rows()?;
     let mut rdr = ReaderBuilder::new()
       .delimiter(vec_sep[idx])
-      .from_reader(skip_rows_reader);
+      .from_reader(csv_options.skip_csv_rows()?);
     let h = rdr.byte_headers()?;
 
     let mut columns_of_this_file =
