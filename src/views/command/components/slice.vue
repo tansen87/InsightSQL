@@ -126,17 +126,37 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="Numer of slice/start" effect="light">
+        <!-- 当 mode 为 'left' 或 'right' 时显示 n -->
+        <el-tooltip
+          v-if="mode === 'left' || mode === 'right'"
+          content="Number of slice"
+          effect="light"
+        >
           <el-input v-model="n" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
-        <el-tooltip content="Numer of stop" effect="light">
-          <el-input v-model="m" style="margin-left: 10px; width: 50px" />
-        </el-tooltip>
-        <el-tooltip content="Slice separator" effect="light">
-          <el-input v-model="sliceSep" style="margin-left: 10px; width: 50px" />
-        </el-tooltip>
+        <!-- 当 mode 为 'ss' 时显示 n 和 m -->
+        <template v-if="mode === 'ss'">
+          <el-tooltip content="Number of start" effect="light">
+            <el-input v-model="n" style="margin-left: 10px; width: 50px" />
+          </el-tooltip>
+          <el-tooltip content="Number of stop" effect="light">
+            <el-input v-model="m" style="margin-left: 10px; width: 50px" />
+          </el-tooltip>
+        </template>
+        <!-- 当 mode 为 'nth' 或 'nmax' 时显示 n 和 sliceSep -->
+        <template v-if="['nth', 'nmax'].includes(mode)">
+          <el-tooltip content="Number of slice" effect="light">
+            <el-input v-model="n" style="margin-left: 10px; width: 50px" />
+          </el-tooltip>
+          <el-tooltip content="Slice separator" effect="light">
+            <el-input
+              v-model="sliceSep"
+              style="margin-left: 10px; width: 50px"
+            />
+          </el-tooltip>
+        </template>
         <el-tooltip content="Slice mode" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 84px">
+          <el-select v-model="mode" style="margin-left: 10px; width: 103px">
             <el-option label="Left" value="left" />
             <el-option label="Right" value="right" />
             <el-option label="StartStop" value="ss" />
