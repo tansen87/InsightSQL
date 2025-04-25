@@ -2,6 +2,7 @@ use std::{fs::File, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tauri::{Emitter, Window};
 
 use crate::utils::CsvOptions;
@@ -53,53 +54,90 @@ pub async fn count(path: String, mode: String, window: Window) -> Result<String,
   let start_time = Instant::now();
   let paths: Vec<&str> = path.split('|').collect();
 
-  for file in paths.iter() {
+  paths.par_iter().try_for_each(|file| {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
-    window
+
+    if let Err(e) = window
       .emit("start_convert", &filename)
-      .map_err(|e| e.to_string())?;
-    let inner_time = Instant::now();
-    match mode.as_str() {
-      "index" => match crate::command::idx::create_index(file).await {
-        Ok(_) => {
-          let end_time = Instant::now();
-          let elapsed_time = end_time.duration_since(inner_time).as_secs_f64();
-          window
-            .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
-            .map_err(|e| e.to_string())?;
-        }
-        Err(err) => {
-          window
-            .emit("count_err", format!("{filename}|{err}"))
-            .map_err(|e| e.to_string())?;
-        }
-      },
-      "count" => match count_rows(file).await {
-        Ok(cnt) => {
-          window
-            .emit("count_msg", format!("{filename}|{cnt}"))
-            .map_err(|e| e.to_string())?;
-        }
-        Err(err) => {
-          window
-            .emit("count_err", format!("{filename}|{err}"))
-            .map_err(|e| e.to_string())?;
-        }
-      },
-      _ => match count_check(file).await {
-        Ok(cnt) => {
-          window
-            .emit("count_msg", format!("{filename}|{cnt}"))
-            .map_err(|e| e.to_string())?;
-        }
-        Err(err) => {
-          window
-            .emit("count_err", format!("{filename}|{err}"))
-            .map_err(|e| e.to_string())?;
-        }
-      },
+      .map_err(|e| e.to_string())
+    {
+      return Err(e);
     }
-  }
+
+    match mode.as_str() {
+      "index" => {
+        let _ = tauri::async_runtime::block_on(async {
+          match crate::command::idx::create_index(file).await {
+            Ok(_) => {
+              let elapsed_time = Instant::now().duration_since(start_time).as_secs_f64();
+              if let Err(e) = window
+                .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
+                .map_err(|e| e.to_string())
+              {
+                return Err(e);
+              }
+            }
+            Err(err) => {
+              if let Err(e) = window
+                .emit("count_err", format!("{filename}|{err}"))
+                .map_err(|e| e.to_string())
+              {
+                return Err(e);
+              }
+            }
+          }
+          Ok(())
+        });
+      }
+      "count" => {
+        let _ = tauri::async_runtime::block_on(async {
+          match count_rows(file).await {
+            Ok(cnt) => {
+              if let Err(e) = window
+                .emit("count_msg", format!("{filename}|{cnt}"))
+                .map_err(|e| e.to_string())
+              {
+                return Err(e);
+              }
+            }
+            Err(err) => {
+              if let Err(e) = window
+                .emit("count_err", format!("{filename}|{err}"))
+                .map_err(|e| e.to_string())
+              {
+                return Err(e);
+              }
+            }
+          }
+          Ok(())
+        });
+      }
+      _ => {
+        let _ = tauri::async_runtime::block_on(async {
+          match count_check(file).await {
+            Ok(cnt) => {
+              if let Err(e) = window
+                .emit("count_msg", format!("{filename}|{cnt}"))
+                .map_err(|e| e.to_string())
+              {
+                return Err(e);
+              }
+            }
+            Err(err) => {
+              if let Err(e) = window
+                .emit("count_err", format!("{filename}|{err}"))
+                .map_err(|e| e.to_string())
+              {
+                return Err(e);
+              }
+            }
+          }
+          Ok(())
+        });
+      }
+    }
+    Ok(())
+  })?;
 
   let end_time = Instant::now();
   let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

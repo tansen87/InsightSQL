@@ -171,6 +171,7 @@ async function applyData() {
     </el-select>
 
     <el-select
+      v-if="applyMode === 'operations'"
       v-model="operations"
       filterable
       multiple
@@ -202,7 +203,10 @@ async function applyData() {
           </el-tooltip>
         </div>
 
-        <div style="flex: 1; margin-left: 5px; margin-top: 12px">
+        <div
+          v-if="applyMode === 'operations'"
+          style="flex: 1; margin-left: 5px; margin-top: 12px"
+        >
           <el-tooltip content="replace - from" effect="light">
             <el-input
               v-model="comparand"
@@ -212,8 +216,10 @@ async function applyData() {
             />
           </el-tooltip>
         </div>
-
-        <div style="flex: 1; margin-left: 5px; margin-top: 12px">
+        <div
+          v-if="applyMode === 'operations'"
+          style="flex: 1; margin-left: 5px; margin-top: 12px"
+        >
           <el-tooltip content="replace - to" effect="light">
             <el-input
               v-model="replacement"
@@ -224,7 +230,10 @@ async function applyData() {
           </el-tooltip>
         </div>
 
-        <div style="flex: 3; margin-left: 5px; margin-top: 12px">
+        <div
+          v-if="applyMode === 'calcconv' || applyMode === 'dynfmt'"
+          style="flex: 3; margin-left: 5px; margin-top: 12px"
+        >
           <el-tooltip
             content="formatstr with CalcConv or DynFmt"
             effect="light"
