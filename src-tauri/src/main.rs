@@ -29,6 +29,7 @@ use lib::command::slice;
 use lib::command::sort;
 use lib::command::split;
 use lib::command::sqlp;
+use lib::command::transpose;
 use lib::command::traverse;
 
 fn main() {
@@ -75,6 +76,7 @@ fn main() {
       sort::sort,
       split::split,
       sqlp::query,
+      transpose::transpose,
       traverse::traverse,
     ])
     .run(tauri::generate_context!())

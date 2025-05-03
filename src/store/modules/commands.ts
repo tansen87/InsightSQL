@@ -111,6 +111,11 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/reverse"
       },
       {
+        title: "Transpose",
+        description: "Transpose rows/columns of a CSV.",
+        route: "/command/components/transpose"
+      },
+      {
         title: "Traverse",
         description: "Traverse the directory to obtain filenames.",
         route: "/operation/components/traverse"

@@ -35,7 +35,7 @@ fn execute_query(
     // Low memory path: direct streaming write to CSV
     let lf = ctx.execute(query)?;
     let output_path = format!("{}.csv", output.unwrap());
-    write_lazy_frame_to_csv(lf, &output_path, sep)?;
+    write_lazyframe(lf, &output_path, sep)?;
   } else {
     // Normal execution path
     df = ctx.execute(query)?.collect()?;
@@ -50,7 +50,7 @@ fn execute_query(
 }
 
 /// write LazyFrame directly to CSV (low memory mode)
-fn write_lazy_frame_to_csv(lf: LazyFrame, output_path: &str, sep: u8) -> Result<()> {
+fn write_lazyframe(lf: LazyFrame, output_path: &str, sep: u8) -> Result<()> {
   Ok(lf.sink_csv(
     output_path,
     CsvWriterOptions {
@@ -105,7 +105,7 @@ fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<()> {
   ParquetWriter::new(writer)
     .with_row_group_size(Some(768 ^ 2))
     .finish(&mut df)?;
-  Ok(drop(df))
+  Ok(())
 }
 
 /// CSV writing implementation
@@ -120,7 +120,7 @@ fn write_csv(mut df: DataFrame, output: Option<String>, sep: u8) -> Result<()> {
     .with_float_precision(Some(2))
     .finish(&mut df)?;
   w.flush()?;
-  Ok(drop(df))
+  Ok(())
 }
 
 async fn prepare_query(

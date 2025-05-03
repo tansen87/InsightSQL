@@ -203,6 +203,15 @@ export default {
         title: "reverse",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/transpose",
+      name: "transpose",
+      component: () => import("@/views/command/components/transpose.vue"),
+      meta: {
+        title: "transpose",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

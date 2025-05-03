@@ -22,4 +22,5 @@ pub mod slice;
 pub mod sort;
 pub mod split;
 pub mod sqlp;
+pub mod transpose;
 pub mod traverse;
