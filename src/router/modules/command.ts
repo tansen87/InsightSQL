@@ -132,15 +132,15 @@ export default {
         showLink: false
       }
     },
-    {
-      path: "/command/components/offset",
-      name: "offset",
-      component: () => import("@/views/command/components/offset.vue"),
-      meta: {
-        title: "offset",
-        showLink: false
-      }
-    },
+    // {
+    //   path: "/command/components/offset",
+    //   name: "offset",
+    //   component: () => import("@/views/command/components/offset.vue"),
+    //   meta: {
+    //     title: "offset",
+    //     showLink: false
+    //   }
+    // },
     {
       path: "/command/components/enumerate",
       name: "enumerate",

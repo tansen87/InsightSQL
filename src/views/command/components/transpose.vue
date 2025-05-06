@@ -74,7 +74,7 @@ async function transposeData() {
             <span>{{ shortFileName(path) }}</span>
           </el-tooltip>
         </span>
-        <span v-else>Fill empty fields in selected columns of a CSV</span>
+        <span v-else>Transpose rows/columns of a CSV</span>
       </el-text>
     </div>
     <div class="custom-container1">

@@ -70,11 +70,11 @@ export const useCommandStore = defineStore("command", {
         description: "Skip rows from CSV.",
         route: "/command/components/skip"
       },
-      {
-        title: "Offset",
-        description: "net amount.",
-        route: "/command/components/offset"
-      },
+      // {
+      //   title: "Offset",
+      //   description: "net amount.",
+      //   route: "/command/components/offset"
+      // },
       {
         title: "Enumerate",
         description: "Add a new column enumerating the lines of a CSV file.",
