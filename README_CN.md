@@ -2,7 +2,7 @@
 
 [English](./README.md) | 中文
 
-> 基于Tauri的数据处理工具箱
+> InsightSQL是一个基于Tauri的数据处理工具箱，旨在简化数据操作和管理。它提供了一个直观的图形用户界面(GUI)。支持多种文件格式的处理，包括 Excel、CSV 和 Parquet 等。用户可以通过简单的操作完成复杂的数据处理任务，如数据查询、转换、合并、连接、排序、切片、格式转换等。
 
 ### 截图
 
@@ -42,15 +42,17 @@
 | Rename | 重命名CSV的列 |
 | Select | 选择、重新排序CSV的列 |
 | Search | 匹配列中的相应行 (包含模式: equal, contains, startswith, regex) |
-| Fill | 在CSV的选定列中填写空白字段 |
-| Split | 将一个CSV文件拆分为多个CSV文件 (按rows或按lines,如果按行拆分时存在索引,则使用多线程来加快速度) |
+| Fill | 填充CSV中的空值 |
+| Split | 将一个CSV文件拆分为多个CSV文件 (按rows或按lines拆,如果按rows拆分时存在索引,则使用多线程来加快速度) |
 | Skip | 跳过CSV中的行 |
 | Enumerate | 添加一个新列,枚举CSV文件的行 |
 | Chinese to Pinyin | 将CSV中特定列的中文转换为拼音 |
 | Replace | 使用正则表达式替换CSV数据 |
-| Join | 在指定列上连接两组CSV数据 |
+| Join | 在指定列上连接两组CSV数据,可参考SQL的join |
 | Sort | 对CSV排序 |
 | Slice | CSV列的切片 (如pandas.str.slice和str.split('').str[n]) |
+| Reverse | 颠倒CSV的行 |
+| Transpose | CSV行列转换,可参考Excel的transpose |
 
 ### 🍖如何使用?
 
@@ -61,7 +63,7 @@
 
 * Node.js 18+
 * pnpm 9.9.0+
-* 🦀Rust 1.85.0+
+* 🦀Rust 1.86.0+
 
 ## 🚀开发
 

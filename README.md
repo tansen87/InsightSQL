@@ -2,7 +2,7 @@
 
 English | [中文](./README_CN.md)
 
-> Rust Data Processing Toolbox, base on Tauri.
+> InsightSQL is a Tauri based data processing toolbox designed to simplify data operations and management. It provides an intuitive graphical user interface (GUI). Supports processing of multiple file formats, including Excel, CSV, Parquet, etc. Users can complete complex data processing tasks such as data queries, transformations, merges, joins, sorts, slices, format conversions, etc. through simple operations.
 
 ### ScreenShot
 
@@ -46,11 +46,13 @@ English | [中文](./README_CN.md)
 | Split | Split one CSV file into many CSV files (by rows or by lines, uses multithreading to go faster if an index is present when splitting by rows) |
 | Skip | Skip rows form CSV |
 | Enumerate | Add a new column enumerating the lines of a CSV file |
-| Chinese to Pinyin | Convert Chinese to Pinyin for specific column in CSV. |
+| Chinese to Pinyin | Convert Chinese to Pinyin for specific column in CSV |
 | Replace | Replace CSV data using a regex |
 | Join | Joins two sets of CSV data on the specified columns |
 | Sort | Sorts CSV data lexicographically |
 | Slice | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
+| Reverse | Reverse order of rows in a CSV |
+| Transpose | Transpose rows/columns of a CSV |
 
 
 ### 🍖How to use?
@@ -62,7 +64,7 @@ English | [中文](./README_CN.md)
 
 * Node.js 18+
 * pnpm 9.9.0+
-* 🦀Rust 1.85.0+
+* 🦀Rust 1.86.0+
 
 ## 🚀Development
 
