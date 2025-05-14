@@ -12,6 +12,14 @@ pub trait ToPolarsDataFrame {
   fn to_df(&mut self) -> Result<DataFrame>;
 }
 
+pub struct FastExcelReader {
+  fast_workbook: xl::Workbook,
+}
+
+pub trait FastToDataFrame {
+  fn fast_to_df(&mut self, n: usize, skip_rows: usize) -> Result<DataFrame>;
+}
+
 impl ToPolarsDataFrame for Range<Data> {
   fn to_df(&mut self) -> Result<DataFrame> {
     // iterating headers or duplicate headers
@@ -106,6 +114,85 @@ impl ExcelReader {
       .collect();
 
     Ok(column_names)
+  }
+}
+
+impl FastExcelReader {
+  pub fn from_path(path: &str) -> Result<Self> {
+    let fast_workbook = match xl::Workbook::new(path) {
+      Ok(wb) => wb,
+      Err(e) => {
+        return Err(anyhow!("failed to open xlsx: {e}"));
+      }
+    };
+    Ok(FastExcelReader { fast_workbook })
+  }
+
+  /// Get the first n rows of xlsx
+  /// It's very fast
+  pub fn n_rows(&mut self, n: usize) -> Result<Vec<String>> {
+    let worksheets = self.fast_workbook.sheets();
+    let first_sheet_name = match worksheets.by_name().get(0) {
+      Some(sheet) => *sheet,
+      None => "Sheet1",
+    };
+    let sheet = if let Some(s) = worksheets.get(first_sheet_name) {
+      s
+    } else {
+      return Err(anyhow!("worksheet is empty"));
+    };
+    let nrows: Vec<String> = sheet
+      .rows(&mut self.fast_workbook)
+      .take(n + 1)
+      .map(|row| row.to_string().replace(",", "|").replace("\"", ""))
+      .collect();
+
+    Ok(nrows)
+  }
+}
+
+impl FastToDataFrame for FastExcelReader {
+  fn fast_to_df(&mut self, n: usize, skip_rows: usize) -> Result<DataFrame> {
+    let data = self.n_rows(n + skip_rows)?;
+
+    if data.len() <= skip_rows {
+      return Err(anyhow::anyhow!("Not enough rows in the file"));
+    }
+
+    let headers = data
+      .get(skip_rows)
+      .ok_or_else(|| anyhow::anyhow!("Header not found"))?
+      .split('|')
+      .map(String::from)
+      .collect::<Vec<String>>();
+
+    let num_cols = headers.len();
+
+    let rows = data
+      .into_iter()
+      .skip(skip_rows + 1)
+      .filter(|row| !row.trim().is_empty())
+      .collect::<Vec<_>>();
+
+    let mut columns: Vec<Vec<String>> = vec![vec![]; num_cols];
+
+    for row in &rows {
+      let cells = row.split('|').map(|s| s.to_string()).collect::<Vec<_>>();
+      if cells.len() != num_cols {
+        continue;
+      }
+      for (i, cell) in cells.into_iter().enumerate() {
+        columns[i].push(cell);
+      }
+    }
+
+    let series = headers
+      .into_iter()
+      .zip(columns)
+      .map(|(col, data)| Column::new(col.into(), data))
+      .collect();
+
+    Ok(DataFrame::new(series)?)
   }
 }
 

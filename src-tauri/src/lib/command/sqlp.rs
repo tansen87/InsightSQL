@@ -17,7 +17,7 @@ use polars::{
   sql::SQLContext,
 };
 
-use crate::excel_reader::{ExcelReader, ToPolarsDataFrame};
+use crate::excel_reader::{ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame};
 use crate::{utils::CsvOptions, xlsx_writer::XlsxWriter};
 
 fn execute_query(
@@ -206,10 +206,27 @@ async fn prepare_query(
 
     let lf = match file_extension.as_str() {
       "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
-      "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
+      "xls" | "xlsm" | "xlsb" | "ods" => {
         let df: DataFrame = ExcelReader::from_path(table)?
           .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
           .to_df()?;
+        df.lazy()
+      }
+      "xlsx" => {
+        let re = regex::Regex::new(r"limit\s+(\d+)")?;
+        let n = re
+          .captures(&sql_query.to_lowercase())
+          .and_then(|cap| cap.get(1))
+          .and_then(|num_match| num_match.as_str().parse::<usize>().ok());
+
+        let df: DataFrame = match n {
+          Some(n) => {
+            FastExcelReader::from_path(table)?.fast_to_df(n, skip_rows.parse::<usize>()?)?
+          }
+          None => ExcelReader::from_path(table)?
+            .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+            .to_df()?,
+        };
         df.lazy()
       }
       _ => {
