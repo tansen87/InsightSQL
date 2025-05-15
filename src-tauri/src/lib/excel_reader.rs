@@ -12,14 +12,6 @@ pub trait ToPolarsDataFrame {
   fn to_df(&mut self) -> Result<DataFrame>;
 }
 
-pub struct FastExcelReader {
-  fast_workbook: xl::Workbook,
-}
-
-pub trait FastToDataFrame {
-  fn fast_to_df(&mut self, n: usize, skip_rows: usize) -> Result<DataFrame>;
-}
-
 impl ToPolarsDataFrame for Range<Data> {
   fn to_df(&mut self) -> Result<DataFrame> {
     // iterating headers or duplicate headers
@@ -117,6 +109,14 @@ impl ExcelReader {
   }
 }
 
+pub struct FastExcelReader {
+  fast_workbook: xl::Workbook,
+}
+
+pub trait FastToDataFrame {
+  fn fast_to_df(&mut self, n: usize, skip_rows: usize) -> Result<DataFrame>;
+}
+
 impl FastExcelReader {
   pub fn from_path(path: &str) -> Result<Self> {
     let fast_workbook = match xl::Workbook::new(path) {
@@ -194,31 +194,4 @@ impl FastToDataFrame for FastExcelReader {
 
     Ok(DataFrame::new(series)?)
   }
-}
-
-/// Get the first n rows of xlsx
-/// It's very fast
-pub fn n_rows(path: &str, n: usize) -> Result<Vec<String>> {
-  let mut workbook = match xl::Workbook::new(path) {
-    Ok(wb) => wb,
-    Err(e) => {
-      return Err(anyhow!("failed to open xlsx: {e}"));
-    }
-  };
-  let worksheets = workbook.sheets();
-  let first_sheet_name = match worksheets.by_name().get(0) {
-    Some(sheet) => *sheet,
-    None => "Sheet1",
-  };
-  let sheet = if let Some(s) = worksheets.get(first_sheet_name) {
-    s
-  } else {
-    return Err(anyhow!("worksheet is empty"));
-  };
-  let nrows: Vec<String> = sheet
-    .rows(&mut workbook)
-    .take(n)
-    .map(|row| row.to_string().replace(",", "|"))
-    .collect();
-  Ok(nrows)
 }

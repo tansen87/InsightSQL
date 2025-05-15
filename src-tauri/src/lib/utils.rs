@@ -11,7 +11,7 @@ use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{excel_reader, index::Indexed};
+use crate::{excel_reader::{self, FastExcelReader}, index::Indexed};
 
 type ByteString = Vec<u8>;
 
@@ -135,7 +135,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
           }
           let column_names = if file_extension == "xlsx" {
             // use `xl` to get the headers
-            let n_rows = excel_reader::n_rows(f, n).unwrap_or_else(|_| vec![]);
+            let n_rows = FastExcelReader::from_path(f).ok()?.n_rows(n).ok()?;
+            // let n_rows = excel_reader::n_rows(f, n).unwrap_or_else(|_| vec![]);
             if n_rows.is_empty() {
               return None;
             }
