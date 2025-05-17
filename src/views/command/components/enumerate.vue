@@ -5,25 +5,44 @@ import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
+import { listen } from "@tauri-apps/api/event";
 
-const [isLoading, isPath, tableColumn, tableData, path] = [
+const [
+  isLoading,
+  isPath,
+  tableColumn,
+  tableData,
+  path,
+  mode,
+  currentRows,
+  totalRows
+] = [
   ref(false),
   ref(false),
   ref([]),
   ref([]),
-  ref("")
+  ref(""),
+  ref("nil"),
+  ref(0),
+  ref(0)
 ];
-const { dynamicHeight } = useDynamicHeight(134);
+const { dynamicHeight } = useDynamicHeight(148);
+
+listen("update-rows", (event: any) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: any) => {
+  totalRows.value = event.payload;
+});
 
 async function selectFile() {
   isPath.value = false;
   tableColumn.value = [];
   tableData.value = [];
+  totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     const { columnView, dataView } = await viewSqlp(path.value, "0");
@@ -45,7 +64,8 @@ async function enumerate() {
   try {
     isLoading.value = true;
     const rtime: string = await invoke("enumer", {
-      path: path.value
+      path: path.value,
+      mode: mode.value
     });
     message(`Enumerate done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -62,6 +82,16 @@ async function enumerate() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
+        <el-tooltip
+          content="Do you want to add a progress bar? If nil, do not add it"
+          effect="light"
+        >
+          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="std" value="std" />
+            <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
         <el-button
           @click="enumerate()"
           :loading="isLoading"
@@ -95,5 +125,9 @@ async function enumerate() {
         :key="column.prop"
       />
     </el-table>
+    <el-progress
+      v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+      :percentage="Math.round((currentRows / totalRows) * 100)"
+    />
   </div>
 </template>

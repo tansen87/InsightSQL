@@ -466,6 +466,6 @@ pub async fn apply(
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    Err(err) => Err(format!("apply failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }

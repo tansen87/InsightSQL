@@ -28,9 +28,8 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   let sep = csv_options.detect_separator()?;
 
   let total_rows = match mode {
-    "idx" => csv_options.parse_csv_rows().await? - skip_rows,
-    "std" => csv_options.count_csv_rows()? - skip_rows,
-    "nil" => 0,
+    "idx" => csv_options.idx_csv_rows().await? - skip_rows,
+    "std" => csv_options.std_csv_rows()? - skip_rows,
     _ => 0,
   };
   app_handle.emit("total-rows", format!("{filename}|{total_rows}"))?;
@@ -62,13 +61,13 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
           let current_rows = *rows_clone.lock().unwrap();
           let emit_msg = format!("{filename}|{current_rows}");
           if let Err(err) = app_handle.emit("update-rows", emit_msg) {
-            eprintln!("Failed to emit updaterows event: {err:?}");
+            eprintln!("Failed to emit update-rows event: {err:?}");
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
           let emit_msg = format!("{filename}|{final_rows}");
           if let Err(err) = app_handle.emit("update-rows", emit_msg) {
-            eprintln!("Failed to emit final row count: {err:?}");
+            eprintln!("Failed to emit final rows count: {err:?}");
           }
           break;
         },
@@ -79,7 +78,7 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
     }
   });
 
-  let csv_task = tokio::task::spawn_blocking(move || {
+  let counter_task = tokio::task::spawn_blocking(move || {
     let mut record = ByteRecord::new();
     while rdr.read_byte_record(&mut record)? {
       wtr.write_byte_record(&record)?;
@@ -94,10 +93,8 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
     Ok::<_, anyhow::Error>(wtr.flush()?)
   });
 
-  csv_task.await??;
-
+  counter_task.await??;
   let _ = stop_tx.send(());
-
   timer_task.await?;
 
   Ok(())

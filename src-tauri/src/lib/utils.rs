@@ -83,7 +83,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   }
 
   /// Count csv rows (only applicable to standard csv files)
-  pub fn count_csv_rows(&self) -> Result<usize> {
+  pub fn std_csv_rows(&self) -> Result<usize> {
     let reader = BufReader::new(File::open(&self.path)?);
     let total_rows = reader.lines().count().saturating_sub(1);
 
@@ -91,10 +91,10 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   }
 
   /// Count csv rows (applicable to all csv files)
-  pub async fn parse_csv_rows(&self) -> Result<usize> {
-    let cnt = crate::command::count::count_rows(&self.path).await? as usize;
+  pub async fn idx_csv_rows(&self) -> Result<usize> {
+    let total_rows = crate::command::count::count_rows(&self.path).await? as usize;
 
-    Ok(cnt)
+    Ok(total_rows)
   }
 
   /// Skip the first n lines of csv

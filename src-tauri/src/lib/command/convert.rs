@@ -5,8 +5,8 @@ use std::{
   time::Instant,
 };
 
-use anyhow::{anyhow, Result};
-use calamine::{open_workbook_auto, Data, HeaderRow, Range, Reader};
+use anyhow::{Result, anyhow};
+use calamine::{Data, HeaderRow, Range, Reader, open_workbook_auto};
 use csv::{ReaderBuilder, WriterBuilder};
 use polars::{
   io::SerReader,
@@ -16,7 +16,7 @@ use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 
 use crate::{
-  utils::{num_cpus, CsvOptions},
+  utils::{CsvOptions, num_cpus},
   xlsx_writer::XlsxWriter,
 };
 
@@ -179,7 +179,7 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   let sep = csv_options.detect_separator()?;
 
   if use_polars {
-    let row_count = csv_options.count_csv_rows()?;
+    let row_count = csv_options.std_csv_rows()?;
     if row_count > 104_8575 {
       return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
     }

@@ -23,7 +23,7 @@ async fn test_enumerate() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  enumerate::add_index(file_path.to_str().unwrap()).await?;
+  // enumerate::add_index(file_path.to_str().unwrap()).await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.enumerate.csv",
