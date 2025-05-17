@@ -66,9 +66,7 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
           }
           break;
         },
-        _ = (&mut stop_rx) => {
-          break;
-        }
+        _ = (&mut stop_rx) => { break; }
       }
     }
   });

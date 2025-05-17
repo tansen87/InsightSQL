@@ -75,9 +75,7 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
           }
           break;
         },
-        _ = (&mut stop_rx) => {
-          break;
-        }
+        _ = (&mut stop_rx) => { break; }
       }
     }
   });

@@ -9,6 +9,13 @@ use tauri::{Emitter, Window};
 use crate::utils::CsvOptions;
 
 #[tauri::command]
+pub async fn from_headers(path: String) -> Result<Vec<String>, String> {
+  let csv_options = CsvOptions::new(path);
+
+  async { csv_options.from_headers().map_err(|e| e.to_string()) }.await
+}
+
+#[tauri::command]
 pub async fn map_headers(
   path: String,
   skip_rows: String,

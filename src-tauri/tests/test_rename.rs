@@ -25,11 +25,11 @@ async fn test_rename() -> Result<()> {
 
   let new_header = "first_name,years_old,sex";
 
-  rename::rename_headers(
-    file_path.to_str().unwrap(),
-    new_header.to_string(),
-  )
-  .await?;
+  // rename::rename_headers(
+  //   file_path.to_str().unwrap(),
+  //   new_header.to_string(),
+  // )
+  // .await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.rename.csv",

@@ -72,9 +72,7 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
           }
           break;
         },
-        _ = (&mut stop_rx) => {
-          break;
-        }
+        _ = (&mut stop_rx) => { break; }
       }
     }
   });

@@ -44,6 +44,7 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
+      cmd::from_headers,
       cmd::map_headers,
       cmd::inter_headers,
       cmd::dupli_headers,
@@ -65,7 +66,6 @@ fn main() {
       offset::get_offset_headers,
       offset::offset,
       pinyin::pinyin,
-      rename::get_rename_headers,
       rename::rename,
       replace::replace,
       reverse::reverse,

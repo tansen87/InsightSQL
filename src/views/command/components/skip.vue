@@ -109,10 +109,7 @@ async function skipLines() {
             style="margin-left: 10px; width: 50px"
           />
         </el-tooltip>
-        <el-tooltip
-          content="Do you want to add a progress bar? If nil, do not add it"
-          effect="light"
-        >
+        <el-tooltip content="if nil, do not add progress bar" effect="light">
           <el-select v-model="data.mode" style="margin-left: 10px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="std" value="std" />

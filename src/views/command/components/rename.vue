@@ -5,13 +5,26 @@ import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
+import { listen } from "@tauri-apps/api/event";
 
-const [tableData, isLoading, isPath, search, path] = [
+const [
+  tableData,
+  isLoading,
+  isPath,
+  search,
+  path,
+  mode,
+  currentRows,
+  totalRows
+] = [
   ref([]),
   ref(false),
   ref(false),
   ref(""),
-  ref("")
+  ref(""),
+  ref("nil"),
+  ref(0),
+  ref(0)
 ];
 const { dynamicHeight } = useDynamicHeight(122);
 const filterTableData = computed(() =>
@@ -22,21 +35,26 @@ const filterTableData = computed(() =>
   )
 );
 
+listen("update-rows", (event: any) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: any) => {
+  totalRows.value = event.payload;
+});
+
 async function selectFile() {
   tableData.value = [];
   isPath.value = false;
   search.value = "";
+  totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
-    const headers: string[] = await invoke("get_rename_headers", {
+    const headers: string[] = await invoke("from_headers", {
       path: path.value
     });
-
     for (let i = 0; i < headers.length; i++) {
       const colData = {
         col1: headers[i],
@@ -44,7 +62,6 @@ async function selectFile() {
       };
       tableData.value.push(colData);
     }
-
     isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
@@ -64,7 +81,8 @@ async function renameData() {
     const headersString = headersStringArray.join(",");
     const rtime: string = await invoke("rename", {
       path: path.value,
-      headers: headersString
+      headers: headersString,
+      mode: mode.value
     });
     message(`Rename done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -85,6 +103,13 @@ async function headerEdit(row: any) {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
+        <el-tooltip content="if nil, do not add progress bar" effect="light">
+          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="std" value="std" />
+            <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
         <el-button
           @click="renameData()"
           :loading="isLoading"
@@ -125,6 +150,14 @@ async function headerEdit(row: any) {
             v-model="search"
             size="small"
             placeholder="Type to search headers"
+            style="flex: 1; margin-right: 8px"
+          />
+          <el-progress
+            :text-inside="true"
+            :stroke-width="15"
+            v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+            :percentage="Math.round((currentRows / totalRows) * 100)"
+            style="width: 100px"
           />
         </template>
       </el-table-column>

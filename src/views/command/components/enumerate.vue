@@ -82,10 +82,7 @@ async function enumerate() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip
-          content="Do you want to add a progress bar? If nil, do not add it"
-          effect="light"
-        >
+        <el-tooltip content="if nil, do not add progress bar" effect="light">
           <el-select v-model="mode" style="margin-left: 10px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="std" value="std" />

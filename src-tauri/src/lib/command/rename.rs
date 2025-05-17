@@ -1,13 +1,31 @@
-use std::{path::Path, time::Instant};
+use std::{
+  path::Path,
+  sync::{Arc, Mutex},
+  time::{Duration, Instant},
+};
 
 use anyhow::Result;
 use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
+use tauri::{AppHandle, Emitter};
+use tokio::sync::oneshot;
 
 use crate::utils::CsvOptions;
 
-pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(path: P, r_header: String) -> Result<()> {
+pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  r_header: String,
+  mode: &str,
+  app_handle: AppHandle,
+) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+
+  let total_rows = match mode {
+    "idx" => csv_options.idx_csv_rows().await?,
+    "std" => csv_options.std_csv_rows()?,
+    _ => 0,
+  };
+  app_handle.emit("total-rows", total_rows)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -25,26 +43,63 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(path: P, r_header: Str
 
   wtr.write_record(new_headers)?;
 
-  let mut record = ByteRecord::new();
-  while rdr.read_byte_record(&mut record)? {
-    wtr.write_record(&record)?;
-  }
+  let rows = Arc::new(Mutex::new(0));
+  let rows_clone = Arc::clone(&rows);
 
-  Ok(wtr.flush()?)
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
+
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = *rows_clone.lock().unwrap();
+          if let Err(err) = app_handle.emit("update-rows", current_rows) {
+            eprintln!("Failed to emit current rows: {err:?}");
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = app_handle.emit("update-rows", final_rows) {
+            eprintln!("Failed to emit final rows: {err:?}");
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => { break; }
+      }
+    }
+  });
+
+  let counter_task = tokio::task::spawn_blocking(move || {
+    let mut record = ByteRecord::new();
+    while rdr.read_byte_record(&mut record)? {
+      wtr.write_byte_record(&record)?;
+      let mut cnt = rows.lock().unwrap();
+      *cnt += 1;
+    }
+
+    let final_rows = *rows.lock().unwrap();
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
+
+  Ok(())
 }
 
 #[tauri::command]
-pub async fn get_rename_headers(path: String) -> Result<Vec<String>, String> {
-  let csv_options = CsvOptions::new(path);
-
-  async { csv_options.from_headers().map_err(|e| e.to_string()) }.await
-}
-
-#[tauri::command]
-pub async fn rename(path: String, headers: String) -> Result<String, String> {
+pub async fn rename(
+  path: String,
+  headers: String,
+  mode: String,
+  app_handle: AppHandle,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match rename_headers(path, headers).await {
+  match rename_headers(path, headers, mode.as_str(), app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
