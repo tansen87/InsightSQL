@@ -17,7 +17,8 @@ const [
   path,
   mode,
   currentRows,
-  totalRows
+  totalRows,
+  pinyinStyle
 ] = [
   ref(false),
   ref(false),
@@ -28,7 +29,8 @@ const [
   ref(""),
   ref("nil"),
   ref(0),
-  ref(0)
+  ref(0),
+  ref("upper")
 ];
 const { dynamicHeight } = useDynamicHeight(192);
 
@@ -78,7 +80,8 @@ async function chineseToPinyin() {
     const rtime: string = await invoke("pinyin", {
       path: path.value,
       columns: cols,
-      mode: mode.value
+      mode: mode.value,
+      pinyinStyle: pinyinStyle.value
     });
     message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -103,6 +106,15 @@ async function chineseToPinyin() {
             <el-option label="idx" value="idx" />
             <el-option label="std" value="std" />
             <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="upper or lower" effect="light">
+          <el-select
+            v-model="pinyinStyle"
+            style="margin-left: 10px; width: 80px"
+          >
+            <el-option label="upper" value="upper" />
+            <el-option label="lower" value="lower" />
           </el-select>
         </el-tooltip>
         <el-button

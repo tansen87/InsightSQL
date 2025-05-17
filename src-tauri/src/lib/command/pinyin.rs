@@ -14,10 +14,17 @@ use tokio::sync::oneshot;
 
 use crate::utils::{CsvOptions, Selection};
 
+enum PinyinStyle {
+  Upper,
+  Lower,
+  None,
+}
+
 pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
   path: P,
   columns: String,
   mode: &str,
+  pinyin_style: &str,
   app_handle: AppHandle,
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
@@ -75,6 +82,12 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
     }
   });
 
+  let style = match pinyin_style {
+    "upper" => PinyinStyle::Upper,
+    "lower" => PinyinStyle::Lower,
+    _ => PinyinStyle::None,
+  };
+
   let counter_task = tokio::task::spawn_blocking(move || {
     let mut record = ByteRecord::new();
     while rdr.read_byte_record(&mut record)? {
@@ -86,8 +99,17 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
           new_field = new_field
             .chars()
             .map(|c| {
-              c.to_pinyin()
-                .map_or_else(|| c.into(), |py| py.plain().to_string().to_uppercase())
+              c.to_pinyin().map_or_else(
+                || c.into(),
+                |py| {
+                  let s = py.plain().to_string();
+                  match style {
+                    PinyinStyle::Upper => s.to_uppercase(),
+                    PinyinStyle::Lower => s.to_lowercase(),
+                    PinyinStyle::None => s,
+                  }
+                },
+              )
             })
             .collect::<String>();
         }
@@ -116,11 +138,20 @@ pub async fn pinyin(
   path: String,
   columns: String,
   mode: String,
+  pinyin_style: String,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(path, columns, mode.as_str(), app_handle).await {
+  match chinese_to_pinyin(
+    path,
+    columns,
+    mode.as_str(),
+    pinyin_style.as_str(),
+    app_handle,
+  )
+  .await
+  {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
