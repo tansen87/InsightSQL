@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -10,16 +9,34 @@ import {
   CloseBold,
   Delete
 } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicHeight } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
+import { trimOpenFile } from "@/utils/view";
 
 const [isLoading, selectedFiles] = [ref(false), ref([])];
 const data = reactive({
   path: "",
-  skipRows: "1"
+  skipRows: "1",
+  mode: "nil"
 });
 const { dynamicHeight } = useDynamicHeight(122);
 
+listen("update-rows", (event: any) => {
+  const [backFilename, rows] = event.payload.split("|");
+  selectedFiles.value.forEach(file => {
+    if (file.filename === backFilename) {
+      file.currentRows = rows;
+    }
+  });
+});
+listen("total-rows", (event: any) => {
+  const [backFilename, rows] = event.payload.split("|");
+  selectedFiles.value.forEach(file => {
+    if (file.filename === backFilename) {
+      file.totalRows = rows;
+    }
+  });
+});
 listen("start_convert", (event: any) => {
   const startConvert: string = event.payload;
   selectedFiles.value.forEach(file => {
@@ -49,30 +66,15 @@ listen("skip_msg", (event: any) => {
 
 async function selectFile() {
   selectedFiles.value = [];
-
-  const selected = await open({
-    multiple: true,
-    filters: [
-      {
-        name: "csv",
-        extensions: ["*"]
-      }
-    ]
+  const trimFile = await trimOpenFile(true, "csv", ["*"], {
+    includeStatus: true
   });
-  if (Array.isArray(selected)) {
-    data.path = selected.join("|").toString();
-    const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((file: any) => {
-      return { filename: shortFileName(file), status: "" };
-    });
-  } else if (selected === null) {
-    return;
-  } else {
-    data.path = selected;
-  }
+  data.path = trimFile.filePath;
+  selectedFiles.value = trimFile.fileInfo;
+  if (data.path === null) return;
 }
 
-// invoke behead
+// invoke skip
 async function skipLines() {
   if (data.path === "") {
     message("CSV file not selected", { type: "warning" });
@@ -81,12 +83,11 @@ async function skipLines() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("skip", {
       path: data.path,
+      mode: data.mode,
       skipRows: data.skipRows
     });
-
     message(`Skip done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
@@ -107,6 +108,16 @@ async function skipLines() {
             v-model="data.skipRows"
             style="margin-left: 10px; width: 50px"
           />
+        </el-tooltip>
+        <el-tooltip
+          content="Do you want to add a progress bar? If nil, do not add it"
+          effect="light"
+        >
+          <el-select v-model="data.mode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="std" value="std" />
+            <el-option label="nil" value="nil" />
+          </el-select>
         </el-tooltip>
         <el-button
           @click="skipLines()"
@@ -154,6 +165,15 @@ async function skipLines() {
           <span v-if="scope.row.status === 'error'">
             {{ scope.row.errorMessage }}
           </span>
+          <el-progress
+            v-if="
+              scope.row.totalRows !== 0 &&
+              isFinite(scope.row.currentRows / scope.row.totalRows)
+            "
+            :percentage="
+              Math.round((scope.row.currentRows / scope.row.totalRows) * 100)
+            "
+          />
         </template>
       </el-table-column>
     </el-table>

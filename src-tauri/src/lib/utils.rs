@@ -11,7 +11,10 @@ use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{excel_reader::{self, FastExcelReader}, index::Indexed};
+use crate::{
+  excel_reader::{self, FastExcelReader},
+  index::Indexed,
+};
 
 type ByteString = Vec<u8>;
 
@@ -79,12 +82,19 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(separator)
   }
 
-  /// Count csv rows
+  /// Count csv rows (only applicable to standard csv files)
   pub fn count_csv_rows(&self) -> Result<usize> {
     let reader = BufReader::new(File::open(&self.path)?);
     let total_rows = reader.lines().count().saturating_sub(1);
 
     Ok(total_rows)
+  }
+
+  /// Count csv rows (applicable to all csv files)
+  pub async fn parse_csv_rows(&self) -> Result<usize> {
+    let cnt = crate::command::count::count_rows(&self.path).await? as usize;
+
+    Ok(cnt)
   }
 
   /// Skip the first n lines of csv
