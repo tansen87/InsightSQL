@@ -1,17 +1,34 @@
-use std::{fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{
+  fs::File,
+  io::BufWriter,
+  path::Path,
+  sync::{Arc, Mutex},
+  time::{Duration, Instant},
+};
 
 use anyhow::Result;
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use pinyin::ToPinyin;
+use tauri::{AppHandle, Emitter};
+use tokio::sync::oneshot;
 
 use crate::utils::{CsvOptions, Selection};
 
 pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
   path: P,
   columns: String,
+  mode: &str,
+  app_handle: AppHandle,
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+
+  let total_rows = match mode {
+    "idx" => csv_options.idx_csv_rows().await?,
+    "std" => csv_options.std_csv_rows()?,
+    _ => 0,
+  };
+  app_handle.emit("total-rows", total_rows)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -29,38 +46,81 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
 
   wtr.write_record(rdr.headers()?)?;
 
-  for result in rdr.records() {
-    let record = result?;
+  let rows = Arc::new(Mutex::new(0));
+  let rows_clone = Arc::clone(&rows);
 
-    let mut new_record = Vec::new();
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-    for (i, field) in record.iter().enumerate() {
-      let mut new_field = String::from(field);
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = *rows_clone.lock().unwrap();
+          if let Err(err) = app_handle.emit("update-rows", current_rows) {
+            eprintln!("Failed to emit current rows: {err:?}");
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = app_handle.emit("update-rows", final_rows) {
+            eprintln!("Failed to emit final rows: {err:?}");
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => {
+          break;
+        }
+      }
+    }
+  });
 
-      if sel.get_indices().contains(&i) {
-        new_field = new_field
-          .chars()
-          .map(|c| {
-            c.to_pinyin()
-              .map_or_else(|| c.into(), |py| py.plain().to_string().to_uppercase())
-          })
-          .collect::<String>();
+  let counter_task = tokio::task::spawn_blocking(move || {
+    let mut record = ByteRecord::new();
+    while rdr.read_byte_record(&mut record)? {
+      let mut new_record = Vec::new();
+      for (i, field) in record.iter().enumerate() {
+        let mut new_field = String::from_utf8_lossy(field).to_string();
+
+        if sel.get_indices().contains(&i) {
+          new_field = new_field
+            .chars()
+            .map(|c| {
+              c.to_pinyin()
+                .map_or_else(|| c.into(), |py| py.plain().to_string().to_uppercase())
+            })
+            .collect::<String>();
+        }
+
+        new_record.push(new_field);
       }
 
-      new_record.push(new_field);
+      wtr.write_record(&new_record)?;
+      *rows.lock().unwrap() += 1;
+      record.clear();
     }
+    let final_rows = *rows.lock().unwrap();
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
 
-    wtr.write_record(&new_record)?;
-  }
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
 
-  Ok(wtr.flush()?)
+  Ok(())
 }
 
 #[tauri::command]
-pub async fn pinyin(path: String, columns: String) -> Result<String, String> {
+pub async fn pinyin(
+  path: String,
+  columns: String,
+  mode: String,
+  app_handle: AppHandle,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(path, columns).await {
+  match chinese_to_pinyin(path, columns, mode.as_str(), app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

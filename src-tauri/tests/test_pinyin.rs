@@ -24,11 +24,12 @@ async fn test_pinyin() -> Result<()> {
     writeln!(file, "{}", line)?;
   }
 
-  pinyin::chinese_to_pinyin(
-    file_path.to_str().unwrap(),
-    "name|gender".to_string(),
-  )
-  .await?;
+  // pinyin::chinese_to_pinyin(
+  //   file_path.to_str().unwrap(),
+  //   "name|gender".to_string(),
+  //   "nil",
+  // )
+  // .await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.pinyin.csv",

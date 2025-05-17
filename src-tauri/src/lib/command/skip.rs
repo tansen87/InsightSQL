@@ -7,6 +7,7 @@ use std::{
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter, Window};
+use tokio::sync::oneshot;
 
 use crate::utils::CsvOptions;
 
@@ -49,8 +50,8 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   let rows_clone = Arc::clone(&rows);
 
   // 创建一次性通道用于控制定时器结束
-  let (stop_tx, mut stop_rx) = tokio::sync::oneshot::channel::<()>();
-  let (done_tx, mut done_rx) = tokio::sync::oneshot::channel::<usize>();
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
   // 启动定时器任务
   let timer_task = tokio::spawn(async move {
@@ -61,13 +62,13 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
           let current_rows = *rows_clone.lock().unwrap();
           let emit_msg = format!("{filename}|{current_rows}");
           if let Err(err) = app_handle.emit("update-rows", emit_msg) {
-            eprintln!("Failed to emit update-rows event: {err:?}");
+            eprintln!("Failed to emit current rows: {err:?}");
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
           let emit_msg = format!("{filename}|{final_rows}");
           if let Err(err) = app_handle.emit("update-rows", emit_msg) {
-            eprintln!("Failed to emit final rows count: {err:?}");
+            eprintln!("Failed to emit final rows: {err:?}");
           }
           break;
         },

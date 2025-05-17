@@ -5,10 +5,39 @@ import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
 import { message } from "@/utils/message";
+import { listen } from "@tauri-apps/api/event";
 
-const [isLoading, isPath, columns, tableHeader, tableColumn, tableData, path] =
-  [ref(false), ref(false), ref(""), ref([]), ref([]), ref([]), ref("")];
-const { dynamicHeight } = useDynamicHeight(178);
+const [
+  isLoading,
+  isPath,
+  columns,
+  tableHeader,
+  tableColumn,
+  tableData,
+  path,
+  mode,
+  currentRows,
+  totalRows
+] = [
+  ref(false),
+  ref(false),
+  ref(""),
+  ref([]),
+  ref([]),
+  ref([]),
+  ref(""),
+  ref("nil"),
+  ref(0),
+  ref(0)
+];
+const { dynamicHeight } = useDynamicHeight(192);
+
+listen("update-rows", (event: any) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: any) => {
+  totalRows.value = event.payload;
+});
 
 async function selectFile() {
   isPath.value = false;
@@ -16,11 +45,10 @@ async function selectFile() {
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
+  totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
@@ -49,7 +77,8 @@ async function chineseToPinyin() {
     const cols = Object.values(columns.value).join("|");
     const rtime: string = await invoke("pinyin", {
       path: path.value,
-      columns: cols
+      columns: cols,
+      mode: mode.value
     });
     message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -66,6 +95,16 @@ async function chineseToPinyin() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
+        <el-tooltip
+          content="Do you want to add a progress bar? If nil, do not add it"
+          effect="light"
+        >
+          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="std" value="std" />
+            <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
         <el-button
           @click="chineseToPinyin()"
           :loading="isLoading"
@@ -113,5 +152,9 @@ async function chineseToPinyin() {
         :key="column.prop"
       />
     </el-table>
+    <el-progress
+      v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+      :percentage="Math.round((currentRows / totalRows) * 100)"
+    />
   </div>
 </template>

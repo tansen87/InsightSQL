@@ -13,7 +13,7 @@ use tokio::sync::oneshot;
 
 use crate::utils::CsvOptions;
 
-pub async fn enumerate_index<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
   path: P,
   mode: &str,
   app_handle: AppHandle,
@@ -57,12 +57,12 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync + 'static>(
         _ = interval.tick() => {
           let current_rows = *rows_clone.lock().unwrap();
           if let Err(err) = app_handle.emit("update-rows", current_rows) {
-            eprintln!("Failed to emit update-rows event: {err:?}");
+            eprintln!("Failed to emit current rows: {err:?}");
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
           if let Err(err) = app_handle.emit("update-rows", final_rows) {
-            eprintln!("Failed to emit final rows count: {err:?}");
+            eprintln!("Failed to emit final rows: {err:?}");
           }
           break;
         },
