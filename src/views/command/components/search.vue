@@ -5,6 +5,7 @@ import { Search, FolderOpened } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewSqlp, viewOpenFile, mapHeaders } from "@/utils/view";
 import { message } from "@/utils/message";
+import { listen } from "@tauri-apps/api/event";
 
 const [
   isLoading,
@@ -13,10 +14,12 @@ const [
   tableHeader,
   tableColumn,
   tableData,
-  searchBtn,
   path,
   mode,
-  condition
+  condition,
+  countMode,
+  currentRows,
+  totalRows
 ] = [
   ref(false),
   ref(false),
@@ -24,12 +27,21 @@ const [
   ref([]),
   ref([]),
   ref([]),
-  ref("Search"),
   ref(""),
   ref("equal"),
-  ref("")
+  ref(""),
+  ref("nil"),
+  ref(0),
+  ref(0)
 ];
-const { dynamicHeight } = useDynamicHeight(221);
+const { dynamicHeight } = useDynamicHeight(326);
+
+listen("update-rows", (event: any) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: any) => {
+  totalRows.value = event.payload;
+});
 
 async function selectFile() {
   isPath.value = false;
@@ -37,11 +49,10 @@ async function selectFile() {
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
+  totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
@@ -67,14 +78,14 @@ async function searchData() {
 
   try {
     isLoading.value = true;
-    const result: string[] = await invoke("search", {
+    const rtime: string = await invoke("search", {
       path: path.value,
       selectColumn: columns.value,
       mode: mode.value,
-      condition: condition.value
+      condition: condition.value,
+      countMode: countMode.value
     });
-    message(`Search done, elapsed time: ${result[1]} s`, { type: "success" });
-    searchBtn.value = `${result[0]} rows`;
+    message(`Search done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -125,6 +136,13 @@ async function searchData() {
             :value="item.value"
           />
         </el-select>
+        <el-tooltip content="if nil, do not add progress bar" effect="light">
+          <el-select v-model="countMode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="std" value="std" />
+            <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
       </div>
       <el-button
         @click="searchData()"
@@ -132,16 +150,25 @@ async function searchData() {
         :icon="Search"
         style="margin-top: 12px"
       >
-        {{ searchBtn }}
+        Search
       </el-button>
     </div>
-    <div style="margin-top: 12px">
-      <el-input
-        v-model="condition"
-        autosize
-        type="textarea"
-        placeholder="Search rows with text...Example: tom|jack|world"
-      />
+    <div class="custom-container1" style="margin-top: 12px">
+      <div style="flex: 7; width: 70%">
+        <el-input
+          v-model="condition"
+          :autosize="{ minRows: 6, maxRows: 6 }"
+          type="textarea"
+          placeholder="Search rows with text...Example: tom|jack|jerry"
+        />
+      </div>
+      <div style="flex: 0; margin-left: 10px">
+        <el-progress
+          type="circle"
+          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+          :percentage="Math.round((currentRows / totalRows) * 100)"
+        />
+      </div>
     </div>
     <el-table
       :data="tableData"

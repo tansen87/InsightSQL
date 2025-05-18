@@ -1,8 +1,16 @@
-use std::{collections::HashMap, fs::File, path::Path, time::Instant};
+use std::{
+  collections::{HashMap, HashSet},
+  fs::File,
+  path::Path,
+  sync::{Arc, Mutex},
+  time::{Duration, Instant},
+};
 
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, Writer, WriterBuilder};
 use regex::bytes::RegexBuilder;
+use tauri::{AppHandle, Emitter};
+use tokio::sync::oneshot;
 
 use crate::utils::{CsvOptions, Selection};
 
@@ -45,13 +53,12 @@ async fn generic_search<F, P>(
   conditions: Vec<String>,
   output_path: String,
   match_fn: F,
-) -> Result<String>
+  app_handle: AppHandle,
+) -> Result<()>
 where
-  F: Fn(&str, &[String]) -> bool + Send + Sync,
+  F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let mut match_rows: usize = 0;
-
   let csv_options = CsvOptions::new(&path);
 
   let mut rdr = ReaderBuilder::new()
@@ -64,17 +71,54 @@ where
 
   wtr.write_record(rdr.headers()?)?;
 
-  for result in rdr.records() {
-    let record = result?;
-    if let Some(value) = record.get(sel.first_indices()?) {
-      if match_fn(value, &conditions) {
-        wtr.write_record(&record)?;
-        match_rows += 1;
+  let rows = Arc::new(Mutex::new(0));
+  let rows_clone = Arc::clone(&rows);
+
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
+
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = *rows_clone.lock().unwrap();
+          if let Err(err) = app_handle.emit("update-rows", current_rows) {
+            eprintln!("Failed to emit current rows: {err:?}");
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = app_handle.emit("update-rows", final_rows) {
+            eprintln!("Failed to emit final rows: {err:?}");
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => { break; }
       }
     }
-  }
+  });
 
-  Ok(match_rows.to_string())
+  let counter_task = tokio::task::spawn_blocking(move || {
+    for result in rdr.records() {
+      let record = result?;
+      if let Some(value) = record.get(sel.first_indices()?) {
+        if match_fn(value, &conditions) {
+          wtr.write_record(&record)?;
+        }
+      }
+      let mut cnt = rows.lock().unwrap();
+      *cnt += 1;
+    }
+    let final_rows = *rows.lock().unwrap();
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
+
+  Ok(())
 }
 
 async fn generic_multi_search<F, P>(
@@ -83,64 +127,110 @@ async fn generic_multi_search<F, P>(
   select_column: String,
   conditions: Vec<String>,
   match_fn: F,
-) -> Result<String>
+  app_handle: AppHandle,
+) -> Result<()>
 where
-  F: Fn(&str, &String) -> bool + Send + Sync,
-  P: AsRef<Path> + Send + Sync,
+  F: Fn(&str, &String) -> bool + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync + 'static,
 {
-  let mut match_rows: usize = 0;
-  let mut writers: HashMap<&str, Writer<File>> = HashMap::new();
+  let unique_conditions = conditions
+    .into_iter()
+    .collect::<HashSet<_>>()
+    .into_iter()
+    .collect::<Vec<_>>();
+  let conditions = Arc::new(unique_conditions);
+  let match_fn = Arc::new(match_fn);
 
   // prepare writers for each condition with sanitized output paths
-  for condition in &conditions {
-    let sanitized_condition = sanitize_condition(condition);
-    let output_path = format!(
-      "{}/{}_{}.csv",
-      path.as_ref().parent().unwrap().to_str().unwrap(),
-      path.as_ref().file_stem().unwrap().to_str().unwrap(),
-      sanitized_condition
-    );
-    let file = File::create(&output_path)?;
-    writers.insert(
-      condition,
-      WriterBuilder::new().delimiter(sep).from_writer(file),
-    );
-  }
+  let parent = path.as_ref().parent().unwrap().to_str().unwrap();
+  let stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let output_paths: HashMap<String, String> = conditions
+    .iter()
+    .map(|cond| {
+      let sanitized = sanitize_condition(cond);
+      let path = format!("{parent}/{stem}_{sanitized}.csv");
+      (cond.clone(), path)
+    })
+    .collect();
 
-  let csv_options = CsvOptions::new(&path);
+  let rows = Arc::new(Mutex::new(0));
+  let rows_clone = Arc::clone(&rows);
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = *rows_clone.lock().unwrap();
+          if let Err(err) = app_handle.emit("update-rows", current_rows) {
+            eprintln!("Failed to emit current rows: {err:?}");
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = app_handle.emit("update-rows", final_rows) {
+            eprintln!("Failed to emit final rows: {err:?}");
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => { break; }
+      }
+    }
+  });
 
-  let headers = rdr.headers()?.clone();
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
+  let counter_task = tokio::task::spawn_blocking(move || {
+    let mut writers: HashMap<String, Writer<std::fs::File>> = HashMap::new();
 
-  // write headers to all output files
-  for wtr in writers.values_mut() {
-    wtr.write_record(&headers)?;
-  }
+    for (cond, path) in &output_paths {
+      let file = File::create(path)?;
+      writers.insert(
+        cond.clone(),
+        WriterBuilder::new().delimiter(sep).from_writer(file),
+      );
+    }
 
-  for result in rdr.records() {
-    let record = result?;
-    if let Some(value) = record.get(sel.first_indices()?) {
-      for condition in &conditions {
-        if match_fn(value, condition) {
-          if let Some(wtr) = writers.get_mut(condition.as_str()) {
-            wtr.write_record(&record)?;
-            match_rows += 1;
+    let csv_options = CsvOptions::new(&path);
+    let mut rdr = ReaderBuilder::new()
+      .delimiter(sep)
+      .from_reader(csv_options.skip_csv_rows()?);
+    let headers = rdr.headers()?.clone();
+
+    for wtr in writers.values_mut() {
+      wtr.write_record(&headers)?;
+    }
+
+    let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
+
+    for result in rdr.records() {
+      let record = result?;
+      if let Some(value) = record.get(sel.first_indices()?) {
+        for condition in conditions.iter() {
+          if match_fn(value, condition) {
+            if let Some(wtr) = writers.get_mut(condition) {
+              wtr.write_record(&record)?;
+            }
           }
         }
       }
+      let mut cnt = rows.lock().unwrap();
+      *cnt += 1;
     }
-  }
+    let final_rows = *rows.lock().unwrap();
+    let _ = done_tx.send(final_rows);
 
-  // flush all writers
-  for wtr in writers.values_mut() {
-    wtr.flush()?;
-  }
+    // flush all writers
+    for wtr in writers.values_mut() {
+      wtr.flush()?;
+    }
+    Ok::<_, anyhow::Error>(())
+  });
 
-  Ok(match_rows.to_string())
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
+
+  Ok(())
 }
 
 pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
@@ -149,7 +239,8 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   select_column: String,
   conditions: Vec<String>,
   output_path: String,
-) -> Result<String> {
+  app_handle: AppHandle,
+) -> Result<()> {
   generic_search(
     path,
     sep,
@@ -157,19 +248,26 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conditions| conditions.contains(&value.to_string()),
+    app_handle,
   )
   .await
 }
 
-pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync>(
+pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-) -> Result<String> {
-  generic_multi_search(path, sep, select_column, conditions, |value, condition| {
-    value == condition
-  })
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    |value, condition| value == condition,
+    app_handle,
+  )
   .await
 }
 
@@ -179,7 +277,8 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   select_column: String,
   conditions: Vec<String>,
   output_path: String,
-) -> Result<String> {
+  app_handle: AppHandle,
+) -> Result<()> {
   generic_search(
     path,
     sep,
@@ -187,19 +286,26 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
+    app_handle,
   )
   .await
 }
 
-pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync>(
+pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-) -> Result<String> {
-  generic_multi_search(path, sep, select_column, conditions, |value, condition| {
-    value.contains(condition)
-  })
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    |value, condition| value.contains(condition),
+    app_handle,
+  )
   .await
 }
 
@@ -209,7 +315,8 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   select_column: String,
   conditions: Vec<String>,
   output_path: String,
-) -> Result<String> {
+  app_handle: AppHandle,
+) -> Result<()> {
   generic_search(
     path,
     sep,
@@ -217,19 +324,26 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
+    app_handle,
   )
   .await
 }
 
-pub async fn startswith_multi_search<P: AsRef<Path> + Send + Sync>(
+pub async fn startswith_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-) -> Result<String> {
-  generic_multi_search(path, sep, select_column, conditions, |value, condition| {
-    value.starts_with(condition)
-  })
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    |value, condition| value.starts_with(condition),
+    app_handle,
+  )
   .await
 }
 
@@ -239,7 +353,8 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   select_column: String,
   regex_char: String,
   output_path: String,
-) -> Result<String> {
+  app_handle: AppHandle,
+) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_char).build()?;
 
   generic_search(
@@ -249,18 +364,28 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
     vec![regex_char],
     output_path,
     move |value, _| pattern.is_match(value.as_bytes()),
+    app_handle,
   )
   .await
 }
 
-async fn perform_search<P: AsRef<Path> + Send + Sync>(
+async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   select_column: String,
   conditions: String,
   mode: &str,
-) -> Result<String> {
+  count_mode: &str,
+  app_handle: AppHandle,
+) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+
+  let total_rows = match count_mode {
+    "idx" => csv_options.idx_csv_rows().await?,
+    "std" => csv_options.std_csv_rows()?,
+    _ => 0,
+  };
+  app_handle.emit("total-rows", total_rows)?;
 
   let multi_conditions: Vec<String> = conditions
     .split('|')
@@ -276,13 +401,13 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
-      equal_multi_search(path, sep, select_column, conditions).await
+      equal_multi_search(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::StartsWithMulti(conditions) => {
-      startswith_multi_search(path, sep, select_column, conditions).await
+      startswith_multi_search(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::ContainsMulti(conditions) => {
-      contains_multi_search(path, sep, select_column, conditions).await
+      contains_multi_search(path, sep, select_column, conditions, app_handle).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions
@@ -295,15 +420,49 @@ async fn perform_search<P: AsRef<Path> + Send + Sync>(
 
       match search_mode {
         SearchMode::Equal => {
-          equal_search(path, sep, select_column, vec_conditions, output_path).await
+          equal_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            output_path,
+            app_handle,
+          )
+          .await
         }
         SearchMode::Contains => {
-          contains_search(path, sep, select_column, vec_conditions, output_path).await
+          contains_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            output_path,
+            app_handle,
+          )
+          .await
         }
         SearchMode::StartsWith => {
-          startswith_search(path, sep, select_column, vec_conditions, output_path).await
+          startswith_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            output_path,
+            app_handle,
+          )
+          .await
         }
-        SearchMode::Regex => regex_search(path, sep, select_column, conditions, output_path).await,
+        SearchMode::Regex => {
+          regex_search(
+            path,
+            sep,
+            select_column,
+            conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
         _ => Err(anyhow!("Unsupported search mode")),
       }
     }
@@ -316,15 +475,25 @@ pub async fn search(
   select_column: String,
   mode: String,
   condition: String,
-) -> Result<(String, String), String> {
+  count_mode: String,
+  app_handle: AppHandle,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match perform_search(path, select_column, condition, mode.as_str()).await {
-    Ok(result) => {
+  match perform_search(
+    path,
+    select_column,
+    condition,
+    mode.as_str(),
+    count_mode.as_str(),
+    app_handle,
+  )
+  .await
+  {
+    Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2}");
-      Ok((result, runtime))
+      Ok(format!("{elapsed_time:.2}"))
     }
     Err(err) => Err(format!("{err}")),
   }

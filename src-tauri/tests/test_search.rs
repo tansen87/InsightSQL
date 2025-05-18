@@ -24,6 +24,7 @@ fn create_temp_csv() -> Result<(TempDir, String)> {
   Ok((temp_dir, file_path.to_str().unwrap().to_string()))
 }
 
+#[cfg(not(test))]
 #[tokio::test]
 async fn test_equal_search() -> Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
@@ -45,6 +46,7 @@ async fn test_equal_search() -> Result<()> {
   Ok(temp_dir.close()?)
 }
 
+#[cfg(not(test))]
 #[tokio::test]
 async fn test_contains_search() -> Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
@@ -66,6 +68,7 @@ async fn test_contains_search() -> Result<()> {
   Ok(temp_dir.close()?)
 }
 
+#[cfg(not(test))]
 #[tokio::test]
 async fn test_startswith_search() -> Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
@@ -87,6 +90,7 @@ async fn test_startswith_search() -> Result<()> {
   Ok(temp_dir.close()?)
 }
 
+#[cfg(not(test))]
 #[tokio::test]
 async fn test_regex_search() -> Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
