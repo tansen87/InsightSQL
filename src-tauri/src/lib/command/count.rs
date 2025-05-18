@@ -49,95 +49,174 @@ fn count_record<P: AsRef<Path> + Send + Sync>(
   Ok(count)
 }
 
+async fn single_process(
+  file: &str,
+  mode: &str,
+  start_time: Instant,
+  window: &Window,
+) -> Result<(), String> {
+  let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+
+  if let Err(e) = window
+    .emit("start_convert", &filename)
+    .map_err(|e| e.to_string())
+  {
+    return Err(e);
+  }
+
+  match mode {
+    "index" => match crate::command::idx::create_index(file).await {
+      Ok(_) => {
+        let end_time = Instant::now();
+        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+        window
+          .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
+          .map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        window
+          .emit("count_err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+      }
+    },
+    "count" => match count_rows(file).await {
+      Ok(cnt) => {
+        window
+          .emit("count_msg", format!("{filename}|{cnt}"))
+          .map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        window
+          .emit("count_err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+      }
+    },
+    _ => match count_check(file).await {
+      Ok(cnt) => {
+        window
+          .emit("count_msg", format!("{filename}|{cnt}"))
+          .map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        window
+          .emit("count_err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+      }
+    },
+  }
+
+  Ok(())
+}
+
+fn parallel_process(
+  file: &str,
+  mode: &str,
+  start_time: Instant,
+  window: &Window,
+) -> Result<(), String> {
+  let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+
+  if let Err(e) = window
+    .emit("start_convert", &filename)
+    .map_err(|e| e.to_string())
+  {
+    return Err(e);
+  }
+
+  match mode {
+    "index" => {
+      let _ = tauri::async_runtime::block_on(async {
+        match crate::command::idx::create_index(file).await {
+          Ok(_) => {
+            let elapsed_time = start_time.elapsed().as_secs_f64();
+            if let Err(e) = window
+              .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
+              .map_err(|e| e.to_string())
+            {
+              return Err(e);
+            }
+          }
+          Err(err) => {
+            if let Err(e) = window
+              .emit("count_err", format!("{filename}|{err}"))
+              .map_err(|e| e.to_string())
+            {
+              return Err(e);
+            }
+          }
+        }
+        Ok(())
+      });
+    }
+    "count" => {
+      let _ = tauri::async_runtime::block_on(async {
+        match count_rows(file).await {
+          Ok(cnt) => {
+            if let Err(e) = window
+              .emit("count_msg", format!("{filename}|{cnt}"))
+              .map_err(|e| e.to_string())
+            {
+              return Err(e);
+            }
+          }
+          Err(err) => {
+            if let Err(e) = window
+              .emit("count_err", format!("{filename}|{err}"))
+              .map_err(|e| e.to_string())
+            {
+              return Err(e);
+            }
+          }
+        }
+        Ok(())
+      });
+    }
+    _ => {
+      let _ = tauri::async_runtime::block_on(async {
+        match count_check(file).await {
+          Ok(cnt) => {
+            if let Err(e) = window
+              .emit("count_msg", format!("{filename}|{cnt}"))
+              .map_err(|e| e.to_string())
+            {
+              return Err(e);
+            }
+          }
+          Err(err) => {
+            if let Err(e) = window
+              .emit("count_err", format!("{filename}|{err}"))
+              .map_err(|e| e.to_string())
+            {
+              return Err(e);
+            }
+          }
+        }
+        Ok(())
+      });
+    }
+  }
+
+  Ok(())
+}
+
 #[tauri::command]
 pub async fn count(path: String, mode: String, window: Window) -> Result<String, String> {
   let start_time = Instant::now();
   let paths: Vec<&str> = path.split('|').collect();
 
-  paths.par_iter().try_for_each(|file| {
-    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+  let result = if paths.len() > 1 {
+    paths
+      .par_iter()
+      .try_for_each(|file| parallel_process(file, &mode, start_time, &window))
+  } else {
+    Ok(if let Some(file) = paths.first() {
+      single_process(file, &mode, start_time, &window).await?;
+    })
+  };
 
-    if let Err(e) = window
-      .emit("start_convert", &filename)
-      .map_err(|e| e.to_string())
-    {
-      return Err(e);
-    }
-
-    match mode.as_str() {
-      "index" => {
-        let _ = tauri::async_runtime::block_on(async {
-          match crate::command::idx::create_index(file).await {
-            Ok(_) => {
-              let elapsed_time = Instant::now().duration_since(start_time).as_secs_f64();
-              if let Err(e) = window
-                .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
-                .map_err(|e| e.to_string())
-              {
-                return Err(e);
-              }
-            }
-            Err(err) => {
-              if let Err(e) = window
-                .emit("count_err", format!("{filename}|{err}"))
-                .map_err(|e| e.to_string())
-              {
-                return Err(e);
-              }
-            }
-          }
-          Ok(())
-        });
-      }
-      "count" => {
-        let _ = tauri::async_runtime::block_on(async {
-          match count_rows(file).await {
-            Ok(cnt) => {
-              if let Err(e) = window
-                .emit("count_msg", format!("{filename}|{cnt}"))
-                .map_err(|e| e.to_string())
-              {
-                return Err(e);
-              }
-            }
-            Err(err) => {
-              if let Err(e) = window
-                .emit("count_err", format!("{filename}|{err}"))
-                .map_err(|e| e.to_string())
-              {
-                return Err(e);
-              }
-            }
-          }
-          Ok(())
-        });
-      }
-      _ => {
-        let _ = tauri::async_runtime::block_on(async {
-          match count_check(file).await {
-            Ok(cnt) => {
-              if let Err(e) = window
-                .emit("count_msg", format!("{filename}|{cnt}"))
-                .map_err(|e| e.to_string())
-              {
-                return Err(e);
-              }
-            }
-            Err(err) => {
-              if let Err(e) = window
-                .emit("count_err", format!("{filename}|{err}"))
-                .map_err(|e| e.to_string())
-              {
-                return Err(e);
-              }
-            }
-          }
-          Ok(())
-        });
-      }
-    }
-    Ok(())
-  })?;
+  if let Err(e) = result {
+    return Err(e);
+  }
 
   let end_time = Instant::now();
   let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
