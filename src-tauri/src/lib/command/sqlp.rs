@@ -3,7 +3,6 @@ use std::{
   collections::HashMap,
   fs::File,
   io::{BufWriter, Read, Write},
-  num::NonZeroUsize,
   path::{Path, PathBuf},
   time::Instant,
 };
@@ -11,8 +10,8 @@ use std::{
 use anyhow::{Result, anyhow};
 use polars::{
   prelude::{
-    CsvWriter, CsvWriterOptions, DataFrame, IntoLazy, JsonFormat, JsonWriter, LazyCsvReader,
-    LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, SerWriter, SerializeOptions,
+    CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonWriter, LazyCsvReader, LazyFileListReader,
+    LazyFrame, OptFlags, ParquetWriter, SerWriter,
   },
   sql::SQLContext,
 };
@@ -27,52 +26,15 @@ fn execute_query(
   output: Option<String>,
   write: bool,
   write_format: &str,
-  low_memory: bool,
 ) -> Result<String> {
-  let mut df = DataFrame::default();
-
-  if low_memory {
-    // Low memory path: direct streaming write to CSV
-    let lf = ctx.execute(query)?;
-    let output_path = format!("{}.csv", output.unwrap());
-    write_lazyframe(lf, &output_path, sep)?;
-  } else {
-    // Normal execution path
-    df = ctx.execute(query)?.collect()?;
-    if write {
-      // Handle different write formats
-      write_dataframe(&mut df, output.clone(), write_format, sep)?;
-    }
+  let mut df = ctx.execute(query)?.collect()?;
+  if write {
+    // Handle different write formats
+    write_dataframe(&mut df, output.clone(), write_format, sep)?;
   };
 
   let result = query_df_to_json(df.head(Some(500)))?;
   Ok(result)
-}
-
-/// write LazyFrame directly to CSV (low memory mode)
-fn write_lazyframe(lf: LazyFrame, output_path: &str, sep: u8) -> Result<()> {
-  Ok(lf.sink_csv(
-    output_path,
-    CsvWriterOptions {
-      include_bom: false,
-      include_header: true,
-      batch_size: NonZeroUsize::new(1024).unwrap(),
-      maintain_order: false,
-      serialize_options: SerializeOptions {
-        date_format: None,
-        time_format: None,
-        datetime_format: None,
-        float_scientific: None,
-        float_precision: None,
-        separator: sep,
-        quote_char: b'"',
-        null: String::new(),
-        line_terminator: "\n".into(),
-        quote_style: Default::default(),
-      },
-    },
-    Default::default(),
-  )?)
 }
 
 /// Unified dataframe writing handler
@@ -128,7 +90,6 @@ async fn prepare_query(
   sql_query: &str,
   write: bool,
   write_format: &str,
-  low_memory: bool,
   skip_rows: String,
   schema_length: &str,
 ) -> Result<Vec<String>> {
@@ -155,21 +116,7 @@ async fn prepare_query(
   }
 
   let mut opt_state = OptFlags::from_bits_truncate(0);
-  if low_memory {
-    opt_state |= OptFlags::PROJECTION_PUSHDOWN
-      | OptFlags::PREDICATE_PUSHDOWN
-      | OptFlags::CLUSTER_WITH_COLUMNS
-      | OptFlags::SIMPLIFY_EXPR
-      | OptFlags::FILE_CACHING
-      | OptFlags::SLICE_PUSHDOWN
-      | OptFlags::COMM_SUBPLAN_ELIM
-      | OptFlags::COMM_SUBEXPR_ELIM
-      | OptFlags::ROW_ESTIMATE
-      | OptFlags::FAST_PROJECTION;
-  } else {
-    opt_state |= OptFlags::default();
-  };
-  opt_state.set(OptFlags::STREAMING, low_memory);
+  opt_state |= OptFlags::default();
 
   let mut table_aliases = HashMap::with_capacity(file_path.len());
   let mut lossy_table_name = Cow::default();
@@ -235,7 +182,6 @@ async fn prepare_query(
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(infer_schema_length)
-          .with_low_memory(low_memory)
           .with_skip_rows(skip_rows.parse::<usize>()?)
           .finish()?;
 
@@ -285,7 +231,6 @@ async fn prepare_query(
       output_path,
       write,
       write_format,
-      low_memory,
     )?;
     vec_result.push(res);
   }
@@ -313,7 +258,6 @@ pub async fn query(
   sql_query: String,
   write: bool,
   write_format: String,
-  low_memory: bool,
   skip_rows: String,
   schema_length: String,
 ) -> Result<(Vec<String>, String), String> {
@@ -326,7 +270,6 @@ pub async fn query(
     &sql_query,
     write,
     &write_format,
-    low_memory,
     skip_rows,
     schema_length.as_str(),
   )

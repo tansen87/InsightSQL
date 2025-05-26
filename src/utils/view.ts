@@ -72,7 +72,6 @@ export async function viewSqlp(path: string, skipRows: string) {
     sqlQuery: "select * from _t_1 limit 10",
     write: false,
     writeFormat: "csv",
-    lowMemory: false,
     skipRows: skipRows,
     schemaLength: "0"
   });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, computed, markRaw, shallowRef } from "vue";
+import { ref, reactive, computed, markRaw, shallowRef } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
@@ -26,7 +26,6 @@ const data = reactive({
   path: "",
   write: false,
   writeFormat: "xlsx",
-  lowMemory: false,
   skipRows: "0",
   schemaLength: "0"
 });
@@ -107,7 +106,6 @@ async function queryData() {
       sqlQuery: sqlQuery.value,
       write: data.write,
       writeFormat: data.writeFormat,
-      lowMemory: data.lowMemory,
       skipRows: data.skipRows,
       schemaLength: data.schemaLength
     });
@@ -181,7 +179,6 @@ async function selectFile() {
           sqlQuery: `select * from "${basename}" limit 10`,
           write: false,
           writeFormat: "csv",
-          lowMemory: false,
           skipRows: data.skipRows,
           schemaLength: "0"
         });
@@ -269,33 +266,6 @@ const handleNodeClick = async data => {
     message(err.toString(), { type: "error", duration: 10000 });
   }
 };
-
-watch(
-  () => data.lowMemory,
-  newVal => {
-    if (newVal) {
-      data.write = true;
-      data.writeFormat = "csv";
-    }
-  }
-);
-watch(
-  () => data.lowMemory,
-  newVal => {
-    if (!newVal) {
-      data.write = false;
-      data.writeFormat = "csv";
-    }
-  }
-);
-watch(
-  () => data.write,
-  newVal => {
-    if (!newVal) {
-      data.lowMemory = false;
-    }
-  }
-);
 </script>
 
 <template>
@@ -396,18 +366,6 @@ watch(
             style="margin-left: 10px; width: 30px"
           />
         </el-tooltip>
-        <el-form-item style="margin-left: 10px; width: 95px">
-          <el-tooltip
-            content="Memory or stream query"
-            placement="top"
-            effect="light"
-          >
-            <el-select v-model="data.lowMemory">
-              <el-option label="Memory" :value="false" />
-              <el-option label="Stream" :value="true" />
-            </el-select>
-          </el-tooltip>
-        </el-form-item>
       </div>
       <el-pagination
         v-model:current-page="currentPage"
