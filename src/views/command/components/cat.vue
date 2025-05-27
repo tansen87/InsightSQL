@@ -34,7 +34,7 @@ const [
   ref(""),
   ref(false),
   ref(""),
-  ref("memory"),
+  ref("polars"),
   ref("0")
 ];
 const { dynamicHeight } = useDynamicHeight(166);
@@ -158,12 +158,11 @@ const { compiledMarkdown } = useMarkdown(catContent);
           Open File
         </el-button>
         <el-tooltip
-          content="Polars memory or stream, Csv stream Cat, or find duplicate headers"
+          content="Polars memory Cat, Csv stream Cat, or find duplicate headers"
           effect="light"
         >
           <el-select v-model="mode" style="margin-left: 10px; width: 100px">
-            <el-option label="Memory" value="memory" />
-            <el-option label="Stream" value="stream" />
+            <el-option label="Polars" value="polars" />
             <el-option label="Csv" value="csv" />
             <el-option label="Duplicate" value="duplicate" />
           </el-select>

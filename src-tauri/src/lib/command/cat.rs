@@ -1,4 +1,4 @@
-use std::{fs::File, num::NonZeroUsize, path::Path, time::Instant};
+use std::{fs::File, path::Path, time::Instant};
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -6,10 +6,7 @@ use indexmap::IndexSet;
 use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
-  prelude::{
-    CsvWriter, CsvWriterOptions, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter,
-    SerializeOptions, UnionArgs, cols,
-  },
+  prelude::{CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter, UnionArgs, cols},
 };
 
 use crate::{
@@ -22,17 +19,10 @@ async fn cat_with_polars(
   path: String,
   output_path: String,
   file_type: String,
-  mode: String,
   skip_rows: String,
   use_cols: String,
 ) -> Result<()> {
   /* concat csv and excel files into a xlsx or csv file */
-  let low_memory = match mode.as_str() {
-    "memory" => false,
-    "stream" => true,
-    _ => false,
-  };
-
   let paths: Vec<&str> = path.split('|').collect();
   let use_cols: Vec<&str> = use_cols.split('|').collect();
   let use_cols = match use_cols.len() {
@@ -83,7 +73,6 @@ async fn cat_with_polars(
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
           .with_skip_rows(skip_rows.parse::<usize>()?)
-          .with_low_memory(low_memory)
           .finish()?;
 
         let csv_reader = if use_cols == vec!["all"] {
@@ -112,40 +101,15 @@ async fn cat_with_polars(
     },
   )?;
 
-  if !low_memory {
-    let mut cat_df = cat_lf.collect()?;
-    let row_len = cat_df.shape().0;
-    if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
-      let mut xlsx_writer = XlsxWriter::new();
-      xlsx_writer.write_dataframe(&cat_df, output_path.into())?;
-    } else {
-      CsvWriter::new(File::create(output_path)?)
-        .with_separator(vec_sep[0])
-        .finish(&mut cat_df)?;
-    }
+  let mut cat_df = cat_lf.collect()?;
+  let row_len = cat_df.shape().0;
+  if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
+    let mut xlsx_writer = XlsxWriter::new();
+    xlsx_writer.write_dataframe(&cat_df, output_path.into())?;
   } else {
-    cat_lf.sink_csv(
-      output_path,
-      CsvWriterOptions {
-        include_bom: false,
-        include_header: true,
-        batch_size: NonZeroUsize::new(1024).unwrap(),
-        maintain_order: false,
-        serialize_options: SerializeOptions {
-          date_format: None,
-          time_format: None,
-          datetime_format: None,
-          float_scientific: None,
-          float_precision: None,
-          separator: vec_sep[0],
-          quote_char: b'"',
-          null: String::new(),
-          line_terminator: "\n".into(),
-          quote_style: Default::default(),
-        },
-      },
-      Default::default(),
-    )?;
+    CsvWriter::new(File::create(output_path)?)
+      .with_separator(vec_sep[0])
+      .finish(&mut cat_df)?;
   }
 
   Ok(())
@@ -246,15 +210,13 @@ pub async fn concat(
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => {
-      match cat_with_polars(file_path, output_path, file_type, mode, skip_rows, use_cols).await {
-        Ok(()) => {
-          let end_time = Instant::now();
-          let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-          Ok(format!("{elapsed_time:.2}"))
-        }
-        Err(err) => Err(format!("{err}")),
+    _ => match cat_with_polars(file_path, output_path, file_type, skip_rows, use_cols).await {
+      Ok(()) => {
+        let end_time = Instant::now();
+        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+        Ok(format!("{elapsed_time:.2}"))
       }
-    }
+      Err(err) => Err(format!("{err}")),
+    },
   }
 }
