@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use tauri::{Emitter, Window};
 
-use crate::utils::CsvOptions;
+use crate::{tojson, utils::CsvOptions};
 
 #[tauri::command]
 pub async fn from_headers(path: String) -> Result<Vec<String>, String> {
@@ -80,4 +80,12 @@ pub async fn dupli_headers(
   }
 
   Ok((all_unique_headers, all_duplicate_headers))
+}
+
+#[tauri::command]
+pub async fn to_json(path: String) -> Result<String, String> {
+  match async { tojson::csv_to_json(path) }.await {
+    Ok(result) => Ok(result),
+    Err(err) => Err(format!("{err}")),
+  }
 }

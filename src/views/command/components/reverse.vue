@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
-import { viewOpenFile, viewSqlp } from "@/utils/view";
+import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
 const [isLoading, isPath, tableColumn, tableData, path, mode] = [
@@ -27,7 +27,7 @@ async function selectFile() {
   }
 
   try {
-    const { columnView, dataView } = await viewSqlp(path.value, "0");
+    const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;

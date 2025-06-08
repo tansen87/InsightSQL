@@ -94,6 +94,23 @@ export async function viewSqlp(path: string, skipRows: string) {
   };
 }
 
+export async function toJson(path: string) {
+  const result: string = await invoke("to_json", {
+    path: path
+  });
+  const jsonData = JSON.parse(result);
+  const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+  return {
+    columnView: Object.keys(arrayData[0]).map(key => ({
+      name: key,
+      label: key,
+      prop: key
+    })),
+    dataView: arrayData
+  };
+}
+
 export async function mapHeaders(path: string, skipRows: string) {
   const headers: string[] = await invoke("map_headers", {
     path: path,

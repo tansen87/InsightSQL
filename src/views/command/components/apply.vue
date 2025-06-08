@@ -3,7 +3,7 @@ import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Refresh, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
-import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
+import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { CheckboxValueType } from "element-plus";
 import { applyContent, useMarkdown } from "@/utils/markdown";
@@ -83,7 +83,7 @@ async function selectFile() {
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await viewSqlp(path.value, "0");
+    const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;

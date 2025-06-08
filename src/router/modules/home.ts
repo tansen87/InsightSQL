@@ -8,16 +8,16 @@ export default {
   redirect: "/queries",
   meta: {
     icon: "homeFilled",
-    title: "sqlp",
+    title: "sql",
     rank: 0
   },
   children: [
     {
       path: "/queries",
-      name: "sqlp",
+      name: "sql",
       component: () => import("@/views/queries/sqlp.vue"),
       meta: {
-        title: "sqlp",
+        title: "sql",
         showLink: VITE_HIDE_HOME === "true" ? false : true
       }
     }

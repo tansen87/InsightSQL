@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Refresh } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
-import { mapHeaders, viewOpenFile, viewSqlp } from "@/utils/view";
+import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
 const [
@@ -43,7 +43,7 @@ async function selectFile() {
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await viewSqlp(path.value, "0");
+    const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
     isPath.value = true;

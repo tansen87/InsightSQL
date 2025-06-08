@@ -48,6 +48,7 @@ fn main() {
       cmd::map_headers,
       cmd::inter_headers,
       cmd::dupli_headers,
+      cmd::to_json,
       #[cfg(target_os = "windows")]
       access::access,
       apply::apply,
