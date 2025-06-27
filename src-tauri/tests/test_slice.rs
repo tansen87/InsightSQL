@@ -243,7 +243,7 @@ async fn test_slice_column_ss_mode() -> Result<()> {
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
   let wtr = WriterBuilder::new().from_writer(buf_writer);
 
-  slice::slice_column_with_ss(rdr, wtr, "name", 2, 3).await?;
+  slice::slice_column_with_sl(rdr, wtr, "name", 2, 3).await?;
 
   let binding = read_to_string(&output_path)?;
   let slice_data = binding.trim().split('\n').collect::<Vec<_>>();

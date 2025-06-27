@@ -17,7 +17,7 @@ const [
   infoDialog,
   path,
   n,
-  m,
+  length,
   sliceSep,
   mode
 ] = [
@@ -76,7 +76,7 @@ async function sliceData() {
       path: path.value,
       selectColumn: selectColumn.value,
       n: n.value,
-      m: m.value,
+      length: length.value,
       sliceSep: sliceSep.value,
       mode: mode.value
     });
@@ -129,23 +129,23 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
         <!-- 当 mode 为 'left' 或 'right' 时显示 n -->
         <el-tooltip
           v-if="mode === 'left' || mode === 'right'"
-          content="Number of slice"
+          content="Number of the slice"
           effect="light"
         >
           <el-input v-model="n" style="margin-left: 10px; width: 50px" />
         </el-tooltip>
-        <!-- 当 mode 为 'ss' 时显示 n 和 m -->
-        <template v-if="mode === 'ss'">
-          <el-tooltip content="Number of start" effect="light">
+        <!-- 当 mode 为 'sl' 时显示 n 和 length -->
+        <template v-if="mode === 'sl'">
+          <el-tooltip content="Start index" effect="light">
             <el-input v-model="n" style="margin-left: 10px; width: 50px" />
           </el-tooltip>
-          <el-tooltip content="Number of stop" effect="light">
-            <el-input v-model="m" style="margin-left: 10px; width: 50px" />
+          <el-tooltip content="Length of the slice" effect="light">
+            <el-input v-model="length" style="margin-left: 10px; width: 50px" />
           </el-tooltip>
         </template>
         <!-- 当 mode 为 'nth' 或 'nmax' 时显示 n 和 sliceSep -->
         <template v-if="['nth', 'nmax'].includes(mode)">
-          <el-tooltip content="Number of slice" effect="light">
+          <el-tooltip content="Number of the slice" effect="light">
             <el-input v-model="n" style="margin-left: 10px; width: 50px" />
           </el-tooltip>
           <el-tooltip content="Slice separator" effect="light">
@@ -159,7 +159,7 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
           <el-select v-model="mode" style="margin-left: 10px; width: 103px">
             <el-option label="Left" value="left" />
             <el-option label="Right" value="right" />
-            <el-option label="StartStop" value="ss" />
+            <el-option label="StartLength" value="sl" />
             <el-option label="Nth" value="nth" />
             <el-option label="Nmax" value="nmax" />
           </el-select>
