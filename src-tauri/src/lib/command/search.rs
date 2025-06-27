@@ -18,6 +18,7 @@ use crate::utils::{CsvOptions, Selection};
 enum SearchMode {
   Equal,
   EqualMulti(Vec<String>),
+  NotEqual,
   Contains,
   ContainsMulti(Vec<String>),
   StartsWith,
@@ -29,6 +30,7 @@ impl From<&str> for SearchMode {
   fn from(mode: &str) -> Self {
     match mode {
       "equal" => SearchMode::Equal,
+      "notequal" => SearchMode::NotEqual,
       "contains" => SearchMode::Contains,
       "startswith" => SearchMode::StartsWith,
       _ => SearchMode::Regex,
@@ -271,6 +273,26 @@ pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   .await
 }
 
+pub async fn not_equal_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    output_path,
+    |value, cond| !cond.contains(&value.to_string()),
+    app_handle,
+  )
+  .await
+}
+
 pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
@@ -421,6 +443,17 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       match search_mode {
         SearchMode::Equal => {
           equal_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::NotEqual => {
+          not_equal_search(
             path,
             sep,
             select_column,

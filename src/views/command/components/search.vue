@@ -116,6 +116,7 @@ async function searchData() {
           <el-select v-model="mode" style="width: 112px">
             <el-option label="Equal" value="equal" />
             <el-option label="EqualMulti" value="equalmulti" />
+            <el-option label="NotEqual" value="notequal" />
             <el-option label="Contains" value="contains" />
             <el-option label="ContainsMulti" value="containsmulti" />
             <el-option label="StartsWtih" value="startswith" />
