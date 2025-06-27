@@ -128,7 +128,7 @@ pub async fn slice_column_with_sl(
           .rev()
           .collect::<String>()
       } else {
-        format!("Number of the slice cannot be equal to 0")
+        return Err(anyhow!("Number of the slice cannot be equal to 0"))
       };
 
       let mut new_record = record.clone();

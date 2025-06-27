@@ -42,7 +42,7 @@ async fn cat_with_polars(
     };
 
     match file_extension.as_str() {
-      "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" | "parquet" => {
+      "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         vec_sep.push(b'|');
       }
       _ => {
@@ -85,7 +85,7 @@ async fn cat_with_polars(
       }
     };
 
-    let lf = lf.with_column(lit(filename).alias("FileName"));
+    let lf = lf.with_column(lit(filename).alias("_filename_"));
     lfs.push(lf);
   }
 
@@ -104,8 +104,7 @@ async fn cat_with_polars(
   let mut cat_df = cat_lf.collect()?;
   let row_len = cat_df.shape().0;
   if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
-    let mut xlsx_writer = XlsxWriter::new();
-    xlsx_writer.write_dataframe(&cat_df, output_path.into())?;
+    XlsxWriter::new().write_dataframe(&cat_df, output_path.into())?;
   } else {
     CsvWriter::new(File::create(output_path)?)
       .with_separator(vec_sep[0])
@@ -127,10 +126,10 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
     csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
     let sep = csv_options.detect_separator()?;
     vec_sep.push(sep);
-    let skip_rows_reader = csv_options.skip_csv_rows()?;
+
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(skip_rows_reader);
+      .from_reader(csv_options.skip_csv_rows()?);
 
     for field in rdr.byte_headers()? {
       let fi = field.to_vec().into_boxed_slice();
@@ -153,6 +152,7 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
     let mut rdr = ReaderBuilder::new()
       .delimiter(vec_sep[idx])
       .from_reader(csv_options.skip_csv_rows()?);
+
     let h = rdr.byte_headers()?;
 
     let mut columns_of_this_file =
@@ -161,11 +161,11 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
     for (n, field) in h.into_iter().enumerate() {
       let fi = field.to_vec().into_boxed_slice();
       if columns_of_this_file.contains_key(&fi) {
-        eprintln!(
-          "Warning: dulplicate column `{}` name in file `{:?}`.",
+        return Err(anyhow!(
+          "dulplicate column `{}` in file `{:?}`.",
           String::from_utf8_lossy(&*fi),
           p,
-        );
+        ));
       }
       columns_of_this_file.insert(fi, n);
     }
