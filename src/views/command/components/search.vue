@@ -123,6 +123,7 @@ async function searchData() {
             <el-option label="StartsWtih" value="startswith" />
             <el-option label="StartsWithMulti" value="startswithmulti" />
             <el-option label="NotStartsWtih" value="notstartswith" />
+            <el-option label="EndsWtih" value="endswith" />
             <el-option label="Regex" value="regex" />
           </el-select>
         </el-tooltip>
