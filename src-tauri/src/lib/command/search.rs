@@ -26,6 +26,7 @@ enum SearchMode {
   StartsWithMulti(Vec<String>),
   NotStartsWith,
   EndsWith,
+  NotEndsWith,
   Regex,
 }
 
@@ -39,6 +40,7 @@ impl From<&str> for SearchMode {
       "startswith" => SearchMode::StartsWith,
       "notstartswith" => SearchMode::NotStartsWith,
       "endswith" => SearchMode::EndsWith,
+      "notendswith" => SearchMode::NotEndsWith,
       _ => SearchMode::Regex,
     }
   }
@@ -435,6 +437,26 @@ pub async fn ends_with_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
+pub async fn not_ends_with_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: String,
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    output_path,
+    |value, conds| !conds.iter().any(|cond| value.ends_with(cond)),
+    app_handle,
+  )
+  .await
+}
+
 pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
@@ -575,6 +597,17 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         }
         SearchMode::EndsWith => {
           ends_with_search(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::NotEndsWith => {
+          not_ends_with_search(
             path,
             sep,
             select_column,
