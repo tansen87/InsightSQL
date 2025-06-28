@@ -35,7 +35,7 @@ English | [中文](./README_CN.md)
 | ------- | ----------- |
 | Sqlp | Execute Polars SQL queries against several files (Support Excel, CSV, Parquet) |
 | Apply | Apply series of string, math transformations to given CSV column/s |
-| Cat | Merge multiple CSV or Excel files into one CSV or xlsx file (Support Polars and CSV engine) |
+| [Cat](./docs/cat.md) | Merge multiple CSV or Excel files into one CSV or xlsx file (Support Polars and CSV engine) |
 | Excel  to CSV | Batch convert Excel to CSV (Support converting all sheets or specifying sheets) |
 | Count | Count the rows of CSV files (Instantaneous with an index) |
 | CSV to xlsx | Batch convert CSV to xlsx |

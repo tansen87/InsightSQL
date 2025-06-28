@@ -35,7 +35,7 @@
 | ------- | ----------- |
 | Sqlp | 对多个文件执行Polars SQL查询 (支持Excel, CSV, Parquet) |
 | Apply | 对给定的CSV列应用一系列字符串和数学转换 |
-| Cat | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 (支持Polars和CSV引擎) |
+| [Cat](./docs/cat.md) | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 (支持Polars和CSV引擎) |
 | Excel  to CSV | 批量将Excel转换为CSV (支持转换所有工作表或指定工作表) |
 | Count | 统计CSV文件的行数 (带索引的瞬时值) |
 | CSV to xlsx | 批量将CSV转换为xlsx |
