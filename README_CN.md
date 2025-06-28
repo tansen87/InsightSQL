@@ -41,7 +41,7 @@
 | CSV to xlsx | 批量将CSV转换为xlsx |
 | Rename | 重命名CSV的列 |
 | Select | 选择、重新排序CSV的列 |
-| Search | 匹配列中的相应行 (包含模式: equal, contains, startswith, regex) |
+| [Search](./docs/search.md) | 匹配列中的相应行 (包含模式: equal, contains, starts with, ends with, regex) |
 | Fill | 填充CSV中的空值 |
 | Split | 将一个CSV文件拆分为多个CSV文件 (按rows或按lines拆,如果按rows拆分时存在索引,则使用多线程来加快速度) |
 | Skip | 跳过CSV中的行 |

@@ -51,6 +51,7 @@ pub async fn slice_column_with_nchar(
   mut wtr: Writer<BufWriter<File>>,
   select_column: &str,
   n: usize,
+  reverse: bool,
   mode: &str,
 ) -> Result<()> {
   let headers = rdr.headers()?.clone();
@@ -67,17 +68,24 @@ pub async fn slice_column_with_nchar(
     let record = result?;
 
     if let Some(value) = record.get(sel.first_indices()?) {
-      let slice_n = if mode == "left" {
-        value.chars().take(n).collect::<String>()
-      } else {
-        value
-          .chars()
-          .rev()
-          .take(n)
-          .collect::<String>()
-          .chars()
-          .rev()
-          .collect::<String>()
+      let slice_n = {
+        let chars: Vec<char> = value.chars().collect();
+
+        let slice = if mode == "left" {
+          &chars[..n.min(chars.len())]
+        } else {
+          // mode == "right"
+          let len = chars.len();
+          &chars[len.saturating_sub(n)..]
+        };
+
+        let mut result: String = slice.iter().collect();
+
+        if reverse {
+          result = result.chars().rev().collect();
+        }
+
+        result
       };
 
       let mut new_record = record.clone();
@@ -96,6 +104,7 @@ pub async fn slice_column_with_sl(
   select_column: &str,
   start_idx: i32,
   length: usize,
+  reverse: bool,
 ) -> Result<()> {
   let headers = rdr.headers()?.clone();
 
@@ -111,24 +120,46 @@ pub async fn slice_column_with_sl(
     let record = result?;
 
     if let Some(value) = record.get(sel.first_indices()?) {
-      let slice_sl = if start_idx > 0 {
-        value
-          .chars()
-          .skip((start_idx-1).try_into()?)
-          .take(length)
-          .collect::<String>()
-      } else if start_idx < 0 {
-        value
-          .chars()
-          .rev()
-          .skip((-start_idx-1).try_into()?)
-          .take(length)
-          .collect::<String>()
-          .chars()
-          .rev()
-          .collect::<String>()
-      } else {
-        return Err(anyhow!("Number of the slice cannot be equal to 0"))
+      let slice_sl = {
+        let chars: Vec<char> = value.chars().collect();
+
+        let (start, is_reversed) = if start_idx > 0 {
+          ((start_idx - 1).try_into()?, false)
+        } else if start_idx < 0 {
+          let start = chars.len().saturating_sub((-start_idx - 1).try_into()?);
+          (start, true)
+        } else {
+          return Err(anyhow!("Number of the slice cannot be equal to 0"));
+        };
+
+        // determine the indices of the slice
+        let end = start + length;
+        let slice = if is_reversed {
+          chars
+            .iter()
+            .rev()
+            .skip(chars.len().saturating_sub(end))
+            .take(length)
+            .cloned()
+            .collect::<Vec<char>>()
+        } else {
+          chars
+            .get(start..end)
+            .map(|r| r.to_vec())
+            .unwrap_or_default()
+        };
+
+        let mut result: String = slice.into_iter().collect();
+
+        // warning: 不需要将以下两个if合并到一起
+        if start_idx < 0 {
+          result = result.chars().rev().collect();
+        }
+        if reverse {
+          result = result.chars().rev().collect();
+        }
+
+        result
       };
 
       let mut new_record = record.clone();
@@ -221,13 +252,17 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   n: i32,
   length: usize,
   slice_sep: &str,
+  reverse: bool,
   mode: SliceMode,
 ) -> Result<()> {
   let num = n as usize;
   if n < 1 && mode.to_str() != "sl" {
-    return Err(anyhow!("Number of the slice must be greater than or equal 1"));
-  } if n == 0 {
-    return Err(anyhow!("Number of the slice cannot be equal to 0"))
+    return Err(anyhow!(
+      "Number of the slice must be greater than or equal 1"
+    ));
+  }
+  if n == 0 {
+    return Err(anyhow!("Number of the slice cannot be equal to 0"));
   }
 
   let csv_options = CsvOptions::new(&path);
@@ -246,12 +281,30 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
 
   match mode {
     SliceMode::Left => {
-      slice_column_with_nchar(rdr, wtr, select_column, num, SliceMode::Left.to_str()).await?
+      slice_column_with_nchar(
+        rdr,
+        wtr,
+        select_column,
+        num,
+        reverse,
+        SliceMode::Left.to_str(),
+      )
+      .await?
     }
     SliceMode::Right => {
-      slice_column_with_nchar(rdr, wtr, select_column, num, SliceMode::Right.to_str()).await?
+      slice_column_with_nchar(
+        rdr,
+        wtr,
+        select_column,
+        num,
+        reverse,
+        SliceMode::Right.to_str(),
+      )
+      .await?
     }
-    SliceMode::StartLength => slice_column_with_sl(rdr, wtr, select_column, n, length).await?,
+    SliceMode::StartLength => {
+      slice_column_with_sl(rdr, wtr, select_column, n, length, reverse).await?
+    }
     SliceMode::Nth => slice_column_with_nth(rdr, wtr, select_column, num, slice_sep).await?,
     SliceMode::Nmax => slice_column_with_nmax(rdr, wtr, select_column, num, slice_sep).await?,
     SliceMode::None => {}
@@ -267,6 +320,7 @@ pub async fn slice(
   n: String,
   length: String,
   slice_sep: String,
+  reverse: bool,
   mode: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -279,6 +333,7 @@ pub async fn slice(
     n.parse::<i32>().map_err(|e| e.to_string())?,
     length.parse::<usize>().map_err(|e| e.to_string())?,
     slice_sep.as_str(),
+    reverse,
     slice_mode,
   )
   .await

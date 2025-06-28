@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
+import {
+  FolderOpened,
+  Refresh,
+  Link,
+  TurnOff,
+  Open
+} from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { sliceContent, useMarkdown } from "@/utils/markdown";
@@ -19,6 +25,7 @@ const [
   n,
   length,
   sliceSep,
+  reverse,
   mode
 ] = [
   ref(false),
@@ -32,6 +39,7 @@ const [
   ref("4"),
   ref("5"),
   ref("-"),
+  ref(false),
   ref("left")
 ];
 const { dynamicHeight } = useDynamicHeight(178);
@@ -78,6 +86,7 @@ async function sliceData() {
       n: n.value,
       length: length.value,
       sliceSep: sliceSep.value,
+      reverse: reverse.value,
       mode: mode.value
     });
     message(`Slice done, elapsed time: ${rtime} s`, { type: "success" });
@@ -163,6 +172,21 @@ const { compiledMarkdown } = useMarkdown(sliceContent);
             <el-option label="Nth" value="nth" />
             <el-option label="Nmax" value="nmax" />
           </el-select>
+        </el-tooltip>
+        <el-tooltip content="Reverse or not" effect="light">
+          <el-switch
+            v-model="reverse"
+            inline-prompt
+            style="
+              --el-switch-on-color: #43cd80;
+              --el-switch-off-color: #b0c4de;
+              margin-left: 10px;
+            "
+            active-text="Y"
+            inactive-text="N"
+            :active-action-icon="Open"
+            :inactive-action-icon="TurnOff"
+          />
         </el-tooltip>
       </div>
       <el-button
