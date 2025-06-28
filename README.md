@@ -41,7 +41,7 @@ English | [中文](./README_CN.md)
 | CSV to xlsx | Batch convert CSV to xlsx |
 | Rename | Rename the columns of a CSV |
 | Select | Select, re-order columns |
-| Search | Match the corresponding row in a column (equal, contains, startswith, regex) |
+| [Search](./docs/searc) | Match the corresponding row in a column (equal, contains, startswith, regex) |
 | Fill | Fill empty fields in selected columns of a CSV |
 | Split | Split one CSV file into many CSV files (by rows or by lines, uses multithreading to go faster if an index is present when splitting by rows) |
 | Skip | Skip rows form CSV |
