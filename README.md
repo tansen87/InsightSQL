@@ -50,7 +50,7 @@ English | [中文](./README_CN.md)
 | Replace | Replace CSV data using a regex |
 | Join | Joins two sets of CSV data on the specified columns |
 | Sort | Sorts CSV data lexicographically |
-| Slice | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
+| [Slice](./docs/slice.md) | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
 | Reverse | Reverse order of rows in a CSV |
 | Transpose | Transpose rows/columns of a CSV |
 

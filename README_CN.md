@@ -50,7 +50,7 @@
 | Replace | 使用正则表达式替换CSV数据 |
 | Join | 在指定列上连接两组CSV数据,可参考SQL的join |
 | Sort | 对CSV排序 |
-| Slice | CSV列的切片 (如pandas.str.slice和str.split('').str[n]) |
+| [Slice](./docs/slice.md) | CSV列的切片 (如pandas.str.slice和str.split('').str[n]) |
 | Reverse | 颠倒CSV的行 |
 | Transpose | CSV行列转换,可参考Excel的transpose |
 
