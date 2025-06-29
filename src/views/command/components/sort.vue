@@ -6,28 +6,14 @@ import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [
-  isLoading,
-  isPath,
-  selectColumn,
-  tableHeader,
-  tableColumn,
-  tableData,
-  path,
-  numeric,
-  reverse,
-  mode
-] = [
+const mode = ref("Sort");
+const [selectColumn, path] = [ref(""), ref("")];
+const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
+const [isLoading, isPath, numeric, reverse] = [
   ref(false),
   ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref(""),
   ref(false),
-  ref(false),
-  ref("Sort")
+  ref(false)
 ];
 const { dynamicHeight } = useDynamicHeight(178);
 

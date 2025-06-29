@@ -7,31 +7,11 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { listen } from "@tauri-apps/api/event";
 
-const [
-  isLoading,
-  isPath,
-  columns,
-  tableHeader,
-  tableColumn,
-  tableData,
-  path,
-  mode,
-  currentRows,
-  totalRows,
-  pinyinStyle
-] = [
-  ref(false),
-  ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref(""),
-  ref("nil"),
-  ref(0),
-  ref(0),
-  ref("upper")
-];
+const [mode, pinyinStyle] = [ref("nil"), ref("upper")];
+const [currentRows, totalRows] = [ref(0), ref(0)];
+const [columns, path] = [ref(""), ref("")];
+const [isLoading, isPath] = [ref(false), ref(false)];
+const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(192);
 
 listen("update-rows", (event: any) => {

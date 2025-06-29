@@ -6,35 +6,22 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
+const joinType = ref("left");
+const [sel1, sel2] = [ref(""), ref("")];
+const [isLoading, isPath1, isPath2, nulls] = [
+  ref(false),
+  ref(false),
+  ref(false),
+  ref(false)
+];
 const [
-  isLoading,
-  isPath1,
-  isPath2,
-  sel1,
-  sel2,
   tableHeader1,
   tableHeader2,
   tableColumn1,
   tableColumn2,
   tableData1,
-  tableData2,
-  joinType,
-  nulls
-] = [
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(""),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref("left"),
-  ref(false)
-];
+  tableData2
+] = [ref([]), ref([]), ref([]), ref([]), ref([]), ref([])];
 const data = reactive({
   path1: "",
   path2: ""

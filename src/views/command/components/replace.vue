@@ -6,23 +6,10 @@ import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [
-  isLoading,
-  isPath,
-  selectColumn,
-  tableHeader,
-  tableColumn,
-  tableData,
-  path,
-  regexPattern,
-  replacement
-] = [
-  ref(false),
-  ref(false),
+const [isLoading, isPath] = [ref(false), ref(false)];
+const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
+const [selectColumn, path, regexPattern, replacement] = [
   ref(""),
-  ref([]),
-  ref([]),
-  ref([]),
   ref(""),
   ref(""),
   ref("")

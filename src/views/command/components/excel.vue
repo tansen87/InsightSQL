@@ -14,25 +14,11 @@ import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [
-  selectedFiles,
-  isLoading,
-  sheetsData,
-  sheetOptions,
-  fileSheet,
-  backendCompleted,
-  backendInfo,
-  btnShow
-] = [
-  ref([]),
-  ref(false),
-  ref({}),
-  ref([]),
-  ref([]),
-  ref(false),
-  ref(""),
-  ref("Convert")
-];
+const btnShow = ref("Convert");
+const backendInfo = ref("");
+const [selectedFiles, sheetOptions, fileSheet] = [ref([]), ref([]), ref([])];
+const [isLoading, backendCompleted] = [ref(false), ref(false)];
+const sheetsData = ref({});
 const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],

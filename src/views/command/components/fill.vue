@@ -6,27 +6,10 @@ import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [
-  isLoading,
-  isPath,
-  columns,
-  tableHeader,
-  tableColumn,
-  tableData,
-  path,
-  fillValue,
-  mode
-] = [
-  ref(false),
-  ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([]),
-  ref(""),
-  ref("0"),
-  ref("fill")
-];
+const [fillValue, mode] = [ref("0"), ref("fill")];
+const [isLoading, isPath] = [ref(false), ref(false)];
+const [columns, path] = [ref(""), ref("")];
+const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(222);
 
 async function selectFile() {

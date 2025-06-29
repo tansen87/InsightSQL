@@ -6,14 +6,10 @@ import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 
-const [isLoading, isPath, tableColumn, tableData, path, mode] = [
-  ref(false),
-  ref(false),
-  ref([]),
-  ref([]),
-  ref(""),
-  ref("reverse")
-];
+const path = ref("");
+const mode = ref("reverse");
+const [tableColumn, tableData] = [ref([]), ref([])];
+const [isLoading, isPath] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(134);
 
 async function selectFile() {

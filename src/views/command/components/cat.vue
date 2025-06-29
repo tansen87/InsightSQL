@@ -14,28 +14,13 @@ import { catContent, useMarkdown } from "@/utils/markdown";
 import { message, closeAllMessage } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [
-  columns,
-  selectedFiles,
-  originalColumns,
-  isLoading,
-  backendCompleted,
-  backendInfo,
-  infoDialog,
-  path,
-  mode,
-  skipRows
-] = [
-  ref(""),
-  ref([]),
-  ref([]),
+const [mode, skipRows] = [ref("polars"), ref("0")];
+const [columns, backendInfo, path] = [ref(""), ref(""), ref("")];
+const [selectedFiles, originalColumns] = [ref([]), ref([])];
+const [isLoading, backendCompleted, infoDialog] = [
   ref(false),
   ref(false),
-  ref(""),
-  ref(false),
-  ref(""),
-  ref("polars"),
-  ref("0")
+  ref(false)
 ];
 const { dynamicHeight } = useDynamicHeight(166);
 

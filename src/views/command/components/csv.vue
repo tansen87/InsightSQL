@@ -14,13 +14,10 @@ import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [isLoading, selectedFiles, path, chunkSize, mode] = [
-  ref(false),
-  ref([]),
-  ref(""),
-  ref("700000"),
-  ref("csv")
-];
+const [chunkSize, mode] = [ref("700000"), ref("csv")];
+const isLoading = ref(false);
+const selectedFiles = ref([]);
+const path = ref("");
 const { dynamicHeight } = useDynamicHeight(123);
 
 listen("start_convert", (event: any) => {

@@ -14,12 +14,10 @@ import {
 import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
-const [isLoading, selectedFiles, path, mode] = [
-  ref(false),
-  ref([]),
-  ref(""),
-  ref("count")
-];
+const mode = ref("count");
+const path = ref("");
+const isLoading = ref(false);
+const selectedFiles = ref([]);
 const { dynamicHeight } = useDynamicHeight(122);
 
 listen("start_convert", (event: any) => {

@@ -7,25 +7,9 @@ import { viewOpenFile, toJson } from "@/utils/view";
 import { splitContent, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 
-const [
-  isLoading,
-  isPath,
-  tableColumn,
-  tableData,
-  infoDialog,
-  path,
-  size,
-  mode
-] = [
-  ref(false),
-  ref(false),
-  ref([]),
-  ref([]),
-  ref(false),
-  ref(""),
-  ref(1000000),
-  ref("rows")
-];
+const [path, size, mode] = [ref(""), ref(1000000), ref("rows")];
+const [tableColumn, tableData] = [ref([]), ref([])];
+const [isLoading, isPath, infoDialog] = [ref(false), ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(176);
 
 async function selectFile() {

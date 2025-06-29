@@ -13,34 +13,14 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { sliceContent, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 
-const [
-  isLoading,
-  isPath,
-  selectColumn,
-  tableHeader,
-  tableColumn,
-  tableData,
-  infoDialog,
-  path,
-  n,
-  length,
-  sliceSep,
-  reverse,
-  mode
-] = [
+const [selectColumn, path] = [ref(""), ref("")];
+const [n, length, sliceSep, mode] = [ref("4"), ref("5"), ref("-"), ref("left")];
+const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
+const [isLoading, isPath, infoDialog, reverse] = [
   ref(false),
   ref(false),
-  ref(""),
-  ref([]),
-  ref([]),
-  ref([]),
   ref(false),
-  ref(""),
-  ref("4"),
-  ref("5"),
-  ref("-"),
-  ref(false),
-  ref("left")
+  ref(false)
 ];
 const { dynamicHeight } = useDynamicHeight(178);
 

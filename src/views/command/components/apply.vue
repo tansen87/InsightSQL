@@ -11,40 +11,34 @@ import { applyContent, useMarkdown } from "@/utils/markdown";
 const [
   isLoading,
   isPath,
-  operations,
-  tableHeader,
-  tableColumn,
-  tableData,
   checkAll,
   indeterminate,
-  path,
-  applyMode,
-  comparand,
-  replacement,
-  formatstr,
   newColumn,
   infoDialog,
-  backendCompleted,
-  backendInfo
+  backendCompleted
 ] = [
   ref(false),
   ref(false),
+  ref(false),
+  ref(false),
+  ref(false),
+  ref(false),
+  ref(false)
+];
+const [operations, tableHeader, tableColumn, tableData] = [
   ref([]),
   ref([]),
   ref([]),
-  ref([]),
-  ref(false),
-  ref(false),
-  ref(""),
-  ref("Operations"),
+  ref([])
+];
+const [path, comparand, replacement, formatstr, backendInfo] = [
   ref(""),
   ref(""),
   ref(""),
-  ref(false),
-  ref(false),
-  ref(false),
+  ref(""),
   ref("")
 ];
+const applyMode = ref("operations");
 const selColumns = ref<CheckboxValueType[]>([]);
 const { dynamicHeight } = useDynamicHeight(266);
 watch(selColumns, val => {

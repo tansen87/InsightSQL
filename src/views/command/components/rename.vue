@@ -7,25 +7,11 @@ import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { listen } from "@tauri-apps/api/event";
 
-const [
-  tableData,
-  isLoading,
-  isPath,
-  search,
-  path,
-  mode,
-  currentRows,
-  totalRows
-] = [
-  ref([]),
-  ref(false),
-  ref(false),
-  ref(""),
-  ref(""),
-  ref("nil"),
-  ref(0),
-  ref(0)
-];
+const mode = ref("nil");
+const tableData = ref([]);
+const [search, path] = [ref(""), ref("")];
+const [currentRows, totalRows] = [ref(0), ref(0)];
+const [isLoading, isPath] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(122);
 const filterTableData = computed(() =>
   tableData.value.filter(

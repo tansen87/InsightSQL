@@ -7,24 +7,13 @@ import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { CheckboxValueType } from "element-plus";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 
-const [
-  originalColumns,
-  isLoading,
-  isPath,
-  checkAll,
-  indeterminate,
-  tableColumn,
-  tableData,
-  path
-] = [
-  ref([]),
+const path = ref("");
+const [originalColumns, tableColumn, tableData] = [ref([]), ref([]), ref([])];
+const [isLoading, isPath, checkAll, indeterminate] = [
   ref(false),
   ref(false),
   ref(false),
-  ref(false),
-  ref([]),
-  ref([]),
-  ref("")
+  ref(false)
 ];
 const selColumns = ref<CheckboxValueType[]>([]);
 
