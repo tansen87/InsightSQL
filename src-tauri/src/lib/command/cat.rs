@@ -100,8 +100,8 @@ async fn cat_with_polars(
       maintain_order: true,
     },
   )?;
-
-  let mut cat_df = cat_lf.collect()?;
+  let mut cat_df =
+    tokio::task::spawn_blocking(move || -> Result<_> { Ok(cat_lf.collect()?) }).await??;
   let row_len = cat_df.shape().0;
   if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
     XlsxWriter::new().write_dataframe(&cat_df, output_path.into())?;

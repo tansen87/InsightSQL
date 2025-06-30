@@ -2,7 +2,7 @@ use std::{
   borrow::Cow,
   collections::HashMap,
   fs::File,
-  io::{BufWriter, Read, Write},
+  io::{BufWriter, Write},
   path::{Path, PathBuf},
   time::Instant,
 };
@@ -18,24 +18,6 @@ use polars::{
 
 use crate::excel_reader::{ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame};
 use crate::{utils::CsvOptions, xlsx_writer::XlsxWriter};
-
-fn execute_query(
-  query: &str,
-  ctx: &mut SQLContext,
-  sep: u8,
-  output: Option<String>,
-  write: bool,
-  write_format: &str,
-) -> Result<String> {
-  let mut df = ctx.execute(query)?.collect()?;
-  if write {
-    // Handle different write formats
-    write_dataframe(&mut df, output.clone(), write_format, sep)?;
-  };
-
-  let result = query_df_to_json(df.head(Some(500)))?;
-  Ok(result)
-}
 
 /// Unified dataframe writing handler
 fn write_dataframe(df: &DataFrame, output: Option<String>, format: &str, sep: u8) -> Result<()> {
@@ -194,46 +176,29 @@ async fn prepare_query(
 
   let mut vec_result = Vec::new();
 
-  // check if the query is a SQL script
-  let queries = if Path::new(&sql_query)
-    .extension()
-    .map_or(false, |ext| ext.eq_ignore_ascii_case("sql"))
-  {
-    let mut file = File::open(&sql_query)?;
-    let mut sql_script = String::new();
-    file.read_to_string(&mut sql_script)?;
-    sql_script
-      .split(';')
-      .map(std::string::ToString::to_string)
-      .filter(|s| !s.trim().is_empty())
-      .collect()
-  } else {
-    // its not a sql script, just a single query
-    vec![sql_query.to_string().clone()]
-  };
-
   let mut current_query = String::new();
 
-  for (idx, query) in queries.iter().enumerate() {
-    // replace aliases in query
-    current_query.clone_from(query);
-    for (table_name, table_alias) in &table_aliases {
-      // we quote the table name to avoid issues with reserved keywords and
-      // other characters that are not allowed in identifiers
-      current_query = current_query.replace(table_alias, &format!(r#""{table_name}""#));
-    }
-
-    let output_path = Some(format!("{}_{idx}", output[0].clone().unwrap()));
-    let res = execute_query(
-      &current_query,
-      &mut ctx,
-      vec_sep[0],
-      output_path,
-      write,
-      write_format,
-    )?;
-    vec_result.push(res);
+  // replace aliases in query
+  current_query.clone_from(&sql_query.to_string());
+  for (table_name, table_alias) in &table_aliases {
+    // we quote the table name to avoid issues with reserved keywords and
+    // other characters that are not allowed in identifiers
+    current_query = current_query.replace(table_alias, &format!(r#""{table_name}""#));
   }
+
+  let output_path = Some(format!("{}", output[0].clone().unwrap()));
+  let mut ctx = ctx.clone();
+
+  let mut df = tokio::task::spawn_blocking(move || -> Result<_> {
+    Ok(ctx.execute(&current_query)?.collect()?)
+  })
+  .await??;
+
+  if write {
+    write_dataframe(&mut df, output_path, write_format, vec_sep[0])?;
+  }
+
+  vec_result.push(query_df_to_json(df.head(Some(500)))?);
 
   Ok(vec_result)
 }
