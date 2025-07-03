@@ -98,11 +98,12 @@ async function searchData() {
             <el-option label="Contains" value="contains" />
             <el-option label="ContainsMulti" value="containsmulti" />
             <el-option label="NotContains" value="notcontains" />
-            <el-option label="StartsWtih" value="startswith" />
+            <el-option label="StartsWith" value="startswith" />
             <el-option label="StartsWithMulti" value="startswithmulti" />
             <el-option label="NotStartsWtih" value="notstartswith" />
-            <el-option label="EndsWtih" value="endswith" />
-            <el-option label="NotEndsWtih" value="notendswith" />
+            <el-option label="EndsWith" value="endswith" />
+            <el-option label="EndsWithMulti" value="endswithmulti" />
+            <el-option label="NotEndsWith" value="notendswith" />
             <el-option label="Regex" value="regex" />
           </el-select>
         </el-tooltip>

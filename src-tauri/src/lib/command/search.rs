@@ -26,6 +26,7 @@ enum SearchMode {
   StartsWithMulti(Vec<String>),
   NotStartsWith,
   EndsWith,
+  EndsWithMulti(Vec<String>),
   NotEndsWith,
   Regex,
 }
@@ -379,7 +380,7 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn startswith_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn starts_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
@@ -432,6 +433,24 @@ pub async fn ends_with_search<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conds| conds.iter().any(|cond| value.ends_with(cond)),
+    app_handle,
+  )
+  .await
+}
+
+pub async fn ends_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_multi_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    |value, conds| value.ends_with(conds),
     app_handle,
   )
   .await
@@ -506,6 +525,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
     "equalmulti" => SearchMode::EqualMulti(multi_conditions),
     "startswithmulti" => SearchMode::StartsWithMulti(multi_conditions),
     "containsmulti" => SearchMode::ContainsMulti(multi_conditions),
+    "endswithmulti" => SearchMode::EndsWithMulti(multi_conditions),
     _ => mode.into(),
   };
 
@@ -514,10 +534,13 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       equal_multi_search(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::StartsWithMulti(conditions) => {
-      startswith_multi_search(path, sep, select_column, conditions, app_handle).await
+      starts_with_multi_search(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::ContainsMulti(conditions) => {
       contains_multi_search(path, sep, select_column, conditions, app_handle).await
+    }
+    SearchMode::EndsWithMulti(conditions) => {
+      ends_with_multi_search(path, sep, select_column, conditions, app_handle).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions

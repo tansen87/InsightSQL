@@ -11,8 +11,6 @@ sample file (test.csv)
 └─────┴────────┘
 ```
 
-
-
 ### 1. Equal
 
 Set search criteria (Search mode: <u>Equal</u>, Search by column: <u>name</u>, Search rows: <u>tom|jerry</u>)
@@ -26,8 +24,6 @@ Equal search result (1 output file: test_search.csv)
 │  2  │ jerry  │
 └─────┴────────┘
 ```
-
-
 
 ### 2. EqualMulti
 
@@ -50,8 +46,6 @@ test_jerry.csv
 └─────┴────────┘
 ```
 
-
-
 ### 3. NotEqual
 
 Set search criteria (Search mode: <u>NotEqual</u>, Search by column: <u>name</u>, Search rows: <u>tom|jerry</u>)
@@ -64,8 +58,6 @@ NotEqual search result (1 output file: test_search.csv)
 │  3  │ hansen │
 └─────┴────────┘
 ```
-
-
 
 ### 4. Contains
 
@@ -80,8 +72,6 @@ Contains search result (1 output file: test_search.csv)
 │  2  │ jerry  │
 └─────┴────────┘
 ```
-
-
 
 ### 5. ContainsMulti
 
@@ -104,8 +94,6 @@ test_jer.csv
 └─────┴────────┘
 ```
 
-
-
 ### 6. NotContains
 
 Set search criteria (Search mode: <u>NotContains</u>, Search by column: <u>name</u>, Search rows: <u>om|jer</u>)
@@ -118,8 +106,6 @@ NotContains search result (1 output file: test_search.csv)
 │  3  │ hansen │
 └─────┴────────┘
 ```
-
-
 
 ### 7. StartsWith
 
@@ -134,8 +120,6 @@ StartsWith search result (1 output file: test_search.csv)
 │  2  │ jerry  │
 └─────┴────────┘
 ```
-
-
 
 ### 8. StartsWithMulti
 
@@ -158,14 +142,12 @@ test_jer.csv
 └─────┴────────┘
 ```
 
+### 9. NotStartsWith
 
-
-### 9. NotStartsWtih
-
-Set search criteria (Search mode: <u>NotStartsWtih</u>, Search by column: <u>name</u>, Search rows: <u>to|jer</u>)
+Set search criteria (Search mode: <u>NotStartsWith</u>, Search by column: <u>name</u>, Search rows: <u>to|jer</u>)
 
 ```
-NotStartsWtih search result (1 output file: test_search.csv)
+NotStartsWith search result (1 output file: test_search.csv)
 ┌─────┬────────┐
 │ idx │ name   │
 ├─────┼────────┤
@@ -173,14 +155,12 @@ NotStartsWtih search result (1 output file: test_search.csv)
 └─────┴────────┘
 ```
 
+### 10. EndsWith
 
-
-### 10. EndsWtih
-
-Set search criteria (Search mode: <u>EndsWtih</u>, Search by column: <u>name</u>, Search rows: <u>om|rry</u>)
+Set search criteria (Search mode: <u>EndsWith</u>, Search by column: <u>name</u>, Search rows: <u>om|rry</u>)
 
 ```
-EndsWtih search result (1 output file: test_search.csv)
+EndsWith search result (1 output file: test_search.csv)
 ┌─────┬────────┐
 │ idx │ name   │
 ├─────┼────────┤
@@ -189,14 +169,33 @@ EndsWtih search result (1 output file: test_search.csv)
 └─────┴────────┘
 ```
 
+### 11. EndsWithMulti
 
-
-### 11. NotEndsWtih
-
-Set search criteria (Search mode: <u>NotEndsWtih</u>, Search by column: <u>name</u>, Search rows: <u>om|rry</u>)
+Set search criteria (Search mode: <u>EndsWithMulti</u>, Search by column: <u>name</u>, Search rows: <u>om|rry</u>)
 
 ```
-NotEndsWtih search result (1 output file: test_search.csv)
+StartsWithMulti search result (2 output file: test_to.csv, test_jer.csv)
+test_om.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+└─────┴────────┘
+
+test_rry.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+└─────┴────────┘
+```
+
+### 12. NotEndsWith
+
+Set search criteria (Search mode: <u>NotEndsWith</u>, Search by column: <u>name</u>, Search rows: <u>om|rry</u>)
+
+```
+NotEndsWith search result (1 output file: test_search.csv)
 ┌─────┬────────┐
 │ idx │ name   │
 ├─────┼────────┤
@@ -204,9 +203,7 @@ NotEndsWtih search result (1 output file: test_search.csv)
 └─────┴────────┘
 ```
 
-
-
-### 12. Regex
+### 13. Regex
 
 Set search criteria (Search mode: <u>Regex</u>, Search by column: <u>name</u>, Search rows: <u>hansen</u>)
 

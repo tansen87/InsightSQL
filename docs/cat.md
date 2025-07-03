@@ -21,8 +21,6 @@ test2.xlsx (test2.csv)
 └─────┴─────┘
 ```
 
-
-
 ### 1. Polars (support csv and excel file)
 
 ```
@@ -38,8 +36,6 @@ test2.xlsx (test2.csv)
 └─────┴────────┴─────────────┴─────┘
 ```
 
-
-
 ### 2. CSV (only support csv file)
 
 ```
@@ -54,8 +50,6 @@ test2.xlsx (test2.csv)
 │  6  │        │ 31  │
 └─────┴────────┴─────┘
 ```
-
-
 
 ### 3. Duplicate (only support csv file)
 
