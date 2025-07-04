@@ -65,7 +65,7 @@ async fn single_process(
   }
 
   match mode {
-    "index" => match crate::command::idx::create_index(file).await {
+    "index" => match crate::cmd::idx::create_index(file).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -126,7 +126,7 @@ fn parallel_process(
   match mode {
     "index" => {
       let _ = tauri::async_runtime::block_on(async {
-        match crate::command::idx::create_index(file).await {
+        match crate::cmd::idx::create_index(file).await {
           Ok(_) => {
             let elapsed_time = start_time.elapsed().as_secs_f64();
             if let Err(e) = window

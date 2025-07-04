@@ -3,34 +3,33 @@
   windows_subsystem = "windows"
 )]
 
-use lib::cmd;
+use lib::command;
 
 #[cfg(target_os = "windows")]
-use lib::command::access;
-use lib::command::apply;
-use lib::command::cat;
-use lib::command::convert;
-use lib::command::count;
-use lib::command::dbf;
-use lib::command::enumerate;
-use lib::command::extsort;
-use lib::command::fill;
-use lib::command::idx;
-use lib::command::join;
-use lib::command::offset;
-use lib::command::pinyin;
-use lib::command::rename;
-use lib::command::replace;
-use lib::command::reverse;
-use lib::command::search;
-use lib::command::select;
-use lib::command::skip;
-use lib::command::slice;
-use lib::command::sort;
-use lib::command::split;
-use lib::command::sqlp;
-use lib::command::transpose;
-use lib::command::traverse;
+use lib::cmd::access;
+use lib::cmd::apply;
+use lib::cmd::cat;
+use lib::cmd::convert;
+use lib::cmd::count;
+use lib::cmd::dbf;
+use lib::cmd::enumerate;
+use lib::cmd::extsort;
+use lib::cmd::fill;
+use lib::cmd::idx;
+use lib::cmd::join;
+use lib::cmd::pinyin;
+use lib::cmd::rename;
+use lib::cmd::replace;
+use lib::cmd::reverse;
+use lib::cmd::search;
+use lib::cmd::select;
+use lib::cmd::skip;
+use lib::cmd::slice;
+use lib::cmd::sort;
+use lib::cmd::split;
+use lib::cmd::sqlp;
+use lib::cmd::transpose;
+use lib::cmd::traverse;
 
 fn main() {
   tauri::Builder::default()
@@ -44,11 +43,11 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
-      cmd::from_headers,
-      cmd::map_headers,
-      cmd::inter_headers,
-      cmd::dupli_headers,
-      cmd::to_json,
+      command::from_headers,
+      command::map_headers,
+      command::inter_headers,
+      command::dupli_headers,
+      command::to_json,
       #[cfg(target_os = "windows")]
       access::access,
       apply::apply,
@@ -64,8 +63,6 @@ fn main() {
       fill::fill,
       idx::idx,
       join::join,
-      offset::get_offset_headers,
-      offset::offset,
       pinyin::pinyin,
       rename::rename,
       replace::replace,

@@ -12,8 +12,8 @@ use csv::{ByteRecord, ReaderBuilder};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-  excel_reader::{self, FastExcelReader},
   index::Indexed,
+  io::excel_reader::{self, FastExcelReader},
 };
 
 type ByteString = Vec<u8>;
@@ -92,7 +92,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
   /// Count csv rows (applicable to all csv files)
   pub async fn idx_csv_rows(&self) -> Result<usize> {
-    let total_rows = crate::command::count::count_rows(&self.path).await? as usize;
+    let total_rows = crate::cmd::count::count_rows(&self.path).await? as usize;
 
     Ok(total_rows)
   }

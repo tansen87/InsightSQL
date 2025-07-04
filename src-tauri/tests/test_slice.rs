@@ -7,7 +7,7 @@ use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 use tempfile::TempDir;
 
-use lib::command::slice;
+use lib::cmd::slice;
 use lib::utils::CsvOptions;
 
 #[tokio::test]

@@ -4,7 +4,7 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::command::enumerate;
+use lib::cmd::enumerate;
 
 #[tokio::test]
 async fn test_enumerate() -> Result<()> {

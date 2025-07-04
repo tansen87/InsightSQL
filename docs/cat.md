@@ -1,4 +1,4 @@
-# [Cat](../src-tauri/src/lib/command/cat.rs) - Merge multiple CSV or Excel files into one CSV or xlsx file
+# [Cat](../src-tauri/src/lib/cmd/cat.rs) - Merge multiple CSV or Excel files into one CSV or xlsx file
 
 ```
 sample file

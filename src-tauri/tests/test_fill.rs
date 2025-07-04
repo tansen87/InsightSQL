@@ -4,7 +4,7 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::command::fill;
+use lib::cmd::fill;
 
 #[tokio::test]
 async fn test_fill() -> Result<()> {

@@ -63,7 +63,7 @@ pub async fn reverse(path: String, mode: String) -> Result<String, String> {
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match crate::command::idx::create_index(path).await {
+    _ => match crate::cmd::idx::create_index(path).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

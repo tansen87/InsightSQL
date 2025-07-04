@@ -10,7 +10,6 @@ pub mod extsort;
 pub mod fill;
 pub mod idx;
 pub mod join;
-pub mod offset;
 pub mod pinyin;
 pub mod rename;
 pub mod replace;

@@ -1,4 +1,4 @@
-# [Search](../src-tauri/src/lib/command/search.rs) - Match the corresponding row in a column
+# [Search](../src-tauri/src/lib/cmd/search.rs) - Match the corresponding row in a column
 
 ```
 sample file (test.csv)

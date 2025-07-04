@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::command::split;
+use lib::cmd::split;
 use lib::utils::CsvOptions;
 
 #[tokio::test]

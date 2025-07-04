@@ -1,4 +1,4 @@
-# [Slice](../src-tauri/src/lib/command/slice.rs) - Slicing of CSV column
+# [Slice](../src-tauri/src/lib/cmd/slice.rs) - Slicing of CSV column
 
 ```
 sample file (test.csv)

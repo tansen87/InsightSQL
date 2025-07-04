@@ -2,7 +2,7 @@ use anyhow::Result;
 use csv::{ReaderBuilder, StringRecord, Writer};
 use tempfile::TempDir;
 
-use lib::command::sort;
+use lib::cmd::sort;
 
 #[tokio::test]
 async fn test_sort() -> Result<()> {

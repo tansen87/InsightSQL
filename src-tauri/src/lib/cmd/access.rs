@@ -1,10 +1,9 @@
-use std::path::Path;
-use std::time::Instant;
+use std::{path::Path, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::StringRecord;
 use lazy_static::lazy_static;
-use odbc_api::{buffers::TextRowSet, ConnectionOptions, Cursor, Environment, ResultSetMetadata};
+use odbc_api::{ConnectionOptions, Cursor, Environment, ResultSetMetadata, buffers::TextRowSet};
 
 fn connection(odbc_conn: &str) -> Result<odbc_api::Connection<'_>, odbc_api::Error> {
   lazy_static! {

@@ -10,9 +10,9 @@ use polars::{
 };
 
 use crate::{
-  excel_reader::{ExcelReader, ToPolarsDataFrame},
+  io::excel_reader::{ExcelReader, ToPolarsDataFrame},
+  io::xlsx_writer::XlsxWriter,
   utils::CsvOptions,
-  xlsx_writer::XlsxWriter,
 };
 
 async fn cat_with_polars(

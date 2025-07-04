@@ -4,7 +4,7 @@ use anyhow::Result;
 use csv::WriterBuilder;
 use tempfile::TempDir;
 
-use lib::command::skip;
+use lib::cmd::skip;
 
 #[tokio::test]
 async fn test_skip() -> Result<()> {

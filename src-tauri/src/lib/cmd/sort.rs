@@ -1,6 +1,4 @@
-use std::path::Path;
-use std::str::from_utf8;
-use std::{cmp, time::Instant};
+use std::{cmp, path::Path, str::from_utf8, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};

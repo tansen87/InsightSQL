@@ -4,7 +4,7 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::command::count;
+use lib::cmd::count;
 
 #[tokio::test]
 async fn test_count() -> Result<()> {

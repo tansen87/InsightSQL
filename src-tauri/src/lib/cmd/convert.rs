@@ -16,8 +16,8 @@ use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 
 use crate::{
+  io::xlsx_writer::XlsxWriter,
   utils::{CsvOptions, num_cpus},
-  xlsx_writer::XlsxWriter,
 };
 
 async fn excel_to_csv<P: AsRef<Path>>(

@@ -1,10 +1,12 @@
-use std::collections::hash_map::{Entry, HashMap};
-use std::fmt;
-use std::fs::{self, File};
-use std::io::{self, Write};
-use std::iter::repeat;
-use std::path::Path;
-use std::time::Instant;
+use std::{
+  collections::hash_map::{Entry, HashMap},
+  fmt,
+  fs::{self, File},
+  io::{self, Write},
+  iter::repeat,
+  path::Path,
+  time::Instant,
+};
 
 use anyhow::{Result, anyhow};
 use byteorder::{BigEndian, WriteBytesExt};
