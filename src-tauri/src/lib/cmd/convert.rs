@@ -23,11 +23,10 @@ use crate::{
 async fn excel_to_csv<P: AsRef<Path>>(
   path: P,
   skip_rows: u32,
-  sep: u8,
   sheet_name: Option<String>,
   output_path: &PathBuf,
 ) -> Result<()> {
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let mut wtr = WriterBuilder::new().from_path(output_path)?;
 
   let mut workbook = open_workbook_auto(&path)?;
 
@@ -305,7 +304,6 @@ pub async fn map_excel_sheets(
 pub async fn switch_excel(
   path: String,
   skip_rows: String,
-  sep: String,
   map_file_sheet: Vec<HashMap<String, String>>,
   all_sheets: bool,
   write_sheetname: bool,
@@ -315,11 +313,6 @@ pub async fn switch_excel(
 
   let skip_rows = skip_rows.parse::<u32>().map_err(|e| e.to_string())?;
   let paths: Vec<&str> = path.split('|').collect();
-  let sep = if sep == "\\t" {
-    b'\t'
-  } else {
-    sep.into_bytes()[0]
-  };
 
   for file in paths.iter() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
@@ -345,7 +338,7 @@ pub async fn switch_excel(
         false => Path::new(file).with_extension("csv"),
       };
 
-      match excel_to_csv(file, skip_rows, sep, sheet_name, &output_path).await {
+      match excel_to_csv(file, skip_rows, sheet_name, &output_path).await {
         Ok(_) => {
           window
             .emit("e2c_msg", filename)
@@ -372,7 +365,7 @@ pub async fn switch_excel(
       for (index, sheet) in sheet_names.iter().enumerate() {
         let output_path = path.with_file_name(format!("{}_{}.csv", file_stem, sheet));
 
-        match excel_to_csv(file, skip_rows, sep, Some(sheet.to_string()), &output_path).await {
+        match excel_to_csv(file, skip_rows, Some(sheet.to_string()), &output_path).await {
           Ok(_) => {
             // check if it is the last sheet
             if index == sheet_names.len() - 1 {

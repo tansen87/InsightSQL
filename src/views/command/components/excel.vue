@@ -8,13 +8,15 @@ import {
   Select,
   FolderOpened,
   SwitchFilled,
-  Loading
+  Loading,
+  Open,
+  TurnOff
 } from "@element-plus/icons-vue";
 import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const btnShow = ref("Convert");
+const btnShow = ref("CONVERT ONE");
 const backendInfo = ref("");
 const [selectedFiles, sheetOptions, fileSheet] = [ref([]), ref([]), ref([])];
 const [isLoading, backendCompleted] = [ref(false), ref(false)];
@@ -23,7 +25,6 @@ const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
   skipRows: "0",
-  sep: "|",
   allSheets: false,
   writeSheetname: false
 });
@@ -32,9 +33,9 @@ watch(
   () => data.allSheets,
   val => {
     if (val === true) {
-      btnShow.value = "Convert-all";
+      btnShow.value = "CONVERT ALL";
     } else if (val === false) {
-      btnShow.value = "Convert";
+      btnShow.value = "CONVERT ONE";
     }
   }
 );
@@ -159,7 +160,6 @@ async function excelToCsv() {
     const rtime: string = await invoke("switch_excel", {
       path: data.path,
       skipRows: data.skipRows,
-      sep: data.sep,
       mapFileSheet: mapFileSheet,
       allSheets: data.allSheets,
       writeSheetname: data.writeSheetname
@@ -179,12 +179,6 @@ async function excelToCsv() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; margin-right: 10px; width: 50px"
-          />
-        </el-tooltip>
       </el-form-item>
       <span v-if="backendCompleted"> {{ backendInfo }} </span>
       <span v-else> Batch convert excel to csv </span>
@@ -192,32 +186,38 @@ async function excelToCsv() {
 
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-tooltip content="write separator" effect="light">
-          <el-select v-model="data.sep" style="margin-right: 10px; width: 50px">
-            <el-option label="|" value="|" />
-            <el-option label="," value="," />
-            <el-option label=";" value=";" />
-            <el-option label="^" value="^" />
-            <el-option label="\t" value="\t" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="convert all sheets" effect="light">
-          <el-select
+        <el-tooltip content="Convert all sheets or not" effect="light">
+          <el-switch
             v-model="data.allSheets"
-            style="margin-right: 10px; width: 80px"
-          >
-            <el-option label="True" :value="true" />
-            <el-option label="False" :value="false" />
-          </el-select>
+            inline-prompt
+            style="
+              --el-switch-on-color: #43cd80;
+              --el-switch-off-color: #b0c4de;
+              margin-right: 10px;
+            "
+            active-text="All sheet"
+            inactive-text="One sheet"
+            :active-action-icon="Open"
+            :inactive-action-icon="TurnOff"
+          />
         </el-tooltip>
         <el-tooltip content="write sheetname or not" effect="light">
-          <el-select
+          <el-switch
             v-model="data.writeSheetname"
-            style="margin-right: 10px; width: 80px"
-          >
-            <el-option label="True" :value="true" />
-            <el-option label="False" :value="false" />
-          </el-select>
+            inline-prompt
+            style="
+              --el-switch-on-color: #43cd80;
+              --el-switch-off-color: #b0c4de;
+              margin-right: 10px;
+            "
+            active-text="Y"
+            inactive-text="N"
+            :active-action-icon="Open"
+            :inactive-action-icon="TurnOff"
+          />
+        </el-tooltip>
+        <el-tooltip content="skip rows" effect="light">
+          <el-input v-model="data.skipRows" style="width: 50px" />
         </el-tooltip>
       </div>
       <el-button
