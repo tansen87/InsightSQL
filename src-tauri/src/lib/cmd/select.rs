@@ -1,38 +1,9 @@
-use std::{
-  collections::{BTreeMap, HashMap},
-  fs::File,
-  io::BufWriter,
-  path::Path,
-  time::Instant,
-};
+use std::{collections::BTreeMap, fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::CsvOptions;
-
-async fn get_header<P: AsRef<Path> + Send + Sync>(path: P) -> Result<Vec<HashMap<String, String>>> {
-  let csv_options = CsvOptions::new(&path);
-
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(csv_options.detect_separator()?)
-    .from_reader(csv_options.skip_csv_rows()?);
-
-  let vec_headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();
-
-  let hs = vec_headers
-    .into_iter()
-    .enumerate()
-    .map(|(index, name)| {
-      let mut map = HashMap::new();
-      map.insert("name".to_string(), name);
-      map.insert("id".to_string(), index.to_string());
-      map
-    })
-    .collect();
-
-  Ok(hs)
-}
 
 pub async fn select_columns<P: AsRef<Path> + Send + Sync>(path: P, cols: String) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
@@ -86,14 +57,6 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(path: P, cols: String)
   }
 
   Ok(wtr.flush()?)
-}
-
-#[tauri::command]
-pub async fn get_select_headers(path: String) -> Result<Vec<HashMap<String, String>>, String> {
-  match get_header(path).await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("{err}")),
-  }
 }
 
 #[tauri::command]

@@ -68,7 +68,6 @@ fn main() {
       replace::replace,
       reverse::reverse,
       search::search,
-      select::get_select_headers,
       select::select,
       slice::slice,
       sort::sort,
