@@ -37,6 +37,7 @@ enum Operations {
   Round,
   Squeeze,
   Strip,
+  Reverse,
 }
 
 impl Operations {
@@ -53,6 +54,7 @@ impl Operations {
       "round" => Ok(Operations::Round),
       "squeeze" => Ok(Operations::Squeeze),
       "strip" => Ok(Operations::Strip),
+      "reverse" => Ok(Operations::Reverse),
       _ => Err(anyhow!("Unknown '{op}' operation")),
     }
   }
@@ -107,9 +109,6 @@ fn validate_operations(
   new_column: Option<&String>,
   formatstr: &str,
 ) -> Result<SmallVec<[Operations; 4]>> {
-  let mut copy_invokes = 0_u8;
-  let mut replace_invokes = 0_u8;
-
   let mut ops_vec = SmallVec::with_capacity(operations.len());
 
   for op in operations {
@@ -119,7 +118,16 @@ fn validate_operations(
         if new_column.is_none() {
           return Err(anyhow!("new_column is required for copy operation."));
         }
-        copy_invokes = copy_invokes.saturating_add(1);
+      }
+      Operations::Len => {
+        if new_column.is_none() {
+          return Err(anyhow!("new_column is required for len operation."));
+        }
+      }
+      Operations::Reverse => {
+        if new_column.is_none() {
+          return Err(anyhow!("new_column is required for reverse operation."));
+        }
       }
       Operations::Replace => {
         if comparand.is_empty() || replacement.is_empty() {
@@ -127,7 +135,6 @@ fn validate_operations(
             "comparand and replacement are required for replace operation."
           ));
         }
-        replace_invokes = replace_invokes.saturating_add(1);
       }
       Operations::Round => {
         if ROUND_PLACES
@@ -141,11 +148,6 @@ fn validate_operations(
     }
     ops_vec.push(operation);
   }
-  if copy_invokes > 1 || replace_invokes > 1 {
-    return Err(anyhow!(
-      "you can only use copy({copy_invokes}), replace({replace_invokes}), ONCE per operation series."
-    ));
-  };
 
   Ok(ops_vec) // no validation errors
 }
@@ -193,6 +195,9 @@ fn apply_operations(
         let striper: &'static Regex = regex_oncelock!(r"[\r\n]+");
         *cell = striper.replace_all(cell, " ").into_owned();
       }
+      Operations::Reverse => {
+        *cell = cell.as_str().chars().rev().collect::<String>();
+      }
       Operations::Copy => {} // copy is a noop
     }
   }
@@ -211,13 +216,15 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   let select_columns: Vec<&str> = select_columns.split('|').collect();
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+  let sep_char = sep as char;
 
   let new_column: Option<String> = if new_column {
     Some(
       select_columns
         .iter()
         .map(|col| format!("{col}_new"))
-        .collect(),
+        .collect::<Vec<_>>()
+        .join(&sep_char.to_string()),
     )
   } else {
     None
@@ -261,8 +268,10 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 
   let mut headers = rdr.headers()?.clone();
 
-  if let Some(new_column) = &new_column {
-    headers.push_field(new_column);
+  if let Some(ref new_column) = new_column {
+    for col in new_column.split(sep_char) {
+      headers.push_field(col);
+    }
   }
   wtr.write_record(&headers)?;
 
