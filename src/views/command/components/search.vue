@@ -90,8 +90,21 @@ async function searchData() {
     </div>
     <div class="custom-container1">
       <div class="custom-container2" style="margin-top: 12px">
+        <el-select
+          v-model="columns"
+          filterable
+          style="margin-right: 10px; width: 140px"
+          placeholder="Select column"
+        >
+          <el-option
+            v-for="item in tableHeader"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
         <el-tooltip content="Search mode" effect="light">
-          <el-select v-model="mode" style="width: 112px">
+          <el-select v-model="mode" style="width: 140px">
             <el-option label="Equal" value="equal" />
             <el-option label="EqualMulti" value="equalmulti" />
             <el-option label="NotEqual" value="notequal" />
@@ -107,19 +120,6 @@ async function searchData() {
             <el-option label="Regex" value="regex" />
           </el-select>
         </el-tooltip>
-        <el-select
-          v-model="columns"
-          filterable
-          style="margin-left: 10px; width: 200px"
-          placeholder="Search by column"
-        >
-          <el-option
-            v-for="item in tableHeader"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
         <el-tooltip content="if nil, do not add progress bar" effect="light">
           <el-select v-model="countMode" style="margin-left: 10px; width: 70px">
             <el-option label="idx" value="idx" />
@@ -143,7 +143,7 @@ async function searchData() {
           v-model="condition"
           :autosize="{ minRows: 6, maxRows: 6 }"
           type="textarea"
-          placeholder="Search rows with text...Example: tom|jack|jerry"
+          placeholder="Search conditions......Separate by |. (Example: tom|jack|jerry)"
         />
       </div>
       <div style="flex: 0; margin-left: 10px">
