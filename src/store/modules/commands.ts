@@ -16,9 +16,9 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/cat"
       },
       {
-        title: "Excel to csv",
-        description: "Batch convert Excel to CSV.",
-        route: "/command/components/excel"
+        title: "2csv",
+        description: "Batch convert files to CSV",
+        route: "/command/components/toCsv"
       },
       {
         title: "Count",
@@ -26,9 +26,9 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/count"
       },
       {
-        title: "Csv to xlsx",
-        description: "Batch convert CSV to Excel.",
-        route: "/command/components/csv"
+        title: "2excel",
+        description: "Batch convert files to Excel",
+        route: "/command/components/toExcel"
       },
       {
         title: "Rename",
@@ -70,11 +70,6 @@ export const useCommandStore = defineStore("command", {
         description: "Skip rows from CSV.",
         route: "/command/components/skip"
       },
-      // {
-      //   title: "Offset",
-      //   description: "net amount.",
-      //   route: "/command/components/offset"
-      // },
       {
         title: "Enumerate",
         description: "Add a new column enumerating the lines of a CSV file.",

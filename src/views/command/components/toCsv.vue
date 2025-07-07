@@ -145,7 +145,7 @@ async function selectFile() {
   }
 }
 
-// invoke switch_excel
+// invoke excel2csv
 async function excelToCsv() {
   if (data.path === "") {
     message("Excel file not selected", { type: "warning" });
@@ -157,7 +157,7 @@ async function excelToCsv() {
       filename: item.filename,
       sheetname: item.sheetname
     }));
-    const rtime: string = await invoke("switch_excel", {
+    const rtime: string = await invoke("excel2csv", {
       path: data.path,
       skipRows: data.skipRows,
       mapFileSheet: mapFileSheet,
@@ -181,7 +181,7 @@ async function excelToCsv() {
         </el-button>
       </el-form-item>
       <span v-if="backendCompleted"> {{ backendInfo }} </span>
-      <span v-else> Batch convert excel to csv </span>
+      <span v-else> Batch convert files to csv </span>
     </div>
 
     <div class="custom-container1">
@@ -193,7 +193,7 @@ async function excelToCsv() {
             style="
               --el-switch-on-color: #43cd80;
               --el-switch-off-color: #b0c4de;
-              margin-right: 10px;
+              width: 90px;
             "
             active-text="All sheet"
             inactive-text="One sheet"
@@ -224,6 +224,7 @@ async function excelToCsv() {
         @click="excelToCsv()"
         :loading="isLoading"
         :icon="SwitchFilled"
+        style="width: 135px"
       >
         {{ btnShow }}
       </el-button>

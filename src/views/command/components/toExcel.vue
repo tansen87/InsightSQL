@@ -56,7 +56,7 @@ async function selectFile() {
   selectedFiles.value = result.fileInfo;
 }
 
-// invoke switch_csv
+// invoke csv2xlsx
 async function csvToxlsx() {
   if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
@@ -65,7 +65,7 @@ async function csvToxlsx() {
 
   try {
     isLoading.value = true;
-    const rtime: string = await invoke("switch_csv", {
+    const rtime: string = await invoke("csv2xlsx", {
       path: path.value,
       mode: mode.value,
       chunkSize: chunkSize.value

@@ -9,7 +9,6 @@ use lib::command;
 use lib::cmd::access;
 use lib::cmd::apply;
 use lib::cmd::cat;
-use lib::cmd::convert;
 use lib::cmd::count;
 use lib::cmd::dbf;
 use lib::cmd::enumerate;
@@ -28,6 +27,8 @@ use lib::cmd::slice;
 use lib::cmd::sort;
 use lib::cmd::split;
 use lib::cmd::sqlp;
+use lib::cmd::to_csv;
+use lib::cmd::to_excel;
 use lib::cmd::transpose;
 use lib::cmd::traverse;
 
@@ -53,9 +54,6 @@ fn main() {
       apply::apply,
       skip::skip,
       cat::concat,
-      convert::switch_excel,
-      convert::map_excel_sheets,
-      convert::switch_csv,
       count::count,
       dbf::dbf,
       enumerate::enumer,
@@ -73,6 +71,9 @@ fn main() {
       sort::sort,
       split::split,
       sqlp::query,
+      to_csv::excel2csv,
+      to_csv::map_excel_sheets,
+      to_excel::csv2xlsx,
       transpose::transpose,
       traverse::traverse,
     ])
