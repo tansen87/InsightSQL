@@ -7,27 +7,15 @@ English | [中文](./README_CN.md)
 ### ScreenShot
 
 * command
- ![cmd.png](/demo/cmd.png)
+ ![cmd.png](/docs/img/cmd.png)
 
-* polars SQL for query
+* Polars SQL for query
 
-  ![sqlp.gif](/demo/sqlp.gif)
-
-* CSV to xlsx
-
-  ![csv2xlsx.gif](/demo/csv2xlsx.gif)
-
-* Excel to CSV
-
-  ![excel2csv.gif](/demo/excel2csv.gif)
-
-* Cat
-
-  ![cat.gif](/demo/cat.gif)
+  ![sqlp.gif](/docs/img/sqlp.gif)
 
 * Rename
 
-  ![rename.gif](/demo/rename.gif)
+  ![rename.gif](/docs/img/rename.gif)
 
 ## ✨Features
 
@@ -64,7 +52,7 @@ English | [中文](./README_CN.md)
 
 * Node.js 18+
 * pnpm 9.9.0+
-* 🦀Rust 1.86.0+
+* 🦀Rust 1.88.0+
 
 ## 🚀Development
 
