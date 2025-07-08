@@ -2,16 +2,18 @@ use std::{
   collections::{HashMap, HashSet},
   ffi::OsStr,
   path::{Path, PathBuf},
-  time::Instant,
+  sync::{Arc, Mutex},
+  time::{Duration, Instant},
 };
 
 use anyhow::{Result, anyhow};
 use calamine::{Data, HeaderRow, Range, Reader, open_workbook_auto};
-use csv::WriterBuilder;
+use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
+use tokio::sync::oneshot;
 
-use crate::utils::num_cpus;
+use crate::utils::{CsvOptions, num_cpus};
 
 /// convert excel to csv
 async fn excel_to_csv<P: AsRef<Path>>(
@@ -237,7 +239,7 @@ pub async fn excel2csv(
   for file in paths.iter() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
     window
-      .emit("start_convert", filename)
+      .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
 
     let path = Path::new(file);
@@ -251,22 +253,17 @@ pub async fn excel2csv(
       };
 
       let output_path = match write_sheetname {
-        true => {
-          let output = path.with_file_name(format!("{}_{}.csv", file_stem, sheetname));
-          output
-        }
+        true => path.with_file_name(format!("{file_stem}_{sheetname}.csv")),
         false => Path::new(file).with_extension("csv"),
       };
 
       match excel_to_csv(file, skip_rows, sheet_name, &output_path).await {
         Ok(_) => {
-          window
-            .emit("e2c_msg", filename)
-            .map_err(|e| e.to_string())?;
+          window.emit("to_msg", filename).map_err(|e| e.to_string())?;
         }
         Err(err) => {
           window
-            .emit("switch_excel_err", format!("{filename}|{err}"))
+            .emit("to_err", format!("{filename}|{err}"))
             .map_err(|e| e.to_string())?;
           continue;
         }
@@ -275,10 +272,7 @@ pub async fn excel2csv(
       let sheet_names = get_all_sheetnames(file).await;
       if sheet_names.is_empty() {
         window
-          .emit(
-            "switch_excel_err",
-            format!("{filename}|It's not an Excel file"),
-          )
+          .emit("to-err", format!("{filename}|It's not an Excel file"))
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -289,14 +283,12 @@ pub async fn excel2csv(
           Ok(_) => {
             // check if it is the last sheet
             if index == sheet_names.len() - 1 {
-              window
-                .emit("e2c_msg", filename)
-                .map_err(|e| e.to_string())?;
+              window.emit("to-msg", filename).map_err(|e| e.to_string())?;
             }
           }
           Err(err) => {
             window
-              .emit("switch_excel_err", format!("{filename}|{sheet}:{err}"))
+              .emit("to-err", format!("{filename}|{sheet}:{err}"))
               .map_err(|e| e.to_string())?;
             continue;
           }
@@ -308,4 +300,127 @@ pub async fn excel2csv(
   let end_time = Instant::now();
   let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
   Ok(format!("{elapsed_time:.2}"))
+}
+
+/// convert csv to csv (only replace the delimiter)
+async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  write_sep: String,
+  filename: String,
+  mode: &str,
+  window: Window,
+) -> Result<()> {
+  let csv_options = CsvOptions::new(&path);
+  let sep = csv_options.detect_separator()?;
+  let write_sep = if write_sep == "\\t" {
+    b'\t'
+  } else {
+    write_sep.into_bytes()[0]
+  };
+  let total_rows = match mode {
+    "idx" => csv_options.idx_csv_rows().await?,
+    "std" => csv_options.std_csv_rows()?,
+    _ => 0,
+  };
+  window.emit("total-rows", format!("{filename}|{total_rows}"))?;
+
+  let mut rdr = ReaderBuilder::new()
+    .delimiter(sep)
+    .from_reader(csv_options.skip_csv_rows()?);
+
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.sep.csv");
+
+  let mut wtr = WriterBuilder::new()
+    .delimiter(write_sep)
+    .from_path(output_path)?;
+  wtr.write_record(rdr.headers()?)?;
+
+  let rows = Arc::new(Mutex::new(0));
+  let rows_clone = Arc::clone(&rows);
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
+
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(300));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = *rows_clone.lock().unwrap();
+          if let Err(err) = window.emit("update-rows", format!("{filename}|{current_rows}")) {
+            let _ = window.emit("to-err", format!("{filename}|{err}"));
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = window.emit("update-rows", format!("{filename}|{final_rows}")) {
+            let _ = window.emit("to-err", format!("{filename}|{err}"));
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => { break; }
+      }
+    }
+  });
+
+  let counter_task = tokio::task::spawn_blocking(move || {
+    let mut record = ByteRecord::new();
+    while rdr.read_byte_record(&mut record)? {
+      wtr.write_byte_record(&record)?;
+      let mut count = rows.lock().unwrap();
+      *count += 1;
+    }
+
+    let final_rows = *rows.lock().unwrap();
+    let _ = done_tx.send(final_rows);
+
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
+
+  Ok(())
+}
+
+#[tauri::command]
+pub async fn csv2csv(
+  path: String,
+  sep: String,
+  mode: String,
+  window: Window,
+) -> Result<String, String> {
+  let start_time = Instant::now();
+
+  let paths: Vec<&str> = path.split('|').collect();
+  for fp in paths.iter() {
+    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
+    window
+      .emit("start-to", filename)
+      .map_err(|e| e.to_string())?;
+    match csv_to_csv(
+      fp,
+      sep.clone(),
+      filename.to_string(),
+      mode.as_str(),
+      window.clone(),
+    )
+    .await
+    {
+      Ok(_) => {
+        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        window
+          .emit("to-err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+        continue;
+      }
+    }
+  }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  Ok(format!("{:.2}", elapsed_time))
 }

@@ -16,7 +16,8 @@ import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const btnShow = ref("CONVERT ONE");
+const btnShow = ref("CONVERT ALL");
+const typeTo = ref("excel");
 const backendInfo = ref("");
 const [selectedFiles, sheetOptions, fileSheet] = [ref([]), ref([]), ref([])];
 const [isLoading, backendCompleted] = [ref(false), ref(false)];
@@ -25,7 +26,9 @@ const data = reactive({
   path: "",
   fileFormats: ["xlsx", "xls", "xlsb", "xlsm", "xlam", "xla", "ods"],
   skipRows: "0",
-  allSheets: false,
+  sep: "|",
+  mode: "nil",
+  allSheets: true,
   writeSheetname: false
 });
 const { dynamicHeight } = useDynamicHeight(172);
@@ -40,7 +43,23 @@ watch(
   }
 );
 
-listen("start_convert", event => {
+listen("update-rows", (event: any) => {
+  const [backFilename, rows] = event.payload.split("|");
+  selectedFiles.value.forEach(file => {
+    if (file.filename === backFilename) {
+      file.currentRows = rows;
+    }
+  });
+});
+listen("total-rows", (event: any) => {
+  const [backFilename, rows] = event.payload.split("|");
+  selectedFiles.value.forEach(file => {
+    if (file.filename === backFilename) {
+      file.totalRows = rows;
+    }
+  });
+});
+listen("start-to", event => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert) {
@@ -48,16 +67,16 @@ listen("start_convert", event => {
     }
   });
 });
-listen("switch_excel_err", event => {
-  const excelRowCountErr: any = event.payload;
+listen("to-err", event => {
+  const rowCountErr: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === excelRowCountErr.split("|")[0]) {
+    if (file.filename === rowCountErr.split("|")[0]) {
       file.status = "error";
-      file.errorMessage = excelRowCountErr.split("|")[1];
+      file.errMessage = rowCountErr.split("|")[1];
     }
   });
 });
-listen("e2c_msg", (event: any) => {
+listen("to-msg", (event: any) => {
   const e2cMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === e2cMsg) {
@@ -109,36 +128,39 @@ async function selectFile() {
   backendCompleted.value = false;
   backendInfo.value = "";
   try {
-    const trimFile = await trimOpenFile(true, "Excel", ["*"], {
+    const trimFile = await trimOpenFile(true, "Files", ["*"], {
       includeStatus: true
     });
     data.path = trimFile.filePath;
     selectedFiles.value = trimFile.fileInfo;
-    message("get excel sheets...", {
-      type: "info",
-      duration: 0,
-      icon: Loading
-    });
-    const mapSheets: string[] = await invoke("map_excel_sheets", {
-      path: data.path
-    });
-    sheetsData.value = mapSheets[0];
-    for (const fileName in sheetsData.value) {
-      sheetsData.value[fileName].forEach(sheet => {
-        sheetOptions.value.push({
-          label: `${fileName} - ${sheet}`,
-          value: sheet
-        });
+
+    if (typeTo.value === "excel") {
+      message("get excel sheets...", {
+        type: "info",
+        duration: 0,
+        icon: Loading
       });
-    }
-    selectedFiles.value.forEach(file => {
-      if (!file.selectedSheet && getSheetsForFile(file.filename).length > 0) {
-        file.selectedSheet = getSheetsForFile(file.filename)[0];
+      const mapSheets: string[] = await invoke("map_excel_sheets", {
+        path: data.path
+      });
+      sheetsData.value = mapSheets[0];
+      for (const fileName in sheetsData.value) {
+        sheetsData.value[fileName].forEach(sheet => {
+          sheetOptions.value.push({
+            label: `${fileName} - ${sheet}`,
+            value: sheet
+          });
+        });
       }
-    });
-    closeAllMessage();
-    backendInfo.value = "get excel sheets done";
-    backendCompleted.value = true;
+      selectedFiles.value.forEach(file => {
+        if (!file.selectedSheet && getSheetsForFile(file.filename).length > 0) {
+          file.selectedSheet = getSheetsForFile(file.filename)[0];
+        }
+      });
+      closeAllMessage();
+      backendInfo.value = "get excel sheets done";
+      backendCompleted.value = true;
+    }
   } catch (err) {
     closeAllMessage();
     message(err.toString(), { type: "error" });
@@ -146,25 +168,34 @@ async function selectFile() {
 }
 
 // invoke excel2csv
-async function excelToCsv() {
+async function toCsv() {
   if (data.path === "") {
     message("Excel file not selected", { type: "warning" });
     return;
   }
   try {
     isLoading.value = true;
-    const mapFileSheet = fileSheet.value.map(item => ({
-      filename: item.filename,
-      sheetname: item.sheetname
-    }));
-    const rtime: string = await invoke("excel2csv", {
-      path: data.path,
-      skipRows: data.skipRows,
-      mapFileSheet: mapFileSheet,
-      allSheets: data.allSheets,
-      writeSheetname: data.writeSheetname
-    });
-    message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
+    if (typeTo.value === "excel") {
+      const mapFileSheet = fileSheet.value.map(item => ({
+        filename: item.filename,
+        sheetname: item.sheetname
+      }));
+      const rtime: string = await invoke("excel2csv", {
+        path: data.path,
+        skipRows: data.skipRows,
+        mapFileSheet: mapFileSheet,
+        allSheets: data.allSheets,
+        writeSheetname: data.writeSheetname
+      });
+      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
+    } else if (typeTo.value === "csv") {
+      const rtime: string = await invoke("csv2csv", {
+        path: data.path,
+        sep: data.sep,
+        mode: data.mode
+      });
+      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
+    }
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -175,17 +206,20 @@ async function excelToCsv() {
 <template>
   <el-form class="page-container" :style="dynamicHeight">
     <div class="custom-container1">
+      <el-button @click="selectFile()" :icon="FolderOpened">
+        Open File
+      </el-button>
       <el-form-item>
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
+        <el-select v-model="typeTo" style="width: 88px; margin-right: 10px">
+          <el-option label="Excel" value="excel" />
+          <el-option label="CSV" value="csv" />
+        </el-select>
+        <span> TO CSV </span>
       </el-form-item>
-      <span v-if="backendCompleted"> {{ backendInfo }} </span>
-      <span v-else> Batch convert files to csv </span>
     </div>
 
     <div class="custom-container1">
-      <div class="custom-container2">
+      <div class="custom-container2" v-if="typeTo === 'excel'">
         <el-tooltip content="Convert all sheets or not" effect="light">
           <el-switch
             v-model="data.allSheets"
@@ -220,11 +254,35 @@ async function excelToCsv() {
           <el-input v-model="data.skipRows" style="width: 50px" />
         </el-tooltip>
       </div>
+      <div class="custom-container2" v-if="typeTo === 'csv'">
+        <el-tooltip content="write delimiter" effect="light">
+          <el-select v-model="data.sep" style="width: 50px">
+            <el-option label="|" value="|" />
+            <el-option label="\t" value="\t" />
+            <el-option label="," value="," />
+            <el-option label=";" value=";" />
+          </el-select>
+        </el-tooltip>
+      </div>
+      <el-tooltip content="if nil, do not add progress bar" effect="light">
+        <el-select
+          v-if="typeTo === 'csv'"
+          v-model="data.mode"
+          style="margin-left: 10px; width: 70px"
+        >
+          <el-option label="idx" value="idx" />
+          <el-option label="std" value="std" />
+          <el-option label="nil" value="nil" />
+        </el-select>
+      </el-tooltip>
+      <span v-if="backendCompleted && typeTo === 'excel'">
+        {{ backendInfo }}
+      </span>
       <el-button
-        @click="excelToCsv()"
+        @click="toCsv()"
         :loading="isLoading"
         :icon="SwitchFilled"
-        style="width: 135px"
+        style="width: 150px"
       >
         {{ btnShow }}
       </el-button>
@@ -265,12 +323,19 @@ async function excelToCsv() {
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
             <CloseBold />
           </ElIcon>
-          <span v-if="scope.row.errorMessage && scope.row.status !== 'loading'">
-            {{ scope.row.errorMessage || scope.row.status }}
+          <span
+            v-if="
+              scope.row.errMessage &&
+              scope.row.status !== 'loading' &&
+              typeTo === 'excel'
+            "
+          >
+            {{ scope.row.errMessage || scope.row.status }}
           </span>
         </template>
       </el-table-column>
       <el-table-column
+        v-if="typeTo === 'excel'"
         prop="sheets"
         label="Sheets"
         :class="{ 'custom-width': true }"
@@ -289,6 +354,28 @@ async function excelToCsv() {
               :value="sheet"
             />
           </el-select>
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="typeTo === 'csv'"
+        prop="errMessage"
+        label="Progress"
+        :class="{ 'custom-width': true }"
+        style="flex: 0 0 60%"
+      >
+        <template #default="scope">
+          <span v-if="scope.row.status === 'error'">
+            {{ scope.row.errMessage }}
+          </span>
+          <el-progress
+            v-if="
+              scope.row.totalRows !== 0 &&
+              isFinite(scope.row.currentRows / scope.row.totalRows)
+            "
+            :percentage="
+              Math.round((scope.row.currentRows / scope.row.totalRows) * 100)
+            "
+          />
         </template>
       </el-table-column>
     </el-table>
