@@ -37,7 +37,7 @@ listen("total-rows", (event: any) => {
     }
   });
 });
-listen("start_convert", (event: any) => {
+listen("start-skip", (event: any) => {
   const startConvert: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert) {
@@ -45,7 +45,7 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("skip_err", (event: any) => {
+listen("skip-err", (event: any) => {
   const beheadErr: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === beheadErr.split("|")[0]) {
@@ -55,7 +55,7 @@ listen("skip_err", (event: any) => {
   });
   isLoading.value = false;
 });
-listen("skip_msg", (event: any) => {
+listen("skip-msg", (event: any) => {
   const skipMsg: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === skipMsg) {

@@ -15,7 +15,6 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
   filename: String,
   skip_rows: usize,
-  parent_path: &str,
   mode: &str,
   app_handle: AppHandle,
 ) -> Result<()> {
@@ -25,17 +24,17 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
 
   let mut csv_options = CsvOptions::new(&path);
   csv_options.set_skip_rows(skip_rows);
-
   let sep = csv_options.detect_separator()?;
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_csv_rows().await? - skip_rows,
-    "std" => csv_options.std_csv_rows()? - skip_rows,
+    "idx" => csv_options.idx_csv_rows().await?.saturating_sub(skip_rows) + 1,
+    "std" => csv_options.std_csv_rows()?.saturating_sub(skip_rows) + 1,
     _ => 0,
   };
   app_handle.emit("total-rows", format!("{filename}|{total_rows}"))?;
 
   let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_stem}.skiprows.csv");
 
   let mut rdr = ReaderBuilder::new()
@@ -60,15 +59,13 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
       tokio::select! {
         _ = interval.tick() => {
           let current_rows = *rows_clone.lock().unwrap();
-          let emit_msg = format!("{filename}|{current_rows}");
-          if let Err(err) = app_handle.emit("update-rows", emit_msg) {
-            eprintln!("Failed to emit current rows: {err:?}");
+          if let Err(err) = app_handle.emit("update-rows", format!("{filename}|{current_rows}")) {
+            let _ = app_handle.emit("to-err", format!("{filename}|{err}"));
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          let emit_msg = format!("{filename}|{final_rows}");
-          if let Err(err) = app_handle.emit("update-rows", emit_msg) {
-            eprintln!("Failed to emit final rows: {err:?}");
+          if let Err(err) = app_handle.emit("update-rows", format!("{filename}|{final_rows}")) {
+            let _ = app_handle.emit("to-err", format!("{filename}|{err}"));
           }
           break;
         },
@@ -110,19 +107,17 @@ pub async fn skip(
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  let parent_path = Path::new(&paths[0]).parent().unwrap().to_str().unwrap();
   let skip_rows = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
 
   for fp in paths.iter() {
     let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
     window
-      .emit("start_convert", filename)
+      .emit("start-skip", filename)
       .map_err(|e| e.to_string())?;
     match skip_csv(
       fp,
       filename.to_string(),
       skip_rows,
-      parent_path,
       mode.as_str(),
       app_handle.clone(),
     )
@@ -130,12 +125,12 @@ pub async fn skip(
     {
       Ok(_) => {
         window
-          .emit("skip_msg", filename)
+          .emit("skip-msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("skip_err", format!("{filename}|{err}"))
+          .emit("skip-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
         continue;
       }
