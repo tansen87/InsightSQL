@@ -56,11 +56,6 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/split"
       },
       {
-        title: "Access to CSV",
-        description: "Convert Access Database to CSV.",
-        route: "/command/components/access"
-      },
-      {
         title: "Dbf to CSV",
         description: "Convert dbf file to CSV.",
         route: "/command/components/dbf"

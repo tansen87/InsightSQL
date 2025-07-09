@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use calamine::{Data, HeaderRow, Range, Reader, open_workbook_auto};
-use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
+use csv::{ByteRecord, ReaderBuilder, StringRecord, WriterBuilder};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 use tokio::sync::oneshot;
@@ -56,7 +56,7 @@ async fn excel_to_csv<P: AsRef<Path>>(
   let mut rows_iter = range.rows();
 
   // amortize allocations
-  let mut record = csv::StringRecord::with_capacity(500, col_count);
+  let mut record = StringRecord::with_capacity(500, col_count);
   let mut col_name: String;
 
   // get the first row as header
@@ -94,10 +94,10 @@ async fn excel_to_csv<P: AsRef<Path>>(
   // let chunk_size = row_count.div_ceil(ncpus);
   let chunk_size = (row_count + ncpus - 1) / ncpus;
 
-  let processed_rows: Vec<Vec<csv::StringRecord>> = rows
+  let processed_rows: Vec<Vec<StringRecord>> = rows
     .par_chunks(chunk_size)
     .map(|chunk| {
-      let mut record = csv::StringRecord::with_capacity(500, col_count);
+      let mut record = StringRecord::with_capacity(500, col_count);
       let mut float_val;
       let mut work_date = String::new();
       let mut ryu_buffer = ryu::Buffer::new();

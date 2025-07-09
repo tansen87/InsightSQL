@@ -50,7 +50,7 @@ fn main() {
       command::dupli_headers,
       command::to_json,
       #[cfg(target_os = "windows")]
-      access::access,
+      access::access2csv,
       apply::apply,
       skip::skip,
       cat::concat,

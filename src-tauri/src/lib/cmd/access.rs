@@ -1,9 +1,10 @@
 use std::{path::Path, time::Instant};
 
 use anyhow::{Result, anyhow};
-use csv::StringRecord;
+use csv::{StringRecord, WriterBuilder};
 use lazy_static::lazy_static;
 use odbc_api::{ConnectionOptions, Cursor, Environment, ResultSetMetadata, buffers::TextRowSet};
+use tauri::{Emitter, Window};
 
 fn connection(odbc_conn: &str) -> Result<odbc_api::Connection<'_>, odbc_api::Error> {
   lazy_static! {
@@ -39,7 +40,7 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
   Ok(tables)
 }
 
-async fn access_to_csv(path: String, sep: String) -> Result<()> {
+async fn access_to_csv(path: &str, sep: String) -> Result<()> {
   let driver = "{Microsoft Access Driver (*.mdb, *.accdb)}";
   let batch_size = 5000;
 
@@ -48,42 +49,36 @@ async fn access_to_csv(path: String, sep: String) -> Result<()> {
   } else {
     sep.as_bytes()[0]
   };
+  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
+  let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
 
-  let vec_path: Vec<&str> = path.split('|').collect();
-  let parent_path = Path::new(&vec_path[0])
-    .parent()
-    .map(|parent| parent.to_string_lossy())
-    .unwrap_or_else(|| "Default Path".to_string().into());
+  let c = format!("Driver={};Dbq={};", driver, path);
+  let conn = connection(&c)?;
+  let tables = get_all_table(&conn)?;
 
-  for fp in vec_path.iter() {
-    let c = format!("Driver={};Dbq={};", driver, fp);
-    let conn = connection(&c)?;
-    let tables = get_all_table(&conn)?;
+  for table in tables.iter() {
+    let fname = format!("{parent_path}/{file_stem}.{table}.access.csv");
+    let query = format!("select * from {}", table);
 
-    for table in tables.iter() {
-      let fname = format!("{}/accessDB_{}.csv", parent_path, table);
-      let query = format!("select * from {}", table);
+    match conn.execute(&query, ())? {
+      Some(mut cursor) => {
+        let mut writer = WriterBuilder::new().delimiter(sep).from_path(&fname)?;
+        let headers: Vec<String> = cursor.column_names()?.collect::<Result<_, _>>()?;
+        writer.write_record(headers)?;
 
-      match conn.execute(&query, ())? {
-        Some(mut cursor) => {
-          let mut writer = csv::WriterBuilder::new().delimiter(sep).from_path(&fname)?;
-          let headers: Vec<String> = cursor.column_names()?.collect::<Result<_, _>>()?;
-          writer.write_record(headers)?;
-
-          let mut buffers = TextRowSet::for_cursor(batch_size, &mut cursor, Some(4096))?;
-          let mut row_set_cursor = cursor.bind_buffer(&mut buffers)?;
-          while let Some(batch) = row_set_cursor.fetch()? {
-            for row_index in 0..batch.num_rows() {
-              let record = (0..batch.num_cols())
-                .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]));
-              let record = StringRecord::from_byte_record_lossy(record.collect());
-              writer.write_record(record.as_byte_record())?;
-            }
+        let mut buffers = TextRowSet::for_cursor(batch_size, &mut cursor, Some(4096))?;
+        let mut row_set_cursor = cursor.bind_buffer(&mut buffers)?;
+        while let Some(batch) = row_set_cursor.fetch()? {
+          for row_index in 0..batch.num_rows() {
+            let record =
+              (0..batch.num_cols()).map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]));
+            let record = StringRecord::from_byte_record_lossy(record.collect());
+            writer.write_record(record.as_byte_record())?;
           }
-          writer.flush()?;
         }
-        None => return Err(anyhow!("Query came back empty.")),
+        writer.flush()?;
       }
+      None => return Err(anyhow!("Query came back empty.")),
     }
   }
 
@@ -91,15 +86,29 @@ async fn access_to_csv(path: String, sep: String) -> Result<()> {
 }
 
 #[tauri::command]
-pub async fn access(path: String, sep: String) -> Result<String, String> {
+pub async fn access2csv(path: String, sep: String, window: Window) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match access_to_csv(path, sep).await {
-    Ok(_) => {
-      let end_time = Instant::now();
-      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
+  let paths: Vec<&str> = path.split('|').collect();
+  for fp in paths.iter() {
+    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
+    window
+      .emit("start-to", filename)
+      .map_err(|e| e.to_string())?;
+    match access_to_csv(fp, sep.clone()).await {
+      Ok(_) => {
+        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        window
+          .emit("to-err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+        continue;
+      }
     }
-    Err(err) => Err(format!("access failed: {err}")),
   }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  Ok(format!("{:.2}", elapsed_time))
 }

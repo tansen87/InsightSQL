@@ -106,15 +106,6 @@ export default {
       }
     },
     {
-      path: "/command/components/access",
-      name: "access",
-      component: () => import("@/views/command/components/access.vue"),
-      meta: {
-        title: "access to csv",
-        showLink: false
-      }
-    },
-    {
       path: "/command/components/dbf",
       name: "dbf",
       component: () => import("@/views/command/components/dbf.vue"),
