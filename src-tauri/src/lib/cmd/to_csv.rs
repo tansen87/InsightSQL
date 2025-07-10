@@ -9,6 +9,7 @@ use std::{
 use anyhow::{Result, anyhow};
 use calamine::{Data, HeaderRow, Range, Reader, open_workbook_auto};
 use csv::{ByteRecord, ReaderBuilder, StringRecord, WriterBuilder};
+use dbase::FieldValue;
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 use tokio::sync::oneshot;
@@ -408,6 +409,87 @@ pub async fn csv2csv(
     )
     .await
     {
+      Ok(_) => {
+        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        window
+          .emit("to-err", format!("{filename}|{err}"))
+          .map_err(|e| e.to_string())?;
+        continue;
+      }
+    }
+  }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  Ok(format!("{:.2}", elapsed_time))
+}
+
+/// convert dbf to csv
+async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
+  let sep = if sep == "\\t" {
+    b'\t'
+  } else {
+    sep.into_bytes()[0]
+  };
+
+  let mut rdr = dbase::Reader::from_path(path)?;
+
+  let headers: Vec<String> = rdr
+    .fields()
+    .iter()
+    .map(|field| field.name().to_string())
+    .collect();
+
+  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
+  let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
+  let output_path = format!("{parent_path}/{file_stem}.dbf.csv");
+
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+
+  wtr.write_record(&headers)?;
+
+  for result in rdr.iter_records() {
+    let record = result?;
+    let mut row: Vec<String> = Vec::new();
+
+    for field_name in &headers {
+      let value = match record.get(field_name.as_str()) {
+        Some(FieldValue::Character(Some(value))) => value.trim().to_string(),
+        Some(FieldValue::Character(None)) => "".to_string(),
+        Some(FieldValue::Date(Some(value))) => value.to_string(),
+        Some(FieldValue::Date(None)) => "".to_string(),
+        Some(FieldValue::Float(Some(value))) => value.to_string(),
+        Some(FieldValue::Float(None)) => "".to_string(),
+        Some(FieldValue::Logical(Some(value))) => value.to_string(),
+        Some(FieldValue::Logical(None)) => "".to_string(),
+        Some(FieldValue::Numeric(Some(value))) => value.to_string(),
+        Some(FieldValue::Numeric(None)) => "".to_string(),
+        Some(FieldValue::Memo(value)) => value.to_string(),
+        Some(FieldValue::Integer(value)) => value.to_string(),
+        _ => "".to_string(),
+      };
+      row.push(value);
+    }
+    wtr.write_record(&row)?;
+  }
+  wtr.flush()?;
+
+  Ok(())
+}
+
+#[tauri::command]
+pub async fn dbf2csv(path: String, sep: String, window: tauri::Window) -> Result<String, String> {
+  let start_time = Instant::now();
+
+  let paths: Vec<&str> = path.split('|').collect();
+  for fp in paths.iter() {
+    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
+    window
+      .emit("start-to", filename)
+      .map_err(|e| e.to_string())?;
+    match dbf_to_csv(fp, sep.clone()).await {
       Ok(_) => {
         window.emit("to-msg", filename).map_err(|e| e.to_string())?;
       }

@@ -106,15 +106,6 @@ export default {
       }
     },
     {
-      path: "/command/components/dbf",
-      name: "dbf",
-      component: () => import("@/views/command/components/dbf.vue"),
-      meta: {
-        title: "dbf to csv",
-        showLink: false
-      }
-    },
-    {
       path: "/command/components/skip",
       name: "skip",
       component: () => import("@/views/command/components/skip.vue"),

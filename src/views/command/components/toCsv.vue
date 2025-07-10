@@ -200,6 +200,12 @@ async function toCsv() {
         sep: data.sep
       });
       message(`Done, elapsed time: ${rtime} s`, { type: "success" });
+    } else if (typeTo.value === "dbf") {
+      const rtime: string = await invoke("dbf2csv", {
+        path: path.value,
+        sep: data.sep
+      });
+      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     }
   } catch (err) {
     message(err.toString(), { type: "error" });
@@ -219,6 +225,7 @@ async function toCsv() {
           <el-option label="Excel" value="excel" />
           <el-option label="CSV" value="csv" />
           <el-option label="Access" value="access" />
+          <el-option label="DBF" value="dbf" />
         </el-select>
         <span> TO CSV </span>
       </el-form-item>

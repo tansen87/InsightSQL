@@ -3,7 +3,6 @@ pub mod access;
 pub mod apply;
 pub mod cat;
 pub mod count;
-pub mod dbf;
 pub mod enumerate;
 pub mod extsort;
 pub mod fill;

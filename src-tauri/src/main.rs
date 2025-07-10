@@ -10,7 +10,6 @@ use lib::cmd::access;
 use lib::cmd::apply;
 use lib::cmd::cat;
 use lib::cmd::count;
-use lib::cmd::dbf;
 use lib::cmd::enumerate;
 use lib::cmd::extsort;
 use lib::cmd::fill;
@@ -55,7 +54,6 @@ fn main() {
       skip::skip,
       cat::concat,
       count::count,
-      dbf::dbf,
       enumerate::enumer,
       extsort::extsort,
       fill::fill,
@@ -74,6 +72,7 @@ fn main() {
       to_csv::excel2csv,
       to_csv::map_excel_sheets,
       to_csv::csv2csv,
+      to_csv::dbf2csv,
       to_excel::csv2xlsx,
       transpose::transpose,
       traverse::traverse,
