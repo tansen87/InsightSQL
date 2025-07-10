@@ -519,6 +519,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   let multi_conditions: Vec<String> = conditions
     .split('|')
     .map(|s| s.trim().to_string())
+    .collect::<HashSet<_>>()  // de duplication
+    .into_iter()
     .collect();
 
   let search_mode = match mode {
@@ -546,6 +548,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       let vec_conditions: Vec<String> = conditions
         .split('|')
         .map(|s| s.trim().to_string())
+        .collect::<HashSet<_>>()  // de duplication
+        .into_iter()
         .collect();
       let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
       let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
