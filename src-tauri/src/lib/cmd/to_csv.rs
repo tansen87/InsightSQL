@@ -318,6 +318,11 @@ async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
   } else {
     write_sep.into_bytes()[0]
   };
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.fmt.csv"));
+
   let total_rows = match mode {
     "idx" => csv_options.idx_csv_rows().await?,
     "std" => csv_options.std_csv_rows()?,
@@ -328,10 +333,6 @@ async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
-
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.sep.csv");
 
   let mut wtr = WriterBuilder::new()
     .delimiter(write_sep)
@@ -433,6 +434,10 @@ async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
   } else {
     sep.into_bytes()[0]
   };
+  let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
+  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.dbf.csv"));
 
   let mut rdr = dbase::Reader::from_path(path)?;
 
@@ -442,12 +447,7 @@ async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
     .map(|field| field.name().to_string())
     .collect();
 
-  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
-  let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.dbf.csv");
-
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
-
   wtr.write_record(&headers)?;
 
   for result in rdr.iter_records() {

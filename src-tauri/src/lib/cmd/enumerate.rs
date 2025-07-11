@@ -1,7 +1,7 @@
 use std::{
   fs::File,
   io::BufWriter,
-  path::Path,
+  path::{Path, PathBuf},
   sync::{Arc, Mutex},
   time::{Duration, Instant},
 };
@@ -20,6 +20,10 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.enumer.csv"));
 
   let total_rows = match mode {
     "idx" => csv_options.idx_csv_rows().await?,
@@ -27,10 +31,6 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;
-
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.enumerate.csv");
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)

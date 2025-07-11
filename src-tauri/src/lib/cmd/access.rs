@@ -1,4 +1,4 @@
-use std::{path::Path, time::Instant};
+use std::{path::{Path, PathBuf}, time::Instant};
 
 use anyhow::{Result, anyhow};
 use csv::{StringRecord, WriterBuilder};
@@ -49,16 +49,18 @@ async fn access_to_csv(path: &str, sep: String) -> Result<()> {
   } else {
     sep.as_bytes()[0]
   };
-  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
+
   let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
+  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
 
   let c = format!("Driver={};Dbq={};", driver, path);
   let conn = connection(&c)?;
   let tables = get_all_table(&conn)?;
 
   for table in tables.iter() {
-    let fname = format!("{parent_path}/{file_stem}.{table}.access.csv");
-    let query = format!("select * from {}", table);
+    let mut fname = PathBuf::from(parent_path);
+    fname.push(format!("{file_stem}.access.csv"));
+    let query = format!("select * from {table}");
 
     match conn.execute(&query, ())? {
       Some(mut cursor) => {

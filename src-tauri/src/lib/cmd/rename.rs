@@ -1,5 +1,5 @@
 use std::{
-  path::Path,
+  path::{Path, PathBuf},
   sync::{Arc, Mutex},
   time::{Duration, Instant},
 };
@@ -19,6 +19,10 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.rename.csv"));
 
   let total_rows = match mode {
     "idx" => csv_options.idx_csv_rows().await?,
@@ -30,17 +34,9 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
-
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
-
   let new_headers = new_rdr.byte_headers()?;
-
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.rename.csv");
-
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
-
   wtr.write_record(new_headers)?;
 
   let rows = Arc::new(Mutex::new(0));

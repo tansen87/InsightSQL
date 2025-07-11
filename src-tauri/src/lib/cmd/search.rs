@@ -1,7 +1,7 @@
 use std::{
   collections::{HashMap, HashSet},
   fs::File,
-  path::Path,
+  path::{Path, PathBuf},
   sync::{Arc, Mutex},
   time::{Duration, Instant},
 };
@@ -62,7 +62,7 @@ async fn generic_search<F, P>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   match_fn: F,
   app_handle: AppHandle,
 ) -> Result<()>
@@ -153,13 +153,13 @@ where
   let match_fn = Arc::new(match_fn);
 
   // prepare writers for each condition with sanitized output paths
-  let parent = path.as_ref().parent().unwrap().to_str().unwrap();
-  let stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let output_paths: HashMap<String, String> = conditions
     .iter()
     .map(|cond| {
       let sanitized = sanitize_condition(cond);
-      let path = format!("{parent}/{stem}_{sanitized}.csv");
+      let path = format!("{parent_path}/{file_stem}_{sanitized}.csv");
       (cond.clone(), path)
     })
     .collect();
@@ -249,7 +249,7 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -287,7 +287,7 @@ pub async fn not_equal_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -307,7 +307,7 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -345,7 +345,7 @@ pub async fn not_contains_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -365,7 +365,7 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -403,7 +403,7 @@ pub async fn not_startswith_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -423,7 +423,7 @@ pub async fn ends_with_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -461,7 +461,7 @@ pub async fn not_ends_with_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   generic_search(
@@ -481,7 +481,7 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   sep: u8,
   select_column: String,
   regex_char: String,
-  output_path: String,
+  output_path: PathBuf,
   app_handle: AppHandle,
 ) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_char).build()?;
@@ -519,7 +519,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   let multi_conditions: Vec<String> = conditions
     .split('|')
     .map(|s| s.trim().to_string())
-    .collect::<HashSet<_>>()  // de duplication
+    .collect::<HashSet<_>>() // de duplication
     .into_iter()
     .collect();
 
@@ -548,12 +548,13 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       let vec_conditions: Vec<String> = conditions
         .split('|')
         .map(|s| s.trim().to_string())
-        .collect::<HashSet<_>>()  // de duplication
+        .collect::<HashSet<_>>() // de duplication
         .into_iter()
         .collect();
       let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-      let file_name = path.as_ref().file_stem().unwrap().to_str().unwrap();
-      let output_path = format!("{}/{}.search.csv", parent_path, file_name);
+      let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+      let mut output_path = PathBuf::from(parent_path);
+      output_path.push(format!("{file_stem}.search.csv"));
 
       match search_mode {
         SearchMode::Equal => {

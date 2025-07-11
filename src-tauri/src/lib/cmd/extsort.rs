@@ -1,6 +1,6 @@
 use std::{
   io::{self, BufRead, Write},
-  path::Path,
+  path::{Path, PathBuf},
   time::Instant,
 };
 
@@ -115,7 +115,9 @@ pub async fn sort_csv(
 
   let parent_path = Path::new(&path).parent().unwrap().to_str().unwrap();
   let file_stem = Path::new(&path).file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.extsort.csv");
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.extsort.csv"));
+
   let mut sorted_csv_wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   sorted_csv_wtr.write_byte_record(&headers)?;

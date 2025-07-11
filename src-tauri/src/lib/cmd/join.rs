@@ -4,13 +4,13 @@ use std::{
   fs::{self, File},
   io::{self, Write},
   iter::repeat,
-  path::Path,
+  path::{Path, PathBuf},
   time::Instant,
 };
 
 use anyhow::{Result, anyhow};
 use byteorder::{BigEndian, WriteBytesExt};
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::index::Indexed;
 use crate::utils::{CsvOptions, Selection};
@@ -172,6 +172,11 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
   let sep1 = csv_options1.detect_separator()?;
   let csv_options2 = CsvOptions::new(&path2);
   let sep2 = csv_options2.detect_separator()?;
+  let parent_path = path1.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path1.as_ref().file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.join.csv"));
+
   let mut rdr1 = ReaderBuilder::new()
     .delimiter(sep1)
     .from_reader(File::open(&path1)?);
@@ -179,24 +184,15 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
     .delimiter(sep2)
     .from_reader(File::open(&path2)?);
 
-  let parent_path = &path1
-    .as_ref()
-    .parent()
-    .map(|path| path.to_string_lossy())
-    .unwrap();
-
-  let file_name = &path1.as_ref().file_stem().unwrap().to_str().unwrap();
-
-  let output_path = format!("{parent_path}/{file_name}.join.csv");
-
   let boxed_writer: Box<dyn Write> = Box::new(File::create(output_path)?);
 
-  let wtr = csv::WriterBuilder::new()
+  let wtr = WriterBuilder::new()
     .delimiter(sep1)
     .from_writer(boxed_writer);
 
   let sel1 = Selection::from_headers(rdr1.byte_headers()?, &[sel1.as_str()][..])?;
   let sel2 = Selection::from_headers(rdr2.byte_headers()?, &[sel2.as_str()][..])?;
+
   Ok(IoState {
     wtr,
     rdr1: rdr1,

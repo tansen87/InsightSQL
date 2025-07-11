@@ -1,7 +1,7 @@
 use std::{
   fs::File,
   io::{BufReader, BufWriter},
-  path::Path,
+  path::{Path, PathBuf},
   time::Instant,
 };
 
@@ -267,10 +267,10 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
 
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
-
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.slice.csv");
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.slice.csv"));
 
   let rdr = ReaderBuilder::new()
     .delimiter(sep)

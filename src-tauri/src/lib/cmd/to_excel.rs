@@ -17,7 +17,6 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   chunk_size: usize,
 ) -> Result<()> {
   let dest = path.as_ref().with_extension("xlsx");
-
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 

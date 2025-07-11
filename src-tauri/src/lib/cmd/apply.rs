@@ -1,4 +1,9 @@
-use std::{collections::HashMap, path::Path, sync::OnceLock, time::Instant};
+use std::{
+  collections::HashMap,
+  path::{Path, PathBuf},
+  sync::OnceLock,
+  time::Instant,
+};
 
 use anyhow::{Result, anyhow};
 use cpc::{eval, units::Unit};
@@ -217,6 +222,10 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
   let sep_char = sep as char;
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.apply.csv"));
 
   let new_column: Option<String> = if new_column {
     Some(
@@ -233,9 +242,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(csv_options.skip_csv_rows()?);
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.apply.csv");
+
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   let headers = rdr.byte_headers()?;
@@ -275,37 +282,36 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   }
   wtr.write_record(&headers)?;
 
-  let dynfmt_template =
-    if (apply_mode.to_lowercase() == "calcconv") || (apply_mode.to_lowercase() == "dynfmt") {
-      let mut dynfmt_template_wrk = formatstr.clone();
-      let mut dynfmt_fields = Vec::new();
+  let dynfmt_template = if (apply_mode == "calcconv") || (apply_mode == "dynfmt") {
+    let mut dynfmt_template_wrk = formatstr.clone();
+    let mut dynfmt_fields = Vec::new();
 
-      // first, get the fields used in the dynfmt template
-      let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
-      for format_fields in formatstr_re.captures_iter(&formatstr) {
-        // safety: we already checked that the regex match is valid
-        dynfmt_fields.push(format_fields.name("key").unwrap().as_str());
+    // first, get the fields used in the dynfmt template
+    let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
+    for format_fields in formatstr_re.captures_iter(&formatstr) {
+      // safety: we already checked that the regex match is valid
+      dynfmt_fields.push(format_fields.name("key").unwrap().as_str());
+    }
+    // we sort the fields so we can do binary_search
+    dynfmt_fields.sort_unstable();
+
+    // now, get the indices of the columns for the lookup vec
+    for (i, field) in headers.iter().enumerate() {
+      if dynfmt_fields.binary_search(&field).is_ok() {
+        let field_with_curly = format!("{{{field}}}");
+        let field_index = format!("{{{i}}}");
+        dynfmt_template_wrk = dynfmt_template_wrk.replace(&field_with_curly, &field_index);
       }
-      // we sort the fields so we can do binary_search
-      dynfmt_fields.sort_unstable();
+    }
 
-      // now, get the indices of the columns for the lookup vec
-      for (i, field) in headers.iter().enumerate() {
-        if dynfmt_fields.binary_search(&field).is_ok() {
-          let field_with_curly = format!("{{{field}}}");
-          let field_index = format!("{{{i}}}");
-          dynfmt_template_wrk = dynfmt_template_wrk.replace(&field_with_curly, &field_index);
-        }
-      }
-
-      dynfmt_template_wrk.to_string()
-    } else {
-      String::new()
-    };
+    dynfmt_template_wrk.to_string()
+  } else {
+    String::new()
+  };
 
   let mut ops_vec = SmallVec::<[Operations; 4]>::new();
 
-  let apply_cmd = if apply_mode.to_lowercase() == "operations" {
+  let apply_cmd = if apply_mode == "operations" {
     match validate_operations(
       &operations.split('|').collect(),
       &comparand,
@@ -317,7 +323,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
       Err(e) => return Err(e),
     }
     ApplyCmd::Operations
-  } else if apply_mode.to_lowercase() == "calcconv" {
+  } else if apply_mode == "calcconv" {
     ApplyCmd::CalcConv
   } else {
     ApplyCmd::DynFmt

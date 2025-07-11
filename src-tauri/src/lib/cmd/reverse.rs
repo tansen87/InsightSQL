@@ -1,4 +1,7 @@
-use std::{path::Path, time::Instant};
+use std::{
+  path::{Path, PathBuf},
+  time::Instant,
+};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -8,10 +11,10 @@ use crate::utils::CsvOptions;
 pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
-
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.reverse.csv");
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.reverse.csv"));
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)

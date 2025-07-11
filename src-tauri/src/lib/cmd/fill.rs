@@ -1,6 +1,12 @@
-use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{
+  collections::HashMap,
+  fs::File,
+  io::BufWriter,
+  path::{Path, PathBuf},
+  time::Instant,
+};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::utils::{CsvOptions, Selection};
@@ -13,6 +19,10 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
+  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
+  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.fill.csv"));
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -20,10 +30,6 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
 
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
-
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let output_path = format!("{parent_path}/{file_stem}.fill.csv");
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)

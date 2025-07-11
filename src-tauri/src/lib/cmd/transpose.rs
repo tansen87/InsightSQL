@@ -1,4 +1,9 @@
-use std::{fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{
+  fs::File,
+  io::BufWriter,
+  path::{Path, PathBuf},
+  time::Instant,
+};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -8,10 +13,10 @@ use crate::utils::CsvOptions;
 pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let file_options = CsvOptions::new(&path);
   let sep = file_options.detect_separator()?;
-
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let wtr_path = format!("{parent_path}/{file_stem}.transpose.csv");
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.transpose.csv"));
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -19,7 +24,7 @@ pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(wtr_path)?));
+    .from_writer(BufWriter::new(File::create(output_path)?));
 
   let nrows = rdr.byte_headers()?.len();
 
@@ -39,10 +44,10 @@ pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
 pub async fn multipass_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let file_options = CsvOptions::new(&path);
   let sep = file_options.detect_separator()?;
-
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let wtr_path = format!("{parent_path}/{file_stem}.transpose.csv");
+  let mut output_path = PathBuf::from(parent_path);
+  output_path.push(format!("{file_stem}.transpose.csv"));
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -50,7 +55,7 @@ pub async fn multipass_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(wtr_path)?));
+    .from_writer(BufWriter::new(File::create(output_path)?));
 
   let nrows = rdr.byte_headers()?.len();
 
