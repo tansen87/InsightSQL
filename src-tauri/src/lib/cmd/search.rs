@@ -84,7 +84,6 @@ where
 
   let rows = Arc::new(Mutex::new(0));
   let rows_clone = Arc::clone(&rows);
-
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 

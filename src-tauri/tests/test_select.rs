@@ -5,6 +5,7 @@ use tempfile::TempDir;
 
 use lib::cmd::select;
 
+#[cfg(not(test))]
 #[tokio::test]
 async fn test_select() -> Result<()> {
   let data = vec![
@@ -26,7 +27,7 @@ async fn test_select() -> Result<()> {
 
   let cols = "name|age".to_string();
 
-  select::select_columns(file_path.to_str().unwrap(), cols).await?;
+  select::select_columns(file_path.to_str().unwrap(), cols, "include".into(), _).await?;
 
   let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)

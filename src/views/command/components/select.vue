@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Cherry, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, Select } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { CheckboxValueType } from "element-plus";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
+import { listen } from "@tauri-apps/api/event";
 
 const path = ref("");
+const [currentRows, totalRows] = [ref(0), ref(0)];
+const [pgsMode, selMode] = [ref("nil"), ref("include")];
 const [originalColumns, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, isPath, checkAll, indeterminate] = [
   ref(false),
@@ -15,6 +18,7 @@ const [isLoading, isPath, checkAll, indeterminate] = [
   ref(false),
   ref(false)
 ];
+const { dynamicHeight } = useDynamicHeight(214);
 const selColumns = ref<CheckboxValueType[]>([]);
 
 watch(selColumns, val => {
@@ -28,7 +32,7 @@ watch(selColumns, val => {
     indeterminate.value = true;
   }
 });
-const { dynamicHeight } = useDynamicHeight(178);
+
 const handleCheckAll = (val: CheckboxValueType) => {
   indeterminate.value = false;
   if (val) {
@@ -38,12 +42,20 @@ const handleCheckAll = (val: CheckboxValueType) => {
   }
 };
 
+listen("update-rows", (event: any) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: any) => {
+  totalRows.value = event.payload;
+});
+
 async function selectFile() {
   originalColumns.value = [];
   isPath.value = false;
   selColumns.value = [];
   tableColumn.value = [];
   tableData.value = [];
+  totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
   if (path.value === null) {
@@ -74,10 +86,12 @@ async function selectColumns() {
 
   try {
     isLoading.value = true;
-    const useCols = Object.values(selColumns.value).join("|");
+    const selCols = Object.values(selColumns.value).join("|");
     const rtime: string = await invoke("select", {
       path: path.value,
-      cols: useCols
+      selCols: selCols,
+      selMode: selMode.value,
+      pgsMode: pgsMode.value
     });
     message(`Select done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -94,24 +108,30 @@ async function selectColumns() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-button
-          @click="selectColumns()"
-          :loading="isLoading"
-          :icon="Cherry"
-          style="margin-left: 10px"
-        >
-          Select
-        </el-button>
+        <el-tooltip content="Select mode" effect="light">
+          <el-select v-model="selMode" style="width: 95px; margin-left: 10px">
+            <el-option label="Include" value="include" />
+            <el-option label="Exclude" value="exclude" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="if nil, do not add progress bar" effect="light">
+          <el-select v-model="pgsMode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="std" value="std" />
+            <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
       </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Select, re-order columns</span>
-      </el-text>
+      <el-button
+        @click="selectColumns()"
+        :loading="isLoading"
+        :icon="Select"
+        style="margin-left: 10px"
+      >
+        Select
+      </el-button>
     </div>
+
     <el-select
       v-model="selColumns"
       multiple
@@ -150,5 +170,14 @@ async function selectColumns() {
         :key="column.prop"
       />
     </el-table>
+    <div v-if="isPath" style="margin-top: 12px">
+      <el-tooltip :content="path" effect="light">
+        <el-progress
+          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+          :percentage="Math.round((currentRows / totalRows) * 100)"
+        />
+      </el-tooltip>
+    </div>
+    <div v-else style="margin-top: 12px">Select, drop, re-order columns</div>
   </div>
 </template>
