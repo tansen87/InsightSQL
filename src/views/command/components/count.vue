@@ -20,7 +20,7 @@ const isLoading = ref(false);
 const selectedFiles = ref([]);
 const { dynamicHeight } = useDynamicHeight(122);
 
-listen("start_convert", (event: any) => {
+listen("start-count", (event: any) => {
   const startConvert: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert) {
@@ -28,7 +28,7 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("count_err", (event: any) => {
+listen("count-err", (event: any) => {
   const countErr: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === countErr.split("|")[0]) {
@@ -37,7 +37,7 @@ listen("count_err", (event: any) => {
     }
   });
 });
-listen("count_msg", (event: any) => {
+listen("count-msg", (event: any) => {
   const countMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === countMsg.split("|")[0]) {

@@ -192,7 +192,7 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
 
 #[tauri::command]
 pub async fn concat(
-  file_path: String,
+  path: String,
   output_path: String,
   file_type: String,
   mode: String,
@@ -202,7 +202,7 @@ pub async fn concat(
   let start_time = Instant::now();
 
   match mode.as_str() {
-    "csv" => match cat_with_csv(file_path, skip_rows, output_path).await {
+    "csv" => match cat_with_csv(path, skip_rows, output_path).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -210,7 +210,7 @@ pub async fn concat(
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match cat_with_polars(file_path, output_path, file_type, skip_rows, use_cols).await {
+    _ => match cat_with_polars(path, output_path, file_type, skip_rows, use_cols).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

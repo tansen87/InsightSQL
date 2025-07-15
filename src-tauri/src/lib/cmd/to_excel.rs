@@ -60,18 +60,18 @@ pub async fn csv2xlsx(
   for file in paths.iter() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
     window
-      .emit("start_convert", filename)
+      .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
 
     match csv_to_xlsx(file, use_polars, chunk_size).await {
       Ok(_) => {
         window
-          .emit("c2x_msg", filename)
+          .emit("c2x-msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("rows_err", format!("{filename}|{err}"))
+          .emit("rows-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
         continue;
       }

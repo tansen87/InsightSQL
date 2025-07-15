@@ -2,7 +2,6 @@
 import { ref } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import {
   FolderOpened,
   Connection,
@@ -23,24 +22,6 @@ const [isLoading, backendCompleted, infoDialog] = [
   ref(false)
 ];
 const { dynamicHeight } = useDynamicHeight(166);
-
-listen("dupler_msg", (event: any) => {
-  const duplerMsg: any = event.payload;
-  const dupler = duplerMsg.split("|")[2];
-  selectedFiles.value.forEach(file => {
-    if (file.filename === duplerMsg.split("|")[0]) {
-      file.infoMsg = dupler === "{}" ? "" : dupler;
-    }
-  });
-});
-listen("dupler_err", (event: any) => {
-  const duplerErr: string = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === duplerErr.split("|")[0]) {
-      file.infoMsg = duplerErr.split("|")[1];
-    }
-  });
-});
 
 async function selectFile() {
   columns.value = "";
@@ -117,7 +98,7 @@ async function concatData() {
     const saveFileType = outputPath.split(".").pop();
     const useCols = Object.values(columns.value).join("|");
     const rtime: string = await invoke("concat", {
-      filePath: path.value,
+      path: path.value,
       outputPath: outputPath,
       fileType: saveFileType,
       mode: mode.value,

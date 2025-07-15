@@ -20,7 +20,7 @@ const selectedFiles = ref([]);
 const path = ref("");
 const { dynamicHeight } = useDynamicHeight(123);
 
-listen("start_convert", (event: any) => {
+listen("start-to", (event: any) => {
   const startConvert: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === startConvert) {
@@ -28,7 +28,7 @@ listen("start_convert", (event: any) => {
     }
   });
 });
-listen("rows_err", (event: any) => {
+listen("rows-err", (event: any) => {
   const csvRowsErr: string = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === csvRowsErr.split("|")[0]) {
@@ -37,7 +37,7 @@ listen("rows_err", (event: any) => {
     }
   });
 });
-listen("c2x_msg", (event: any) => {
+listen("c2x-msg", (event: any) => {
   const c2xMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
     if (file.filename === c2xMsg) {

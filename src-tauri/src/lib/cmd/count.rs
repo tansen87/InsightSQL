@@ -58,7 +58,7 @@ async fn single_process(
   let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
 
   if let Err(e) = window
-    .emit("start_convert", &filename)
+    .emit("start-count", &filename)
     .map_err(|e| e.to_string())
   {
     return Err(e);
@@ -70,36 +70,36 @@ async fn single_process(
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
         window
-          .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
+          .emit("count-msg", format!("{filename}|{elapsed_time:.2} s"))
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("count_err", format!("{filename}|{err}"))
+          .emit("count-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
       }
     },
     "count" => match count_rows(file).await {
       Ok(cnt) => {
         window
-          .emit("count_msg", format!("{filename}|{cnt}"))
+          .emit("count-msg", format!("{filename}|{cnt}"))
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("count_err", format!("{filename}|{err}"))
+          .emit("count-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
       }
     },
     _ => match count_check(file).await {
       Ok(cnt) => {
         window
-          .emit("count_msg", format!("{filename}|{cnt}"))
+          .emit("count-msg", format!("{filename}|{cnt}"))
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("count_err", format!("{filename}|{err}"))
+          .emit("count-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
       }
     },
@@ -117,7 +117,7 @@ fn parallel_process(
   let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
 
   if let Err(e) = window
-    .emit("start_convert", &filename)
+    .emit("start-count", &filename)
     .map_err(|e| e.to_string())
   {
     return Err(e);
@@ -130,7 +130,7 @@ fn parallel_process(
           Ok(_) => {
             let elapsed_time = start_time.elapsed().as_secs_f64();
             if let Err(e) = window
-              .emit("count_msg", format!("{filename}|{elapsed_time:.2} s"))
+              .emit("count-msg", format!("{filename}|{elapsed_time:.2} s"))
               .map_err(|e| e.to_string())
             {
               return Err(e);
@@ -138,7 +138,7 @@ fn parallel_process(
           }
           Err(err) => {
             if let Err(e) = window
-              .emit("count_err", format!("{filename}|{err}"))
+              .emit("count-err", format!("{filename}|{err}"))
               .map_err(|e| e.to_string())
             {
               return Err(e);
@@ -153,7 +153,7 @@ fn parallel_process(
         match count_rows(file).await {
           Ok(cnt) => {
             if let Err(e) = window
-              .emit("count_msg", format!("{filename}|{cnt}"))
+              .emit("count-msg", format!("{filename}|{cnt}"))
               .map_err(|e| e.to_string())
             {
               return Err(e);
@@ -161,7 +161,7 @@ fn parallel_process(
           }
           Err(err) => {
             if let Err(e) = window
-              .emit("count_err", format!("{filename}|{err}"))
+              .emit("count-err", format!("{filename}|{err}"))
               .map_err(|e| e.to_string())
             {
               return Err(e);
@@ -176,7 +176,7 @@ fn parallel_process(
         match count_check(file).await {
           Ok(cnt) => {
             if let Err(e) = window
-              .emit("count_msg", format!("{filename}|{cnt}"))
+              .emit("count-msg", format!("{filename}|{cnt}"))
               .map_err(|e| e.to_string())
             {
               return Err(e);
@@ -184,7 +184,7 @@ fn parallel_process(
           }
           Err(err) => {
             if let Err(e) = window
-              .emit("count_err", format!("{filename}|{err}"))
+              .emit("count-err", format!("{filename}|{err}"))
               .map_err(|e| e.to_string())
             {
               return Err(e);
