@@ -1,10 +1,9 @@
-use std::{path::{Path, PathBuf}, time::Instant};
+use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
 use csv::{StringRecord, WriterBuilder};
 use lazy_static::lazy_static;
 use odbc_api::{ConnectionOptions, Cursor, Environment, ResultSetMetadata, buffers::TextRowSet};
-use tauri::{Emitter, Window};
 
 fn connection(odbc_conn: &str) -> Result<odbc_api::Connection<'_>, odbc_api::Error> {
   lazy_static! {
@@ -40,7 +39,7 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
   Ok(tables)
 }
 
-async fn access_to_csv(path: &str, sep: String) -> Result<()> {
+pub async fn access_to_csv(path: &str, sep: String) -> Result<()> {
   let driver = "{Microsoft Access Driver (*.mdb, *.accdb)}";
   let batch_size = 5000;
 
@@ -85,32 +84,4 @@ async fn access_to_csv(path: &str, sep: String) -> Result<()> {
   }
 
   Ok(())
-}
-
-#[tauri::command]
-pub async fn access2csv(path: String, sep: String, window: Window) -> Result<String, String> {
-  let start_time = Instant::now();
-
-  let paths: Vec<&str> = path.split('|').collect();
-  for fp in paths.iter() {
-    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
-    window
-      .emit("start-to", filename)
-      .map_err(|e| e.to_string())?;
-    match access_to_csv(fp, sep.clone()).await {
-      Ok(_) => {
-        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
-      }
-      Err(err) => {
-        window
-          .emit("to-err", format!("{filename}|{err}"))
-          .map_err(|e| e.to_string())?;
-        continue;
-      }
-    }
-  }
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  Ok(format!("{:.2}", elapsed_time))
 }

@@ -1,4 +1,4 @@
-use std::{path::Path, time::Instant};
+use std::path::Path;
 
 use anyhow::{Result, anyhow};
 use csv::ReaderBuilder;
@@ -6,13 +6,12 @@ use polars::{
   io::SerReader,
   prelude::{CsvParseOptions, CsvReadOptions},
 };
-use tauri::{Emitter, Window};
 
 use crate::io::csv::options::CsvOptions;
 use crate::io::excel::xlsx_writer::XlsxWriter;
 
 /// convert csv to xlsx
-async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
+pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   path: P,
   use_polars: bool,
   chunk_size: usize,
@@ -43,43 +42,4 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   }
 
   Ok(())
-}
-
-#[tauri::command]
-pub async fn csv2xlsx(
-  path: String,
-  mode: String,
-  chunk_size: String,
-  window: Window,
-) -> Result<String, String> {
-  let start_time = Instant::now();
-
-  let paths: Vec<&str> = path.split('|').collect();
-  let chunk_size = chunk_size.parse::<usize>().map_err(|e| e.to_string())?;
-  let use_polars = mode != "csv";
-
-  for file in paths.iter() {
-    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
-    window
-      .emit("start-to", filename)
-      .map_err(|e| e.to_string())?;
-
-    match csv_to_xlsx(file, use_polars, chunk_size).await {
-      Ok(_) => {
-        window
-          .emit("c2x-msg", filename)
-          .map_err(|e| e.to_string())?;
-      }
-      Err(err) => {
-        window
-          .emit("rows-err", format!("{filename}|{err}"))
-          .map_err(|e| e.to_string())?;
-        continue;
-      }
-    }
-  }
-
-  let end_time = Instant::now();
-  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  Ok(format!("{elapsed_time:.2}"))
 }
