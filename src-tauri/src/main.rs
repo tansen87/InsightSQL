@@ -25,7 +25,6 @@ use lib::cmd::sort;
 use lib::cmd::split;
 use lib::cmd::sqlp;
 use lib::cmd::string;
-use lib::cmd::to;
 use lib::cmd::transpose;
 use lib::cmd::traverse;
 
@@ -50,6 +49,12 @@ fn main() {
       skip::skip,
       cat::concat,
       convert::excel_to_csv::map_excel_sheets,
+      #[cfg(target_os = "windows")]
+      convert::access2csv,
+      convert::csv2csv,
+      convert::csv2xlsx,
+      convert::dbf2csv,
+      convert::excel2csv,
       count::count,
       enumerate::enumer,
       extsort::extsort,
@@ -67,12 +72,6 @@ fn main() {
       sqlp::query,
       string::str_slice,
       string::str_split,
-      #[cfg(target_os = "windows")]
-      to::access2csv,
-      to::excel2csv,
-      to::csv2csv,
-      to::dbf2csv,
-      to::csv2xlsx,
       transpose::transpose,
       traverse::traverse,
     ])
