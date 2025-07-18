@@ -21,10 +21,10 @@ use lib::cmd::reverse;
 use lib::cmd::search;
 use lib::cmd::select;
 use lib::cmd::skip;
-use lib::cmd::slice;
 use lib::cmd::sort;
 use lib::cmd::split;
 use lib::cmd::sqlp;
+use lib::cmd::string;
 use lib::cmd::to;
 use lib::cmd::transpose;
 use lib::cmd::traverse;
@@ -62,10 +62,11 @@ fn main() {
       reverse::reverse,
       search::search,
       select::select,
-      slice::slice,
       sort::sort,
       split::split,
       sqlp::query,
+      string::str_slice,
+      string::str_split,
       #[cfg(target_os = "windows")]
       to::access2csv,
       to::excel2csv,

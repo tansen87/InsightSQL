@@ -2,7 +2,6 @@ use std::{
   fs::File,
   io::{BufReader, BufWriter},
   path::{Path, PathBuf},
-  time::Instant,
 };
 
 use anyhow::{Result, anyhow};
@@ -15,8 +14,6 @@ pub enum SliceMode {
   Left,
   Right,
   StartLength,
-  Nth,
-  Nmax,
 }
 
 impl From<&str> for SliceMode {
@@ -24,9 +21,7 @@ impl From<&str> for SliceMode {
     match mode {
       "left" => SliceMode::Left,
       "right" => SliceMode::Right,
-      "sl" => SliceMode::StartLength,
-      "nth" => SliceMode::Nth,
-      "nmax" => SliceMode::Nmax,
+      "startlen" => SliceMode::StartLength,
       _ => SliceMode::Left,
     }
   }
@@ -37,14 +32,12 @@ impl SliceMode {
     match self {
       SliceMode::Left => "left",
       SliceMode::Right => "right",
-      SliceMode::StartLength => "sl",
-      SliceMode::Nth => "nth",
-      SliceMode::Nmax => "nmax",
+      SliceMode::StartLength => "startlen",
     }
   }
 }
 
-pub async fn slice_column_with_nchar(
+pub async fn slice_nchar(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
   select_column: &str,
@@ -96,7 +89,7 @@ pub async fn slice_column_with_nchar(
   Ok(wtr.flush()?)
 }
 
-pub async fn slice_column_with_sl(
+pub async fn slice_start_length(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
   select_column: &str,
@@ -109,7 +102,7 @@ pub async fn slice_column_with_sl(
   let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
 
   let mut new_headers = headers.clone();
-  let new_column_name = format!("{}_sl", select_column);
+  let new_column_name = format!("{}_slen", select_column);
   new_headers.push_field(&new_column_name);
 
   wtr.write_record(&new_headers)?;
@@ -170,91 +163,16 @@ pub async fn slice_column_with_sl(
   Ok(wtr.flush()?)
 }
 
-pub async fn slice_column_with_nth(
-  mut rdr: Reader<BufReader<File>>,
-  mut wtr: Writer<BufWriter<File>>,
-  select_column: &str,
-  n: usize,
-  slice_sep: &str,
-) -> Result<()> {
-  let mut headers = rdr.headers()?.clone();
-
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
-
-  let new_column_name = format!("{}_nth", select_column);
-  headers.push_field(&new_column_name);
-  wtr.write_record(&headers)?;
-
-  for result in rdr.records() {
-    let record = result?;
-    if let Some(value) = record.get(sel.first_indices()?) {
-      let split_parts: Vec<&str> = value.split(slice_sep).collect();
-      let selected_part = if split_parts.len() >= n {
-        split_parts[n - 1]
-      } else {
-        ""
-      };
-
-      let mut new_record = record.clone();
-      new_record.push_field(selected_part);
-      wtr.write_record(&new_record)?;
-    }
-  }
-
-  Ok(wtr.flush()?)
-}
-
-pub async fn slice_column_with_nmax(
-  mut rdr: Reader<BufReader<File>>,
-  mut wtr: Writer<BufWriter<File>>,
-  select_column: &str,
-  n: usize,
-  slice_sep: &str,
-) -> Result<()> {
-  let mut headers = rdr.headers()?.clone();
-
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
-
-  let mut first_record = true;
-  for result in rdr.records() {
-    let record = result?;
-    if let Some(value) = record.get(sel.first_indices()?) {
-      let split_parts: Vec<&str> = value.split(slice_sep).collect();
-      if first_record {
-        for i in 1..=n {
-          headers.push_field(&format!("{}_nmax{}", select_column, i));
-        }
-        wtr.write_record(&headers)?;
-        first_record = false;
-      }
-
-      let mut new_record = record.clone();
-      for i in 0..n {
-        if i < split_parts.len() {
-          new_record.push_field(split_parts[i]);
-        } else {
-          new_record.push_field("");
-        }
-      }
-
-      wtr.write_record(&new_record)?;
-    }
-  }
-
-  Ok(wtr.flush()?)
-}
-
 pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   path: P,
   select_column: &str,
   n: i32,
   length: usize,
-  slice_sep: &str,
   reverse: bool,
   mode: SliceMode,
 ) -> Result<()> {
   let num = n as usize;
-  if n < 1 && mode.to_str() != "sl" {
+  if n < 1 && mode.to_str() != "startlen" {
     return Err(anyhow!(
       "Number of the slice must be greater than or equal 1"
     ));
@@ -279,7 +197,7 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
 
   match mode {
     SliceMode::Left => {
-      slice_column_with_nchar(
+      slice_nchar(
         rdr,
         wtr,
         select_column,
@@ -290,7 +208,7 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
       .await?
     }
     SliceMode::Right => {
-      slice_column_with_nchar(
+      slice_nchar(
         rdr,
         wtr,
         select_column,
@@ -301,45 +219,9 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
       .await?
     }
     SliceMode::StartLength => {
-      slice_column_with_sl(rdr, wtr, select_column, n, length, reverse).await?
+      slice_start_length(rdr, wtr, select_column, n, length, reverse).await?
     }
-    SliceMode::Nth => slice_column_with_nth(rdr, wtr, select_column, num, slice_sep).await?,
-    SliceMode::Nmax => slice_column_with_nmax(rdr, wtr, select_column, num, slice_sep).await?,
   }
 
   Ok(())
-}
-
-#[tauri::command]
-pub async fn slice(
-  path: String,
-  select_column: String,
-  n: String,
-  length: String,
-  slice_sep: String,
-  reverse: bool,
-  mode: String,
-) -> Result<String, String> {
-  let start_time = Instant::now();
-
-  let slice_mode: SliceMode = mode.as_str().into();
-
-  match perform_slice(
-    path,
-    select_column.as_str(),
-    n.parse::<i32>().map_err(|e| e.to_string())?,
-    length.parse::<usize>().map_err(|e| e.to_string())?,
-    slice_sep.as_str(),
-    reverse,
-    slice_mode,
-  )
-  .await
-  {
-    Ok(_) => {
-      let end_time = Instant::now();
-      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
-    }
-    Err(err) => Err(format!("{err}")),
-  }
 }

@@ -130,67 +130,85 @@ export function splitContent() {
 
 export function sliceContent() {
   return `
-### What happens when running slice
-
-For example, let's say we have a file (**data.csv**) with the following contents:
-
-\`\`\`sql
-name,age,gender
-汤-姆-1,18,男
-杰-瑞-2,19,male
-Sa-n-dy,24,female
+\`\`\`
+sample file
+┌─────┬──────────┐
+│ idx │ name     │
+├─────┼──────────┤
+│  1  │ tom-1    │
+│  2  │ jerry-2  │
+│  3  | hansen-3 |
+└─────┴──────────┘
 \`\`\`
 
-1st, we set **Slice by column** to <u>name</u> and set the **Numer of slice** to <u>2</u>
-and set the **Slice mode** to <u>Left</u>,
-we will receive the following files and with the following contents:
-
-left mode: **data.slice.csv**
-
-\`\`\`sql
-name,age,gender,name_nchar
-汤-姆-1,18,男,汤-
-杰-瑞-2,19,male,杰-
-Sa-n-dy,24,female,Sa
+### 1. Left
+Set criteria (Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Left</u>)
+\`\`\`
+┌─────┬──────────┬────────────┐
+│ idx │ name     │ name_nchar │
+├─────┼──────────┼────────────┤
+│  1  │ tom-1    │    tom     │
+│  2  │ jerry-2  │    jer     │
+│  3  | hansen-3 |    han     │
+└─────┴──────────┴────────────┘
 \`\`\`
 
-2nd, we set **Slice by column** to <u>name</u> and set the **Numer of slice** to <u>2</u>
-and set the **Slice mode** to <u>Right</u>,
-we will receive the following files and with the following contents:
-
-right mode: **data.slice.csv**
-
-\`\`\`sql
-name,age,gender,name_nchar
-汤-姆-1,18,男,-1
-杰-瑞-2,19,male,-2
-Sa-n-dy,24,female,dy
+### 2. Right
+Set criteria (Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Right</u>)
+\`\`\`
+┌─────┬──────────┬────────────┐
+│ idx │ name     │ name_nchar │
+├─────┼──────────┼────────────┤
+│  1  │ tom-1    │    m-1     │
+│  2  │ jerry-2  │    y-2     │
+│  3  | hansen-3 |    n-3     │
+└─────┴──────────┴────────────┘
 \`\`\`
 
-3rd, we set **Slice by column** to <u>name</u> and set the **Numer of slice** to <u>2</u>
-and set the **Slice separator** to <u>-</u> and set the **Slice mode** to <u>Nth</u>,
-we will receive the following files and with the following contents:
-
-nth mode: **data.slice.csv**
-
-\`\`\`sql
-name,age,gender,name_nth
-汤-姆-1,18,男,姆
-杰-瑞-2,19,male,瑞
-Sa-n-dy,24,female,n
+### 3. StartLength
+Set criteria (Select column: <u>name</u>, Start index: <u>1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
+\`\`\`
+┌─────┬──────────┬─────────┐
+│ idx │ name     │ name_sl │
+├─────┼──────────┼─────────┤
+│  1  │ tom-1    │   tom   │
+│  2  │ jerry-2  │   jer   │
+│  3  | hansen-3 |   han   │
+└─────┴──────────┴─────────┘
+\`\`\`
+Set criteria (Select column: <u>name</u>, Start index: <u>-1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
+\`\`\`
+┌─────┬──────────┬─────────┐
+│ idx │ name     │ name_sl │
+├─────┼──────────┼─────────┤
+│  1  │ tom-1    │   m-1   │
+│  2  │ jerry-2  │   y-2   │
+│  3  | hansen-3 |   n-3   │
+└─────┴──────────┴─────────┘
 \`\`\`
 
-4th, we set **Slice by column** to <u>name</u> and set the **Numer of slice** to <u>2</u>
-and set the **Slice separator** to <u>-</u> and set the **Slice mode** to <u>Nmax</u>,
-we will receive the following files and with the following contents:
+### 4. Nth
+Set criteria (Select column: <u>name</u>, Number of the string: <u>1</u>, String separator: <u>-</u>, String mode: <u>Nth</u>)
+\`\`\`
+┌─────┬──────────┬──────────┐
+│ idx │ name     │ name_nth │
+├─────┼──────────┼──────────┤
+│  1  │ tom-1    │  tom     │
+│  2  │ jerry-2  │  jerry   │
+│  3  | hansen-3 |  hansen  │
+└─────┴──────────┴──────────┘
+\`\`\`
 
-nmax mode: **data.slice.csv**
-
-\`\`\`sql
-name,age,gender,name_nmax1,name_nmax2
-汤-姆-1,18,男,汤,姆
-杰-瑞-2,19,male,杰,瑞
-Sa-n-dy,24,female,Sa,n
+### 5. Nmax
+Set criteria (Select column: <u>name</u>, Number of the string: <u>2</u>, String separator: <u>-</u>, String mode: <u>Nmax</u>)
+\`\`\`
+┌─────┬──────────┬────────────┬────────────┐
+│ idx │ name     │ name_nmax1 │ name_nmax2 │
+├─────┼──────────┼────────────┼────────────┤
+│  1  │ tom-1    │  tom       │     1      │
+│  2  │ jerry-2  │  jerry     │     2      │
+│  3  | hansen-3 |  hansen    │     3      │
+└─────┴──────────┴────────────┴────────────┘
 \`\`\`
 `;
 }

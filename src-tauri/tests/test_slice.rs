@@ -7,11 +7,11 @@ use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 use tempfile::TempDir;
 
-use lib::cmd::slice;
+use lib::cmd::string::{slice, split};
 use lib::io::csv::options::CsvOptions;
 
 #[tokio::test]
-async fn test_slice_column_left_mode() -> Result<()> {
+async fn test_slice_left() -> Result<()> {
   let data = vec![
     "Patrick,4,male",
     "name,age,gender",
@@ -43,7 +43,7 @@ async fn test_slice_column_left_mode() -> Result<()> {
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
   let wtr = WriterBuilder::new().from_writer(buf_writer);
 
-  slice::slice_column_with_nchar(rdr, wtr, "name", 1, false, "left").await?;
+  slice::slice_nchar(rdr, wtr, "name", 1, false, "left").await?;
 
   let binding = read_to_string(&output_path)?;
   let slice_data = binding.trim().split('\n').collect::<Vec<_>>();
@@ -61,7 +61,7 @@ async fn test_slice_column_left_mode() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_slice_column_right_mode() -> Result<()> {
+async fn test_slice_right() -> Result<()> {
   let data = vec![
     "Patrick,4,male",
     "name,age,gender",
@@ -93,7 +93,7 @@ async fn test_slice_column_right_mode() -> Result<()> {
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
   let wtr = WriterBuilder::new().from_writer(buf_writer);
 
-  slice::slice_column_with_nchar(rdr, wtr, "name", 1, false, "right").await?;
+  slice::slice_nchar(rdr, wtr, "name", 1, false, "right").await?;
 
   let binding = read_to_string(&output_path)?;
   let slice_data = binding.trim().split('\n').collect::<Vec<_>>();
@@ -111,7 +111,7 @@ async fn test_slice_column_right_mode() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_slice_column_nth_mode() -> Result<()> {
+async fn test_split_nth() -> Result<()> {
   let data = vec![
     "Patrick,4,male",
     "name,age,gender",
@@ -143,7 +143,7 @@ async fn test_slice_column_nth_mode() -> Result<()> {
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
   let wtr = WriterBuilder::new().from_writer(buf_writer);
 
-  slice::slice_column_with_nth(rdr, wtr, "name", 2, "-").await?;
+  split::split_nth(rdr, wtr, "name", 2, "-").await?;
 
   let binding = read_to_string(&output_path)?;
   let slice_data = binding.trim().split('\n').collect::<Vec<_>>();
@@ -161,7 +161,7 @@ async fn test_slice_column_nth_mode() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_slice_column_nmax_mode() -> Result<()> {
+async fn test_split_nmax() -> Result<()> {
   let data = vec![
     "Patrick,4,male",
     "name,age,gender",
@@ -193,7 +193,7 @@ async fn test_slice_column_nmax_mode() -> Result<()> {
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
   let wtr = WriterBuilder::new().from_writer(buf_writer);
 
-  slice::slice_column_with_nmax(rdr, wtr, "name", 2, "-").await?;
+  split::split_nmax(rdr, wtr, "name", 2, "-").await?;
 
   let binding = read_to_string(&output_path)?;
   let slice_data = binding.trim().split('\n').collect::<Vec<_>>();
@@ -211,7 +211,7 @@ async fn test_slice_column_nmax_mode() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_slice_column_sl_mode() -> Result<()> {
+async fn test_slice_start_length() -> Result<()> {
   let data = vec![
     "Patrick,4,male",
     "name,age,gender",
@@ -243,7 +243,7 @@ async fn test_slice_column_sl_mode() -> Result<()> {
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
   let wtr = WriterBuilder::new().from_writer(buf_writer);
 
-  slice::slice_column_with_sl(rdr, wtr, "name", 2, 3, false).await?;
+  slice::slice_start_length(rdr, wtr, "name", 2, 3, false).await?;
 
   let binding = read_to_string(&output_path)?;
   let slice_data = binding.trim().split('\n').collect::<Vec<_>>();
