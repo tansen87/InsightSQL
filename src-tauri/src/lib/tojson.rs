@@ -1,10 +1,8 @@
-use std::fs::File;
-
 use anyhow::Result;
 use csv::ReaderBuilder;
 use serde_json::{Value, json};
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub fn csv_to_json(path: String) -> Result<String> {
   let n_rows = 20;
@@ -13,7 +11,7 @@ pub fn csv_to_json(path: String) -> Result<String> {
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(path)?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let headers = rdr.headers()?.clone();
 

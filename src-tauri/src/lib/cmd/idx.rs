@@ -1,10 +1,15 @@
-use std::{fs::File, io::BufWriter, path::{Path, PathBuf}, time::Instant};
+use std::{
+  fs::File,
+  io::BufWriter,
+  path::{Path, PathBuf},
+  time::Instant,
+};
 
 use anyhow::Result;
 use csv::ReaderBuilder;
 use csv_index::RandomAccessSimple;
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn create_index<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let csv_options = CsvOptions::new(&path);

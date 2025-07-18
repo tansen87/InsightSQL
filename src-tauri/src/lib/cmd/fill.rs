@@ -9,7 +9,7 @@ use std::{
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -26,7 +26,7 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;

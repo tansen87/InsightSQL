@@ -16,8 +16,11 @@ use polars::{
   sql::SQLContext,
 };
 
-use crate::io::excel_reader::{ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame};
-use crate::{io::xlsx_writer::XlsxWriter, utils::CsvOptions};
+use crate::io::csv::options::CsvOptions;
+use crate::io::excel::excel_reader::{
+  ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame,
+};
+use crate::io::excel::xlsx_writer::XlsxWriter;
 
 /// Unified dataframe writing handler
 fn write_dataframe(df: &DataFrame, output: Option<String>, format: &str, sep: u8) -> Result<()> {

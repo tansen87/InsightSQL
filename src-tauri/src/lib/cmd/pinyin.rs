@@ -12,7 +12,7 @@ use pinyin::ToPinyin;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 enum PinyinStyle {
   Upper,
@@ -35,15 +35,15 @@ pub async fn chinese_to_pinyin<P: AsRef<Path> + Send + Sync>(
   output_path.push(format!("{file_stem}.pinyin.csv"));
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_csv_rows().await?,
-    "std" => csv_options.std_csv_rows()?,
+    "idx" => csv_options.idx_count_rows().await?,
+    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let cols: Vec<&str> = columns.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &cols[..])?;

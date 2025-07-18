@@ -9,10 +9,7 @@ use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, Writer, WriterBuilder};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{
-  index::Indexed,
-  utils::{CsvOptions, num_of_chunks},
-};
+use crate::{index::Indexed, io::csv::options::CsvOptions, utils::num_of_chunks};
 
 fn new_writer(
   headers: &ByteRecord,
@@ -40,7 +37,7 @@ pub async fn sequential_split_rows(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let headers = rdr.byte_headers()?.clone();
 
@@ -124,7 +121,7 @@ pub async fn split_lines(
   size: u32,
   output_path: &str,
 ) -> Result<()> {
-  let reader = csv_options.skip_csv_rows()?;
+  let reader = csv_options.rdr_skip_rows()?;
   let mut lines = reader.lines();
   let headers = lines.next().transpose()?;
 

@@ -8,7 +8,7 @@ use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use regex::bytes::RegexBuilder;
 
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -26,7 +26,7 @@ pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 

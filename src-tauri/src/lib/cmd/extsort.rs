@@ -8,7 +8,8 @@ use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 use ext_sort::{ExternalSorter, ExternalSorterBuilder, LimitedBufferBuilder};
 
-use crate::utils::{self, CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::utils;
 
 const RW_BUFFER_CAPACITY: usize = 1_000_000; // 1 MB
 const MEMORY_LIMITED_BUFFER: usize = 100 * 1_000_000; // 100 MB
@@ -37,7 +38,7 @@ pub async fn sort_csv(
 
   let mut input_rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let linewtr_tfile = tempfile::NamedTempFile::new_in(tmp_dir)?;
   let mut line_wtr = io::BufWriter::with_capacity(RW_BUFFER_CAPACITY, linewtr_tfile.as_file());

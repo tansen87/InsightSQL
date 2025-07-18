@@ -8,7 +8,8 @@ use polars::{
 };
 use tauri::{Emitter, Window};
 
-use crate::{io::xlsx_writer::XlsxWriter, utils::CsvOptions};
+use crate::io::csv::options::CsvOptions;
+use crate::io::excel::xlsx_writer::XlsxWriter;
 
 /// convert csv to xlsx
 async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
@@ -21,7 +22,7 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   let sep = csv_options.detect_separator()?;
 
   if use_polars {
-    let row_count = csv_options.std_csv_rows()?;
+    let row_count = csv_options.std_count_rows()?;
     if row_count > 104_8575 {
       return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
     }
@@ -36,7 +37,7 @@ async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   } else {
     let rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(csv_options.skip_csv_rows()?);
+      .from_reader(csv_options.rdr_skip_rows()?);
 
     XlsxWriter::new().write_xlsx(rdr, chunk_size, dest)?;
   }

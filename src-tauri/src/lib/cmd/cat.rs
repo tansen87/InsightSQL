@@ -10,9 +10,9 @@ use polars::{
 };
 
 use crate::{
-  io::excel_reader::{ExcelReader, ToPolarsDataFrame},
-  io::xlsx_writer::XlsxWriter,
-  utils::CsvOptions,
+  io::csv::options::CsvOptions,
+  io::excel::excel_reader::{ExcelReader, ToPolarsDataFrame},
+  io::excel::xlsx_writer::XlsxWriter,
 };
 
 async fn cat_with_polars(
@@ -129,7 +129,7 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
 
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(csv_options.skip_csv_rows()?);
+      .from_reader(csv_options.rdr_skip_rows()?);
 
     for field in rdr.byte_headers()? {
       let fi = field.to_vec().into_boxed_slice();
@@ -151,7 +151,7 @@ async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> R
     csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
     let mut rdr = ReaderBuilder::new()
       .delimiter(vec_sep[idx])
-      .from_reader(csv_options.skip_csv_rows()?);
+      .from_reader(csv_options.rdr_skip_rows()?);
 
     let h = rdr.byte_headers()?;
 

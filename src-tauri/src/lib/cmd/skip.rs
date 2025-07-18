@@ -9,7 +9,7 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter, Window};
 use tokio::sync::oneshot;
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -31,8 +31,14 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   output_path.push(format!("{file_stem}.skip.csv"));
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_csv_rows().await?.saturating_sub(skip_rows) + 1,
-    "std" => csv_options.std_csv_rows()?.saturating_sub(skip_rows) + 1,
+    "idx" => {
+      csv_options
+        .idx_count_rows()
+        .await?
+        .saturating_sub(skip_rows)
+        + 1
+    }
+    "std" => csv_options.std_count_rows()?.saturating_sub(skip_rows) + 1,
     _ => 0,
   };
   app_handle.emit("total-rows", format!("{filename}|{total_rows}"))?;
@@ -40,7 +46,7 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .has_headers(false)
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 

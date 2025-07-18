@@ -8,7 +8,7 @@ use std::{
 use anyhow::{Result, anyhow};
 use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
 
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 #[derive(Debug)]
 pub enum SliceMode {
@@ -17,7 +17,6 @@ pub enum SliceMode {
   StartLength,
   Nth,
   Nmax,
-  None,
 }
 
 impl From<&str> for SliceMode {
@@ -28,7 +27,7 @@ impl From<&str> for SliceMode {
       "sl" => SliceMode::StartLength,
       "nth" => SliceMode::Nth,
       "nmax" => SliceMode::Nmax,
-      _ => SliceMode::None,
+      _ => SliceMode::Left,
     }
   }
 }
@@ -41,7 +40,6 @@ impl SliceMode {
       SliceMode::StartLength => "sl",
       SliceMode::Nth => "nth",
       SliceMode::Nmax => "nmax",
-      SliceMode::None => "none",
     }
   }
 }
@@ -274,7 +272,7 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
 
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
@@ -307,7 +305,6 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
     }
     SliceMode::Nth => slice_column_with_nth(rdr, wtr, select_column, num, slice_sep).await?,
     SliceMode::Nmax => slice_column_with_nmax(rdr, wtr, select_column, num, slice_sep).await?,
-    SliceMode::None => {}
   }
 
   Ok(())

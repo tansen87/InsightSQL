@@ -1,13 +1,13 @@
 use std::{
   fs::{self, File},
-  io::{BufRead, BufReader, BufWriter, Write}
+  io::{BufRead, BufReader, BufWriter, Write},
 };
 
 use anyhow::Result;
 use tempfile::TempDir;
 
 use lib::cmd::split;
-use lib::utils::CsvOptions;
+use lib::io::csv::options::CsvOptions;
 
 #[tokio::test]
 async fn test_split_rows() -> Result<()> {

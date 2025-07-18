@@ -12,7 +12,7 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{Emitter, Window};
 use tokio::sync::oneshot;
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 #[derive(Debug, Clone, Copy)]
 pub enum SelectMode {
@@ -46,15 +46,15 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
   let col_names: HashSet<&str> = sel_cols.split('|').collect();
 
   let total_rows = match pgs_mode {
-    "idx" => csv_options.idx_csv_rows().await?,
-    "std" => csv_options.std_csv_rows()?,
+    "idx" => csv_options.idx_count_rows().await?,
+    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   window.emit("total-rows", total_rows)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 

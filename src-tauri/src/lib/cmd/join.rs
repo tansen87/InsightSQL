@@ -13,7 +13,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::index::Indexed;
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 type ByteString = Vec<u8>;
 

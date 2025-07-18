@@ -11,7 +11,7 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -26,15 +26,15 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
   output_path.push(format!("{file_stem}.enumer.csv"));
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_csv_rows().await?,
-    "std" => csv_options.std_csv_rows()?,
+    "idx" => csv_options.idx_count_rows().await?,
+    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);

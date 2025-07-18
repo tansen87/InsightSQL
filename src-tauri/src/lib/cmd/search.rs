@@ -12,7 +12,7 @@ use regex::bytes::RegexBuilder;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 #[derive(Debug)]
 enum SearchMode {
@@ -74,7 +74,7 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column.as_str()][..])?;
 
@@ -203,7 +203,7 @@ where
     let csv_options = CsvOptions::new(&path);
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(csv_options.skip_csv_rows()?);
+      .from_reader(csv_options.rdr_skip_rows()?);
     let headers = rdr.headers()?.clone();
 
     for wtr in writers.values_mut() {
@@ -509,8 +509,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   let sep = csv_options.detect_separator()?;
 
   let total_rows = match count_mode {
-    "idx" => csv_options.idx_csv_rows().await?,
-    "std" => csv_options.std_csv_rows()?,
+    "idx" => csv_options.idx_count_rows().await?,
+    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;

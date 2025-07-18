@@ -1,5 +1,5 @@
 use std::{
-  fs::{read_to_string, File},
+  fs::{File, read_to_string},
   io::BufWriter,
 };
 
@@ -8,7 +8,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 use tempfile::TempDir;
 
 use lib::cmd::slice;
-use lib::utils::CsvOptions;
+use lib::io::csv::options::CsvOptions;
 
 #[tokio::test]
 async fn test_slice_column_left_mode() -> Result<()> {
@@ -37,7 +37,7 @@ async fn test_slice_column_left_mode() -> Result<()> {
 
   let mut csv_options = CsvOptions::new(file_path);
   csv_options.set_skip_rows(1);
-  let rdr = ReaderBuilder::new().from_reader(csv_options.skip_csv_rows()?);
+  let rdr = ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
   let output_file = File::create(&output_path)?;
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
@@ -87,7 +87,7 @@ async fn test_slice_column_right_mode() -> Result<()> {
 
   let mut csv_options = CsvOptions::new(file_path);
   csv_options.set_skip_rows(1);
-  let rdr = ReaderBuilder::new().from_reader(csv_options.skip_csv_rows()?);
+  let rdr = ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
   let output_file = File::create(&output_path)?;
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
@@ -137,7 +137,7 @@ async fn test_slice_column_nth_mode() -> Result<()> {
 
   let mut csv_options = CsvOptions::new(file_path);
   csv_options.set_skip_rows(1);
-  let rdr = ReaderBuilder::new().from_reader(csv_options.skip_csv_rows()?);
+  let rdr = ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
   let output_file = File::create(&output_path)?;
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
@@ -187,7 +187,7 @@ async fn test_slice_column_nmax_mode() -> Result<()> {
 
   let mut csv_options = CsvOptions::new(file_path);
   csv_options.set_skip_rows(1);
-  let rdr = ReaderBuilder::new().from_reader(csv_options.skip_csv_rows()?);
+  let rdr = ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
   let output_file = File::create(&output_path)?;
   let buf_writer = BufWriter::with_capacity(256_000, output_file);
@@ -237,7 +237,7 @@ async fn test_slice_column_sl_mode() -> Result<()> {
 
   let mut csv_options = CsvOptions::new(file_path);
   csv_options.set_skip_rows(1);
-  let rdr = ReaderBuilder::new().from_reader(csv_options.skip_csv_rows()?);
+  let rdr = ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
   let output_file = File::create(&output_path)?;
   let buf_writer = BufWriter::with_capacity(256_000, output_file);

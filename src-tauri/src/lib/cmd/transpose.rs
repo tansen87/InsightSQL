@@ -8,11 +8,11 @@ use std::{
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
-  let file_options = CsvOptions::new(&path);
-  let sep = file_options.detect_separator()?;
+  let csv_options = CsvOptions::new(&path);
+  let sep = csv_options.detect_separator()?;
   let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
   let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
   let mut output_path = PathBuf::from(parent_path);
@@ -20,7 +20,7 @@ pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(File::open(&path)?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)

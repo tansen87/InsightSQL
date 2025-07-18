@@ -4,7 +4,7 @@ use std::io::Write;
 use anyhow::Result;
 use tempfile::TempDir;
 
-use lib::cmd::rename;
+// use lib::cmd::rename;
 
 #[tokio::test]
 async fn test_rename() -> Result<()> {

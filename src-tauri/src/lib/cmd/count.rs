@@ -1,18 +1,18 @@
-use std::{fs::File, path::Path, time::Instant};
+use std::{path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tauri::{Emitter, Window};
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
   let csv_options = CsvOptions::new(&path);
 
   let count = match csv_options.indexed()? {
     Some(idx) => idx.count(),
-    None => count_record(&path, true, &csv_options)?,
+    None => count_record(true, &csv_options)?,
   };
 
   Ok(count)
@@ -21,8 +21,8 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 /// Used to check for counting errors caused by double quotation marks in CSV files
 pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
   let csv_options = CsvOptions::new(&path);
-  let quoting_true = count_record(&path, true, &csv_options)?;
-  let quoting_false = count_record(&path, false, &csv_options)?;
+  let quoting_true = count_record(true, &csv_options)?;
+  let quoting_false = count_record(false, &csv_options)?;
 
   let max_count = std::cmp::max(quoting_true, quoting_false);
   let min_count = std::cmp::min(quoting_true, quoting_false);
@@ -31,14 +31,13 @@ pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 }
 
 fn count_record<P: AsRef<Path> + Send + Sync>(
-  path: P,
   quoting: bool,
   csv_options: &CsvOptions<P>,
 ) -> Result<u64> {
   let mut rdr = ReaderBuilder::new()
     .delimiter(csv_options.detect_separator()?)
     .quoting(quoting)
-    .from_reader(File::open(&path)?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut record = ByteRecord::new();
   let mut count: u64 = 0;

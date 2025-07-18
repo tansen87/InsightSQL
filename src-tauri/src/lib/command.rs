@@ -6,7 +6,8 @@ use std::{
 use anyhow::Result;
 use tauri::{Emitter, Window};
 
-use crate::{tojson, utils::CsvOptions};
+use crate::io::csv::options::CsvOptions;
+use crate::tojson;
 
 #[tauri::command]
 pub async fn from_headers(path: String) -> Result<Vec<String>, String> {
@@ -62,7 +63,7 @@ pub async fn dupli_headers(
       Ok((duplicate_headers, unique_headers)) => {
         window
           .emit(
-            "dupler_msg",
+            "dupler-msg",
             format!("{filename}|{:?}|{:?}", &unique_headers, &duplicate_headers),
           )
           .map_err(|e| e.to_string())?;
@@ -72,7 +73,7 @@ pub async fn dupli_headers(
       }
       Err(err) => {
         window
-          .emit("dupler_err", format!("{filename}|{err}"))
+          .emit("dupler-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
         continue;
       }

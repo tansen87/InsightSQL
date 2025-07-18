@@ -16,7 +16,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -60,7 +60,7 @@ impl Operations {
       "squeeze" => Ok(Operations::Squeeze),
       "strip" => Ok(Operations::Strip),
       "reverse" => Ok(Operations::Reverse),
-      _ => Err(anyhow!("Unknown '{op}' operation")),
+      _ => Ok(Operations::Copy),
     }
   }
 }
@@ -241,7 +241,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 

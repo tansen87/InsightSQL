@@ -50,8 +50,8 @@ English | [中文](./README_CN.md)
 
 ### 🏃‍Runtime Environment
 
-* Node.js 18+
-* pnpm 9.9.0+
+* Node.js 20.19+
+* pnpm 10.0+
 * 🦀Rust 1.88.0+
 
 ## 🚀Development

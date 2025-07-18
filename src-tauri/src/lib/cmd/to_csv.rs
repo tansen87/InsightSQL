@@ -14,7 +14,8 @@ use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use tauri::{Emitter, Window};
 use tokio::sync::oneshot;
 
-use crate::utils::{CsvOptions, num_cpus};
+use crate::io::csv::options::CsvOptions;
+use crate::utils::num_cpus;
 
 /// convert excel to csv
 async fn excel_to_csv<P: AsRef<Path>>(
@@ -324,15 +325,15 @@ async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
   output_path.push(format!("{file_stem}.fmt.csv"));
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_csv_rows().await?,
-    "std" => csv_options.std_csv_rows()?,
+    "idx" => csv_options.idx_count_rows().await?,
+    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   window.emit("total-rows", format!("{filename}|{total_rows}"))?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new()
     .delimiter(write_sep)

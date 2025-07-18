@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
@@ -18,7 +18,7 @@ pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 

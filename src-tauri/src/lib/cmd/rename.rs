@@ -9,7 +9,7 @@ use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::utils::CsvOptions;
+use crate::io::csv::options::CsvOptions;
 
 pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -25,15 +25,15 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
   output_path.push(format!("{file_stem}.rename.csv"));
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_csv_rows().await?,
-    "std" => csv_options.std_csv_rows()?,
+    "idx" => csv_options.idx_count_rows().await?,
+    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
   let new_headers = new_rdr.byte_headers()?;
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;

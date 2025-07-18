@@ -9,7 +9,7 @@ use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 
 use self::Number::{Float, Int};
-use crate::utils::{CsvOptions, Selection};
+use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -26,7 +26,7 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.skip_csv_rows()?);
+    .from_reader(csv_options.rdr_skip_rows()?);
 
   let headers = rdr.byte_headers()?.clone();
 
