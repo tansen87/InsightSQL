@@ -70,7 +70,7 @@ async fn generic_search<F, P>(
   output_path: PathBuf,
   match_fn: F,
   app_handle: AppHandle,
-) -> Result<()>
+) -> Result<String>
 where
   F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
@@ -89,6 +89,8 @@ where
 
   let rows = Arc::new(Mutex::new(0));
   let rows_clone = Arc::clone(&rows);
+  let match_rows = Arc::new(Mutex::new(0));
+  let match_rows_clone = Arc::clone(&match_rows);
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
@@ -97,14 +99,20 @@ where
     loop {
       tokio::select! {
         _ = interval.tick() => {
-          let current_rows = *rows_clone.lock().unwrap();
+          let current_rows = match rows_clone.lock() {
+            Ok(lock) => *lock,
+            Err(err) => {
+              eprintln!("Failed to lock current rows: {err}");
+              0
+            }
+          };
           if let Err(err) = app_handle.emit("update-rows", current_rows) {
-            eprintln!("Failed to emit current rows: {err:?}");
+            eprintln!("Failed to emit current rows: {err}");
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
           if let Err(err) = app_handle.emit("update-rows", final_rows) {
-            eprintln!("Failed to emit final rows: {err:?}");
+            eprintln!("Failed to emit final rows: {err}");
           }
           break;
         },
@@ -119,12 +127,20 @@ where
       if let Some(value) = record.get(sel.first_indices()?) {
         if match_fn(value, &conditions) {
           wtr.write_record(&record)?;
+          let mut match_rows_cnt = match_rows
+            .lock()
+            .map_err(|poison| anyhow!("match rows cnt lock poisoned: {poison}"))?;
+          *match_rows_cnt += 1;
         }
       }
-      let mut cnt = rows.lock().unwrap();
+      let mut cnt = rows
+        .lock()
+        .map_err(|poison| anyhow!("cnt lock poisoned: {poison}"))?;
       *cnt += 1;
     }
-    let final_rows = *rows.lock().unwrap();
+    let final_rows = *rows
+      .lock()
+      .map_err(|poison| anyhow!("final rows lock poisoned: {poison}"))?;
     let _ = done_tx.send(final_rows);
     Ok::<_, anyhow::Error>(wtr.flush()?)
   });
@@ -133,7 +149,10 @@ where
   let _ = stop_tx.send(());
   timer_task.await?;
 
-  Ok(())
+  let final_match_rows = *match_rows_clone
+    .lock()
+    .map_err(|poison| anyhow!("final match rows lock poisoned: {poison}"))?;
+  Ok(final_match_rows.to_string())
 }
 
 async fn generic_multi_search<F, P>(
@@ -143,7 +162,7 @@ async fn generic_multi_search<F, P>(
   conditions: Vec<String>,
   match_fn: F,
   app_handle: AppHandle,
-) -> Result<()>
+) -> Result<String>
 where
   F: Fn(&str, &String) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync + 'static,
@@ -170,6 +189,8 @@ where
 
   let rows = Arc::new(Mutex::new(0));
   let rows_clone = Arc::clone(&rows);
+  let match_rows = Arc::new(Mutex::new(0));
+  let match_rows_clone = Arc::clone(&match_rows);
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
@@ -178,7 +199,13 @@ where
     loop {
       tokio::select! {
         _ = interval.tick() => {
-          let current_rows = *rows_clone.lock().unwrap();
+          let current_rows = match rows_clone.lock() {
+            Ok(lock) => *lock,
+            Err(err) => {
+              eprintln!("Failed to lock current rows: {err}");
+              0
+            }
+          };
           if let Err(err) = app_handle.emit("update-rows", current_rows) {
             eprintln!("Failed to emit current rows: {err:?}");
           }
@@ -224,14 +251,22 @@ where
           if match_fn(value, condition) {
             if let Some(wtr) = writers.get_mut(condition) {
               wtr.write_record(&record)?;
+              let mut match_rows_cnt = match_rows
+                .lock()
+                .map_err(|poison| anyhow!("match rows cnt lock poisoned: {poison}"))?;
+              *match_rows_cnt += 1;
             }
           }
         }
       }
-      let mut cnt = rows.lock().unwrap();
+      let mut cnt = rows
+        .lock()
+        .map_err(|poison| anyhow!("cnt lock poisoned: {poison}"))?;
       *cnt += 1;
     }
-    let final_rows = *rows.lock().unwrap();
+    let final_rows = *rows
+      .lock()
+      .map_err(|poison| anyhow!("final rows lock poisoned: {poison}"))?;
     let _ = done_tx.send(final_rows);
 
     // flush all writers
@@ -245,7 +280,10 @@ where
   let _ = stop_tx.send(());
   timer_task.await?;
 
-  Ok(())
+  let final_match_rows = *match_rows_clone
+    .lock()
+    .map_err(|poison| anyhow!("final match rows lock poisoned: {poison}"))?;
+  Ok(final_match_rows.to_string())
 }
 
 pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
@@ -255,7 +293,7 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -274,7 +312,7 @@ pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   select_column: String,
   conditions: Vec<String>,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_multi_search(
     path,
     sep,
@@ -293,7 +331,7 @@ pub async fn not_equal_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -313,7 +351,7 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -332,7 +370,7 @@ pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   select_column: String,
   conditions: Vec<String>,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_multi_search(
     path,
     sep,
@@ -351,7 +389,7 @@ pub async fn not_contains_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -371,7 +409,7 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -390,7 +428,7 @@ pub async fn starts_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   select_column: String,
   conditions: Vec<String>,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_multi_search(
     path,
     sep,
@@ -409,7 +447,7 @@ pub async fn not_startswith_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -429,7 +467,7 @@ pub async fn ends_with_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -448,7 +486,7 @@ pub async fn ends_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   select_column: String,
   conditions: Vec<String>,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_multi_search(
     path,
     sep,
@@ -467,7 +505,7 @@ pub async fn not_ends_with_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -487,7 +525,7 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   regex_char: String,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   let pattern = RegexBuilder::new(&regex_char).build()?;
 
   generic_search(
@@ -509,7 +547,7 @@ pub async fn is_null_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -529,7 +567,7 @@ pub async fn is_not_null_search<P: AsRef<Path> + Send + Sync>(
   conditions: Vec<String>,
   output_path: PathBuf,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   generic_search(
     path,
     sep,
@@ -549,7 +587,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   mode: &str,
   count_mode: &str,
   app_handle: AppHandle,
-) -> Result<()> {
+) -> Result<String> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
 
@@ -701,26 +739,10 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::IsNull => {
-          is_null_search(
-            path,
-            sep,
-            select_column,
-            vec![],
-            output_path,
-            app_handle,
-          )
-          .await
+          is_null_search(path, sep, select_column, vec![], output_path, app_handle).await
         }
         SearchMode::IsNotNull => {
-          is_not_null_search(
-            path,
-            sep,
-            select_column,
-            vec![],
-            output_path,
-            app_handle,
-          )
-          .await
+          is_not_null_search(path, sep, select_column, vec![], output_path, app_handle).await
         }
         _ => Err(anyhow!("Unsupported search mode")),
       }
@@ -736,7 +758,7 @@ pub async fn search(
   condition: String,
   count_mode: String,
   app_handle: AppHandle,
-) -> Result<String, String> {
+) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
   match perform_search(
@@ -749,10 +771,10 @@ pub async fn search(
   )
   .await
   {
-    Ok(_) => {
+    Ok(match_rows) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
+      Ok((match_rows, format!("{elapsed_time:.2}")))
     }
     Err(err) => Err(format!("{err}")),
   }

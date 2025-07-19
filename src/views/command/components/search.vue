@@ -8,11 +8,11 @@ import { message } from "@/utils/message";
 import { listen } from "@tauri-apps/api/event";
 
 const [mode, countMode] = [ref("equal"), ref("nil")];
-const [currentRows, totalRows] = [ref(0), ref(0)];
+const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
 const [columns, path, condition] = [ref(""), ref(""), ref("")];
-const [isLoading, isPath] = [ref(false), ref(false)];
+const [isLoading, isBtnShow] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(326);
+const { dynamicHeight } = useDynamicHeight(324);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -22,7 +22,8 @@ listen("total-rows", (event: any) => {
 });
 
 async function selectFile() {
-  isPath.value = false;
+  isBtnShow.value = false;
+  path.value = "";
   columns.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
@@ -37,7 +38,6 @@ async function selectFile() {
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -56,14 +56,16 @@ async function searchData() {
 
   try {
     isLoading.value = true;
-    const rtime: string = await invoke("search", {
+    const res: string[] = await invoke("search", {
       path: path.value,
       selectColumn: columns.value,
       mode: mode.value,
       condition: condition.value,
       countMode: countMode.value
     });
-    message(`Search done, elapsed time: ${rtime} s`, { type: "success" });
+    matchRows.value = Number(res[0]);
+    isBtnShow.value = true;
+    message(`Match ${res[0]}, elapsed time: ${res[1]} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -78,22 +80,10 @@ async function searchData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-      </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" placement="top" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Select fields matching rows</span>
-      </el-text>
-    </div>
-    <div class="custom-container1">
-      <div class="custom-container2" style="margin-top: 12px">
         <el-select
           v-model="columns"
           filterable
-          style="margin-right: 10px; width: 140px"
+          style="margin-left: 10px; margin-right: 10px; width: 140px"
           placeholder="Select column"
         >
           <el-option
@@ -103,7 +93,7 @@ async function searchData() {
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="Search mode" effect="light" placement="top">
+        <el-tooltip content="Search mode" effect="light">
           <el-select v-model="mode" filterable style="width: 140px">
             <el-option label="Equal" value="equal" />
             <el-option label="EqualMulti" value="equalmulti" />
@@ -130,20 +120,16 @@ async function searchData() {
           </el-select>
         </el-tooltip>
       </div>
-      <el-button
-        @click="searchData()"
-        :loading="isLoading"
-        :icon="Search"
-        style="margin-top: 12px"
-      >
-        Search
+      <el-button @click="searchData()" :loading="isLoading" :icon="Search">
+        <el-text v-if="isBtnShow"> {{ matchRows }} rows filtered </el-text>
+        <el-text v-else> Search </el-text>
       </el-button>
     </div>
     <div class="custom-container1" style="margin-top: 12px">
       <div style="flex: 7; width: 70%">
         <el-input
           v-model="condition"
-          :autosize="{ minRows: 6, maxRows: 6 }"
+          :autosize="{ minRows: 7, maxRows: 7 }"
           type="textarea"
           placeholder="Search conditions......Separate by |. (Example: tom|jack|jerry)"
         />
@@ -171,5 +157,13 @@ async function searchData() {
         :key="column.prop"
       />
     </el-table>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-text>Filter rows matching conditions</el-text>
+      </div>
+      <el-tooltip :content="path" effect="light">
+        <el-text>{{ shortFileName(path) }}</el-text>
+      </el-tooltip>
+    </div>
   </div>
 </template>
