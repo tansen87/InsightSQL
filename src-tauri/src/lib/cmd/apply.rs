@@ -1,8 +1,5 @@
 use std::{
-  collections::HashMap,
-  path::{Path, PathBuf},
-  sync::OnceLock,
-  time::Instant,
+  collections::HashMap, ops::Neg, path::{Path, PathBuf}, sync::OnceLock, time::Instant
 };
 
 use anyhow::{Result, anyhow};
@@ -43,6 +40,8 @@ enum Operations {
   Squeeze,
   Strip,
   Reverse,
+  Abs,
+  Neg,
 }
 
 impl Operations {
@@ -60,6 +59,8 @@ impl Operations {
       "squeeze" => Ok(Operations::Squeeze),
       "strip" => Ok(Operations::Strip),
       "reverse" => Ok(Operations::Reverse),
+      "abs" => Ok(Operations::Abs),
+      "neg" => Ok(Operations::Neg),
       _ => Ok(Operations::Copy),
     }
   }
@@ -202,6 +203,16 @@ fn apply_operations(
       }
       Operations::Reverse => {
         *cell = cell.as_str().chars().rev().collect::<String>();
+      }
+      Operations::Abs => {
+        if let Ok(num) = cell.parse::<f64>() {
+          *cell = num.abs().to_string()
+        }
+      }
+      Operations::Neg => {
+        if let Ok(num) = cell.parse::<f64>() {
+          *cell = num.neg().to_string()
+        }
       }
       Operations::Copy => {} // copy is a noop
     }

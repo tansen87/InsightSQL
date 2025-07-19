@@ -184,6 +184,8 @@ async function applyData() {
       <el-option label="Squeeze" value="squeeze" />
       <el-option label="Strip" value="strip" />
       <el-option label="Reverse" value="reverse" />
+      <el-option label="Abs" value="abs" />
+      <el-option label="Neg" value="neg" />
     </el-select>
 
     <div class="custom-container1">
