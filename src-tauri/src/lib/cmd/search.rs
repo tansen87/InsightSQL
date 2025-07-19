@@ -35,6 +35,7 @@ enum SearchMode {
   GreaterThanEqual,
   LessThan,
   LessThanEqual,
+  Between,
 }
 
 impl From<&str> for SearchMode {
@@ -55,6 +56,7 @@ impl From<&str> for SearchMode {
       "ge" => SearchMode::GreaterThanEqual,
       "lt" => SearchMode::LessThan,
       "le" => SearchMode::LessThanEqual,
+      "between" => SearchMode::Between,
       _ => SearchMode::Equal,
     }
   }
@@ -656,7 +658,7 @@ pub async fn less_than<P: AsRef<Path> + Send + Sync>(
 ) -> Result<String> {
   let threshold_value = conditions
     .parse::<f64>()
-    .map_err(|_| anyhow!("Condition must be a valid number"))?;
+    .map_err(|_| anyhow!("Invalid number: {conditions}"))?;
 
   generic_search(
     path,
@@ -697,6 +699,51 @@ pub async fn less_than_or_equal<P: AsRef<Path> + Send + Sync>(
       value
         .parse::<f64>()
         .map(|v| v <= threshold_value)
+        .unwrap_or(false)
+    },
+    app_handle,
+  )
+  .await
+}
+
+pub async fn between<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<String> {
+  if conditions.len() != 2 {
+    return Err(anyhow!(
+      "Exactly two values required for between: min and max"
+    ));
+  }
+
+  let val1 = conditions[0]
+    .parse::<f64>()
+    .map_err(|_| anyhow!("Invalid number: {}", conditions[0]))?;
+
+  let val2 = conditions[1]
+    .parse::<f64>()
+    .map_err(|_| anyhow!("Invalid number: {}", conditions[1]))?;
+
+  let (min_value, max_value) = if val1 <= val2 {
+    (val1, val2)
+  } else {
+    (val2, val1)
+  };
+
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    output_path,
+    move |value, _| {
+      value
+        .parse::<f64>()
+        .map(|v| v >= min_value && v <= max_value)
         .unwrap_or(false)
     },
     app_handle,
@@ -907,6 +954,17 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             sep,
             select_column,
             conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::Between => {
+          between(
+            path,
+            sep,
+            select_column,
+            vec_conditions,
             output_path,
             app_handle,
           )

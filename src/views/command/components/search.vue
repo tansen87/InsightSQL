@@ -118,6 +118,7 @@ async function searchData() {
             <el-option label="ge (≥)" value="ge" />
             <el-option label="lt (<)" value="lt" />
             <el-option label="le (≤)" value="le" />
+            <el-option label="Between" value="between" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="if nil, no progress bar" effect="light">

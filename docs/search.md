@@ -260,3 +260,15 @@ le search result (1 output file: test.search.csv)
 │  2  │ jerry  │
 └─────┴────────┘
 ```
+
+### 20. Between
+Set search criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>1|2</u>)
+```
+Between search result (1 output file: test.search.csv)
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+```

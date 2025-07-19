@@ -513,5 +513,16 @@ Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditio
 │  2  │ jerry  │
 └─────┴────────┘
 \`\`\`
+
+### 20. Between
+Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>1|2</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
 `;
 }
