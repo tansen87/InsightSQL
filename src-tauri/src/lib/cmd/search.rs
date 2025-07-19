@@ -31,6 +31,10 @@ enum SearchMode {
   Regex,
   IsNull,
   IsNotNull,
+  GreaterThan,
+  GreaterThanEqual,
+  LessThan,
+  LessThanEqual,
 }
 
 impl From<&str> for SearchMode {
@@ -47,6 +51,10 @@ impl From<&str> for SearchMode {
       "regex" => SearchMode::Regex,
       "isnull" => SearchMode::IsNull,
       "isnotnull" => SearchMode::IsNotNull,
+      "gt" => SearchMode::GreaterThan,
+      "ge" => SearchMode::GreaterThanEqual,
+      "lt" => SearchMode::LessThan,
+      "le" => SearchMode::LessThanEqual,
       _ => SearchMode::Equal,
     }
   }
@@ -286,7 +294,7 @@ where
   Ok(final_match_rows.to_string())
 }
 
-pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
+pub async fn equal<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -306,7 +314,7 @@ pub async fn equal_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn equal_multi<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
@@ -324,7 +332,7 @@ pub async fn equal_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   .await
 }
 
-pub async fn not_equal_search<P: AsRef<Path> + Send + Sync>(
+pub async fn not_equal<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -344,7 +352,7 @@ pub async fn not_equal_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
+pub async fn contains<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -364,7 +372,7 @@ pub async fn contains_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn contains_multi<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
@@ -382,7 +390,7 @@ pub async fn contains_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   .await
 }
 
-pub async fn not_contains_search<P: AsRef<Path> + Send + Sync>(
+pub async fn not_contains<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -402,7 +410,7 @@ pub async fn not_contains_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
+pub async fn starts_with<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -422,7 +430,7 @@ pub async fn startswith_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn starts_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn starts_with_multi<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
@@ -440,7 +448,7 @@ pub async fn starts_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   .await
 }
 
-pub async fn not_startswith_search<P: AsRef<Path> + Send + Sync>(
+pub async fn not_starts_with<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -460,7 +468,7 @@ pub async fn not_startswith_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn ends_with_search<P: AsRef<Path> + Send + Sync>(
+pub async fn ends_with<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -480,7 +488,7 @@ pub async fn ends_with_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn ends_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn ends_with_multi<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   sep: u8,
   select_column: String,
@@ -498,7 +506,7 @@ pub async fn ends_with_multi_search<P: AsRef<Path> + Send + Sync + 'static>(
   .await
 }
 
-pub async fn not_ends_with_search<P: AsRef<Path> + Send + Sync>(
+pub async fn not_ends_with<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -540,7 +548,7 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn is_null_search<P: AsRef<Path> + Send + Sync>(
+pub async fn is_null<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -560,7 +568,7 @@ pub async fn is_null_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn is_not_null_search<P: AsRef<Path> + Send + Sync>(
+pub async fn is_not_null<P: AsRef<Path> + Send + Sync>(
   path: P,
   sep: u8,
   select_column: String,
@@ -575,6 +583,122 @@ pub async fn is_not_null_search<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, _c| !value.trim().is_empty(),
+    app_handle,
+  )
+  .await
+}
+
+pub async fn greater_than<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: String,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<String> {
+  let threshold_value = conditions
+    .parse::<f64>()
+    .map_err(|_| anyhow!("Condition must be a valid number"))?;
+
+  generic_search(
+    path,
+    sep,
+    select_column,
+    vec![conditions],
+    output_path,
+    move |value, _| {
+      value
+        .parse::<f64>()
+        .map(|v| v > threshold_value)
+        .unwrap_or(false)
+    },
+    app_handle,
+  )
+  .await
+}
+
+pub async fn greater_than_or_equal<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: String,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<String> {
+  let threshold_value = conditions
+    .parse::<f64>()
+    .map_err(|_| anyhow!("Condition must be a valid number"))?;
+
+  generic_search(
+    path,
+    sep,
+    select_column,
+    vec![conditions],
+    output_path,
+    move |value, _| {
+      value
+        .parse::<f64>()
+        .map(|v| v >= threshold_value)
+        .unwrap_or(false)
+    },
+    app_handle,
+  )
+  .await
+}
+
+pub async fn less_than<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: String,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<String> {
+  let threshold_value = conditions
+    .parse::<f64>()
+    .map_err(|_| anyhow!("Condition must be a valid number"))?;
+
+  generic_search(
+    path,
+    sep,
+    select_column,
+    vec![conditions],
+    output_path,
+    move |value, _| {
+      value
+        .parse::<f64>()
+        .map(|v| v < threshold_value)
+        .unwrap_or(false)
+    },
+    app_handle,
+  )
+  .await
+}
+
+pub async fn less_than_or_equal<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: String,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<String> {
+  let threshold_value = conditions
+    .parse::<f64>()
+    .map_err(|_| anyhow!("Condition must be a valid number"))?;
+
+  generic_search(
+    path,
+    sep,
+    select_column,
+    vec![conditions],
+    output_path,
+    move |value, _| {
+      value
+        .parse::<f64>()
+        .map(|v| v <= threshold_value)
+        .unwrap_or(false)
+    },
     app_handle,
   )
   .await
@@ -615,16 +739,16 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
-      equal_multi_search(path, sep, select_column, conditions, app_handle).await
+      equal_multi(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::StartsWithMulti(conditions) => {
-      starts_with_multi_search(path, sep, select_column, conditions, app_handle).await
+      starts_with_multi(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::ContainsMulti(conditions) => {
-      contains_multi_search(path, sep, select_column, conditions, app_handle).await
+      contains_multi(path, sep, select_column, conditions, app_handle).await
     }
     SearchMode::EndsWithMulti(conditions) => {
-      ends_with_multi_search(path, sep, select_column, conditions, app_handle).await
+      ends_with_multi(path, sep, select_column, conditions, app_handle).await
     }
     _ => {
       let vec_conditions: Vec<String> = conditions
@@ -640,7 +764,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
 
       match search_mode {
         SearchMode::Equal => {
-          equal_search(
+          equal(
             path,
             sep,
             select_column,
@@ -651,7 +775,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::NotEqual => {
-          not_equal_search(
+          not_equal(
             path,
             sep,
             select_column,
@@ -662,7 +786,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::Contains => {
-          contains_search(
+          contains(
             path,
             sep,
             select_column,
@@ -673,7 +797,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::NotContains => {
-          not_contains_search(
+          not_contains(
             path,
             sep,
             select_column,
@@ -684,7 +808,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::StartsWith => {
-          startswith_search(
+          starts_with(
             path,
             sep,
             select_column,
@@ -695,7 +819,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::NotStartsWith => {
-          not_startswith_search(
+          not_starts_with(
             path,
             sep,
             select_column,
@@ -706,7 +830,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::EndsWith => {
-          ends_with_search(
+          ends_with(
             path,
             sep,
             select_column,
@@ -717,7 +841,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::NotEndsWith => {
-          not_ends_with_search(
+          not_ends_with(
             path,
             sep,
             select_column,
@@ -739,10 +863,54 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
           .await
         }
         SearchMode::IsNull => {
-          is_null_search(path, sep, select_column, vec![], output_path, app_handle).await
+          is_null(path, sep, select_column, vec![], output_path, app_handle).await
         }
         SearchMode::IsNotNull => {
-          is_not_null_search(path, sep, select_column, vec![], output_path, app_handle).await
+          is_not_null(path, sep, select_column, vec![], output_path, app_handle).await
+        }
+        SearchMode::GreaterThan => {
+          greater_than(
+            path,
+            sep,
+            select_column,
+            conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::GreaterThanEqual => {
+          greater_than_or_equal(
+            path,
+            sep,
+            select_column,
+            conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::LessThan => {
+          less_than(
+            path,
+            sep,
+            select_column,
+            conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::LessThanEqual => {
+          less_than_or_equal(
+            path,
+            sep,
+            select_column,
+            conditions,
+            output_path,
+            app_handle,
+          )
+          .await
         }
         _ => Err(anyhow!("Unsupported search mode")),
       }

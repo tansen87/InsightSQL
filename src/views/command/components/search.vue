@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Search, FolderOpened } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
+import { Search, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
-import { message } from "@/utils/message";
 import { listen } from "@tauri-apps/api/event";
+import { searchContent, useMarkdown } from "@/utils/markdown";
 
 const [mode, countMode] = [ref("equal"), ref("nil")];
 const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
 const [columns, path, condition] = [ref(""), ref(""), ref("")];
-const [isLoading, isBtnShow] = [ref(false), ref(false)];
+const [dialog, isLoading, isBtnShow] = [ref(false), ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(324);
+const { compiledMarkdown } = useMarkdown(searchContent);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -65,7 +67,9 @@ async function searchData() {
     });
     matchRows.value = Number(res[0]);
     isBtnShow.value = true;
-    message(`Match ${res[0]}, elapsed time: ${res[1]} s`, { type: "success" });
+    message(`Match ${res[0]} rows, elapsed time: ${res[1]} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -110,6 +114,10 @@ async function searchData() {
             <el-option label="Regex" value="regex" />
             <el-option label="IsNull" value="isnull" />
             <el-option label="IsNotNull" value="isnotnull" />
+            <el-option label="gt (>)" value="gt" />
+            <el-option label="ge (≥)" value="ge" />
+            <el-option label="lt (<)" value="lt" />
+            <el-option label="le (≤)" value="le" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="if nil, no progress bar" effect="light">
@@ -159,11 +167,25 @@ async function searchData() {
     </el-table>
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-text>Filter rows matching conditions</el-text>
+        <el-tooltip :content="path" effect="light">
+          <el-text>{{ shortFileName(path) }}</el-text>
+        </el-tooltip>
       </div>
-      <el-tooltip :content="path" effect="light">
-        <el-text>{{ shortFileName(path) }}</el-text>
-      </el-tooltip>
+      <el-link @click="dialog = true" :icon="Link">
+        <span>
+          About
+          <span style="color: skyblue; font-weight: bold">Search</span>
+        </span>
+      </el-link>
     </div>
+    <el-dialog
+      v-model="dialog"
+      title="Search - Filter rows matching conditions"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

@@ -114,9 +114,66 @@ export function applyContent() {
 
 export function catContent() {
   return `
-  Merge **file1.csv** and **file2.csv**, then we get **cat.csv**.
-  As shown in the figure:
-  ![cat.png](/demo/cat.png)
+\`\`\`
+sample file
+test1.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+
+test2.xlsx (test2.csv)
+┌─────┬─────┐
+│ age │ idx │
+├─────┼─────┤
+│ 10  │  4  │
+│ 21  │  5  │
+│ 31  |  6  |
+└─────┴─────┘
+\`\`\`
+
+### 1. Polars (support csv and excel file)
+\`\`\`
+┌─────┬────────┬─────────────┬─────┐
+│ idx │ name   │ _filename_  │ age │
+├─────┼────────┼─────────────┼─────┤
+│  1  │ tom    │ test1.csv   │     │
+│  2  │ jerry  │ test1.csv   │     │
+│  3  | hansen | test1.csv   │     │
+│  4  │        │ test2.xlsx  │ 10  │
+│  5  │        │ test2.xlsx  │ 21  │
+│  6  │        │ test2.xlsx  │ 31  │
+└─────┴────────┴─────────────┴─────┘
+\`\`\`
+
+### 2. CSV (only support csv file)
+\`\`\`
+┌─────┬────────┬─────┐
+│ idx │ name   │ age │
+├─────┼────────┤─────┤
+│  1  │ tom    │     │
+│  2  │ jerry  │     │
+│  3  | hansen |     │
+│  4  │        │ 10  │
+│  5  │        │ 21  │
+│  6  │        │ 31  │
+└─────┴────────┴─────┘
+\`\`\`
+
+### 3. Duplicate (only support csv file)
+\`\`\`
+sample file (test.csv)
+┌──────┬───────┐
+│ name │ name  │
+├──────┼───────┤
+│  1   │ tom   │
+└──────┴───────┘
+
+duplicate result: {"name"}
+\`\`\`
 `;
 }
 
@@ -209,6 +266,252 @@ Set criteria (Select column: <u>name</u>, Number of the string: <u>2</u>, String
 │  2  │ jerry-2  │  jerry     │     2      │
 │  3  | hansen-3 |  hansen    │     3      │
 └─────┴──────────┴────────────┴────────────┘
+\`\`\`
+`;
+}
+
+export function searchContent() {
+  return `
+\`\`\`
+sample file (test.csv)
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### 1. Equal
+Set criteria (Select column: <u>name</u>, Search mode: <u>Equal</u>, Search conditions: <u>tom|jerry</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 2. EqualMulti
+Set criteria (Select column: <u>name</u>, Search mode: <u>EqualMulti</u>, Search conditions: <u>tom|jerry</u>)
+\`\`\`
+test_tom.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+└─────┴────────┘
+
+test_jerry.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 3. NotEqual
+Set criteria (Select column: <u>name</u>, Search mode: <u>NotEqual</u>, Search conditions: <u>tom|jerry</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  │ hansen │
+└─────┴────────┘
+\`\`\`
+
+### 4. Contains
+Set criteria (Select column: <u>name</u>, Search mode: <u>Contains</u>, Search conditions: <u>om|jer</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 5. ContainsMulti
+Set criteria (Select column: <u>name</u>, Search mode: <u>ContainsMulti</u>, Search conditions: <u>om|jer</u>)
+\`\`\`
+test_om.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+└─────┴────────┘
+
+test_jer.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 6. NotContains
+Set criteria (Select column: <u>name</u>, Search mode: <u>NotContains</u>, Search conditions: <u>om|jer</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  │ hansen │
+└─────┴────────┘
+\`\`\`
+
+### 7. StartsWith
+Set criteria (Select column: <u>name</u>, Search mode: <u>StartsWith</u>, Search conditions: <u>to|jer</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 8. StartsWithMulti
+Set criteria (Select column: <u>name</u>, Search mode: <u>StartsWithMulti</u>, Search conditions: <u>to|jer</u>)
+\`\`\`
+test_to.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+└─────┴────────┘
+
+test_jer.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 9. NotStartsWith
+Set criteria (Select column: <u>name</u>, Search mode: <u>NotStartsWith</u>, Search conditions: <u>to|jer</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  │ hansen │
+└─────┴────────┘
+\`\`\`
+
+### 10. EndsWith
+Set criteria (Select column: <u>name</u>, Search mode: <u>EndsWith</u>, Search conditions: <u>om|rry</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 11. EndsWithMulti
+Set criteria (Select column: <u>name</u>, Search mode: <u>EndsWithMulti</u>, Search conditions: <u>om|rry</u>)
+\`\`\`
+test_om.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+└─────┴────────┘
+
+test_rry.csv
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 12. NotEndsWith
+Set criteria (Select column: <u>name</u>, Search mode: <u>NotEndsWith</u>, Search conditions: <u>om|rry</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  │ hansen │
+└─────┴────────┘
+\`\`\`
+
+### 13. Regex
+Set criteria (Select column: <u>name</u>, Search mode: <u>Regex</u>, Search conditions: <u>hansen</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+\`\`\`
+
+### 14. IsNull
+Set criteria (Select column: <u>name</u>, Search mode: <u>IsNull</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│     │        │
+└─────┴────────┘
+\`\`\`
+
+### 15. IsNotNull
+Set criteria (Select column: <u>name</u>, Search mode: <u>IsNotNull</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### 16. gt
+Set criteria (Select column: <u>idx</u>, Search mode: <u>gt</u>, Search conditions: <u>2</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### 17. ge
+Set criteria (Select column: <u>idx</u>, Search mode: <u>ge</u>, Search conditions: <u>2</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### 18. lt
+Set criteria (Select column: <u>idx</u>, Search mode: <u>lt</u>, Search conditions: <u>2</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+└─────┴────────┘
+\`\`\`
+
+### 19. le
+Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>2</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
 \`\`\`
 `;
 }
