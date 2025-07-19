@@ -29,6 +29,8 @@ enum SearchMode {
   EndsWithMulti(Vec<String>),
   NotEndsWith,
   Regex,
+  IsNull,
+  IsNotNull,
 }
 
 impl From<&str> for SearchMode {
@@ -42,7 +44,10 @@ impl From<&str> for SearchMode {
       "notstartswith" => SearchMode::NotStartsWith,
       "endswith" => SearchMode::EndsWith,
       "notendswith" => SearchMode::NotEndsWith,
-      _ => SearchMode::Regex,
+      "regex" => SearchMode::Regex,
+      "isnull" => SearchMode::IsNull,
+      "isnotnull" => SearchMode::IsNotNull,
+      _ => SearchMode::Equal,
     }
   }
 }
@@ -497,6 +502,46 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
+pub async fn is_null_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    output_path,
+    |value, _c| value.trim().is_empty(),
+    app_handle,
+  )
+  .await
+}
+
+pub async fn is_not_null_search<P: AsRef<Path> + Send + Sync>(
+  path: P,
+  sep: u8,
+  select_column: String,
+  conditions: Vec<String>,
+  output_path: PathBuf,
+  app_handle: AppHandle,
+) -> Result<()> {
+  generic_search(
+    path,
+    sep,
+    select_column,
+    conditions,
+    output_path,
+    |value, _c| !value.trim().is_empty(),
+    app_handle,
+  )
+  .await
+}
+
 async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   path: P,
   select_column: String,
@@ -650,6 +695,28 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             sep,
             select_column,
             conditions,
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::IsNull => {
+          is_null_search(
+            path,
+            sep,
+            select_column,
+            vec![],
+            output_path,
+            app_handle,
+          )
+          .await
+        }
+        SearchMode::IsNotNull => {
+          is_not_null_search(
+            path,
+            sep,
+            select_column,
+            vec![],
             output_path,
             app_handle,
           )

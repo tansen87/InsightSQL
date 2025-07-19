@@ -103,8 +103,8 @@ async function searchData() {
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="Search mode" effect="light">
-          <el-select v-model="mode" style="width: 140px">
+        <el-tooltip content="Search mode" effect="light" placement="top">
+          <el-select v-model="mode" filterable style="width: 140px">
             <el-option label="Equal" value="equal" />
             <el-option label="EqualMulti" value="equalmulti" />
             <el-option label="NotEqual" value="notequal" />
@@ -118,9 +118,11 @@ async function searchData() {
             <el-option label="EndsWithMulti" value="endswithmulti" />
             <el-option label="NotEndsWith" value="notendswith" />
             <el-option label="Regex" value="regex" />
+            <el-option label="IsNull" value="isnull" />
+            <el-option label="IsNotNull" value="isnotnull" />
           </el-select>
         </el-tooltip>
-        <el-tooltip content="if nil, do not add progress bar" effect="light">
+        <el-tooltip content="if nil, no progress bar" effect="light">
           <el-select v-model="countMode" style="margin-left: 10px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="std" value="std" />
