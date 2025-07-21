@@ -7,7 +7,7 @@ use std::{
   time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{Emitter, Window};
 use tokio::sync::oneshot;
@@ -108,7 +108,13 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
     loop {
       tokio::select! {
         _ = interval.tick() => {
-          let current_rows = *rows_clone.lock().unwrap();
+          let current_rows = match rows_clone.lock() {
+            Ok(lock) => *lock,
+            Err(err) => {
+              eprintln!("Failed to lock current rows: {err}");
+              0
+            }
+          };
           if let Err(err) = window.emit("update-rows", current_rows) {
             eprintln!("Failed to emit current rows: {err:?}");
           }
@@ -138,10 +144,15 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
         .collect();
       wtr.write_record(selected_data.iter())?;
 
-      let mut cnt = rows.lock().unwrap();
+      let mut cnt = rows
+        .lock()
+        .map_err(|poison| anyhow!("cnt lock poisoned: {poison}"))?;
       *cnt += 1;
     }
-    let final_rows = *rows.lock().unwrap();
+
+    let final_rows = *rows
+      .lock()
+      .map_err(|poison| anyhow!("final rows lock poisoned: {poison}"))?;
     let _ = done_tx.send(final_rows);
     Ok::<_, anyhow::Error>(wtr.flush()?)
   });

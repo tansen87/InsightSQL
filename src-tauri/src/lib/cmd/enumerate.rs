@@ -6,7 +6,7 @@ use std::{
   time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
@@ -55,7 +55,13 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
     loop {
       tokio::select! {
         _ = interval.tick() => {
-          let current_rows = *rows_clone.lock().unwrap();
+          let current_rows = match rows_clone.lock() {
+            Ok(lock) => *lock,
+            Err(err) => {
+              eprintln!("Failed to lock current rows: {err}");
+              0
+            }
+          };
           if let Err(err) = app_handle.emit("update-rows", current_rows) {
             eprintln!("Failed to emit current rows: {err:?}");
           }
@@ -75,7 +81,9 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
     let mut record = ByteRecord::new();
     while rdr.read_byte_record(&mut record)? {
       let i = {
-        let mut count = rows.lock().unwrap();
+        let mut count = rows
+          .lock()
+          .map_err(|poison| anyhow!("cnt lock poisoned: {poison}"))?;
         *count += 1;
         *count
       };
@@ -89,9 +97,10 @@ pub async fn enumerate_index<P: AsRef<Path> + Send + Sync>(
       wtr.write_record(&new_record)?;
     }
 
-    let final_rows = *rows.lock().unwrap();
+    let final_rows = *rows
+      .lock()
+      .map_err(|poison| anyhow!("final rows lock poisoned: {poison}"))?;
     let _ = done_tx.send(final_rows);
-
     Ok::<_, anyhow::Error>(wtr.flush()?)
   });
 
