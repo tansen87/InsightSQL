@@ -4,6 +4,7 @@ English | [中文](./README_CN.md)
 
 > InsightSQL is a Tauri based data processing toolbox designed to simplify data operations and management. It provides an intuitive graphical user interface (GUI). Supports processing of multiple file formats, including Excel, CSV, Parquet, etc. Users can complete complex data processing tasks such as data queries, transformations, merges, joins, sorts, slices, format conversions, etc. through simple operations.
 
+
 ### ScreenShot
 
 * command
@@ -17,6 +18,7 @@ English | [中文](./README_CN.md)
 
   ![rename.gif](/docs/img/rename.gif)
 
+
 ## ✨Features
 
 | Function | Description |
@@ -27,25 +29,25 @@ English | [中文](./README_CN.md)
 | Excel  to CSV | Batch convert Excel to CSV (Support converting all sheets or specifying sheets) |
 | Count | Count the rows of CSV files (Instantaneous with an index) |
 | CSV to xlsx | Batch convert CSV to xlsx |
-| Rename | Rename the columns of a CSV |
-| Select | Select, re-order columns |
+| [Rename](./docs/rename.md) | Rename the columns of a CSV |
+| [Select](./docs/select.md) | Select, re-order columns |
 | [Search](./docs/search.md) | Match the corresponding row in a column (equal, contains, starts with, ends with, regex) |
-| Fill | Fill empty fields in selected columns of a CSV |
-| Split | Split one CSV file into many CSV files (by rows or by lines, uses multithreading to go faster if an index is present when splitting by rows) |
-| Skip | Skip rows form CSV |
-| Enumerate | Add a new column enumerating the lines of a CSV file |
-| Chinese to Pinyin | Convert Chinese to Pinyin for specific column in CSV |
-| Replace | Replace CSV data using a regex |
+| [Fill](./docs/fill.md) | Fill empty fields in selected columns of a CSV |
+| [Split](./docs/split.md) | Split one CSV file into many CSV files (by rows or by lines, uses multithreading to go faster if an index is present when splitting by rows) |
+| [Skip](./docs/skip.md) | Skip rows form CSV |
+| [Enumerate](./docs/enumerate.md) | Add a new column enumerating the lines of a CSV file |
+| [Pinyin](./docs/pinyin.md) | Convert Chinese to Pinyin for specific column in CSV |
+| [Replace](./docs/replace.md) | Replace CSV data using a regex |
 | Join | Joins two sets of CSV data on the specified columns |
 | Sort | Sorts CSV data lexicographically |
-| [Slice](./docs/slice.md) | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
-| Reverse | Reverse order of rows in a CSV |
-| Transpose | Transpose rows/columns of a CSV |
+| [Slice](./docs/str_slice.md) | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
+| [Reverse](./docs/reverse.md) | Reverse order of rows in a CSV |
+| [Transpose](./docs/transpose.md) | Transpose rows/columns of a CSV |
 
 
 ### 🍖How to use?
 
-* For more details, please refer to [release](https://github.com/tansen87/sqlp/releases/)
+* For more details, please refer to [release](https://github.com/tansen87/InsightSQL/releases/)
 
 
 ### 🏃‍Runtime Environment
@@ -53,6 +55,7 @@ English | [中文](./README_CN.md)
 * Node.js 20.19+
 * pnpm 10.0+
 * 🦀Rust 1.88.0+
+
 
 ## 🚀Development
 
@@ -86,9 +89,11 @@ English | [中文](./README_CN.md)
    pnpm tauri:build
    ```
 
+
 ### video
 
 * [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c) (The video hasn't been updated for a long time)
+
 
 ### See also
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)

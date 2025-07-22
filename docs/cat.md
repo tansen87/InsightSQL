@@ -21,8 +21,8 @@ test2.xlsx (test2.csv)
 └─────┴─────┘
 ```
 
-### 1. Polars (support csv and excel file)
 
+### 1. Polars (support csv and excel file)
 ```
 ┌─────┬────────┬─────────────┬─────┐
 │ idx │ name   │ _filename_  │ age │
@@ -36,8 +36,8 @@ test2.xlsx (test2.csv)
 └─────┴────────┴─────────────┴─────┘
 ```
 
-### 2. CSV (only support csv file)
 
+### 2. CSV (only support csv file)
 ```
 ┌─────┬────────┬─────┐
 │ idx │ name   │ age │
@@ -51,8 +51,8 @@ test2.xlsx (test2.csv)
 └─────┴────────┴─────┘
 ```
 
-### 3. Duplicate (only support csv file)
 
+### 3. Duplicate (only support csv file)
 ```
 sample file (test.csv)
 ┌──────┬───────┐
@@ -63,4 +63,3 @@ sample file (test.csv)
 
 duplicate result: {"name"}
 ```
-
