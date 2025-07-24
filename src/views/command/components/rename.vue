@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Refresh } from "@element-plus/icons-vue";
+import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { listen } from "@tauri-apps/api/event";
+import { renameContent, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
 const tableData = ref([]);
 const [search, path] = [ref(""), ref("")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
-const [isLoading, isPath] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(122);
+const [dialog, isLoading] = [ref(false), ref(false)];
+const { dynamicHeight } = useDynamicHeight(143);
+const { compiledMarkdown } = useMarkdown(renameContent);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -30,8 +32,8 @@ listen("total-rows", (event: any) => {
 
 async function selectFile() {
   tableData.value = [];
-  isPath.value = false;
   search.value = "";
+  path.value = "";
   totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
@@ -48,7 +50,6 @@ async function selectFile() {
       };
       tableData.value.push(colData);
     }
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -83,7 +84,7 @@ async function headerEdit(row: any) {
 </script>
 
 <template>
-  <el-form class="page-container" :style="dynamicHeight">
+  <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -96,23 +97,15 @@ async function headerEdit(row: any) {
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
-        <el-button
-          @click="renameData()"
-          :loading="isLoading"
-          :icon="Refresh"
-          style="margin-left: 10px"
-        >
-          Rename
-        </el-button>
       </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Rename the columns of a CSV</span>
-      </el-text>
+      <el-button
+        @click="renameData()"
+        :loading="isLoading"
+        :icon="Refresh"
+        style="margin-left: 10px"
+      >
+        Rename
+      </el-button>
     </div>
     <el-table
       :data="filterTableData"
@@ -148,5 +141,27 @@ async function headerEdit(row: any) {
         </template>
       </el-table-column>
     </el-table>
-  </el-form>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-tooltip :content="path" effect="light">
+          <el-text>{{ shortFileName(path) }}</el-text>
+        </el-tooltip>
+      </div>
+      <el-link @click="dialog = true" :icon="Link">
+        <span>
+          About
+          <span style="color: skyblue; font-weight: bold">Rename</span>
+        </span>
+      </el-link>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Rename - Rename the columns of a CSV"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
+  </div>
 </template>

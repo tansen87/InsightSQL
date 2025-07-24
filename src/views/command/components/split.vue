@@ -2,31 +2,29 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
-import { useDynamicHeight } from "@/utils/utils";
+import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { splitContent, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 
 const [path, size, mode] = [ref(""), ref(1000000), ref("rows")];
 const [tableColumn, tableData] = [ref([]), ref([])];
-const [isLoading, isPath, infoDialog] = [ref(false), ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(176);
+const [isLoading, dialog] = [ref(false), ref(false)];
+const { dynamicHeight } = useDynamicHeight(155);
+const { compiledMarkdown } = useMarkdown(splitContent);
 
 async function selectFile() {
-  isPath.value = false;
+  path.value = "";
   tableColumn.value = [];
   tableData.value = [];
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -52,8 +50,6 @@ async function splitData() {
   }
   isLoading.value = false;
 }
-
-const { compiledMarkdown } = useMarkdown(splitContent);
 </script>
 
 <template>
@@ -63,22 +59,11 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-      </div>
-      <el-link @click="infoDialog = true" :icon="Link">
-        <span v-if="isPath">{{ path }}</span>
-        <span v-else>
-          About
-          <span style="color: skyblue; font-weight: bold">Split</span>
-        </span>
-      </el-link>
-    </div>
-    <div class="custom-container1">
-      <div class="custom-container2" style="margin-top: 10px">
         <el-tooltip content="Split rows" effect="light">
           <el-input-number
             v-model="size"
             controls-position="right"
-            style="width: 172px"
+            style="width: 172px; margin-left: 10px"
           />
         </el-tooltip>
         <el-tooltip content="Split mode" effect="light">
@@ -90,7 +75,6 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         </el-tooltip>
       </div>
       <el-button
-        style="margin-top: 10px"
         @click="splitData()"
         :loading="isLoading"
         :icon="IceCreamRound"
@@ -113,9 +97,21 @@ const { compiledMarkdown } = useMarkdown(splitContent);
         :key="column.prop"
       />
     </el-table>
-
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-tooltip :content="path" effect="light">
+          <el-text>{{ shortFileName(path) }}</el-text>
+        </el-tooltip>
+      </div>
+      <el-link @click="dialog = true" :icon="Link">
+        <span>
+          About
+          <span style="color: skyblue; font-weight: bold">Split</span>
+        </span>
+      </el-link>
+    </div>
     <el-dialog
-      v-model="infoDialog"
+      v-model="dialog"
       title="Split - Split one CSV file into many CSV files"
       width="800"
     >

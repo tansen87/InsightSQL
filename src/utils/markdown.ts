@@ -179,9 +179,62 @@ duplicate result: {"name"}
 
 export function splitContent() {
   return `
-  Split **file.csv**, set the **Split rows** to \`2\`,
-  then we get two files, As show in the figure:
-  ![split.png](/demo/split.png)
+### 1. Rows (standard csv file)
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+Set criteria (Split rows: <u>2</u>, Split mode: <u>Rows</u>)
+\`\`\`
+split 1
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+└─────┴────────┘
+
+split 2
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### 2. Lines
+\`\`\`
+sample file
+------------------------
+idx,name
+hello world...
+say hello.
+this is a test for lines.
+------------------------
+\`\`\`
+Set criteria (Split rows: <u>2</u>, Split mode: <u>Lines</u>)
+\`\`\`
+split 1
+------------------------
+idx,name
+hello world...
+say hello.
+------------------------
+
+split 2
+------------------------
+idx,name
+this is a test for lines.
+------------------------
+\`\`\`
+
+### Index - add index for csv
 `;
 }
 
@@ -525,4 +578,108 @@ Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditio
 └─────┴────────┘
 \`\`\`
 `;
+}
+
+export function renameContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+Set new headers: idx1, name1
+\`\`\`
+┌──────┬────────┐
+│ idx1 │ name1  │
+├──────┼────────┤
+│  1   │ tom    │
+│  2   │ jerry  │
+│  3   | hansen |
+└──────┴────────┘
+\`\`\`
+`;
+}
+
+export function selectContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┬─────────────┐
+│ idx │ name   │ _filename_  │
+├─────┼────────┼─────────────┤
+│  1  │ tom    │ test1.csv   │
+│  2  │ jerry  │ test1.csv   │
+│  3  | hansen | test1.csv   │
+└─────┴────────┴─────────────┘
+\`\`\`
+
+### 1. Include
+Set criteria (Select column: <u>name,idx</u>, Select mode: <u>Include</u>)
+\`\`\`
+┌────────┬─────┐
+│ name   │ idx │
+├────────┼─────┤
+│ tom    │  1  │
+│ jerry  │  2  │
+│ hansen |  3  |
+└────────┴─────┘
+\`\`\`
+
+### 2. Exclude
+Set criteria (Select column: <u>\\_filename\\_</u>, Select mode: <u>Exclude</u>)
+\`\`\`
+sample file
+┌─────┬────────┬─────────────┐
+│ idx │ name   │ _filename_  │
+├─────┼────────┼─────────────┤
+│  1  │ tom    │ test1.csv   │
+│  2  │ jerry  │ test1.csv   │
+│  3  | hansen | test1.csv   │
+└─────┴────────┴─────────────┘
+\`\`\`
+`;
+}
+
+export function fillContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬─────────┐
+│ idx │ name    │
+├─────┼─────────┤
+│  1  │         │
+│  2  │ jerry   │
+│  3  |         |
+└─────┴─────────┘
+\`\`\`
+
+### 1. fill
+Set criteria (Select column: <u>name</u>, fill mode: <u>fill</u>, fill value: <u>jerry</u>)
+\`\`\`
+┌─────┬─────────┐
+│ idx │ name    │
+├─────┼─────────┤
+│  1  │ jerry   │
+│  2  │ jerry   │
+│  3  | jerry   |
+└─────┴─────────┘
+\`\`\`
+
+### 2. f-fill
+Set criteria (Select column: <u>name</u>, fill mode: <u>f-fill</u>)
+\`\`\`
+┌─────┬─────────┐
+│ idx │ name    │
+├─────┼─────────┤
+│  1  │         │
+│  2  │ jerry   │
+│  3  | jerry   |
+└─────┴─────────┘
+\`\`\`
+  `;
 }
