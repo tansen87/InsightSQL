@@ -7,7 +7,7 @@ export default {
   component: Layout,
   redirect: "/queries",
   meta: {
-    icon: "homeFilled",
+    icon: "searchEyeLine",
     title: "sql",
     rank: 0
   },

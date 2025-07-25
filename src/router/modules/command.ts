@@ -185,6 +185,15 @@ export default {
         title: "transpose",
         showLink: false
       }
+    },
+    {
+      path: "/command/components/traverse",
+      name: "traverse",
+      component: () => import("@/views/command/components/traverse.vue"),
+      meta: {
+        title: "traverse directory",
+        showLink: false
+      }
     }
   ]
 } satisfies RouteConfigsTable;

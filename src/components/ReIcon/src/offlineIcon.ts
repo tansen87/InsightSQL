@@ -5,14 +5,10 @@ import { addIcon } from "@iconify/vue/dist/offline";
  */
 
 // 本地菜单图标，后端在路由的icon中返回对应的图标字符串并且前端在此处使用addIcon添加即可渲染菜单图标
-import HomeFilled from "@iconify-icons/ri/search-eye-line";
-import InformationLine from "@iconify-icons/ri/information-line";
-import Lollipop from "@iconify-icons/ep/lollipop";
+import SearchEyeLine from "@iconify-icons/ri/search-eye-line";
 import Command from "@iconify-icons/ri/code-box-line";
-import FileChartLine from "@iconify-icons/ri/file-chart-line";
+import FlowChart from "@iconify-icons/ri/flow-chart";
 
-addIcon("homeFilled", HomeFilled);
-addIcon("informationLine", InformationLine);
-addIcon("lollipop", Lollipop);
+addIcon("searchEyeLine", SearchEyeLine);
 addIcon("command", Command);
-addIcon("fileChartLine", FileChartLine);
+addIcon("flowChart", FlowChart);

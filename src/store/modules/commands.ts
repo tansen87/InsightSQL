@@ -103,7 +103,7 @@ export const useCommandStore = defineStore("command", {
       {
         title: "Traverse",
         description: "Traverse the directory to obtain filenames",
-        route: "/operation/components/traverse"
+        route: "/command/components/traverse"
       }
     ]
   })
