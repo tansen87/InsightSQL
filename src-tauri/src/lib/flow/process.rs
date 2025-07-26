@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
 use csv::ReaderBuilder;
@@ -51,23 +52,25 @@ pub async fn process_operations(
       }
       "filter" => {
         if let (Some(col), Some(mode), Some(val)) = (&op.column, &op.mode, &op.value) {
+          let col = Arc::from(col.as_str());
+          let val = Arc::from(val.as_str());
+          let headers = Arc::new(headers.to_vec());
           match mode.as_str() {
-            "equal" => context.add_filter(filter::equal(col, val, &headers)?),
-            "not_equal" => context.add_filter(filter::not_equal(col, val, &headers)?),
-            "contains" => context.add_filter(filter::contains(col, val, &headers)?),
-            "not_contains" => context.add_filter(filter::not_contains(col, val, &headers)?),
-            "starts_with" => context.add_filter(filter::starts_with(col, val, &headers)?),
-            "not_starts_with" => context.add_filter(filter::not_starts_with(col, val, &headers)?),
-            "ends_with" => context.add_filter(filter::ends_with(col, val, &headers)?),
-            "not_ends_with" => context.add_filter(filter::not_ends_with(col, val, &headers)?),
-            "gt" => context.add_filter(filter::gt(col, val, &headers)?),
-            "ge" => context.add_filter(filter::ge(col, val, &headers)?),
-            "lt" => context.add_filter(filter::lt(col, val, &headers)?),
-            "le" => context.add_filter(filter::le(col, val, &headers)?),
-            "between" => context.add_filter(filter::between(col, val, &headers)?),
-            "is_null" => context.add_filter(filter::is_null(col, &headers)?),
-            "is_not_null" => context.add_filter(filter::is_not_null(col, &headers)?),
-            "is_in" => context.add_filter(filter::is_in(col, val, &headers)?),
+            "equal" => context.add_filter(filter::equal(col, val, headers)?),
+            "not_equal" => context.add_filter(filter::not_equal(col, val, headers)?),
+            "contains" => context.add_filter(filter::contains(col, val, headers)?),
+            "not_contains" => context.add_filter(filter::not_contains(col, val, headers)?),
+            "starts_with" => context.add_filter(filter::starts_with(col, val, headers)?),
+            "not_starts_with" => context.add_filter(filter::not_starts_with(col, val, headers)?),
+            "ends_with" => context.add_filter(filter::ends_with(col, val, headers)?),
+            "not_ends_with" => context.add_filter(filter::not_ends_with(col, val, headers)?),
+            "gt" => context.add_filter(filter::gt(col, val, headers)?),
+            "ge" => context.add_filter(filter::ge(col, val, headers)?),
+            "lt" => context.add_filter(filter::lt(col, val, headers)?),
+            "le" => context.add_filter(filter::le(col, val, headers)?),
+            "between" => context.add_filter(filter::between(col, val, headers)?),
+            "is_null" => context.add_filter(filter::is_null(col, headers)?),
+            "is_not_null" => context.add_filter(filter::is_not_null(col, headers)?),
             _ => return Err(anyhow!("Not support filter mode: {}", mode)),
           }
         }

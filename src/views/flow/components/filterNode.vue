@@ -53,25 +53,23 @@ function deleteBtn() {
         id="input"
         class="handle-style"
       />
-      <div style="text-align: center; width: 100%; padding: 5px">
+      <div style="text-align: center; padding: 5px">
         <el-tooltip content="Delete" effect="light">
           <el-button
-            class="del-btn"
             circle
             link
             @click="deleteBtn"
             :icon="CloseBold"
             size="small"
+            style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
           />
         </el-tooltip>
-        <span style="display: block; font-weight: bold; margin-bottom: 10px">
-          Filter
-        </span>
+        <span style="display: block; font-weight: bold"> Filter </span>
         <el-select
           v-model="columns"
           filterable
           placeholder="Select column"
-          style="width: 100%; margin-bottom: 10px"
+          style="margin-bottom: 6px"
         >
           <el-option
             v-for="item in headerStore.headers"
@@ -80,35 +78,27 @@ function deleteBtn() {
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="Filter mode" effect="light">
-          <el-select
-            v-model="mode"
-            filterable
-            style="width: 100%; margin-bottom: 10px"
-          >
-            <el-option label="Equal" value="equal" />
-            <el-option label="NotEqual" value="not_equal" />
-            <el-option label="IsIn" value="is_in" />
-            <el-option label="Contains" value="contains" />
-            <el-option label="NotContains" value="not_contains" />
-            <el-option label="StartsWith" value="starts_with" />
-            <el-option label="NotStartsWtih" value="not_starts_with" />
-            <el-option label="EndsWith" value="ends_with" />
-            <el-option label="NotEndsWith" value="not_ends_with" />
-            <el-option label="IsNull" value="is_null" />
-            <el-option label="IsNotNull" value="is_not_null" />
-            <el-option label="gt(>)" value="gt" />
-            <el-option label="ge(≥)" value="ge" />
-            <el-option label="lt(<)" value="lt" />
-            <el-option label="le(≤)" value="le" />
-            <el-option label="Between" value="between" />
-          </el-select>
-        </el-tooltip>
+        <el-select v-model="mode" filterable style="margin-bottom: 6px">
+          <el-option label="Equal" value="equal" />
+          <el-option label="NotEqual" value="not_equal" />
+          <el-option label="Contains" value="contains" />
+          <el-option label="NotContains" value="not_contains" />
+          <el-option label="StartsWith" value="starts_with" />
+          <el-option label="NotStartsWith" value="not_starts_with" />
+          <el-option label="EndsWith" value="ends_with" />
+          <el-option label="NotEndsWith" value="not_ends_with" />
+          <el-option label="IsNull" value="is_null" />
+          <el-option label="IsNotNull" value="is_not_null" />
+          <el-option label="gt(>)" value="gt" />
+          <el-option label="ge(≥)" value="ge" />
+          <el-option label="lt(<)" value="lt" />
+          <el-option label="le(≤)" value="le" />
+          <el-option label="Between" value="between" />
+        </el-select>
         <el-input
           v-if="mode !== 'is_null' && mode !== 'is_not_null'"
           v-model="condition"
-          placeholder="Filter condition..."
-          style="width: 100%"
+          placeholder="Filter conditions"
         />
       </div>
       <Handle
@@ -120,12 +110,3 @@ function deleteBtn() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.del-btn {
-  position: absolute;
-  top: -2.5px;
-  right: -2.5px;
-  z-index: 10;
-}
-</style>

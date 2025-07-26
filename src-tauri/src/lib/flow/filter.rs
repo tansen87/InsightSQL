@@ -1,280 +1,406 @@
+use std::{collections::HashSet, sync::Arc};
+
 use anyhow::{Result, anyhow};
 use csv::StringRecord;
 
 pub fn equal(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let value = value.to_string();
-  Ok(move |record: &StringRecord| record.get(idx).map_or(false, |field| field == value))
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| values.iter().any(|val| f == val.as_ref()))
+        .unwrap_or(false)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record.get(idx).map_or(false, |f| f == val)
+    }))
+  }
 }
 
 pub fn not_equal(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let value = value.to_string();
-  Ok(move |record: &StringRecord| record.get(idx).map_or(true, |field| field != value))
-}
-
-pub fn is_in(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
-  let idx = headers
-    .iter()
-    .position(|h| h == column)
-    .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let values: Vec<String> = value.split('|').map(|s| s.to_string()).collect();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(false, |field| values.contains(&field.to_string()))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map_or(true, |f| values.iter().all(|val| f != val.as_ref()))
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record.get(idx).map_or(true, |f| f != val)
+    }))
+  }
 }
 
 pub fn contains(
-  column: &str,
-  substring: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
-  let column_idx = headers
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
+  let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let substring = substring.to_string();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(column_idx)
-      .map_or(false, |field| field.contains(&substring))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| values.iter().any(|val| f.contains(val.as_ref())))
+        .unwrap_or(false)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record.get(idx).map(|f| f.contains(&val)).unwrap_or(false)
+    }))
+  }
 }
 
 pub fn not_contains(
-  column: &str,
-  substring: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let substring = substring.to_string();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(true, |field| !field.contains(&substring))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| !values.iter().any(|val| f.contains(val.as_ref())))
+        .unwrap_or(true)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record.get(idx).map(|f| !f.contains(&val)).unwrap_or(true)
+    }))
+  }
 }
 
 pub fn starts_with(
-  column: &str,
-  prefix: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let prefix = prefix.to_string();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(false, |field| field.starts_with(&prefix))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| values.iter().any(|val| f.starts_with(val.as_ref())))
+        .unwrap_or(false)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| f.starts_with(&val))
+        .unwrap_or(false)
+    }))
+  }
 }
 
 pub fn not_starts_with(
-  column: &str,
-  prefix: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let prefix = prefix.to_string();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(true, |field| !field.starts_with(&prefix))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| values.iter().all(|val| !f.starts_with(val.as_ref())))
+        .unwrap_or(true)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| !f.starts_with(&val))
+        .unwrap_or(true)
+    }))
+  }
 }
 
 pub fn ends_with(
-  column: &str,
-  suffix: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let suffix = suffix.to_string();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(false, |field| field.ends_with(&suffix))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| values.iter().any(|val| f.ends_with(val.as_ref())))
+        .unwrap_or(false)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record.get(idx).map(|f| f.ends_with(&val)).unwrap_or(false)
+    }))
+  }
 }
 
 pub fn not_ends_with(
-  column: &str,
-  suffix: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let suffix = suffix.to_string();
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(true, |field| !field.ends_with(&suffix))
-  })
+  if value.contains('|') {
+    let values: Vec<Arc<str>> = value
+      .split('|')
+      .map(|s| s.trim())
+      .filter(|s| !s.is_empty())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .map(Arc::from)
+      .collect();
+    Ok(Box::new(move |record: &StringRecord| {
+      record
+        .get(idx)
+        .map(|f| values.iter().all(|val| !f.ends_with(val.as_ref())))
+        .unwrap_or(true)
+    }))
+  } else {
+    let val = value.to_string();
+    Ok(Box::new(move |record: &StringRecord| {
+      record.get(idx).map(|f| !f.ends_with(&val)).unwrap_or(true)
+    }))
+  }
 }
 
-pub fn is_null(column: &str, headers: &[String]) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+pub fn is_null(
+  column: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(true, |field| field.trim().is_empty())
-  })
+  Ok(Box::new(move |record: &StringRecord| {
+    record.get(idx).map_or(true, |f| f.trim().is_empty())
+  }))
 }
 
 pub fn is_not_null(
-  column: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  Ok(move |record: &StringRecord| {
-    record
-      .get(idx)
-      .map_or(false, |field| !field.trim().is_empty())
-  })
+  Ok(Box::new(move |record: &StringRecord| {
+    record.get(idx).map_or(false, |f| !f.trim().is_empty())
+  }))
 }
 
 pub fn gt(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let value = value
+  let val = value
     .parse::<f64>()
-    .map_err(|e| anyhow!("filter value 不是有效数字: {}", e))?;
-  Ok(move |record: &StringRecord| {
+    .map_err(|e| anyhow!("filter value is invalid number: {}", e))?;
+  Ok(Box::new(move |record: &StringRecord| {
     record
       .get(idx)
-      .and_then(|field| field.parse::<f64>().ok())
-      .map_or(false, |v| v > value)
-  })
+      .and_then(|f| f.parse::<f64>().ok())
+      .map(|f| f > val)
+      .unwrap_or(false)
+  }))
 }
 
 pub fn ge(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let value = value
+  let val = value
     .parse::<f64>()
-    .map_err(|e| anyhow!("filter value 不是有效数字: {}", e))?;
-  Ok(move |record: &StringRecord| {
+    .map_err(|e| anyhow!("filter value is invalid number: {}", e))?;
+  Ok(Box::new(move |record: &StringRecord| {
     record
       .get(idx)
-      .and_then(|field| field.parse::<f64>().ok())
-      .map_or(false, |v| v >= value)
-  })
+      .and_then(|f| f.parse::<f64>().ok())
+      .map(|f| f >= val)
+      .unwrap_or(false)
+  }))
 }
 
 pub fn lt(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let value = value
+  let val = value
     .parse::<f64>()
-    .map_err(|e| anyhow!("filter value 不是有效数字: {}", e))?;
-  Ok(move |record: &StringRecord| {
+    .map_err(|e| anyhow!("filter value is invalid number: {}", e))?;
+  Ok(Box::new(move |record: &StringRecord| {
     record
       .get(idx)
-      .and_then(|field| field.parse::<f64>().ok())
-      .map_or(false, |v| v < value)
-  })
+      .and_then(|f| f.parse::<f64>().ok())
+      .map(|f| f < val)
+      .unwrap_or(false)
+  }))
 }
 
 pub fn le(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let value = value
+  let val = value
     .parse::<f64>()
-    .map_err(|e| anyhow!("filter value 不是有效数字: {}", e))?;
-  Ok(move |record: &StringRecord| {
+    .map_err(|e| anyhow!("filter value is invalid number: {}", e))?;
+  Ok(Box::new(move |record: &StringRecord| {
     record
       .get(idx)
       .and_then(|field| field.parse::<f64>().ok())
-      .map_or(false, |v| v <= value)
-  })
+      .map(|f| f <= val)
+      .unwrap_or(false)
+  }))
 }
 
 pub fn between(
-  column: &str,
-  value: &str,
-  headers: &[String],
-) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  column: Arc<str>,
+  value: Arc<str>,
+  headers: Arc<Vec<String>>,
+) -> Result<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>> {
   let idx = headers
     .iter()
-    .position(|h| h == column)
+    .position(|h| h == column.as_ref())
     .ok_or_else(|| anyhow!("Column not found: {}", column))?;
-  let parts: Vec<&str> = value.split('|').collect();
-  let min = parts
-    .get(0)
-    .and_then(|s| s.parse::<f64>().ok())
-    .unwrap_or(f64::MIN);
-  let max = parts
-    .get(1)
-    .and_then(|s| s.parse::<f64>().ok())
-    .unwrap_or(f64::MAX);
-  Ok(move |record: &StringRecord| {
+  let values: Vec<Arc<str>> = value
+    .split('|')
+    .map(|s| s.trim())
+    .filter(|s| !s.is_empty())
+    .collect::<HashSet<_>>()
+    .into_iter()
+    .map(Arc::from)
+    .collect();
+  if values.len() != 2 {
+    return Err(anyhow!(
+      "Between value must have two values separated by vertical line"
+    ));
+  }
+  let min = values[0].clone();
+  let max = values[1].clone();
+  Ok(Box::new(move |record: &StringRecord| {
     record
       .get(idx)
-      .and_then(|field| field.parse::<f64>().ok())
-      .map_or(false, |v| v >= min && v <= max)
-  })
+      .map_or(false, |f| f >= min.as_ref() && f <= max.as_ref())
+  }))
 }
