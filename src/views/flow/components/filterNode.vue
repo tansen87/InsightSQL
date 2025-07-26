@@ -88,6 +88,7 @@ function deleteBtn() {
           >
             <el-option label="Equal" value="equal" />
             <el-option label="NotEqual" value="not_equal" />
+            <el-option label="IsIn" value="is_in" />
             <el-option label="Contains" value="contains" />
             <el-option label="NotContains" value="not_contains" />
             <el-option label="StartsWith" value="starts_with" />

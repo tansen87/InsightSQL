@@ -67,6 +67,7 @@ pub async fn process_operations(
             "between" => context.add_filter(filter::between(col, val, &headers)?),
             "is_null" => context.add_filter(filter::is_null(col, &headers)?),
             "is_not_null" => context.add_filter(filter::is_not_null(col, &headers)?),
+            "is_in" => context.add_filter(filter::is_in(col, val, &headers)?),
             _ => return Err(anyhow!("Not support filter mode: {}", mode)),
           }
         }

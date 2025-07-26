@@ -27,6 +27,23 @@ pub fn not_equal(
   Ok(move |record: &StringRecord| record.get(idx).map_or(true, |field| field != value))
 }
 
+pub fn is_in(
+  column: &str,
+  value: &str,
+  headers: &[String],
+) -> Result<impl Fn(&StringRecord) -> bool + use<>> {
+  let idx = headers
+    .iter()
+    .position(|h| h == column)
+    .ok_or_else(|| anyhow!("Column not found: {}", column))?;
+  let values: Vec<String> = value.split('|').map(|s| s.to_string()).collect();
+  Ok(move |record: &StringRecord| {
+    record
+      .get(idx)
+      .map_or(false, |field| values.contains(&field.to_string()))
+  })
+}
+
 pub fn contains(
   column: &str,
   substring: &str,
