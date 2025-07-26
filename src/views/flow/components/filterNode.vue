@@ -54,16 +54,14 @@ function deleteBtn() {
         class="handle-style"
       />
       <div style="text-align: center; padding: 5px">
-        <el-tooltip content="Delete" effect="light">
-          <el-button
-            circle
-            link
-            @click="deleteBtn"
-            :icon="CloseBold"
-            size="small"
-            style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
-          />
-        </el-tooltip>
+        <el-button
+          circle
+          link
+          @click="deleteBtn"
+          :icon="CloseBold"
+          size="small"
+          style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
+        />
         <span style="display: block; font-weight: bold"> Filter </span>
         <el-select
           v-model="columns"

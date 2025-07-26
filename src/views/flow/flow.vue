@@ -75,7 +75,7 @@ const onDragOver = event => {
 
 <template>
   <div class="page-container" style="display: flex; height: 90vh">
-    <div class="sidebar">
+    <div style="width: 80px; padding: 5px; border-right: 1px solid #ddd">
       <div
         v-for="type in nodeTypes"
         :key="type"
@@ -108,11 +108,6 @@ const onDragOver = event => {
 </template>
 
 <style scoped>
-.sidebar {
-  width: 80px;
-  padding: 5px;
-  border-right: 1px solid #ddd;
-}
 .draggable-node {
   padding: 5px;
   margin-bottom: 10px;

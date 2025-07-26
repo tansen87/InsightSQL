@@ -10,9 +10,8 @@ import {
 import { CloseBold } from "@element-plus/icons-vue";
 import { useHeaders, useSlice } from "@/store/modules/flow";
 
-const columns = ref("");
 const mode = ref("left");
-const [offset, length] = [ref("1"), ref("1")];
+const [columns, offset, length] = [ref(""), ref(""), ref("")];
 const nodeId = useNodeId();
 const node = useNode();
 const { removeNodes } = useVueFlow();
@@ -58,25 +57,23 @@ function deleteBtn() {
         id="input"
         class="handle-style"
       />
-      <div style="text-align: center; width: 100%; padding: 5px">
-        <el-tooltip content="Delete" effect="light">
-          <el-button
-            class="del-btn"
-            circle
-            link
-            @click="deleteBtn"
-            :icon="CloseBold"
-            size="small"
-          />
-        </el-tooltip>
-        <span style="display: block; font-weight: bold; margin-bottom: 10px">
+      <div style="text-align: center; padding: 5px">
+        <el-button
+          circle
+          link
+          @click="deleteBtn"
+          :icon="CloseBold"
+          size="small"
+          style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
+        />
+        <span style="display: block; font-weight: bold; margin-bottom: 6px">
           Slice
         </span>
         <el-select
           v-model="columns"
           filterable
           placeholder="Select column"
-          style="width: 100%; margin-bottom: 10px"
+          style="width: 100%; margin-bottom: 6px"
         >
           <el-option
             v-for="item in headerStore.headers"
@@ -85,42 +82,18 @@ function deleteBtn() {
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="Slice mode" effect="light">
-          <el-select
-            v-model="mode"
-            filterable
-            style="width: 100%; margin-bottom: 10px"
-          >
-            <el-option label="left" value="left" />
-            <el-option label="right" value="right" />
-            <el-option label="slice" value="slice" />
-          </el-select>
-        </el-tooltip>
-        <div v-if="mode === 'slice'">
-          <el-tooltip content="start index" effect="light">
-            <el-input
-              v-model="offset"
-              style="width: 100%; margin-bottom: 10px"
-              placeholder="start index"
-            />
-          </el-tooltip>
-          <el-tooltip content="length" effect="light">
-            <el-input
-              v-model="length"
-              style="width: 100%"
-              placeholder="length"
-            />
-          </el-tooltip>
-        </div>
-        <div v-else>
-          <el-tooltip content="length" effect="light">
-            <el-input
-              v-model="length"
-              style="width: 100%"
-              placeholder="length"
-            />
-          </el-tooltip>
-        </div>
+        <el-select v-model="mode" filterable style="margin-bottom: 6px">
+          <el-option label="left" value="left" />
+          <el-option label="right" value="right" />
+          <el-option label="slice" value="slice" />
+        </el-select>
+        <el-input
+          v-if="mode === 'slice'"
+          v-model="offset"
+          style="margin-bottom: 6px"
+          placeholder="start index"
+        />
+        <el-input v-model="length" placeholder="length" />
       </div>
       <Handle
         type="source"
@@ -131,12 +104,3 @@ function deleteBtn() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.del-btn {
-  position: absolute;
-  top: -2.5px;
-  right: -2.5px;
-  z-index: 10;
-}
-</style>

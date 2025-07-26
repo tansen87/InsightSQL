@@ -38,18 +38,16 @@ async function selectFile() {
 <template>
   <div class="page-container">
     <div class="node-container">
-      <div style="text-align: center; width: 100%; padding: 5px">
-        <el-tooltip content="Delete" effect="light">
-          <el-button
-            class="del-btn"
-            circle
-            link
-            @click="deleteBtn"
-            :icon="CloseBold"
-            size="small"
-          />
-        </el-tooltip>
-        <span style="display: block; font-weight: bold; margin-bottom: 10px">
+      <div style="text-align: center; padding: 5px">
+        <el-button
+          circle
+          link
+          @click="deleteBtn"
+          :icon="CloseBold"
+          size="small"
+          style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
+        />
+        <span style="display: block; font-weight: bold; margin-bottom: 6px">
           Start
         </span>
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -70,12 +68,3 @@ async function selectFile() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.del-btn {
-  position: absolute;
-  top: -2.5px;
-  right: -2.5px;
-  z-index: 10;
-}
-</style>
