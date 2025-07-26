@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { Handle, Position } from "@vue-flow/core";
-import { FolderOpened } from "@element-plus/icons-vue";
+import { Handle, Position, useNode, useVueFlow } from "@vue-flow/core";
+import { FolderOpened, CloseBold } from "@element-plus/icons-vue";
 import { mapHeaders, viewOpenFile } from "@/utils/view";
 import { message } from "@/utils/message";
 import { shortFileName } from "@/utils/utils";
@@ -11,6 +11,12 @@ const path = ref("");
 const isPath = ref(false);
 const headerStore = useHeaders();
 const pathStore = usePath();
+const node = useNode();
+const { removeNodes } = useVueFlow();
+
+function deleteBtn() {
+  removeNodes(node.id);
+}
 
 async function selectFile() {
   path.value = "";
@@ -22,10 +28,6 @@ async function selectFile() {
   isPath.value = true;
   try {
     const headers = await mapHeaders(path.value, "0");
-    // const fmts = headers.map(header => ({
-    //   label: header,
-    //   value: header
-    // }));
     headerStore.headers = headers;
   } catch (err) {
     message(err.toString(), { type: "error" });
@@ -37,6 +39,16 @@ async function selectFile() {
   <div class="page-container">
     <div class="node-container">
       <div style="text-align: center; width: 100%; padding: 5px">
+        <el-tooltip content="Delete" effect="light">
+          <el-button
+            class="del-btn"
+            circle
+            link
+            @click="deleteBtn"
+            :icon="CloseBold"
+            size="small"
+          />
+        </el-tooltip>
         <span style="display: block; font-weight: bold; margin-bottom: 10px">
           Start
         </span>
@@ -58,3 +70,12 @@ async function selectFile() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.del-btn {
+  position: absolute;
+  top: -2.5px;
+  right: -2.5px;
+  z-index: 10;
+}
+</style>

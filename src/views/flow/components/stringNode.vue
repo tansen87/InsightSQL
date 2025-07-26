@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { Handle, Position, useNodeId } from "@vue-flow/core";
+import {
+  Handle,
+  Position,
+  useNodeId,
+  useNode,
+  useVueFlow
+} from "@vue-flow/core";
+import { CloseBold } from "@element-plus/icons-vue";
 import { useHeaders, useStr } from "@/store/modules/flow";
 
 const mode = ref("len");
@@ -8,6 +15,8 @@ const [comparand, replacement, columns] = [ref(""), ref(""), ref("")];
 const nodeId = useNodeId();
 const headerStore = useHeaders();
 const strStore = useStr();
+const node = useNode();
+const { removeNodes } = useVueFlow();
 const strData = computed(() => {
   return {
     op: "str",
@@ -30,6 +39,10 @@ watch(
   },
   { deep: true, immediate: true }
 );
+
+function deleteBtn() {
+  removeNodes(node.id);
+}
 </script>
 
 <template>
@@ -42,6 +55,16 @@ watch(
         class="handle-style"
       />
       <div style="text-align: center; width: 100%; padding: 5px">
+        <el-tooltip content="Delete" effect="light">
+          <el-button
+            class="del-btn"
+            circle
+            link
+            @click="deleteBtn"
+            :icon="CloseBold"
+            size="small"
+          />
+        </el-tooltip>
         <span style="display: block; font-weight: bold; margin-bottom: 10px">
           Str
         </span>
@@ -115,3 +138,12 @@ watch(
     </div>
   </div>
 </template>
+
+<style scoped>
+.del-btn {
+  position: absolute;
+  top: -2.5px;
+  right: -2.5px;
+  z-index: 10;
+}
+</style>

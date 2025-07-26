@@ -16,7 +16,7 @@ import SliceNode from "./components/sliceNode.vue";
 import StringNode from "./components/stringNode.vue";
 import InputNode from "./components/inputNode.vue";
 import OutputNode from "./components/outputNode.vue";
-import { useNode } from "@/store/modules/flow";
+import { useNodeStore } from "@/store/modules/flow";
 
 const vueFlowRef = ref();
 const nodes = ref([]);
@@ -30,7 +30,7 @@ const customNodeTypes = {
   start: InputNode,
   end: OutputNode
 };
-const nodeStore = useNode();
+const nodeStore = useNodeStore();
 let nodeIdCounter = 1;
 
 function generateId() {

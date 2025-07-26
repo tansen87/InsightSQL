@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { SwitchButton } from "@element-plus/icons-vue";
-import { Handle, Position } from "@vue-flow/core";
+import { SwitchButton, CloseBold } from "@element-plus/icons-vue";
+import { Handle, Position, useNode, useVueFlow } from "@vue-flow/core";
 import { message } from "@/utils/message";
 import {
   usePath,
@@ -10,7 +10,7 @@ import {
   useSelect,
   useSlice,
   useStr,
-  useNode,
+  useNodeStore,
   getExecutionOrder,
   getExecutionConfig
 } from "@/store/modules/flow";
@@ -21,7 +21,13 @@ const filterStore = useFilter();
 const selectStore = useSelect();
 const sliceStore = useSlice();
 const strStore = useStr();
-const nodeStore = useNode();
+const nodeStore = useNodeStore();
+const node = useNode();
+const { removeNodes } = useVueFlow();
+
+function deleteBtn() {
+  removeNodes(node.id);
+}
 
 // invoke flow
 async function endFlow() {
@@ -70,6 +76,16 @@ async function endFlow() {
         class="handle-style"
       />
       <div style="text-align: center; width: 100%; padding: 5px">
+        <el-tooltip content="Delete" effect="light">
+          <el-button
+            class="del-btn"
+            circle
+            link
+            @click="deleteBtn"
+            :icon="CloseBold"
+            size="small"
+          />
+        </el-tooltip>
         <span style="display: block; font-weight: bold; margin-bottom: 10px">
           End
         </span>
@@ -80,3 +96,12 @@ async function endFlow() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.del-btn {
+  position: absolute;
+  top: -2.5px;
+  right: -2.5px;
+  z-index: 10;
+}
+</style>

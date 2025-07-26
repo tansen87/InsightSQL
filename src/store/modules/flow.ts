@@ -54,7 +54,7 @@ export const usePath = defineStore("path", {
 });
 
 // node
-export const useNode = defineStore("node", {
+export const useNodeStore = defineStore("node", {
   state: () => ({
     nodes: [],
     edges: []
