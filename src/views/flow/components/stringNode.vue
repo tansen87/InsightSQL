@@ -102,6 +102,8 @@ function deleteBtn() {
             <el-option label="upper" value="upper" />
             <el-option label="lower" value="lower" />
             <el-option label="pinyin" value="pinyin" />
+            <el-option label="fill" value="fill" />
+            <el-option label="forwardFill" value="f_fill" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="replace - from" effect="light">
@@ -120,6 +122,12 @@ function deleteBtn() {
             placeholder="replace - to"
           />
         </el-tooltip>
+        <el-input
+          v-if="mode === 'fill'"
+          v-model="replacement"
+          style="width: 100%"
+          placeholder="fill value"
+        />
         <el-tooltip
           v-if="mode === 'pinyin'"
           content="pinyin mode"
