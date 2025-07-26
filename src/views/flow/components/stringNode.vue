@@ -1,0 +1,117 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import { Handle, Position, useNodeId } from "@vue-flow/core";
+import { useHeaders, useStr } from "@/store/modules/flow";
+
+const mode = ref("len");
+const [comparand, replacement, columns] = [ref(""), ref(""), ref("")];
+const nodeId = useNodeId();
+const headerStore = useHeaders();
+const strStore = useStr();
+const strData = computed(() => {
+  return {
+    op: "str",
+    mode: mode.value,
+    column: columns.value,
+    comparand: comparand.value,
+    replacement: replacement.value
+  };
+});
+
+watch(
+  strData,
+  newData => {
+    if (nodeId && (newData.mode || newData.column)) {
+      strStore.addString({
+        id: nodeId,
+        ...newData
+      });
+    }
+  },
+  { deep: true, immediate: true }
+);
+</script>
+
+<template>
+  <div class="page-container">
+    <div class="node-container">
+      <Handle
+        type="target"
+        :position="Position.Left"
+        id="input"
+        class="handle-style"
+      />
+      <div style="text-align: center; width: 100%; padding: 5px">
+        <span style="display: block; font-weight: bold; margin-bottom: 10px">
+          Str
+        </span>
+        <el-select
+          v-model="columns"
+          filterable
+          placeholder="Select column"
+          style="width: 100%; margin-bottom: 10px"
+        >
+          <el-option
+            v-for="item in headerStore.headers"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+        <el-tooltip content="String mode" effect="light">
+          <el-select
+            v-model="mode"
+            filterable
+            style="width: 100%; margin-bottom: 10px"
+          >
+            <el-option label="copy" value="copy" />
+            <el-option label="abs" value="abs" />
+            <el-option label="neg" value="neg" />
+            <el-option label="reverse" value="reverse" />
+            <el-option label="strip" value="strip" />
+            <el-option label="squeeze" value="squeeze" />
+            <el-option label="round" value="round" />
+            <el-option label="len" value="len" />
+            <el-option label="replace" value="replace" />
+            <el-option label="ltrim" value="ltrim" />
+            <el-option label="rtrim" value="rtrim" />
+            <el-option label="trim" value="trim" />
+            <el-option label="upper" value="upper" />
+            <el-option label="lower" value="lower" />
+            <el-option label="pinyin" value="pinyin" />
+          </el-select>
+        </el-tooltip>
+        <div v-if="mode === 'replace'">
+          <el-tooltip content="replace - from" effect="light">
+            <el-input
+              v-model="comparand"
+              style="width: 100%; margin-bottom: 10px"
+              placeholder="replace - from"
+            />
+          </el-tooltip>
+          <el-tooltip content="replace - to" effect="light">
+            <el-input
+              v-model="replacement"
+              style="width: 100%"
+              placeholder="replace - to"
+            />
+          </el-tooltip>
+        </div>
+        <div v-if="mode === 'pinyin'">
+          <el-tooltip content="pinyin mode" effect="light">
+            <el-select v-model="replacement" filterable style="width: 100%">
+              <el-option label="upper" value="upper" />
+              <el-option label="lower" value="lower" />
+            </el-select>
+          </el-tooltip>
+        </div>
+      </div>
+      <Handle
+        type="source"
+        :position="Position.Right"
+        id="output"
+        class="handle-style"
+      />
+    </div>
+  </div>
+</template>

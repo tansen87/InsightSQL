@@ -4,6 +4,7 @@
 )]
 
 use lib::command;
+use lib::flow;
 
 use lib::cmd::apply;
 use lib::cmd::cat;
@@ -45,6 +46,7 @@ fn main() {
       command::inter_headers,
       command::dupli_headers,
       command::to_json,
+      flow::flow,
       apply::apply,
       skip::skip,
       cat::concat,
