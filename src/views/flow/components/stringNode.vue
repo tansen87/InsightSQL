@@ -81,7 +81,7 @@ function deleteBtn() {
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="String mode" effect="light">
+        <el-tooltip content="Str mode" effect="light">
           <el-select
             v-model="mode"
             filterable
@@ -104,30 +104,32 @@ function deleteBtn() {
             <el-option label="pinyin" value="pinyin" />
           </el-select>
         </el-tooltip>
-        <div v-if="mode === 'replace'">
-          <el-tooltip content="replace - from" effect="light">
-            <el-input
-              v-model="comparand"
-              style="width: 100%; margin-bottom: 10px"
-              placeholder="replace - from"
-            />
-          </el-tooltip>
-          <el-tooltip content="replace - to" effect="light">
-            <el-input
-              v-model="replacement"
-              style="width: 100%"
-              placeholder="replace - to"
-            />
-          </el-tooltip>
-        </div>
-        <div v-if="mode === 'pinyin'">
-          <el-tooltip content="pinyin mode" effect="light">
-            <el-select v-model="replacement" filterable style="width: 100%">
-              <el-option label="upper" value="upper" />
-              <el-option label="lower" value="lower" />
-            </el-select>
-          </el-tooltip>
-        </div>
+        <el-tooltip content="replace - from" effect="light">
+          <el-input
+            v-if="mode === 'replace'"
+            v-model="comparand"
+            style="width: 100%; margin-bottom: 10px"
+            placeholder="replace - from"
+          />
+        </el-tooltip>
+        <el-tooltip content="replace - to" effect="light">
+          <el-input
+            v-if="mode === 'replace'"
+            v-model="replacement"
+            style="width: 100%"
+            placeholder="replace - to"
+          />
+        </el-tooltip>
+        <el-tooltip
+          v-if="mode === 'pinyin'"
+          content="pinyin mode"
+          effect="light"
+        >
+          <el-select v-model="replacement" style="width: 100%">
+            <el-option label="upper" value="upper" />
+            <el-option label="lower" value="lower" />
+          </el-select>
+        </el-tooltip>
       </div>
       <Handle
         type="source"

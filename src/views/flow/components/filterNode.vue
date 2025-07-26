@@ -87,23 +87,24 @@ function deleteBtn() {
             style="width: 100%; margin-bottom: 10px"
           >
             <el-option label="Equal" value="equal" />
-            <el-option label="NotEqual" value="notequal" />
+            <el-option label="NotEqual" value="not_equal" />
             <el-option label="Contains" value="contains" />
-            <el-option label="NotContains" value="notcontains" />
-            <el-option label="StartsWith" value="startswith" />
-            <el-option label="NotStartsWtih" value="notstartswith" />
-            <el-option label="EndsWith" value="endswith" />
-            <el-option label="NotEndsWith" value="notendswith" />
-            <el-option label="IsNull" value="isnull" />
-            <el-option label="IsNotNull" value="isnotnull" />
-            <el-option label="gt (>)" value="gt" />
-            <el-option label="ge (≥)" value="ge" />
-            <el-option label="lt (<)" value="lt" />
-            <el-option label="le (≤)" value="le" />
+            <el-option label="NotContains" value="not_contains" />
+            <el-option label="StartsWith" value="starts_with" />
+            <el-option label="NotStartsWtih" value="not_starts_with" />
+            <el-option label="EndsWith" value="ends_with" />
+            <el-option label="NotEndsWith" value="not_ends_with" />
+            <el-option label="IsNull" value="is_null" />
+            <el-option label="IsNotNull" value="is_not_null" />
+            <el-option label="gt(>)" value="gt" />
+            <el-option label="ge(≥)" value="ge" />
+            <el-option label="lt(<)" value="lt" />
+            <el-option label="le(≤)" value="le" />
             <el-option label="Between" value="between" />
           </el-select>
         </el-tooltip>
         <el-input
+          v-if="mode !== 'is_null' && mode !== 'is_not_null'"
           v-model="condition"
           placeholder="Filter condition..."
           style="width: 100%"

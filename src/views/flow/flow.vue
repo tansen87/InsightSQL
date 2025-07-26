@@ -109,15 +109,20 @@ const onDragOver = event => {
 
 <style scoped>
 .sidebar {
-  width: 100px;
+  width: 80px;
   padding: 5px;
   border-right: 1px solid #ddd;
 }
 .draggable-node {
-  padding: 10px;
+  padding: 5px;
   margin-bottom: 10px;
   border: 1px solid #ccc;
   cursor: grab;
+  border-radius: 5px;
+}
+.draggable-node:hover {
+  background-color: #cebdbd;
+  transform: scale(1.02);
 }
 .canvas {
   flex: 1;

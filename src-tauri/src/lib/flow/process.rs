@@ -65,10 +65,6 @@ pub async fn process_operations(
             "lt" => context.add_filter(filter::lt(col, val, &headers)?),
             "le" => context.add_filter(filter::le(col, val, &headers)?),
             "between" => context.add_filter(filter::between(col, val, &headers)?),
-            _ => return Err(anyhow!("Not support filter mode: {}", mode)),
-          }
-        } else if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
-          match mode.as_str() {
             "is_null" => context.add_filter(filter::is_null(col, &headers)?),
             "is_not_null" => context.add_filter(filter::is_not_null(col, &headers)?),
             _ => return Err(anyhow!("Not support filter mode: {}", mode)),
