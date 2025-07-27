@@ -73,7 +73,7 @@ function deleteBtn() {
           v-model="columns"
           filterable
           placeholder="Select column"
-          style="width: 100%; margin-bottom: 6px"
+          style="margin-bottom: 6px"
         >
           <el-option
             v-for="item in headerStore.headers"

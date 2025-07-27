@@ -48,6 +48,7 @@ async function endFlow() {
       strStore
     });
     const jsonConfig = JSON.stringify(config);
+    console.log(jsonConfig);
     if (jsonConfig === "{}" || jsonConfig === "[]") {
       message("operation is null", { type: "warning" });
       isLoading.value = false;

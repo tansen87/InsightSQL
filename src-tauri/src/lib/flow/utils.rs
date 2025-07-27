@@ -7,8 +7,8 @@ pub struct Operation {
   pub mode: Option<String>,
   pub column: Option<String>,
   pub value: Option<String>,
-  pub offset: Option<usize>,
-  pub length: Option<usize>,
+  pub offset: Option<String>,
+  pub length: Option<String>,
   pub comparand: Option<String>,
   pub replacement: Option<String>,
   pub alias: Option<String>,
@@ -17,8 +17,8 @@ pub struct Operation {
 pub struct SliceOperation {
   pub column: String,
   pub mode: String,
-  pub offset: usize,
-  pub length: usize,
+  pub offset: String,
+  pub length: String,
   pub alias: Option<String>,
 }
 
@@ -69,8 +69,8 @@ impl ProcessingContext {
     &mut self,
     column: &str,
     mode: &str,
-    offset: usize,
-    length: usize,
+    offset: String,
+    length: String,
     alias: Option<String>,
   ) {
     self.slice_ops.push(SliceOperation {

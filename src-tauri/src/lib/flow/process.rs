@@ -77,8 +77,8 @@ pub async fn process_operations(
       }
       "slice" => {
         if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
-          let offset = op.offset.unwrap_or(1);
-          let length = op.length.unwrap_or(1);
+          let offset = op.offset.clone().ok_or(anyhow!("offset is null"))?;
+          let length = op.length.clone().ok_or(anyhow!("length is null"))?;
           context.add_slice(col, mode, offset, length, op.alias.clone());
         }
       }
@@ -140,6 +140,13 @@ pub async fn process_operations(
         || string_op.mode == "rtrim"
         || string_op.mode == "squeeze"
         || string_op.mode == "strip"
+        || string_op.mode == "replace"
+        || string_op.mode == "regex_replace"
+        || string_op.mode == "round"
+        || string_op.mode == "reverse"
+        || string_op.mode == "abs"
+        || string_op.mode == "neg"
+        || string_op.mode == "pinyin"
       {
         continue;
       }
@@ -172,6 +179,13 @@ pub async fn process_operations(
         || string_op.mode == "rtrim"
         || string_op.mode == "squeeze"
         || string_op.mode == "strip"
+        || string_op.mode == "replace"
+        || string_op.mode == "regex_replace"
+        || string_op.mode == "round"
+        || string_op.mode == "reverse"
+        || string_op.mode == "abs"
+        || string_op.mode == "neg"
+        || string_op.mode == "pinyin"
       {
         continue;
       }
@@ -205,6 +219,13 @@ pub async fn process_operations(
         || string_op.mode == "rtrim"
         || string_op.mode == "squeeze"
         || string_op.mode == "strip"
+        || string_op.mode == "replace"
+        || string_op.mode == "regex_replace"
+        || string_op.mode == "round"
+        || string_op.mode == "reverse"
+        || string_op.mode == "abs"
+        || string_op.mode == "neg"
+        || string_op.mode == "pinyin"
       {
         continue;
       }
@@ -229,21 +250,27 @@ pub async fn process_operations(
     let mut slice_results = Vec::new();
     for slice_op in &context.slice_ops {
       let idx = headers.iter().position(|h| h == &slice_op.column);
+      let length = slice_op.length.parse::<usize>()?;
       if let Some(idx) = idx {
         if let Some(val) = record.get(idx) {
           let new_val = match slice_op.mode.as_str() {
-            "left" => val.chars().take(slice_op.length).collect(),
-            "right" => val
+            "left" => {
+              val.chars().take(length).collect()
+            }
+            "right" => {
+              val
               .chars()
               .rev()
-              .take(slice_op.length)
+              .take(length)
               .collect::<String>()
               .chars()
               .rev()
-              .collect(),
+              .collect()
+            }
             "slice" => {
-              let start = slice_op.offset as isize - 1;
-              let end = start + slice_op.length as isize;
+              let offset = slice_op.offset.parse::<isize>()?;
+              let start = offset - 1;
+              let end = start + length as isize;
               val
                 .chars()
                 .skip(start.max(0) as usize)
@@ -295,16 +322,47 @@ pub async fn process_operations(
             let re = regex::Regex::new(r"[\r\n]+").unwrap();
             row_fields[idx] = re.replace_all(&cell, " ").into_owned();
           }
-          // add new column
+          "replace" => {
+            let comparand = string_op.comparand.as_deref().unwrap_or("");
+            let replacement = string_op.replacement.as_deref().unwrap_or("");
+            row_fields[idx] = cell.replace(comparand, replacement);
+          }
+          "regex_replace" => {
+            let comparand = string_op.comparand.as_deref().unwrap_or("");
+            let replacement = string_op.replacement.as_deref().unwrap_or("");
+            let pattern = regex::RegexBuilder::new(comparand).build()?;
+            row_fields[idx] = pattern.replace_all(&cell, replacement).to_string();
+          }
+          "round" => {
+            if let Ok(num) = cell.parse::<f64>() {
+              row_fields[idx] = format!("{:.2}", num);
+            } else {
+              row_fields[idx] = cell;
+            }
+          }
+          "reverse" => row_fields[idx] = cell.chars().rev().collect(),
+          "abs" => {
+            if let Ok(num) = cell.parse::<f64>() {
+              row_fields[idx] = num.abs().to_string();
+            } else {
+              row_fields[idx] = cell;
+            }
+          }
+          "neg" => {
+            if let Ok(num) = cell.parse::<f64>() {
+              row_fields[idx] = (-num).to_string();
+            } else {
+              row_fields[idx] = cell;
+            }
+          }
           "pinyin" => {
-            let py_mode_string = string_op.replacement.clone().unwrap_or("none".to_owned());
-            let py_mode = py_mode_string.as_str();
-            let new_val = cell
+            let py_mode_string = string_op.replacement.clone().unwrap_or("".to_owned());
+            row_fields[idx] = cell
               .chars()
               .map(|c| {
                 c.to_pinyin().map_or_else(
                   || c.to_string(),
-                  |py| match py_mode {
+                  |py| match py_mode_string.as_str() {
                     "upper" => py.plain().to_uppercase(),
                     "lower" => py.plain().to_lowercase(),
                     _ => py.plain().to_string(),
@@ -312,41 +370,14 @@ pub async fn process_operations(
                 )
               })
               .collect();
-            string_results.push(new_val);
           }
-          "replace" => {
-            let comparand = string_op.comparand.as_deref().unwrap_or("");
-            let replacement = string_op.replacement.as_deref().unwrap_or("");
-            string_results.push(cell.replace(comparand, replacement));
-          }
+          // add new column
           "len" => string_results.push(cell.chars().count().to_string()),
-          "round" => {
-            if let Ok(num) = cell.parse::<f64>() {
-              string_results.push(format!("{:.2}", num));
-            } else {
-              string_results.push(cell);
-            }
-          }
-          "reverse" => string_results.push(cell.chars().rev().collect()),
-          "abs" => {
-            if let Ok(num) = cell.parse::<f64>() {
-              string_results.push(num.abs().to_string());
-            } else {
-              string_results.push(cell);
-            }
-          }
-          "neg" => {
-            if let Ok(num) = cell.parse::<f64>() {
-              string_results.push((-num).to_string());
-            } else {
-              string_results.push(cell);
-            }
-          }
           "copy" => string_results.push(cell.clone()),
           _ => string_results.push(cell),
         }
       } else {
-        // 字段找不到时，只有新增列的操作才追加空字符串
+        // 字段找不到时,只有新增列的操作才追加空字符串
         if string_op.mode != "fill"
           && string_op.mode != "f_fill"
           && string_op.mode != "lower"
@@ -356,6 +387,13 @@ pub async fn process_operations(
           && string_op.mode != "rtrim"
           && string_op.mode != "squeeze"
           && string_op.mode != "strip"
+          && string_op.mode != "replace"
+          && string_op.mode != "regex_replace"
+          && string_op.mode != "round"
+          && string_op.mode != "reverse"
+          && string_op.mode != "abs"
+          && string_op.mode != "neg"
+          && string_op.mode != "pinyin"
         {
           string_results.push(String::new());
         }

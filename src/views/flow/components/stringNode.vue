@@ -89,25 +89,26 @@ function deleteBtn() {
           <el-option label="round" value="round" />
           <el-option label="len" value="len" />
           <el-option label="replace" value="replace" />
+          <el-option label="RegexReplace" value="regex_replace" />
+          <el-option label="trim" value="trim" />
           <el-option label="ltrim" value="ltrim" />
           <el-option label="rtrim" value="rtrim" />
-          <el-option label="trim" value="trim" />
           <el-option label="upper" value="upper" />
           <el-option label="lower" value="lower" />
           <el-option label="pinyin" value="pinyin" />
           <el-option label="fill" value="fill" />
-          <el-option label="forwardFill" value="f_fill" />
+          <el-option label="ForwardFill" value="f_fill" />
         </el-select>
         <el-input
-          v-if="mode === 'replace'"
+          v-if="mode === 'replace' || mode === 'regex_replace'"
           v-model="comparand"
           style="margin-bottom: 6px"
-          placeholder="replace - from"
+          placeholder="comparand"
         />
         <el-input
-          v-if="mode === 'replace'"
+          v-if="mode === 'replace' || mode === 'regex_replace'"
           v-model="replacement"
-          placeholder="replace - to"
+          placeholder="replacement"
         />
         <el-input
           v-if="mode === 'fill'"
