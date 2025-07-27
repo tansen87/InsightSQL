@@ -66,20 +66,8 @@ function deleteBtn() {
         <span style="display: block; font-weight: bold; margin-bottom: 6px">
           Str
         </span>
-        <el-select
-          v-model="columns"
-          filterable
-          placeholder="Select column"
-          style="margin-bottom: 6px"
-        >
-          <el-option
-            v-for="item in headerStore.headers"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
         <el-select v-model="mode" filterable style="margin-bottom: 6px">
+          <el-option label="DynFmt" value="dynfmt" />
           <el-option label="copy" value="copy" />
           <el-option label="abs" value="abs" />
           <el-option label="neg" value="neg" />
@@ -99,11 +87,30 @@ function deleteBtn() {
           <el-option label="fill" value="fill" />
           <el-option label="ForwardFill" value="f_fill" />
         </el-select>
+        <el-select
+          v-if="mode !== 'dynfmt'"
+          v-model="columns"
+          filterable
+          placeholder="Select column"
+          style="margin-bottom: 6px"
+        >
+          <el-option
+            v-for="item in headerStore.headers"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
         <el-input
           v-if="mode === 'replace' || mode === 'regex_replace'"
           v-model="comparand"
           style="margin-bottom: 6px"
           placeholder="comparand"
+        />
+        <el-input
+          v-if="mode === 'dynfmt'"
+          v-model="comparand"
+          placeholder="{col1}-{col2}:{col3}"
         />
         <el-input
           v-if="mode === 'replace' || mode === 'regex_replace'"

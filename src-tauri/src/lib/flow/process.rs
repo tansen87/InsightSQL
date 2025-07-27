@@ -6,7 +6,10 @@ use std::sync::Arc;
 use anyhow::{Result, anyhow};
 use csv::ReaderBuilder;
 use csv::WriterBuilder;
+use dynfmt::Format;
+use dynfmt::SimpleCurlyFormat;
 use pinyin::ToPinyin;
+use regex::Regex;
 
 use crate::flow::filter;
 use crate::flow::utils::Operation;
@@ -91,6 +94,16 @@ pub async fn process_operations(
             op.replacement.clone(),
             op.alias.clone(),
           );
+        } else if let Some(mode) = &op.mode {
+          if mode == "dynfmt" {
+            context.add_string(
+              "",
+              mode,
+              op.comparand.clone(),
+              op.replacement.clone(),
+              op.alias.clone(),
+            )
+          }
         }
       }
       _ => return Err(anyhow!("Not support operation: {}", op.op)),
@@ -152,6 +165,8 @@ pub async fn process_operations(
       }
       let string_name = if let Some(ref alias) = string_op.alias {
         alias.clone()
+      } else if string_op.mode == "dynfmt" {
+        "_dynfmt".to_string()
       } else {
         format!("{}_{}", string_op.column, string_op.mode)
       };
@@ -191,6 +206,8 @@ pub async fn process_operations(
       }
       let string_name = if let Some(ref alias) = string_op.alias {
         alias.clone()
+      } else if string_op.mode == "dynfmt" {
+        "_dynfmt".to_string()
       } else {
         format!("{}_{}", string_op.column, string_op.mode)
       };
@@ -231,6 +248,8 @@ pub async fn process_operations(
       }
       let string_name = if let Some(ref alias) = string_op.alias {
         alias.clone()
+      } else if string_op.mode == "dynfmt" {
+        "_dynfmt".to_string()
       } else {
         format!("{}_{}", string_op.column, string_op.mode)
       };
@@ -254,19 +273,15 @@ pub async fn process_operations(
       if let Some(idx) = idx {
         if let Some(val) = record.get(idx) {
           let new_val = match slice_op.mode.as_str() {
-            "left" => {
-              val.chars().take(length).collect()
-            }
-            "right" => {
-              val
+            "left" => val.chars().take(length).collect(),
+            "right" => val
               .chars()
               .rev()
               .take(length)
               .collect::<String>()
               .chars()
               .rev()
-              .collect()
-            }
+              .collect(),
             "slice" => {
               let offset = slice_op.offset.parse::<isize>()?;
               let start = offset - 1;
@@ -299,7 +314,39 @@ pub async fn process_operations(
     let mut row_fields: Vec<String> = record.iter().map(|s| s.to_string()).collect();
     let mut string_results = Vec::new();
     for (i, string_op) in context.string_ops.iter().enumerate() {
-      if let Some(idx) = headers.iter().position(|h| h == &string_op.column) {
+      if string_op.mode == "dynfmt" {
+        // dynfmt操作不依赖特定列，直接处理整个记录
+        let template = string_op.comparand.as_deref().unwrap_or("");
+        let mut dynfmt_template_wrk = template.to_string();
+        let mut dynfmt_fields = Vec::new();
+
+        let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
+        for format_fields in formatstr_re.captures_iter(template) {
+          // safety: we already checked that the regex match is valid
+          if let Some(key) = format_fields.name("key") {
+            dynfmt_fields.push(key.as_str());
+          }
+        }
+        dynfmt_fields.sort_unstable();
+
+        for (i, field) in headers.iter().enumerate() {
+          if dynfmt_fields.binary_search(&field.as_str()).is_ok() {
+            let field_with_curly = format!("{{{field}}}");
+            let field_index = format!("{{{i}}}");
+            dynfmt_template_wrk = dynfmt_template_wrk.replace(&field_with_curly, &field_index);
+          }
+        }
+
+        let mut record_vec: Vec<String> = Vec::with_capacity(record.len());
+        for field in &record {
+          record_vec.push(field.to_string());
+        }
+        if let Ok(formatted) = SimpleCurlyFormat.format(&dynfmt_template_wrk, record_vec) {
+          string_results.push(formatted.to_string());
+        } else {
+          string_results.push(String::new());
+        }
+      } else if let Some(idx) = headers.iter().position(|h| h == &string_op.column) {
         let cell = row_fields[idx].clone();
         match string_op.mode.as_str() {
           // do not add new column
