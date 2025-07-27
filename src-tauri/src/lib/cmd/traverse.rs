@@ -57,7 +57,7 @@ pub async fn traverse(folder_path: String, output: String) -> Result<String, Str
     Err(err) => Err(format!("{err}")),
   };
 
-  match (async { write_xlsx(data.map_err(|e| e.to_string()).unwrap(), output) }).await {
+  match (async { write_xlsx(data.unwrap(), output) }).await {
     Ok(_) => Ok("traverse done".to_string()),
     Err(err) => Err(format!("traverse failed: {err}")),
   }

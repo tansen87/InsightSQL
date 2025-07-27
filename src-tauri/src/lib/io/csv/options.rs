@@ -34,9 +34,37 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     self.skip_rows
   }
 
-  /// Get the path
-  pub fn get_path(&self) -> Option<&str> {
-    self.path.as_ref().to_str()
+  /// return parent path
+  pub fn parent_path(&self) -> Result<&str> {
+    self
+      .path
+      .as_ref()
+      .parent()
+      .ok_or(anyhow!("get parent path failed"))?
+      .to_str()
+      .ok_or(anyhow!("parent path is null"))
+  }
+
+  /// return file stem
+  pub fn file_stem(&self) -> Result<&str> {
+    self
+      .path
+      .as_ref()
+      .file_stem()
+      .ok_or(anyhow!("get file stem failed"))?
+      .to_str()
+      .ok_or(anyhow!("file stem is null"))
+  }
+
+  /// return file name
+  pub fn file_name(&self) -> Result<&str> {
+    self
+      .path
+      .as_ref()
+      .file_name()
+      .ok_or(anyhow!("get file name failed"))?
+      .to_str()
+      .ok_or(anyhow!("file name is null"))
   }
 
   /// Check the delimiter of CSV

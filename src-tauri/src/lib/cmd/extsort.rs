@@ -1,11 +1,12 @@
 use std::{
-  io::{self, BufRead, Write},
+  fs::File,
+  io::{self, BufRead, BufReader, BufWriter, Write},
   path::{Path, PathBuf},
   time::Instant,
 };
 
 use anyhow::{Result, anyhow};
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use ext_sort::{ExternalSorter, ExternalSorterBuilder, LimitedBufferBuilder};
 
 use crate::io::csv::{options::CsvOptions, selection::Selection};
@@ -29,7 +30,7 @@ pub async fn sort_csv(
       if idx.is_none() {
         return Err(anyhow!("extsort CSV mode requires an index"));
       }
-      idx.unwrap()
+      idx.ok_or(anyhow!("index is null"))?
     }
     _ => {
       return Err(anyhow!("extsort CSV mode requires an index"));
@@ -41,14 +42,14 @@ pub async fn sort_csv(
     .from_reader(csv_options.rdr_skip_rows()?);
 
   let linewtr_tfile = tempfile::NamedTempFile::new_in(tmp_dir)?;
-  let mut line_wtr = io::BufWriter::with_capacity(RW_BUFFER_CAPACITY, linewtr_tfile.as_file());
+  let mut line_wtr = BufWriter::with_capacity(RW_BUFFER_CAPACITY, linewtr_tfile.as_file());
 
   let headers = input_rdr.byte_headers()?.clone();
   let sel = Selection::from_headers(&headers, &[sel_column.as_str()][..])?;
 
   let mut sort_key = String::with_capacity(20);
   let mut utf8_string = String::with_capacity(20);
-  let mut curr_row = csv::ByteRecord::new();
+  let mut curr_row = ByteRecord::new();
 
   let rowcount = idxfile.count();
   let width = rowcount.to_string().len();
@@ -68,16 +69,13 @@ pub async fn sort_csv(
         sort_key.push_str(&utf8_string);
       }
     }
-    let idx_position = curr_row.position().unwrap();
+    let idx_position = curr_row.position().ok_or(anyhow!("position is null"))?;
 
     writeln!(line_wtr, "{sort_key}|{:01$}", idx_position.line(), width)?;
   }
   line_wtr.flush()?;
 
-  let line_rdr = io::BufReader::with_capacity(
-    RW_BUFFER_CAPACITY,
-    std::fs::File::open(linewtr_tfile.path())?,
-  );
+  let line_rdr = BufReader::with_capacity(RW_BUFFER_CAPACITY, File::open(linewtr_tfile.path())?);
 
   let compare = |a: &String, b: &String| {
     if reverse {
@@ -96,8 +94,7 @@ pub async fn sort_csv(
   };
 
   let sorted_tfile = tempfile::NamedTempFile::new_in(tmp_dir)?;
-  let mut sorted_line_wtr =
-    io::BufWriter::with_capacity(RW_BUFFER_CAPACITY, sorted_tfile.as_file());
+  let mut sorted_line_wtr = BufWriter::with_capacity(RW_BUFFER_CAPACITY, sorted_tfile.as_file());
 
   for item in sorted.map(Result::unwrap) {
     sorted_line_wtr.write_all(format!("{item}\n").as_bytes())?;
@@ -111,12 +108,11 @@ pub async fn sort_csv(
   // and extracting the position from each line
   // and then using that to seek the input file to retrieve the record
   // and then write the record to the final sorted CSV
-  let sorted_lines = std::fs::File::open(sorted_tfile.path())?;
-  let sorted_line_rdr = io::BufReader::with_capacity(RW_BUFFER_CAPACITY, sorted_lines);
+  let sorted_lines = File::open(sorted_tfile.path())?;
+  let sorted_line_rdr = BufReader::with_capacity(RW_BUFFER_CAPACITY, sorted_lines);
 
-  let parent_path = Path::new(&path).parent().unwrap().to_str().unwrap();
-  let file_stem = Path::new(&path).file_stem().unwrap().to_str().unwrap();
-  let mut output_path = PathBuf::from(parent_path);
+  let file_stem = csv_options.file_stem()?;
+  let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_stem}.extsort.csv"));
 
   let mut sorted_csv_wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
@@ -124,7 +120,7 @@ pub async fn sort_csv(
   sorted_csv_wtr.write_byte_record(&headers)?;
 
   // amortize allocations
-  let mut record_wrk = csv::ByteRecord::new();
+  let mut record_wrk = ByteRecord::new();
   let mut line = String::new();
 
   for l in sorted_line_rdr.lines() {

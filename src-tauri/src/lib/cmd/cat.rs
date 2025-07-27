@@ -34,7 +34,11 @@ async fn cat_with_polars(
   let mut vec_sep = Vec::new();
 
   for (idx, file) in paths.iter().enumerate() {
-    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+    let filename = Path::new(file)
+      .file_name()
+      .ok_or(anyhow!("path is null"))?
+      .to_str()
+      .ok_or(anyhow!("path to str is null"))?;
 
     let file_extension = match Path::new(file).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),

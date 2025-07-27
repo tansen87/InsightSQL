@@ -9,6 +9,7 @@ use std::{
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, Writer, WriterBuilder};
 use regex::bytes::RegexBuilder;
+use smallvec::SmallVec;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
@@ -184,10 +185,11 @@ where
     .collect::<Vec<_>>();
   let conditions = Arc::new(unique_conditions);
   let match_fn = Arc::new(match_fn);
+  let csv_options = CsvOptions::new(&path);
 
   // prepare writers for each condition with sanitized output paths
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
+  let parent_path = csv_options.parent_path()?;
+  let file_stem = csv_options.file_stem()?;
   let output_paths: HashMap<String, String> = conditions
     .iter()
     .map(|cond| {
@@ -769,18 +771,24 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   };
   app_handle.emit("total-rows", total_rows)?;
 
-  let multi_conditions: Vec<String> = conditions
-    .split('|')
-    .map(|s| s.trim().to_string())
-    .collect::<HashSet<_>>() // de duplication
-    .into_iter()
-    .collect();
+  let multi_conditions = if conditions.contains('|') {
+    conditions
+      .split('|')
+      .map(|s| s.trim().to_string())
+      .collect::<HashSet<_>>()
+      .into_iter()
+      .collect()
+  } else {
+    let mut v = SmallVec::<[String; 4]>::new();
+    v.push(conditions.trim().to_string());
+    v
+  };
 
   let search_mode = match mode {
-    "equalmulti" => SearchMode::EqualMulti(multi_conditions),
-    "startswithmulti" => SearchMode::StartsWithMulti(multi_conditions),
-    "containsmulti" => SearchMode::ContainsMulti(multi_conditions),
-    "endswithmulti" => SearchMode::EndsWithMulti(multi_conditions),
+    "equalmulti" => SearchMode::EqualMulti(multi_conditions.to_vec()),
+    "startswithmulti" => SearchMode::StartsWithMulti(multi_conditions.to_vec()),
+    "containsmulti" => SearchMode::ContainsMulti(multi_conditions.to_vec()),
+    "endswithmulti" => SearchMode::EndsWithMulti(multi_conditions.to_vec()),
     _ => mode.into(),
   };
 
@@ -798,15 +806,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       ends_with_multi(path, sep, select_column, conditions, app_handle).await
     }
     _ => {
-      let vec_conditions: Vec<String> = conditions
-        .split('|')
-        .map(|s| s.trim().to_string())
-        .collect::<HashSet<_>>() // de duplication
-        .into_iter()
-        .collect();
-      let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-      let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-      let mut output_path = PathBuf::from(parent_path);
+      let vec_conditions = multi_conditions.to_vec();
+      let file_stem = csv_options.file_stem()?;
+      let mut output_path = PathBuf::from(csv_options.parent_path()?);
       output_path.push(format!("{file_stem}.search.csv"));
 
       match search_mode {

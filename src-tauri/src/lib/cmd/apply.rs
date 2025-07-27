@@ -1,5 +1,9 @@
 use std::{
-  collections::HashMap, ops::Neg, path::{Path, PathBuf}, sync::OnceLock, time::Instant
+  collections::HashMap,
+  ops::Neg,
+  path::{Path, PathBuf},
+  sync::OnceLock,
+  time::Instant,
 };
 
 use anyhow::{Result, anyhow};
@@ -233,9 +237,8 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
   let sep_char = sep as char;
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let mut output_path = PathBuf::from(parent_path);
+  let file_stem = csv_options.file_stem()?;
+  let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_stem}.apply.csv"));
 
   let new_column: Option<String> = if new_column {

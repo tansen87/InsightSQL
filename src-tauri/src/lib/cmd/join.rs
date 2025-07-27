@@ -172,9 +172,8 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
   let sep1 = csv_options1.detect_separator()?;
   let csv_options2 = CsvOptions::new(&path2);
   let sep2 = csv_options2.detect_separator()?;
-  let parent_path = path1.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path1.as_ref().file_stem().unwrap().to_str().unwrap();
-  let mut output_path = PathBuf::from(parent_path);
+  let file_stem = csv_options1.file_stem()?;
+  let mut output_path = PathBuf::from(csv_options1.parent_path()?);
   output_path.push(format!("{file_stem}.join.csv"));
 
   let mut rdr1 = ReaderBuilder::new()

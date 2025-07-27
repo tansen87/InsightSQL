@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::Path, time::Instant};
 
+use anyhow::Result;
 use tauri::{Emitter, Window};
 
 #[cfg(target_os = "windows")]

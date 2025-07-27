@@ -24,9 +24,8 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
       let mut values = Vec::new();
       for col_index in 0..row_set.num_cols() {
         let value = row_set
-          .at_as_str(col_index, row_index)
-          .unwrap()
-          .unwrap_or("NULL");
+          .at_as_str(col_index, row_index)?
+          .ok_or(anyhow!("text column is null"))?;
         values.push(value);
       }
 
@@ -49,8 +48,16 @@ pub async fn access_to_csv(path: &str, sep: String) -> Result<()> {
     sep.as_bytes()[0]
   };
 
-  let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
-  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
+  let parent_path = Path::new(path)
+    .parent()
+    .ok_or(anyhow!("path is null"))?
+    .to_str()
+    .ok_or(anyhow!("path to str is null"))?;
+  let file_stem = Path::new(path)
+    .file_stem()
+    .ok_or(anyhow!("path is null"))?
+    .to_str()
+    .ok_or(anyhow!("path to str is null"))?;
 
   let c = format!("Driver={};Dbq={};", driver, path);
   let conn = connection(&c)?;

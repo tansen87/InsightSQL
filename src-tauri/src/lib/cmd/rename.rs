@@ -19,9 +19,8 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_stem = path.as_ref().file_stem().unwrap().to_str().unwrap();
-  let mut output_path = PathBuf::from(parent_path);
+  let file_stem = csv_options.file_stem()?;
+  let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_stem}.rename.csv"));
 
   let total_rows = match mode {

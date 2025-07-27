@@ -1,8 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use csv::WriterBuilder;
 use dbase::FieldValue;
+
+use crate::io::csv::options::CsvOptions;
 
 /// convert dbf to csv
 pub async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
@@ -11,9 +13,9 @@ pub async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
   } else {
     sep.into_bytes()[0]
   };
-  let parent_path = Path::new(path).parent().unwrap().to_str().unwrap();
-  let file_stem = Path::new(path).file_stem().unwrap().to_str().unwrap();
-  let mut output_path = PathBuf::from(parent_path);
+  let csv_options = CsvOptions::new(path);
+  let file_stem = csv_options.file_stem()?;
+  let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_stem}.dbf.csv"));
 
   let mut rdr = dbase::Reader::from_path(path)?;

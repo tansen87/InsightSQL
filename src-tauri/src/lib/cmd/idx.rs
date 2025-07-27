@@ -13,9 +13,8 @@ use crate::io::csv::options::CsvOptions;
 
 pub async fn create_index<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
-  let parent_path = path.as_ref().parent().unwrap().to_str().unwrap();
-  let file_name = path.as_ref().file_name().unwrap().to_str().unwrap();
-  let mut output_path = PathBuf::from(parent_path);
+  let file_name = csv_options.file_name()?;
+  let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_name}.idx"));
 
   let mut rdr = ReaderBuilder::new()
