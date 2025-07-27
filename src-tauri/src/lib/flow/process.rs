@@ -277,6 +277,14 @@ pub async fn process_operations(
                 .take((end - start) as usize)
                 .collect()
             }
+            "split" => {
+              let split_parts: Vec<&str> = val.split(&slice_op.offset).collect();
+              if split_parts.len() >= length {
+                split_parts[length - 1].to_string()
+              } else {
+                "".to_string()
+              }
+            }
             _ => val.to_string(),
           };
           slice_results.push(new_val);

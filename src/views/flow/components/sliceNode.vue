@@ -86,12 +86,19 @@ function deleteBtn() {
           <el-option label="left" value="left" />
           <el-option label="right" value="right" />
           <el-option label="slice" value="slice" />
+          <el-option label="split" value="split" />
         </el-select>
         <el-input
           v-if="mode === 'slice'"
           v-model="offset"
           style="margin-bottom: 6px"
           placeholder="start index"
+        />
+        <el-input
+          v-if="mode === 'split'"
+          v-model="offset"
+          style="margin-bottom: 6px"
+          placeholder="delimiter"
         />
         <el-input v-model="length" placeholder="length" />
       </div>
