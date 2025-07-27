@@ -7,16 +7,16 @@
 
 ### 截图
 
-* command
- ![cmd.png](/docs/img/cmd.png)
-
 * Polars SQL for query
 
   ![sqlp.gif](/docs/img/sqlp.gif)
 
-* Rename
+* Flow
 
-  ![rename.gif](/docs/img/rename.gif)
+  ![flow.gif](/docs/img/flow.gif)
+
+* command
+  ![cmd.png](/docs/img/cmd.png)
 
 
 ## ✨Features
