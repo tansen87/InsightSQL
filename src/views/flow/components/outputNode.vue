@@ -11,8 +11,8 @@ import {
   useSlice,
   useStr,
   useNodeStore,
-  getExecutionOrder,
-  getExecutionConfig
+  getExecutionConfig,
+  getNodesInEdgeOrder
 } from "@/store/modules/flow";
 
 const isLoading = ref(false);
@@ -40,7 +40,7 @@ async function endFlow() {
     }
     const nodes = nodeStore.nodes;
     const edges = nodeStore.edges;
-    const order = getExecutionOrder(nodes, edges);
+    const order = getNodesInEdgeOrder(nodes, edges);
     const config = getExecutionConfig(order, {
       selectStore,
       filterStore,
@@ -48,7 +48,6 @@ async function endFlow() {
       strStore
     });
     const jsonConfig = JSON.stringify(config);
-    console.log(jsonConfig);
     if (jsonConfig === "{}" || jsonConfig === "[]") {
       message("operation is null", { type: "warning" });
       isLoading.value = false;

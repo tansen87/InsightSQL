@@ -1,20 +1,41 @@
 import { defineStore } from "pinia";
-import { Node, Edge } from "@vue-flow/core";
+// import { Node, Edge } from "@vue-flow/core";
 
-export function getExecutionOrder(nodes: Node[], edges: Edge[]) {
-  const startNode = nodes.find(n => !edges.some(e => e.target === n.id));
-  if (!startNode) return [];
-  const order = [];
-  let currentId = startNode.id;
-  while (currentId) {
-    const node = nodes.find(n => n.id === currentId);
-    if (!node) break;
-    order.push(node);
-    if (node.type === "end") break;
-    const edge = edges.find(e => e.source === currentId);
-    currentId = edge ? edge.target : null;
+// export function getExecutionOrder(nodes: Node[], edges: Edge[]) {
+//   const startNode = nodes.find(n => !edges.some(e => e.target === n.id));
+//   if (!startNode) return [];
+//   const order = [];
+//   let currentId = startNode.id;
+//   while (currentId) {
+//     const node = nodes.find(n => n.id === currentId);
+//     if (!node) break;
+//     order.push(node);
+//     if (node.type === "end") break;
+//     const edge = edges.find(e => e.source === currentId);
+//     currentId = edge ? edge.target : null;
+//   }
+//   return order;
+// }
+
+export function getNodesInEdgeOrder(nodes, edges) {
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const graph = new Map();
+  edges.forEach(edge => {
+    if (!graph.has(edge.source)) graph.set(edge.source, []);
+    graph.get(edge.source).push(edge.target);
+  });
+  const visited = new Set();
+  const result = [];
+  function dfs(id) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    result.push(nodeMap.get(id));
+    (graph.get(id) || []).forEach(dfs);
   }
-  return order;
+  const startNodes = nodes.filter(n => !edges.some(e => e.target === n.id));
+  startNodes.forEach(n => dfs(n.id));
+
+  return result;
 }
 
 export function getExecutionConfig(order, stores) {
