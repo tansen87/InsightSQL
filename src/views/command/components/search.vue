@@ -100,24 +100,24 @@ async function searchData() {
         <el-tooltip content="Search mode" effect="light">
           <el-select v-model="mode" filterable style="width: 140px">
             <el-option label="Equal" value="equal" />
-            <el-option label="EqualMulti" value="equalmulti" />
-            <el-option label="NotEqual" value="notequal" />
+            <el-option label="EqualMulti" value="equal_multi" />
+            <el-option label="NotEqual" value="not_equal" />
             <el-option label="Contains" value="contains" />
-            <el-option label="ContainsMulti" value="containsmulti" />
-            <el-option label="NotContains" value="notcontains" />
-            <el-option label="StartsWith" value="startswith" />
-            <el-option label="StartsWithMulti" value="startswithmulti" />
-            <el-option label="NotStartsWtih" value="notstartswith" />
-            <el-option label="EndsWith" value="endswith" />
-            <el-option label="EndsWithMulti" value="endswithmulti" />
-            <el-option label="NotEndsWith" value="notendswith" />
+            <el-option label="ContainsMulti" value="contains_multi" />
+            <el-option label="NotContains" value="not_contains" />
+            <el-option label="StartsWith" value="starts_with" />
+            <el-option label="StartsWithMulti" value="starts_with_multi" />
+            <el-option label="NotStartsWtih" value="not_starts_with" />
+            <el-option label="EndsWith" value="ends_with" />
+            <el-option label="EndsWithMulti" value="ends_with_multi" />
+            <el-option label="NotEndsWith" value="not_ends_with" />
             <el-option label="Regex" value="regex" />
-            <el-option label="IsNull" value="isnull" />
-            <el-option label="IsNotNull" value="isnotnull" />
-            <el-option label="gt (>)" value="gt" />
-            <el-option label="ge (≥)" value="ge" />
-            <el-option label="lt (<)" value="lt" />
-            <el-option label="le (≤)" value="le" />
+            <el-option label="IsNull" value="is_null" />
+            <el-option label="IsNotNull" value="is_not_null" />
+            <el-option label="gt(>)" value="gt" />
+            <el-option label="ge(≥)" value="ge" />
+            <el-option label="lt(<)" value="lt" />
+            <el-option label="le(≤)" value="le" />
             <el-option label="Between" value="between" />
           </el-select>
         </el-tooltip>

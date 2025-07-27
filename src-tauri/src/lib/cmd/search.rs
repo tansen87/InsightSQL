@@ -43,16 +43,16 @@ impl From<&str> for SearchMode {
   fn from(mode: &str) -> Self {
     match mode {
       "equal" => SearchMode::Equal,
-      "notequal" => SearchMode::NotEqual,
+      "not_equal" => SearchMode::NotEqual,
       "contains" => SearchMode::Contains,
-      "notcontains" => SearchMode::NotContains,
-      "startswith" => SearchMode::StartsWith,
-      "notstartswith" => SearchMode::NotStartsWith,
-      "endswith" => SearchMode::EndsWith,
-      "notendswith" => SearchMode::NotEndsWith,
+      "not_contains" => SearchMode::NotContains,
+      "starts_with" => SearchMode::StartsWith,
+      "not_starts_with" => SearchMode::NotStartsWith,
+      "ends_with" => SearchMode::EndsWith,
+      "not_ends_with" => SearchMode::NotEndsWith,
       "regex" => SearchMode::Regex,
-      "isnull" => SearchMode::IsNull,
-      "isnotnull" => SearchMode::IsNotNull,
+      "is_null" => SearchMode::IsNull,
+      "is_not_null" => SearchMode::IsNotNull,
       "gt" => SearchMode::GreaterThan,
       "ge" => SearchMode::GreaterThanEqual,
       "lt" => SearchMode::LessThan,
@@ -785,10 +785,10 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   };
 
   let search_mode = match mode {
-    "equalmulti" => SearchMode::EqualMulti(multi_conditions.to_vec()),
-    "startswithmulti" => SearchMode::StartsWithMulti(multi_conditions.to_vec()),
-    "containsmulti" => SearchMode::ContainsMulti(multi_conditions.to_vec()),
-    "endswithmulti" => SearchMode::EndsWithMulti(multi_conditions.to_vec()),
+    "equal_multi" => SearchMode::EqualMulti(multi_conditions.to_vec()),
+    "starts_with_multi" => SearchMode::StartsWithMulti(multi_conditions.to_vec()),
+    "contains_multi" => SearchMode::ContainsMulti(multi_conditions.to_vec()),
+    "ends_with_multi" => SearchMode::EndsWithMulti(multi_conditions.to_vec()),
     _ => mode.into(),
   };
 
