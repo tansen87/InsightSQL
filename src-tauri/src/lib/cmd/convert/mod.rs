@@ -10,6 +10,7 @@ pub mod csv_to_excel;
 pub mod dbf_to_csv;
 pub mod excel_to_csv;
 
+#[cfg(target_os = "windows")]
 #[tauri::command]
 pub async fn access2csv(path: String, sep: String, window: Window) -> Result<String, String> {
   let start_time = Instant::now();
