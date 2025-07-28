@@ -1,18 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import {
-  VueFlow,
-  Panel,
-  addEdge,
-  applyNodeChanges,
-  applyEdgeChanges
-} from "@vue-flow/core";
+import { VueFlow, Panel, addEdge, applyChanges } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/controls/dist/style.css";
 import SelectNode from "./components/selectNode.vue";
 import FilterNode from "./components/filterNode.vue";
-import SliceNode from "./components/sliceNode.vue";
 import StringNode from "./components/stringNode.vue";
 import InputNode from "./components/inputNode.vue";
 import OutputNode from "./components/outputNode.vue";
@@ -21,11 +14,10 @@ import { useNodeStore } from "@/store/modules/flow";
 const vueFlowRef = ref();
 const nodes = ref([]);
 const edges = ref([]);
-const nodeTypes = ["start", "select", "filter", "str", "slice", "end"];
+const nodeTypes = ["start", "select", "filter", "str", "end"];
 const customNodeTypes = {
   select: SelectNode,
   filter: FilterNode,
-  slice: SliceNode,
   str: StringNode,
   start: InputNode,
   end: OutputNode
@@ -36,13 +28,14 @@ let nodeIdCounter = 1;
 function generateId() {
   return `${nodeIdCounter++}`;
 }
+
 const onNodesChange = changes => {
-  const newNodes = applyNodeChanges(changes, nodes.value);
+  const newNodes = applyChanges(changes, nodes.value);
   nodes.value = newNodes;
   nodeStore.addNode(newNodes);
 };
 const onEdgesChange = changes => {
-  const newEdge = applyEdgeChanges(changes, edges.value);
+  const newEdge = applyChanges(changes, edges.value);
   edges.value = newEdge;
   nodeStore.addEdge(newEdge);
 };

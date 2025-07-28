@@ -140,37 +140,6 @@ export const useSelect = defineStore("select", {
   }
 });
 
-// slice node
-export const useSlice = defineStore("slice", {
-  state: () => ({
-    slices: [] as Array<{
-      id: string;
-      op: string;
-      mode: string;
-      column: string;
-      offset: string;
-      length: string;
-    }>
-  }),
-  actions: {
-    addSlice(data: {
-      id: string;
-      op: string;
-      mode: string;
-      column: string;
-      offset: string;
-      length: string;
-    }) {
-      const index = this.slices.findIndex(s => s.id === data.id);
-      if (index > -1) {
-        this.slices[index] = data;
-      } else {
-        this.slices.push(data);
-      }
-    }
-  }
-});
-
 // str node
 export const useStr = defineStore("str", {
   state: () => ({

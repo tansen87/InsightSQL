@@ -78,16 +78,9 @@ pub async fn process_operations(
           }
         }
       }
-      "slice" => {
-        if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
-          let offset = op.offset.clone().ok_or(anyhow!("offset is null"))?;
-          let length = op.length.clone().ok_or(anyhow!("length is null"))?;
-          context.add_slice(col, mode, offset, length, op.alias.clone());
-        }
-      }
       "str" => {
         if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
-          context.add_string(
+          context.add_str(
             col,
             mode,
             op.comparand.clone(),
@@ -96,7 +89,7 @@ pub async fn process_operations(
           );
         } else if let Some(mode) = &op.mode {
           if mode == "dynfmt" {
-            context.add_string(
+            context.add_str(
               "",
               mode,
               op.comparand.clone(),
@@ -133,190 +126,130 @@ pub async fn process_operations(
     let mut new_field_names = Vec::new();
     let mut new_field_is_slice = Vec::new(); // true=slice, false=string
     let mut new_field_aliases = Vec::new();
-    for slice_op in &context.slice_ops {
-      let slice_name = if let Some(ref alias) = slice_op.alias {
-        alias.clone()
-      } else {
-        format!("{}_{}", slice_op.column, slice_op.mode)
-      };
-      new_field_names.push(slice_name.clone());
-      new_field_is_slice.push(true);
-      new_field_aliases.push(slice_name);
-    }
-    for string_op in &context.string_ops {
-      if string_op.mode == "fill"
-        || string_op.mode == "f_fill"
-        || string_op.mode == "lower"
-        || string_op.mode == "upper"
-        || string_op.mode == "trim"
-        || string_op.mode == "ltrim"
-        || string_op.mode == "rtrim"
-        || string_op.mode == "squeeze"
-        || string_op.mode == "strip"
-        || string_op.mode == "replace"
-        || string_op.mode == "regex_replace"
-        || string_op.mode == "round"
-        || string_op.mode == "reverse"
-        || string_op.mode == "abs"
-        || string_op.mode == "neg"
-        || string_op.mode == "pinyin"
+
+    for str_op in &context.str_ops {
+      if str_op.mode == "fill"
+        || str_op.mode == "f_fill"
+        || str_op.mode == "lower"
+        || str_op.mode == "upper"
+        || str_op.mode == "trim"
+        || str_op.mode == "ltrim"
+        || str_op.mode == "rtrim"
+        || str_op.mode == "squeeze"
+        || str_op.mode == "strip"
+        || str_op.mode == "replace"
+        || str_op.mode == "regex_replace"
+        || str_op.mode == "round"
+        || str_op.mode == "reverse"
+        || str_op.mode == "abs"
+        || str_op.mode == "neg"
+        || str_op.mode == "pinyin"
+        || str_op.mode == "left"
+        || str_op.mode == "right"
+        || str_op.mode == "slice"
+        || str_op.mode == "split"
       {
         continue;
       }
-      let string_name = if let Some(ref alias) = string_op.alias {
+      let str_name = if let Some(ref alias) = str_op.alias {
         alias.clone()
-      } else if string_op.mode == "dynfmt" {
+      } else if str_op.mode == "dynfmt" {
         "_dynfmt".to_string()
       } else {
-        format!("{}_{}", string_op.column, string_op.mode)
+        format!("{}_{}", str_op.column, str_op.mode)
       };
-      new_field_names.push(string_name.clone());
+      new_field_names.push(str_name.clone());
       new_field_is_slice.push(false);
-      new_field_aliases.push(string_name);
+      new_field_aliases.push(str_name);
     }
 
-    for slice_op in &context.slice_ops {
-      let slice_name = if let Some(ref alias) = slice_op.alias {
-        alias.clone()
-      } else {
-        format!("{}_{}", slice_op.column, slice_op.mode)
-      };
-      selected_headers.push(slice_name);
-    }
-
-    for string_op in &context.string_ops {
-      if string_op.mode == "fill"
-        || string_op.mode == "f_fill"
-        || string_op.mode == "lower"
-        || string_op.mode == "upper"
-        || string_op.mode == "trim"
-        || string_op.mode == "ltrim"
-        || string_op.mode == "rtrim"
-        || string_op.mode == "squeeze"
-        || string_op.mode == "strip"
-        || string_op.mode == "replace"
-        || string_op.mode == "regex_replace"
-        || string_op.mode == "round"
-        || string_op.mode == "reverse"
-        || string_op.mode == "abs"
-        || string_op.mode == "neg"
-        || string_op.mode == "pinyin"
+    for str_op in &context.str_ops {
+      if str_op.mode == "fill"
+        || str_op.mode == "f_fill"
+        || str_op.mode == "lower"
+        || str_op.mode == "upper"
+        || str_op.mode == "trim"
+        || str_op.mode == "ltrim"
+        || str_op.mode == "rtrim"
+        || str_op.mode == "squeeze"
+        || str_op.mode == "strip"
+        || str_op.mode == "replace"
+        || str_op.mode == "regex_replace"
+        || str_op.mode == "round"
+        || str_op.mode == "reverse"
+        || str_op.mode == "abs"
+        || str_op.mode == "neg"
+        || str_op.mode == "pinyin"
+        || str_op.mode == "left"
+        || str_op.mode == "right"
+        || str_op.mode == "slice"
+        || str_op.mode == "split"
       {
         continue;
       }
-      let string_name = if let Some(ref alias) = string_op.alias {
+      let str_name = if let Some(ref alias) = str_op.alias {
         alias.clone()
-      } else if string_op.mode == "dynfmt" {
+      } else if str_op.mode == "dynfmt" {
         "_dynfmt".to_string()
       } else {
-        format!("{}_{}", string_op.column, string_op.mode)
+        format!("{}_{}", str_op.column, str_op.mode)
       };
-      selected_headers.push(string_name);
+      selected_headers.push(str_name);
     }
 
     wtr.write_record(&selected_headers)?;
   } else {
     let mut all_headers: Vec<String> = headers.iter().map(|s| s.to_string()).collect();
-    for slice_op in &context.slice_ops {
-      let slice_name = if let Some(ref alias) = slice_op.alias {
-        alias.clone()
-      } else {
-        format!("{}_{}", slice_op.column, slice_op.mode)
-      };
-      all_headers.push(slice_name);
-    }
 
-    for string_op in &context.string_ops {
-      if string_op.mode == "fill"
-        || string_op.mode == "f_fill"
-        || string_op.mode == "lower"
-        || string_op.mode == "upper"
-        || string_op.mode == "trim"
-        || string_op.mode == "ltrim"
-        || string_op.mode == "rtrim"
-        || string_op.mode == "squeeze"
-        || string_op.mode == "strip"
-        || string_op.mode == "replace"
-        || string_op.mode == "regex_replace"
-        || string_op.mode == "round"
-        || string_op.mode == "reverse"
-        || string_op.mode == "abs"
-        || string_op.mode == "neg"
-        || string_op.mode == "pinyin"
+    for str_op in &context.str_ops {
+      if str_op.mode == "fill"
+        || str_op.mode == "f_fill"
+        || str_op.mode == "lower"
+        || str_op.mode == "upper"
+        || str_op.mode == "trim"
+        || str_op.mode == "ltrim"
+        || str_op.mode == "rtrim"
+        || str_op.mode == "squeeze"
+        || str_op.mode == "strip"
+        || str_op.mode == "replace"
+        || str_op.mode == "regex_replace"
+        || str_op.mode == "round"
+        || str_op.mode == "reverse"
+        || str_op.mode == "abs"
+        || str_op.mode == "neg"
+        || str_op.mode == "pinyin"
+        || str_op.mode == "left"
+        || str_op.mode == "right"
+        || str_op.mode == "slice"
+        || str_op.mode == "split"
       {
         continue;
       }
-      let string_name = if let Some(ref alias) = string_op.alias {
+      let str_name = if let Some(ref alias) = str_op.alias {
         alias.clone()
-      } else if string_op.mode == "dynfmt" {
+      } else if str_op.mode == "dynfmt" {
         "_dynfmt".to_string()
       } else {
-        format!("{}_{}", string_op.column, string_op.mode)
+        format!("{}_{}", str_op.column, str_op.mode)
       };
-      all_headers.push(string_name);
+      all_headers.push(str_name);
     }
 
     wtr.write_record(all_headers.iter().map(|s| s.as_str()))?;
   }
 
   // initital f_fill cache
-  let mut ffill_caches: Vec<Option<String>> = vec![None; context.string_ops.len()];
+  let mut ffill_caches: Vec<Option<String>> = vec![None; context.str_ops.len()];
 
   for result in rdr.records() {
     let record = result?;
 
-    // collect all slice results first
-    let mut slice_results = Vec::new();
-    for slice_op in &context.slice_ops {
-      let idx = headers.iter().position(|h| h == &slice_op.column);
-      let length = slice_op.length.parse::<usize>()?;
-      if let Some(idx) = idx {
-        if let Some(val) = record.get(idx) {
-          let new_val = match slice_op.mode.as_str() {
-            "left" => val.chars().take(length).collect(),
-            "right" => val
-              .chars()
-              .rev()
-              .take(length)
-              .collect::<String>()
-              .chars()
-              .rev()
-              .collect(),
-            "slice" => {
-              let offset = slice_op.offset.parse::<isize>()?;
-              let start = offset - 1;
-              let end = start + length as isize;
-              val
-                .chars()
-                .skip(start.max(0) as usize)
-                .take((end - start) as usize)
-                .collect()
-            }
-            "split" => {
-              let split_parts: Vec<&str> = val.split(&slice_op.offset).collect();
-              if split_parts.len() >= length {
-                split_parts[length - 1].to_string()
-              } else {
-                "".to_string()
-              }
-            }
-            _ => val.to_string(),
-          };
-          slice_results.push(new_val);
-        } else {
-          slice_results.push(String::new());
-        }
-      } else {
-        slice_results.push(String::new());
-      }
-    }
-
     let mut row_fields: Vec<String> = record.iter().map(|s| s.to_string()).collect();
     let mut string_results = Vec::new();
-    for (i, string_op) in context.string_ops.iter().enumerate() {
-      if string_op.mode == "dynfmt" {
+    for (i, str_op) in context.str_ops.iter().enumerate() {
+      if str_op.mode == "dynfmt" {
         // dynfmt操作不依赖特定列，直接处理整个记录
-        let template = string_op.comparand.as_deref().unwrap_or("");
+        let template = str_op.comparand.as_deref().unwrap_or("");
         let mut dynfmt_template_wrk = template.to_string();
         let mut dynfmt_fields = Vec::new();
 
@@ -346,13 +279,21 @@ pub async fn process_operations(
         } else {
           string_results.push(String::new());
         }
-      } else if let Some(idx) = headers.iter().position(|h| h == &string_op.column) {
+      } else if let Some(idx) = headers.iter().position(|h| h == &str_op.column) {
         let cell = row_fields[idx].clone();
-        match string_op.mode.as_str() {
+        let length = match str_op.mode.as_str() {
+          "left" | "right" | "slice" | "split" => str_op
+            .replacement
+            .clone()
+            .ok_or(anyhow!("length is invalid number"))?
+            .parse::<usize>()?,
+          _ => 0,
+        };
+        match str_op.mode.as_str() {
           // do not add new column
           "fill" => {
             if cell.is_empty() {
-              row_fields[idx] = string_op.replacement.clone().unwrap_or_default();
+              row_fields[idx] = str_op.replacement.clone().unwrap_or_default();
             }
           }
           "f_fill" => {
@@ -378,13 +319,13 @@ pub async fn process_operations(
             row_fields[idx] = re.replace_all(&cell, " ").into_owned();
           }
           "replace" => {
-            let comparand = string_op.comparand.as_deref().unwrap_or("");
-            let replacement = string_op.replacement.as_deref().unwrap_or("");
+            let comparand = str_op.comparand.as_deref().unwrap_or("");
+            let replacement = str_op.replacement.as_deref().unwrap_or("");
             row_fields[idx] = cell.replace(comparand, replacement);
           }
           "regex_replace" => {
-            let comparand = string_op.comparand.as_deref().unwrap_or("");
-            let replacement = string_op.replacement.as_deref().unwrap_or("");
+            let comparand = str_op.comparand.as_deref().unwrap_or("");
+            let replacement = str_op.replacement.as_deref().unwrap_or("");
             let pattern = regex::RegexBuilder::new(comparand).build()?;
             row_fields[idx] = pattern.replace_all(&cell, replacement).to_string();
           }
@@ -411,7 +352,7 @@ pub async fn process_operations(
             }
           }
           "pinyin" => {
-            let py_mode_string = string_op.replacement.clone().unwrap_or("".to_owned());
+            let py_mode_string = str_op.replacement.clone().unwrap_or("".to_owned());
             row_fields[idx] = cell
               .chars()
               .map(|c| {
@@ -426,6 +367,43 @@ pub async fn process_operations(
               })
               .collect();
           }
+          "left" => row_fields[idx] = cell.chars().take(length).collect(),
+          "right" => {
+            row_fields[idx] = cell
+              .chars()
+              .rev()
+              .take(length)
+              .collect::<String>()
+              .chars()
+              .rev()
+              .collect()
+          }
+          "slice" => {
+            let offset = str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("start index is invalid number"))?
+              .parse::<isize>()?;
+            let start = offset - 1;
+            let end = start + length as isize;
+            row_fields[idx] = cell
+              .chars()
+              .skip(start.max(0) as usize)
+              .take((end - start) as usize)
+              .collect::<String>();
+          }
+          "split" => {
+            let sep = &str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("delimiter is invalid"))?;
+            let split_parts: Vec<&str> = cell.split(sep).collect();
+            if split_parts.len() >= length {
+              row_fields[idx] = split_parts[length - 1].to_string();
+            } else {
+              row_fields[idx] = "".to_string();
+            }
+          }
           // add new column
           "len" => string_results.push(cell.chars().count().to_string()),
           "copy" => string_results.push(cell.clone()),
@@ -433,22 +411,26 @@ pub async fn process_operations(
         }
       } else {
         // 字段找不到时,只有新增列的操作才追加空字符串
-        if string_op.mode != "fill"
-          && string_op.mode != "f_fill"
-          && string_op.mode != "lower"
-          && string_op.mode != "upper"
-          && string_op.mode != "trim"
-          && string_op.mode != "ltrim"
-          && string_op.mode != "rtrim"
-          && string_op.mode != "squeeze"
-          && string_op.mode != "strip"
-          && string_op.mode != "replace"
-          && string_op.mode != "regex_replace"
-          && string_op.mode != "round"
-          && string_op.mode != "reverse"
-          && string_op.mode != "abs"
-          && string_op.mode != "neg"
-          && string_op.mode != "pinyin"
+        if str_op.mode != "fill"
+          && str_op.mode != "f_fill"
+          && str_op.mode != "lower"
+          && str_op.mode != "upper"
+          && str_op.mode != "trim"
+          && str_op.mode != "ltrim"
+          && str_op.mode != "rtrim"
+          && str_op.mode != "squeeze"
+          && str_op.mode != "strip"
+          && str_op.mode != "replace"
+          && str_op.mode != "regex_replace"
+          && str_op.mode != "round"
+          && str_op.mode != "reverse"
+          && str_op.mode != "abs"
+          && str_op.mode != "neg"
+          && str_op.mode != "pinyin"
+          && str_op.mode == "left"
+          && str_op.mode == "right"
+          && str_op.mode == "slice"
+          && str_op.mode == "split"
         {
           string_results.push(String::new());
         }
@@ -461,12 +443,10 @@ pub async fn process_operations(
           .iter()
           .map(|&idx| row_fields.get(idx).map(|s| s.as_str()).unwrap_or(""))
           .collect();
-        filtered.extend(slice_results.iter().map(|s| s.as_str()));
         filtered.extend(string_results.iter().map(|s| s.as_str()));
         wtr.write_record(&filtered)?;
       } else {
         let mut all_fields: Vec<_> = row_fields.iter().map(|s| s.as_str()).collect();
-        all_fields.extend(slice_results.iter().map(|s| s.as_str()));
         all_fields.extend(string_results.iter().map(|s| s.as_str()));
         wtr.write_record(&all_fields)?;
       }

@@ -8,7 +8,6 @@ import {
   usePath,
   useFilter,
   useSelect,
-  useSlice,
   useStr,
   useNodeStore,
   getExecutionConfig,
@@ -19,7 +18,6 @@ const isLoading = ref(false);
 const pathStore = usePath();
 const filterStore = useFilter();
 const selectStore = useSelect();
-const sliceStore = useSlice();
 const strStore = useStr();
 const nodeStore = useNodeStore();
 const node = useNode();
@@ -44,10 +42,10 @@ async function endFlow() {
     const config = getExecutionConfig(order, {
       selectStore,
       filterStore,
-      sliceStore,
       strStore
     });
     const jsonConfig = JSON.stringify(config);
+    console.log(jsonConfig);
     if (jsonConfig === "{}" || jsonConfig === "[]") {
       message("operation is null", { type: "warning" });
       isLoading.value = false;

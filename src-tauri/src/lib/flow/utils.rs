@@ -7,22 +7,12 @@ pub struct Operation {
   pub mode: Option<String>,
   pub column: Option<String>,
   pub value: Option<String>,
-  pub offset: Option<String>,
-  pub length: Option<String>,
   pub comparand: Option<String>,
   pub replacement: Option<String>,
   pub alias: Option<String>,
 }
 
-pub struct SliceOperation {
-  pub column: String,
-  pub mode: String,
-  pub offset: String,
-  pub length: String,
-  pub alias: Option<String>,
-}
-
-pub struct StringOperation {
+pub struct StrOperation {
   pub column: String,
   pub mode: String,
   pub comparand: Option<String>,
@@ -34,8 +24,7 @@ pub struct ProcessingContext {
   pub select: Option<Vec<usize>>,
   pub alias: Option<Vec<Option<String>>>,
   pub filters: Vec<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>>,
-  pub slice_ops: Vec<SliceOperation>,
-  pub string_ops: Vec<StringOperation>,
+  pub str_ops: Vec<StrOperation>,
 }
 
 impl ProcessingContext {
@@ -44,8 +33,7 @@ impl ProcessingContext {
       select: None,
       alias: None,
       filters: Vec::new(),
-      slice_ops: Vec::new(),
-      string_ops: Vec::new(),
+      str_ops: Vec::new(),
     }
   }
 
@@ -65,24 +53,7 @@ impl ProcessingContext {
     self.filters.push(Box::new(filter));
   }
 
-  pub fn add_slice(
-    &mut self,
-    column: &str,
-    mode: &str,
-    offset: String,
-    length: String,
-    alias: Option<String>,
-  ) {
-    self.slice_ops.push(SliceOperation {
-      column: column.to_string(),
-      mode: mode.to_string(),
-      offset,
-      length,
-      alias,
-    });
-  }
-
-  pub fn add_string(
+  pub fn add_str(
     &mut self,
     column: &str,
     mode: &str,
@@ -90,7 +61,7 @@ impl ProcessingContext {
     replacement: Option<String>,
     alias: Option<String>,
   ) {
-    self.string_ops.push(StringOperation {
+    self.str_ops.push(StrOperation {
       column: column.to_string(),
       mode: mode.to_string(),
       comparand,

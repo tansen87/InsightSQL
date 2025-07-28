@@ -66,6 +66,20 @@ function deleteBtn() {
         <span style="display: block; font-weight: bold; margin-bottom: 6px">
           Str
         </span>
+        <el-select
+          v-if="mode !== 'dynfmt'"
+          v-model="columns"
+          filterable
+          placeholder="Select column"
+          style="margin-bottom: 6px"
+        >
+          <el-option
+            v-for="item in headerStore.headers"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
         <el-select v-model="mode" filterable style="margin-bottom: 6px">
           <el-option label="DynFmt" value="dynfmt" />
           <el-option label="copy" value="copy" />
@@ -86,20 +100,10 @@ function deleteBtn() {
           <el-option label="pinyin" value="pinyin" />
           <el-option label="fill" value="fill" />
           <el-option label="ForwardFill" value="f_fill" />
-        </el-select>
-        <el-select
-          v-if="mode !== 'dynfmt'"
-          v-model="columns"
-          filterable
-          placeholder="Select column"
-          style="margin-bottom: 6px"
-        >
-          <el-option
-            v-for="item in headerStore.headers"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
+          <el-option label="left" value="left" />
+          <el-option label="right" value="right" />
+          <el-option label="slice" value="slice" />
+          <el-option label="split" value="split" />
         </el-select>
         <el-input
           v-if="mode === 'replace' || mode === 'regex_replace'"
@@ -111,6 +115,28 @@ function deleteBtn() {
           v-if="mode === 'dynfmt'"
           v-model="comparand"
           placeholder="{col1}-{col2}:{col3}"
+        />
+        <el-input
+          v-if="mode === 'slice'"
+          v-model="comparand"
+          style="margin-bottom: 6px"
+          placeholder="start index"
+        />
+        <el-input
+          v-if="mode === 'split'"
+          v-model="comparand"
+          style="margin-bottom: 6px"
+          placeholder="delimiter"
+        />
+        <el-input
+          v-if="mode === 'left' || mode === 'right' || mode === 'slice'"
+          v-model="replacement"
+          placeholder="length"
+        />
+        <el-input
+          v-if="mode === 'split'"
+          v-model="replacement"
+          placeholder="n"
         />
         <el-input
           v-if="mode === 'replace' || mode === 'regex_replace'"
