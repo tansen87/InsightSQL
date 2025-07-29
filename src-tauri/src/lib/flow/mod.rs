@@ -7,6 +7,7 @@ use anyhow::Context;
 
 pub mod filter;
 pub mod process;
+pub mod str;
 pub mod utils;
 
 #[tauri::command]

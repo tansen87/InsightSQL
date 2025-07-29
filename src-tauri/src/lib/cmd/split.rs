@@ -162,7 +162,7 @@ pub async fn split(path: String, size: u32, mode: String) -> Result<String, Stri
         Some(idx) => parallel_split_rows(
           &idx,
           csv_options,
-          size.try_into().expect("not valid size"),
+          size.try_into().expect("invalid size"),
           &output_path,
         )
         .await

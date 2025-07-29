@@ -20,16 +20,16 @@ pub struct StrOperation {
   pub alias: Option<String>,
 }
 
-pub struct ProcessingContext {
+pub struct ProcessContext {
   pub select: Option<Vec<usize>>,
   pub alias: Option<Vec<Option<String>>>,
   pub filters: Vec<Box<dyn Fn(&StringRecord) -> bool + Send + Sync>>,
   pub str_ops: Vec<StrOperation>,
 }
 
-impl ProcessingContext {
+impl ProcessContext {
   pub fn new() -> Self {
-    ProcessingContext {
+    ProcessContext {
       select: None,
       alias: None,
       filters: Vec::new(),
