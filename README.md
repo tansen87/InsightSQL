@@ -27,7 +27,7 @@ English | [中文](./README_CN.md)
 | Apply | Apply series of string, math transformations to given CSV column/s |
 | [Cat](./docs/cat.md) | Merge multiple CSV or Excel files into one CSV or xlsx file (Support Polars and CSV engine) |
 | Excel  to CSV | Batch convert Excel to CSV (Support converting all sheets or specifying sheets) |
-| Count | Count the rows of CSV files (Instantaneous with an index) |
+| [Count](./docs/count.md) | Count the rows of CSV files (Instantaneous with an index) |
 | CSV to xlsx | Batch convert CSV to xlsx |
 | [Rename](./docs/rename.md) | Rename the columns of a CSV |
 | [Select](./docs/select.md) | Select, re-order columns |

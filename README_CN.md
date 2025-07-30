@@ -27,7 +27,7 @@
 | Apply | 对给定的CSV列应用一系列字符串和数学转换 |
 | [Cat](./docs/cat.md) | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 (支持Polars和CSV引擎) |
 | Excel  to CSV | 批量将Excel转换为CSV (支持转换所有工作表或指定工作表) |
-| Count | 统计CSV文件的行数 (带索引的瞬时值) |
+| [Count](./docs/count.md) | 统计CSV文件的行数 (带索引的瞬时值) |
 | CSV to xlsx | 批量将CSV转换为xlsx |
 | [Rename](./docs/rename.md) | 重命名CSV的列 |
 | [Select](./docs/select.md) | 选择、重新排序CSV的列 |

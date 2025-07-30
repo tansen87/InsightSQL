@@ -7,18 +7,20 @@ import { ElIcon } from "element-plus";
 import {
   Loading,
   FolderOpened,
-  Grape,
   CloseBold,
-  Select
+  Select,
+  Link
 } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
+import { useMarkdown, countContent } from "@/utils/markdown";
 
 const mode = ref("count");
 const path = ref("");
-const isLoading = ref(false);
+const [dialog, isLoading] = [ref(false), ref(false)];
 const selectedFiles = ref([]);
-const { dynamicHeight } = useDynamicHeight(122);
+const { dynamicHeight } = useDynamicHeight(143);
+const { compiledMarkdown } = useMarkdown(countContent);
 
 listen("start-count", (event: any) => {
   const startConvert: string = event.payload;
@@ -94,7 +96,7 @@ async function countData() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="dynamicHeight">
+  <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -107,16 +109,15 @@ async function countData() {
             <el-option label="Check" value="check" />
           </el-select>
         </el-tooltip>
-        <el-button
-          @click="countData()"
-          :loading="isLoading"
-          :icon="Grape"
-          style="margin-left: 10px"
-        >
-          {{ mode }}
-        </el-button>
       </div>
-      <el-text> Count the rows of CSV files </el-text>
+      <el-button
+        @click="countData()"
+        :loading="isLoading"
+        :icon="Select"
+        style="margin-left: 10px"
+      >
+        {{ mode }}
+      </el-button>
     </div>
     <el-table
       :data="selectedFiles"
@@ -152,7 +153,7 @@ async function countData() {
       </el-table-column>
       <el-table-column
         prop="infoMsg"
-        label="Info"
+        label="Message"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
@@ -163,5 +164,25 @@ async function countData() {
         </template>
       </el-table-column>
     </el-table>
-  </el-form>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-text>Count the rows of CSV files</el-text>
+      </div>
+      <el-link @click="dialog = true" :icon="Link">
+        <span>
+          About
+          <span style="color: skyblue; font-weight: bold">Count</span>
+        </span>
+      </el-link>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Count - Count the rows of CSV files"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
+  </div>
 </template>
