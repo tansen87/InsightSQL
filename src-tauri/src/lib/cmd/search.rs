@@ -766,7 +766,6 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
 
   let total_rows = match count_mode {
     "idx" => csv_options.idx_count_rows().await?,
-    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;

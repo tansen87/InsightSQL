@@ -46,7 +46,6 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
 
   let total_rows = match pgs_mode {
     "idx" => csv_options.idx_count_rows().await?,
-    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   window.emit("total-rows", total_rows)?;

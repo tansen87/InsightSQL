@@ -113,10 +113,9 @@ async function selectColumns() {
             <el-option label="Exclude" value="exclude" />
           </el-select>
         </el-tooltip>
-        <el-tooltip content="if nil, do not add progress bar" effect="light">
+        <el-tooltip content="if nil, no progress bar" effect="light">
           <el-select v-model="pgsMode" style="margin-left: 10px; width: 70px">
             <el-option label="idx" value="idx" />
-            <el-option label="std" value="std" />
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
