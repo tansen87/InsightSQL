@@ -1,4 +1,9 @@
-use std::{fs::File, path::Path, time::Instant};
+use std::{
+  fs::File,
+  path::{Path, PathBuf},
+  sync::Arc,
+  time::Instant,
+};
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -6,7 +11,9 @@ use indexmap::IndexSet;
 use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
-  prelude::{CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, SerWriter, UnionArgs, cols},
+  prelude::{
+    col, CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, PlPath, SerWriter, UnionArgs
+  },
 };
 
 use crate::{
@@ -65,13 +72,15 @@ async fn cat_with_polars(
         let excel_reader = if use_cols == vec!["all"] {
           df.lazy()
         } else {
-          df.lazy().select([cols(use_cols.clone())])
+          let exprs = use_cols.iter().map(|s| col(*s)).collect::<Vec<_>>();
+          df.lazy().select(exprs)
         };
 
         excel_reader
       }
       _ => {
-        let csv_reader = LazyCsvReader::new(file)
+        let p: Arc<Path> = Arc::from(PathBuf::from(file));
+        let csv_reader = LazyCsvReader::new(PlPath::Local(p))
           .with_has_header(true)
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
@@ -82,7 +91,8 @@ async fn cat_with_polars(
         let csv_reader = if use_cols == vec!["all"] {
           csv_reader
         } else {
-          csv_reader.select([cols(use_cols.clone())])
+          let exprs = use_cols.iter().map(|s| col(*s)).collect::<Vec<_>>();
+          csv_reader.select(exprs)
         };
 
         csv_reader

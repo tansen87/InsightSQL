@@ -4,6 +4,7 @@ use std::{
   fs::File,
   io::{BufWriter, Write},
   path::{Path, PathBuf},
+  sync::Arc,
   time::Instant,
 };
 
@@ -11,7 +12,7 @@ use anyhow::{Result, anyhow};
 use polars::{
   prelude::{
     CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonWriter, LazyCsvReader, LazyFileListReader,
-    LazyFrame, OptFlags, ParquetWriter, SerWriter,
+    LazyFrame, OptFlags, ParquetWriter, PlPath, SerWriter,
   },
   sql::SQLContext,
 };
@@ -137,7 +138,10 @@ async fn prepare_query(
     }
 
     let lf = match file_extension.as_str() {
-      "parquet" => LazyFrame::scan_parquet(table, Default::default())?,
+      "parquet" => {
+        let p: Arc<Path> = Arc::from(PathBuf::from(table));
+        LazyFrame::scan_parquet(PlPath::Local(p), Default::default())?
+      }
       "xls" | "xlsm" | "xlsb" | "ods" => {
         let df: DataFrame = ExcelReader::from_path(table)?
           .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
@@ -162,7 +166,8 @@ async fn prepare_query(
         df.lazy()
       }
       _ => {
-        let csv_reader = LazyCsvReader::new(table)
+        let p: Arc<Path> = Arc::from(PathBuf::from(table));
+        let csv_reader = LazyCsvReader::new(PlPath::Local(p))
           .with_has_header(true)
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
