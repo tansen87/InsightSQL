@@ -21,12 +21,12 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/count"
       },
       {
-        title: "2csv",
+        title: "ToCsv",
         description: "Batch convert files to CSV",
         route: "/command/components/toCsv"
       },
       {
-        title: "2excel",
+        title: "ToExcel",
         description: "Batch convert files to Excel",
         route: "/command/components/toExcel"
       },
@@ -66,7 +66,7 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/enumerate"
       },
       {
-        title: "Chinese to Pinyin",
+        title: "Pinyin",
         description: "Convert Chinese to Pinyin for specific column in CSV",
         route: "/command/components/pinyin"
       },

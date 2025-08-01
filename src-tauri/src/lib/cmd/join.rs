@@ -1,14 +1,15 @@
 use std::{
   collections::hash_map::{Entry, HashMap},
   fmt,
-  fs::{self, File},
-  io::{self, Write},
+  fs::File,
+  io::{Cursor, Read, Seek, Write},
   iter::repeat,
+  mem::swap,
   path::{Path, PathBuf},
   time::Instant,
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use byteorder::{BigEndian, WriteBytesExt};
 use csv::{ReaderBuilder, WriterBuilder};
 
@@ -17,7 +18,7 @@ use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 type ByteString = Vec<u8>;
 
-struct IoState<R, W: io::Write> {
+struct IoState<R, W: Write> {
   wtr: csv::Writer<W>,
   rdr1: csv::Reader<R>,
   sel1: Selection,
@@ -26,11 +27,16 @@ struct IoState<R, W: io::Write> {
   nulls: bool,
 }
 
-impl<R: io::Read + io::Seek, W: io::Write> IoState<R, W> {
-  fn write_headers(&mut self) -> Result<()> {
-    let mut headers = self.rdr1.byte_headers()?.clone();
-    headers.extend(self.rdr2.byte_headers()?.iter());
-    self.wtr.write_record(&headers)?;
+impl<R: Read + Seek, W: Write> IoState<R, W> {
+  fn write_headers(&mut self, extend: bool) -> Result<()> {
+    if extend {
+      let mut headers = self.rdr1.byte_headers()?.clone();
+      headers.extend(self.rdr2.byte_headers()?.iter());
+      self.wtr.write_record(&headers)?;
+    } else {
+      let headers = self.rdr1.byte_headers()?;
+      self.wtr.write_record(headers)?;
+    }
 
     Ok(())
   }
@@ -59,8 +65,8 @@ impl<R: io::Read + io::Seek, W: io::Write> IoState<R, W> {
 
   fn outer_join(mut self, right: bool) -> Result<()> {
     if right {
-      ::std::mem::swap(&mut self.rdr1, &mut self.rdr2);
-      ::std::mem::swap(&mut self.sel1, &mut self.sel2);
+      swap(&mut self.rdr1, &mut self.rdr2);
+      swap(&mut self.sel1, &mut self.sel2);
     }
 
     let mut scratch = csv::ByteRecord::new();
@@ -91,6 +97,26 @@ impl<R: io::Read + io::Seek, W: io::Write> IoState<R, W> {
         }
       }
     }
+    Ok(())
+  }
+
+  fn left_join(mut self, anti: bool) -> Result<()> {
+    let validx = ValueIndex::new(self.rdr2, self.sel2, self.nulls)?;
+    let mut row = csv::ByteRecord::new();
+    let mut key;
+
+    while self.rdr1.read_byte_record(&mut row)? {
+      key = (&self.sel1).get_row_key(&row);
+      if !validx.values.contains_key(&key) {
+        if anti {
+          self.wtr.write_record(&row)?;
+        }
+      } else if !anti {
+        self.wtr.write_record(&row)?;
+      }
+    }
+    self.wtr.flush()?;
+
     Ok(())
   }
 
@@ -167,7 +193,7 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
   sel1: String,
   sel2: String,
   nulls: bool,
-) -> Result<IoState<fs::File, Box<dyn io::Write + 'static>>> {
+) -> Result<IoState<File, Box<dyn Write + 'static>>> {
   let csv_options1 = CsvOptions::new(&path1);
   let sep1 = csv_options1.detect_separator()?;
   let csv_options2 = CsvOptions::new(&path2);
@@ -205,14 +231,14 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
 struct ValueIndex<R> {
   // This maps tuples of values to corresponding rows.
   values: HashMap<Vec<ByteString>, Vec<usize>>,
-  idx: Indexed<R, io::Cursor<Vec<u8>>>,
+  idx: Indexed<R, Cursor<Vec<u8>>>,
   num_rows: usize,
 }
 
-impl<R: io::Read + io::Seek> ValueIndex<R> {
+impl<R: Read + Seek> ValueIndex<R> {
   fn new(mut rdr: csv::Reader<R>, sel: Selection, nulls: bool) -> Result<ValueIndex<R>> {
     let mut val_idx = HashMap::with_capacity(10000);
-    let mut row_idx = io::Cursor::new(Vec::with_capacity(8 * 10000));
+    let mut row_idx = Cursor::new(Vec::with_capacity(8 * 10000));
     let (mut rowi, mut count) = (0usize, 0usize);
 
     // This logic is kind of tricky. Basically, we want to include
@@ -257,7 +283,7 @@ impl<R: io::Read + io::Seek> ValueIndex<R> {
     }
 
     row_idx.write_u64::<BigEndian>(count as u64)?;
-    let idx = Indexed::open(rdr, io::Cursor::new(row_idx.into_inner()))?;
+    let idx = Indexed::open(rdr, Cursor::new(row_idx.into_inner()))?;
     Ok(ValueIndex {
       values: val_idx,
       idx: idx,
@@ -294,29 +320,51 @@ async fn run_join<P: AsRef<Path> + Send + Sync>(
   let mut state = new_io_state(path1, path2, sel1, sel2, nulls)?;
   match join_type {
     "left" => {
-      state.write_headers()?;
+      state.write_headers(true)?;
       state.outer_join(false)
     }
     "right" => {
-      state.write_headers()?;
+      state.write_headers(true)?;
       state.outer_join(true)
     }
     "full" => {
-      state.write_headers()?;
+      state.write_headers(true)?;
       state.full_outer_join()
     }
     "cross" => {
-      state.write_headers()?;
+      state.write_headers(true)?;
       state.cross_join()
     }
     "inner" => {
-      state.write_headers()?;
+      state.write_headers(true)?;
       state.inner_join()
     }
-    _ => Err(anyhow!(
-      "Unknown join type '{}'. Please pick one of 'left', 'right', 'full', 'cross', or 'inner'.",
-      join_type
-    )),
+    "left_semi" => {
+      state.write_headers(false)?;
+      state.left_join(false)
+    }
+    "left_anti" => {
+      state.write_headers(false)?;
+      state.left_join(true)
+    }
+    "right_semi" => {
+      let mut swapped_join = state;
+      swap(&mut swapped_join.rdr1, &mut swapped_join.rdr2);
+      swap(&mut swapped_join.sel1, &mut swapped_join.sel2);
+      swapped_join.write_headers(false)?;
+      swapped_join.left_join(true)
+    }
+    "right_anti" => {
+      let mut swapped_join = state;
+      swap(&mut swapped_join.rdr1, &mut swapped_join.rdr2);
+      swap(&mut swapped_join.sel1, &mut swapped_join.sel2);
+      swapped_join.write_headers(false)?;
+      swapped_join.left_join(false)
+    }
+    _ => {
+      state.write_headers(true)?;
+      state.inner_join()
+    }
   }
 }
 

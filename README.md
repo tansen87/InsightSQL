@@ -5,14 +5,11 @@ English | [中文](./README_CN.md)
 > InsightSQL is a Tauri based data processing toolbox designed to simplify data operations and management. It provides an intuitive graphical user interface (GUI). Supports processing of multiple file formats, including Excel, CSV, Parquet, etc. Users can complete complex data processing tasks such as data queries, transformations, merges, joins, sorts, slices, format conversions, etc. through simple operations.
 
 
-### ScreenShot
-
+## 📷ScreenShot
 * Polars SQL for query
-
   ![sqlp.gif](/docs/img/sqlp.gif)
 
 * Flow
-
   ![flow.gif](/docs/img/flow.gif)
 
 * command
@@ -20,7 +17,6 @@ English | [中文](./README_CN.md)
 
 
 ## ✨Features
-
 | Function | Description |
 | ------- | ----------- |
 | Sqlp | Execute Polars SQL queries against several files (Support Excel, CSV, Parquet) |
@@ -38,60 +34,51 @@ English | [中文](./README_CN.md)
 | [Enumerate](./docs/enumerate.md) | Add a new column enumerating the lines of a CSV file |
 | [Pinyin](./docs/pinyin.md) | Convert Chinese to Pinyin for specific column in CSV |
 | [Replace](./docs/replace.md) | Replace CSV data using a regex |
-| Join | Joins two sets of CSV data on the specified columns |
+| [Join](./docs/join.md) | Joins two sets of CSV data on the specified columns |
 | Sort | Sorts CSV data lexicographically |
 | [Slice](./docs/str_slice.md) | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
 | [Reverse](./docs/reverse.md) | Reverse order of rows in a CSV |
 | [Transpose](./docs/transpose.md) | Transpose rows/columns of a CSV |
 
 
-### 🍖How to use?
-
+## 🍖How to use?
 * For more details, please refer to [release](https://github.com/tansen87/InsightSQL/releases/)
 
 
-### 🏃‍Runtime Environment
-
+## 🏃‍Runtime Environment
 * Node.js 20.19+
 * pnpm 10.0+
 * 🦀Rust 1.88.0+
 
 
 ## 🚀Development
-
 1. Clone this repositories
-
    ```bash
    git clone https://github.com/tansen87/InsightSQL.git
    ```
 
 2. cd to the directory of the project
-
    ```bash
    cd InsightSQL
    ```
 
 3. Install dependencies
-
    ```bash
    pnpm i
    ```
 
 4. Development
-
    ```bash
    pnpm tauri:dev
    ```
 
 5. Build
-
    ```bash
    pnpm tauri:build
    ```
 
 
 ### video
-
 * [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c) (The video hasn't been updated for a long time)
 
 

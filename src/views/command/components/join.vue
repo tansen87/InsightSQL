@@ -1,19 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Connection } from "@element-plus/icons-vue";
-import { useDynamicHeight } from "@/utils/utils";
+import { FolderOpened, Connection, Link } from "@element-plus/icons-vue";
+import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
+import { joinContent, useMarkdown } from "@/utils/markdown";
 
 const joinType = ref("left");
 const [sel1, sel2] = [ref(""), ref("")];
-const [isLoading, isPath1, isPath2, nulls] = [
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(false)
-];
+const [dialog, isLoading, nulls] = [ref(false), ref(false), ref(false)];
 const [
   tableHeader1,
   tableHeader2,
@@ -22,38 +18,31 @@ const [
   tableData1,
   tableData2
 ] = [ref([]), ref([]), ref([]), ref([]), ref([]), ref([])];
-const data = reactive({
-  path1: "",
-  path2: ""
-});
-
+const data = reactive({ path1: "", path2: "" });
 const { dynamicHeight } = useDynamicHeight(200);
+const { compiledMarkdown } = useMarkdown(joinContent);
 
-async function selectFile(fileIndex) {
-  const isPath = fileIndex === 1 ? isPath1 : isPath2;
+async function selectFile(fileIndex: number) {
   const selectColumn = fileIndex === 1 ? sel1 : sel2;
-  const tableHeader: any = fileIndex === 1 ? tableHeader1 : tableHeader2;
+  const tableHeader = fileIndex === 1 ? tableHeader1 : tableHeader2;
   const tableColumn = fileIndex === 1 ? tableColumn1 : tableColumn2;
   const tableData = fileIndex === 1 ? tableData1 : tableData2;
   const path = fileIndex === 1 ? "path1" : "path2";
 
-  isPath.value = false;
+  data[path] = "";
   selectColumn.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
 
   data[path] = await viewOpenFile(false, "csv", ["*"]);
-  if (data[path] === null) {
-    return;
-  }
+  if (data[path] === null) return;
 
   try {
     tableHeader.value = await mapHeaders(data[path], "0");
     const { columnView, dataView } = await toJson(data[path]);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
   }
@@ -86,23 +75,6 @@ async function joinData() {
   }
   isLoading.value = false;
 }
-
-const viewFileName1 = computed(() => {
-  const paths = data.path1.split("|");
-  return paths.map(path => {
-    const pathParts = path.split(/[/\\]/);
-    const fileName = pathParts[pathParts.length - 1];
-    return fileName;
-  });
-});
-const viewFileName2 = computed(() => {
-  const paths = data.path2.split("|");
-  return paths.map(path => {
-    const pathParts = path.split(/[/\\]/);
-    const fileName = pathParts[pathParts.length - 1];
-    return fileName;
-  });
-});
 </script>
 
 <template>
@@ -116,9 +88,12 @@ const viewFileName2 = computed(() => {
           File 2
         </el-button>
       </div>
-      <el-text>
-        <span>Joins two sets of CSV data on the specified columns</span>
-      </el-text>
+      <el-link @click="dialog = true" :icon="Link">
+        <span>
+          About
+          <span style="color: skyblue; font-weight: bold">Join</span>
+        </span>
+      </el-link>
     </div>
 
     <div class="custom-container1">
@@ -169,6 +144,10 @@ const viewFileName2 = computed(() => {
             <el-option label="full" value="full" />
             <el-option label="cross" value="cross" />
             <el-option label="inner" value="inner" />
+            <el-option label="left-semi" value="left_semi" />
+            <el-option label="left-anti" value="left_anti" />
+            <el-option label="right-semi" value="right_semi" />
+            <el-option label="right-anti" value="right_anti" />
           </el-select>
         </el-tooltip>
       </div>
@@ -182,13 +161,10 @@ const viewFileName2 = computed(() => {
       </el-button>
     </div>
 
-    <div style="display: flex; justify-content: space-between">
+    <div
+      style="display: flex; justify-content: space-between; margin-top: 12px"
+    >
       <div style="display: flex; flex-direction: column; width: 49%">
-        <div style="margin-bottom: 10px">
-          <el-text>
-            <span v-if="isPath1">{{ viewFileName1[0] }}</span>
-          </el-text>
-        </div>
         <el-table
           :data="tableData1"
           :height="dynamicHeight"
@@ -205,11 +181,6 @@ const viewFileName2 = computed(() => {
         </el-table>
       </div>
       <div style="display: flex; flex-direction: column; width: 49%">
-        <div style="margin-bottom: 10px">
-          <el-text>
-            <span v-if="isPath2">{{ viewFileName2[0] }}</span>
-          </el-text>
-        </div>
         <el-table
           :data="tableData2"
           :height="dynamicHeight"
@@ -226,5 +197,24 @@ const viewFileName2 = computed(() => {
         </el-table>
       </div>
     </div>
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-tooltip :content="data.path1" effect="light">
+          <el-text>{{ shortFileName(data.path1) }}</el-text>
+        </el-tooltip>
+      </div>
+      <el-tooltip :content="data.path2" effect="light">
+        <el-text>{{ shortFileName(data.path2) }}</el-text>
+      </el-tooltip>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Join - Joins two sets of CSV data on the specified columns"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>
