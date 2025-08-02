@@ -20,6 +20,7 @@ dependencies = [
  "indexmap 2.10.0",
  "itoa",
  "lazy_static",
+ "log",
  "num_cpus",
  "odbc-api",
  "pinyin",

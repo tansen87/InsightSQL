@@ -128,7 +128,7 @@ async fn cat_with_polars(
   Ok(())
 }
 
-async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> Result<()> {
+pub async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> Result<()> {
   let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
 
   let mut vec_sep = Vec::new();

@@ -34,6 +34,7 @@ ext-sort = { version = "0.1.5", default-features = false }
 indexmap = { version = "2.10.0", features = ["serde"] }
 itoa = "1"
 lazy_static = "1.5.0"
+log = "0.4"
 num_cpus = "1"
 odbc-api = "9.0.0"
 pinyin = { version = "0.10.0", features = ["plain"] }
