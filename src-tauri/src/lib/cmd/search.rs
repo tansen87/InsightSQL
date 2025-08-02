@@ -13,7 +13,10 @@ use smallvec::SmallVec;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::{
+  io::csv::{options::CsvOptions, selection::Selection},
+  utils::EventEmitter,
+};
 
 #[derive(Debug)]
 enum SearchMode {
@@ -73,16 +76,17 @@ fn sanitize_condition(condition: &str) -> String {
     .collect()
 }
 
-async fn generic_search<F, P>(
+async fn generic_search<E, F, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
   match_fn: F,
-  app_handle: AppHandle,
+  emitter: E,
 ) -> Result<String>
 where
+  E: EventEmitter + Send + Sync + 'static,
   F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
@@ -117,13 +121,13 @@ where
               0
             }
           };
-          if let Err(err) = app_handle.emit("update-rows", current_rows) {
-            eprintln!("Failed to emit current rows: {err}");
+          if let Err(err) = emitter.emit_update_rows(current_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = app_handle.emit("update-rows", final_rows) {
-            eprintln!("Failed to emit final rows: {err}");
+          if let Err(err) = emitter.emit_update_rows(final_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
           }
           break;
         },
@@ -166,15 +170,16 @@ where
   Ok(final_match_rows.to_string())
 }
 
-async fn generic_multi_search<F, P>(
+async fn generic_multi_search<E, F, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   match_fn: F,
-  app_handle: AppHandle,
+  emitter: E,
 ) -> Result<String>
 where
+  E: EventEmitter + Send + Sync + 'static,
   F: Fn(&str, &String) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync + 'static,
 {
@@ -218,12 +223,12 @@ where
               0
             }
           };
-          if let Err(err) = app_handle.emit("update-rows", current_rows) {
+          if let Err(err) = emitter.emit_update_rows(current_rows).await {
             eprintln!("Failed to emit current rows: {err:?}");
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = app_handle.emit("update-rows", final_rows) {
+          if let Err(err) = emitter.emit_update_rows(final_rows).await {
             eprintln!("Failed to emit final rows: {err:?}");
           }
           break;
@@ -298,14 +303,18 @@ where
   Ok(final_match_rows.to_string())
 }
 
-pub async fn equal<P: AsRef<Path> + Send + Sync>(
+pub async fn equal<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -313,7 +322,7 @@ pub async fn equal<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conditions| conditions.contains(&value.to_string()),
-    app_handle,
+    emitter,
   )
   .await
 }
@@ -356,14 +365,18 @@ pub async fn not_equal<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn contains<P: AsRef<Path> + Send + Sync>(
+pub async fn contains<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -371,7 +384,7 @@ pub async fn contains<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
-    app_handle,
+    emitter,
   )
   .await
 }
@@ -414,14 +427,18 @@ pub async fn not_contains<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn starts_with<P: AsRef<Path> + Send + Sync>(
+pub async fn starts_with<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -429,7 +446,7 @@ pub async fn starts_with<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
-    app_handle,
+    emitter,
   )
   .await
 }
@@ -530,14 +547,18 @@ pub async fn not_ends_with<P: AsRef<Path> + Send + Sync>(
   .await
 }
 
-pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
+pub async fn regex_search<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   regex_char: String,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let pattern = RegexBuilder::new(&regex_char).build()?;
 
   generic_search(
@@ -547,7 +568,7 @@ pub async fn regex_search<P: AsRef<Path> + Send + Sync>(
     vec![regex_char],
     output_path,
     move |value, _| pattern.is_match(value.as_bytes()),
-    app_handle,
+    emitter,
   )
   .await
 }

@@ -1,4 +1,5 @@
 use std::{
+  fmt::Display,
   path::{Path, PathBuf},
   sync::{Arc, Mutex},
   time::{Duration, Instant},
@@ -6,18 +7,23 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
-use tauri::{AppHandle, Emitter, Window};
+use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
 
-pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
+pub async fn skip_csv<E, F, P>(
   path: P,
-  filename: String,
+  file_name: F,
   skip_rows: usize,
   mode: &str,
-  app_handle: AppHandle,
-) -> Result<()> {
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  F: AsRef<str> + Send + Sync + Display + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   if skip_rows < 1 {
     return Err(anyhow!("The skip rows must be greater than or equal to 1"));
   }
@@ -40,7 +46,7 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
     "std" => csv_options.std_count_rows()?.saturating_sub(skip_rows) + 1,
     _ => 0,
   };
-  app_handle.emit("total-rows", format!("{filename}|{total_rows}"))?;
+  emitter.emit_total_msg(&format!("{file_name}|{total_rows}")).await?;
 
   let mut rdr = ReaderBuilder::new()
     .has_headers(false)
@@ -52,7 +58,6 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
   // 创建一个Arc<Mutex<usize>>用于跨线程安全地共享rows计数
   let rows = Arc::new(Mutex::new(0));
   let rows_clone = Arc::clone(&rows);
-
   // 创建一次性通道用于控制定时器结束
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
@@ -70,13 +75,13 @@ pub async fn skip_csv<P: AsRef<Path> + Send + Sync>(
               0
             }
           };
-          if let Err(err) = app_handle.emit("update-rows", format!("{filename}|{current_rows}")) {
-            let _ = app_handle.emit("to-err", format!("{filename}|{err}"));
+          if let Err(err) = emitter.emit_update_msg(&format!("{file_name}|{current_rows}")).await {
+            let _ = emitter.emit_err(&format!("{file_name}|{err}")).await;
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = app_handle.emit("update-rows", format!("{filename}|{final_rows}")) {
-            let _ = app_handle.emit("to-err", format!("{filename}|{err}"));
+          if let Err(err) = emitter.emit_update_msg(&format!("{file_name}|{final_rows}")).await {
+            let _ = emitter.emit_err(&format!("{file_name}|{err}")).await;
           }
           break;
         },
@@ -116,22 +121,27 @@ pub async fn skip(
   path: String,
   skip_rows: String,
   mode: String,
-  window: Window,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  let skip_rows = skip_rows.parse::<usize>().map_err(|e| e.to_string())?;
+  let skip_rows = skip_rows
+    .parse::<usize>()
+    .map_err(|e| format!("parse skip rows error: {e}"))?;
 
   for fp in paths.iter() {
-    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
-    window
-      .emit("start-skip", filename)
-      .map_err(|e| e.to_string())?;
+    let file_name = Path::new(fp)
+      .file_name()
+      .ok_or(format!("get file_name failed"))?
+      .to_str()
+      .ok_or(format!("file_name to str failed"))?;
+    app_handle
+      .emit("start-skip", file_name)
+      .map_err(|e| format!("emit start-skip error: {e}"))?;
     match skip_csv(
       fp,
-      filename.to_string(),
+      file_name.to_string(),
       skip_rows,
       mode.as_str(),
       app_handle.clone(),
@@ -139,14 +149,14 @@ pub async fn skip(
     .await
     {
       Ok(_) => {
-        window
-          .emit("skip-msg", filename)
-          .map_err(|e| e.to_string())?;
+        app_handle
+          .emit("skip-msg", file_name)
+          .map_err(|e| format!("emit skip-msg error: {e}"))?;
       }
       Err(err) => {
-        window
-          .emit("skip-err", format!("{filename}|{err}"))
-          .map_err(|e| e.to_string())?;
+        app_handle
+          .emit("skip-err", format!("{file_name}|{err}"))
+          .map_err(|e| format!("emit skip-err error: {e}"))?;
         continue;
       }
     }

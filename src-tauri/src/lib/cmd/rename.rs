@@ -6,17 +6,16 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tokio::sync::oneshot;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
 
-pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
-  path: P,
-  r_header: String,
-  mode: &str,
-  app_handle: AppHandle,
-) -> Result<()> {
+pub async fn rename_headers<E, P>(path: P, r_header: String, mode: &str, emitter: E) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
   let file_stem = csv_options.file_stem()?;
@@ -27,7 +26,7 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
     "idx" => csv_options.idx_count_rows().await?,
     _ => 0,
   };
-  app_handle.emit("total-rows", total_rows)?;
+  emitter.emit_total_rows(total_rows).await?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -39,7 +38,6 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
 
   let rows = Arc::new(Mutex::new(0));
   let rows_clone = Arc::clone(&rows);
-
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
@@ -55,13 +53,13 @@ pub async fn rename_headers<P: AsRef<Path> + Send + Sync>(
               0
             }
           };
-          if let Err(err) = app_handle.emit("update-rows", current_rows) {
-            eprintln!("Failed to emit current rows: {err:?}");
+          if let Err(err) = emitter.emit_update_rows(current_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = app_handle.emit("update-rows", final_rows) {
-            eprintln!("Failed to emit final rows: {err:?}");
+          if let Err(err) = emitter.emit_update_rows(final_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
           }
           break;
         },

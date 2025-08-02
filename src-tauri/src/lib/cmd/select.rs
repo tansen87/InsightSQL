@@ -9,10 +9,10 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
-use tauri::{Emitter, Window};
+use tauri::AppHandle;
 use tokio::sync::oneshot;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
 
 #[derive(Debug, Clone, Copy)]
 pub enum SelectMode {
@@ -30,13 +30,17 @@ impl From<&str> for SelectMode {
   }
 }
 
-pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
+pub async fn select_columns<E, P>(
   path: P,
   sel_cols: String,
   sel_mode: SelectMode,
   pgs_mode: &str,
-  window: Window,
-) -> Result<()> {
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
   let file_stem = csv_options.file_stem()?;
@@ -48,7 +52,8 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
     "idx" => csv_options.idx_count_rows().await?,
     _ => 0,
   };
-  window.emit("total-rows", total_rows)?;
+  emitter.emit_total_rows(total_rows).await?;
+  println!("check total rows:{total_rows}");
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -113,13 +118,13 @@ pub async fn select_columns<P: AsRef<Path> + Send + Sync>(
               0
             }
           };
-          if let Err(err) = window.emit("update-rows", current_rows) {
-            eprintln!("Failed to emit current rows: {err:?}");
+          if let Err(err) = emitter.emit_update_rows(current_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = window.emit("update-rows", final_rows) {
-            eprintln!("Failed to emit final rows: {err:?}");
+          if let Err(err) = emitter.emit_update_rows(final_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
           }
           break;
         },
@@ -168,13 +173,13 @@ pub async fn select(
   sel_cols: String,
   sel_mode: String,
   pgs_mode: String,
-  window: Window,
+  app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   let sel_mode: SelectMode = sel_mode.as_str().into();
 
-  match select_columns(path, sel_cols, sel_mode, &pgs_mode, window).await {
+  match select_columns(path, sel_cols, sel_mode, &pgs_mode, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

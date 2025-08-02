@@ -1,13 +1,5 @@
-use std::fs::{self};
-
-use anyhow::Result;
-use tempfile::TempDir;
-
-use lib::cmd::select;
-
-#[cfg(not(test))]
 #[tokio::test]
-async fn test_select() -> Result<()> {
+async fn test_select() -> anyhow::Result<()> {
   let data = vec![
     "name,age,gender",
     "Tom,18,male",
@@ -16,7 +8,7 @@ async fn test_select() -> Result<()> {
     "Sandy,24,female",
   ];
 
-  let temp_dir = TempDir::new()?;
+  let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
 
   let mut wtr = csv::Writer::from_path(&file_path)?;
@@ -27,9 +19,16 @@ async fn test_select() -> Result<()> {
 
   let cols = "name|age".to_string();
 
-  select::select_columns(file_path.to_str().unwrap(), cols, "include".into(), _).await?;
+  lib::cmd::select::select_columns(
+    file_path.to_str().unwrap(),
+    cols,
+    "nil".into(),
+    "include".into(),
+    lib::utils::MockEmitter::default(),
+  )
+  .await?;
 
-  let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
+  let output_files: Vec<_> = std::fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
     .filter(|entry| entry.path().is_file())
     .filter(|entry| {

@@ -1,9 +1,4 @@
-use anyhow::Result;
-use tempfile::TempDir;
-
-use lib::cmd::search;
-
-fn create_temp_csv() -> Result<(TempDir, String)> {
+fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String)> {
   let data = vec![
     "name,age,gender",
     "Tom,18,male",
@@ -12,7 +7,7 @@ fn create_temp_csv() -> Result<(TempDir, String)> {
     "Sandy,24,female",
   ];
 
-  let temp_dir = TempDir::new()?;
+  let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
 
   let mut wtr = csv::Writer::from_path(&file_path)?;
@@ -24,9 +19,8 @@ fn create_temp_csv() -> Result<(TempDir, String)> {
   Ok((temp_dir, file_path.to_str().unwrap().to_string()))
 }
 
-#[cfg(not(test))]
 #[tokio::test]
-async fn test_equal_search() -> Result<()> {
+async fn test_equal() -> anyhow::Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
@@ -38,7 +32,15 @@ async fn test_equal_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::equal_search(file_path, sep, column, conditions, output_path).await?;
+  let result = lib::cmd::search::equal(
+    file_path,
+    sep,
+    column,
+    conditions,
+    output_path.into(),
+    lib::utils::MockEmitter::default(),
+  )
+  .await?;
 
   // Expect 1 row matched, matched ("Tom")
   assert_eq!(result, "1");
@@ -46,9 +48,8 @@ async fn test_equal_search() -> Result<()> {
   Ok(temp_dir.close()?)
 }
 
-#[cfg(not(test))]
 #[tokio::test]
-async fn test_contains_search() -> Result<()> {
+async fn test_contains() -> anyhow::Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
@@ -60,7 +61,15 @@ async fn test_contains_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::contains_search(file_path, sep, column, conditions, output_path).await?;
+  let result = lib::cmd::search::contains(
+    file_path,
+    sep,
+    column,
+    conditions,
+    output_path.into(),
+    lib::utils::MockEmitter::default(),
+  )
+  .await?;
 
   // Expect 2 rows matched, matched ("Patrick", "Sandy")
   assert_eq!(result, "2");
@@ -68,9 +77,8 @@ async fn test_contains_search() -> Result<()> {
   Ok(temp_dir.close()?)
 }
 
-#[cfg(not(test))]
 #[tokio::test]
-async fn test_startswith_search() -> Result<()> {
+async fn test_starts_with() -> anyhow::Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
@@ -82,7 +90,15 @@ async fn test_startswith_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::startswith_search(file_path, sep, column, conditions, output_path).await?;
+  let result = lib::cmd::search::starts_with(
+    file_path,
+    sep,
+    column,
+    conditions,
+    output_path.into(),
+    lib::utils::MockEmitter::default(),
+  )
+  .await?;
 
   // Expect 1 row matched, matched ("Jerry")
   assert_eq!(result, "1");
@@ -90,9 +106,8 @@ async fn test_startswith_search() -> Result<()> {
   Ok(temp_dir.close()?)
 }
 
-#[cfg(not(test))]
 #[tokio::test]
-async fn test_regex_search() -> Result<()> {
+async fn test_regex() -> anyhow::Result<()> {
   let (temp_dir, file_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
@@ -104,7 +119,15 @@ async fn test_regex_search() -> Result<()> {
     .unwrap()
     .to_string();
 
-  let result = search::regex_search(file_path, sep, column, regex_char, output_path).await?;
+  let result = lib::cmd::search::regex_search(
+    file_path,
+    sep,
+    column,
+    regex_char,
+    output_path.into(),
+    lib::utils::MockEmitter::default(),
+  )
+  .await?;
 
   // Expect 1 row matched, matched ("Jerry")
   assert_eq!(result, "1");

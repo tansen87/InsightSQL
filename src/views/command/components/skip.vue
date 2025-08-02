@@ -21,7 +21,7 @@ const data = reactive({
 });
 const { dynamicHeight } = useDynamicHeight(122);
 
-listen("update-rows", (event: any) => {
+listen("update-msg", (event: any) => {
   const [backFilename, rows] = event.payload.split("|");
   selectedFiles.value.forEach(file => {
     if (file.filename === backFilename) {
@@ -29,7 +29,7 @@ listen("update-rows", (event: any) => {
     }
   });
 });
-listen("total-rows", (event: any) => {
+listen("total-msg", (event: any) => {
   const [backFilename, rows] = event.payload.split("|");
   selectedFiles.value.forEach(file => {
     if (file.filename === backFilename) {
@@ -153,7 +153,7 @@ async function skipLines() {
       </el-table-column>
       <el-table-column
         prop="errorMessage"
-        label="Info"
+        label="Message"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
