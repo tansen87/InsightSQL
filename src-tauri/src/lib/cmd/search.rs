@@ -327,32 +327,40 @@ where
   .await
 }
 
-pub async fn equal_multi<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn equal_multi<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync + 'static,
+{
   generic_multi_search(
     path,
     sep,
     select_column,
     conditions,
     |value, condition| value == condition,
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn not_equal<P: AsRef<Path> + Send + Sync>(
+pub async fn not_equal<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -360,7 +368,7 @@ pub async fn not_equal<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, cond| !cond.contains(&value.to_string()),
-    app_handle,
+    emitter,
   )
   .await
 }
@@ -389,32 +397,40 @@ where
   .await
 }
 
-pub async fn contains_multi<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn contains_multi<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync + 'static,
+{
   generic_multi_search(
     path,
     sep,
     select_column,
     conditions,
     |value, condition| value.contains(condition),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn not_contains<P: AsRef<Path> + Send + Sync>(
+pub async fn not_contains<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -422,7 +438,7 @@ pub async fn not_contains<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conds| !conds.iter().any(|cond| value.contains(cond)),
-    app_handle,
+    emitter,
   )
   .await
 }
@@ -451,32 +467,40 @@ where
   .await
 }
 
-pub async fn starts_with_multi<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn starts_with_multi<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync + 'static,
+{
   generic_multi_search(
     path,
     sep,
     select_column,
     conditions,
     |value, condition| value.starts_with(condition),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn not_starts_with<P: AsRef<Path> + Send + Sync>(
+pub async fn not_starts_with<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -484,19 +508,23 @@ pub async fn not_starts_with<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conds| !conds.iter().any(|cond| value.starts_with(cond)),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn ends_with<P: AsRef<Path> + Send + Sync>(
+pub async fn ends_with<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -504,37 +532,45 @@ pub async fn ends_with<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conds| conds.iter().any(|cond| value.ends_with(cond)),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn ends_with_multi<P: AsRef<Path> + Send + Sync + 'static>(
+pub async fn ends_with_multi<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync + 'static,
+{
   generic_multi_search(
     path,
     sep,
     select_column,
     conditions,
     |value, conds| value.ends_with(conds),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn not_ends_with<P: AsRef<Path> + Send + Sync>(
+pub async fn not_ends_with<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -542,7 +578,7 @@ pub async fn not_ends_with<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, conds| !conds.iter().any(|cond| value.ends_with(cond)),
-    app_handle,
+    emitter,
   )
   .await
 }
@@ -573,14 +609,18 @@ where
   .await
 }
 
-pub async fn is_null<P: AsRef<Path> + Send + Sync>(
+pub async fn is_null<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -588,19 +628,23 @@ pub async fn is_null<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, _c| value.trim().is_empty(),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn is_not_null<P: AsRef<Path> + Send + Sync>(
+pub async fn is_not_null<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   generic_search(
     path,
     sep,
@@ -608,19 +652,23 @@ pub async fn is_not_null<P: AsRef<Path> + Send + Sync>(
     conditions,
     output_path,
     |value, _c| !value.trim().is_empty(),
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn greater_than<P: AsRef<Path> + Send + Sync>(
+pub async fn greater_than<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: String,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
@@ -637,19 +685,23 @@ pub async fn greater_than<P: AsRef<Path> + Send + Sync>(
         .map(|v| v > threshold_value)
         .unwrap_or(false)
     },
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn greater_than_or_equal<P: AsRef<Path> + Send + Sync>(
+pub async fn greater_than_or_equal<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: String,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
@@ -666,19 +718,23 @@ pub async fn greater_than_or_equal<P: AsRef<Path> + Send + Sync>(
         .map(|v| v >= threshold_value)
         .unwrap_or(false)
     },
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn less_than<P: AsRef<Path> + Send + Sync>(
+pub async fn less_than<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: String,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Invalid number: {conditions}"))?;
@@ -695,19 +751,23 @@ pub async fn less_than<P: AsRef<Path> + Send + Sync>(
         .map(|v| v < threshold_value)
         .unwrap_or(false)
     },
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn less_than_or_equal<P: AsRef<Path> + Send + Sync>(
+pub async fn less_than_or_equal<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: String,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
@@ -724,19 +784,23 @@ pub async fn less_than_or_equal<P: AsRef<Path> + Send + Sync>(
         .map(|v| v <= threshold_value)
         .unwrap_or(false)
     },
-    app_handle,
+    emitter,
   )
   .await
 }
 
-pub async fn between<P: AsRef<Path> + Send + Sync>(
+pub async fn between<E, P>(
   path: P,
   sep: u8,
   select_column: String,
   conditions: Vec<String>,
   output_path: PathBuf,
-  app_handle: AppHandle,
-) -> Result<String> {
+  emitter: E,
+) -> Result<String>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   if conditions.len() != 2 {
     return Err(anyhow!(
       "Exactly two values required for between: min and max"
@@ -769,7 +833,7 @@ pub async fn between<P: AsRef<Path> + Send + Sync>(
         .map(|v| v >= min_value && v <= max_value)
         .unwrap_or(false)
     },
-    app_handle,
+    emitter,
   )
   .await
 }
