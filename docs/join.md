@@ -113,7 +113,8 @@ right semi join result (left_on='idx', right_on='idx')
 ┌─────┬──────┐
 │ idx │ age  │
 ├─────┼──────┤
-│  5  │ 10   |
+│  1  │ 20   │
+│  3  | 18   |
 └─────┴──────┘
 ```
 
@@ -124,7 +125,6 @@ right anti join result (left_on='idx', right_on='idx')
 ┌─────┬──────┐
 │ idx │ age  │
 ├─────┼──────┤
-│  1  │ 20   │
-│  3  | 18   |
+│  5  │ 10   |
 └─────┴──────┘
 ```

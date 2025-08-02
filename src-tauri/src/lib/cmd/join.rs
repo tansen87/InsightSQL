@@ -309,7 +309,7 @@ impl<R> fmt::Debug for ValueIndex<R> {
   }
 }
 
-async fn run_join<P: AsRef<Path> + Send + Sync>(
+pub async fn run_join<P: AsRef<Path> + Send + Sync>(
   path1: P,
   path2: P,
   sel1: String,
@@ -352,14 +352,14 @@ async fn run_join<P: AsRef<Path> + Send + Sync>(
       swap(&mut swapped_join.rdr1, &mut swapped_join.rdr2);
       swap(&mut swapped_join.sel1, &mut swapped_join.sel2);
       swapped_join.write_headers(false)?;
-      swapped_join.left_join(true)
+      swapped_join.left_join(false)
     }
     "right_anti" => {
       let mut swapped_join = state;
       swap(&mut swapped_join.rdr1, &mut swapped_join.rdr2);
       swap(&mut swapped_join.sel1, &mut swapped_join.sel2);
       swapped_join.write_headers(false)?;
-      swapped_join.left_join(false)
+      swapped_join.left_join(true)
     }
     _ => {
       state.write_headers(true)?;

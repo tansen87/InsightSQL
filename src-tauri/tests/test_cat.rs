@@ -1,22 +1,24 @@
 #[tokio::test]
 async fn test_cat_csv() -> anyhow::Result<()> {
+  let temp_dir = tempfile::TempDir::new()?;
+
   let data1 = vec!["name,age", "Tom,18", "Jerry,19"];
-  let data2 = vec!["idx,name", "1,Sandy", "2,Patrick"];
-  let temp_dir1 = tempfile::TempDir::new()?;
-  let file_path1 = temp_dir1.path().join("input1.csv");
+  let file_path1 = temp_dir.path().join("input1.csv");
   let mut wtr1 = csv::Writer::from_path(&file_path1)?;
   for line in &data1 {
     wtr1.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
   wtr1.flush()?;
-  let temp_dir2 = tempfile::TempDir::new()?;
-  let file_path2 = temp_dir2.path().join("input2.csv");
+
+  let data2 = vec!["idx,name", "1,Sandy", "2,Patrick"];
+  let file_path2 = temp_dir.path().join("input2.csv");
   let mut wtr2 = csv::Writer::from_path(&file_path2)?;
   for line in &data2 {
     wtr2.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
   wtr2.flush()?;
-  let output_path = temp_dir1
+
+  let output_path = temp_dir
     .path()
     .join("input1.cat.csv")
     .to_str()
@@ -36,7 +38,6 @@ async fn test_cat_csv() -> anyhow::Result<()> {
   ];
   assert_eq!(expected, result);
 
-  temp_dir1.close()?;
-  temp_dir2.close()?;
-  Ok(())
+
+  Ok(temp_dir.close()?)
 }
