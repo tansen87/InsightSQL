@@ -9,13 +9,13 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
 
   let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
-
   let mut wtr = csv::Writer::from_path(&file_path)?;
   for line in &data {
     wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
   wtr.flush()?;
 
+  let path = file_path.to_str().unwrap().to_string();
   let output_path = temp_dir
     .path()
     .join("input.search.csv")
@@ -23,22 +23,18 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
     .unwrap()
     .to_string();
 
-  Ok((
-    temp_dir,
-    file_path.to_str().unwrap().to_string(),
-    output_path,
-  ))
+  Ok((temp_dir, path, output_path))
 }
 
 #[tokio::test]
 async fn test_equal() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string()];
 
   let match_rows = lib::cmd::search::contains(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -49,42 +45,23 @@ async fn test_equal() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 1);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Tom", "18", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Tom,18,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_not_equal() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string()];
 
   let match_rows = lib::cmd::search::not_equal(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -95,46 +72,28 @@ async fn test_not_equal() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 3);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    vec!["Jerry", "19", "male"],
-    vec!["Patrick", "4", "male"],
-    vec!["Sandy", "24", "female"],
+    "name,age,gender",
+    "Jerry,19,male",
+    "Patrick,4,male",
+    "Sandy,24,female",
   ];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_contains() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["at".to_string()];
 
   let match_rows = lib::cmd::search::contains(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -145,42 +104,23 @@ async fn test_contains() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 1);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Patrick", "4", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Patrick,4,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_not_contains() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["at".to_string()];
 
   let match_rows = lib::cmd::search::not_contains(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -191,46 +131,28 @@ async fn test_not_contains() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 3);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    vec!["Tom", "18", "male"],
-    vec!["Jerry", "19", "male"],
-    vec!["Sandy", "24", "female"],
+    "name,age,gender",
+    "Tom,18,male",
+    "Jerry,19,male",
+    "Sandy,24,female",
   ];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_starts_with() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string()];
 
   let match_rows = lib::cmd::search::starts_with(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -241,42 +163,23 @@ async fn test_starts_with() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 1);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Patrick", "4", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Patrick,4,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_not_starts_with() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string()];
 
   let match_rows = lib::cmd::search::not_starts_with(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -287,46 +190,28 @@ async fn test_not_starts_with() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 3);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    vec!["Tom", "18", "male"],
-    vec!["Jerry", "19", "male"],
-    vec!["Sandy", "24", "female"],
+    "name,age,gender",
+    "Tom,18,male",
+    "Jerry,19,male",
+    "Sandy,24,female",
   ];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_ends_with() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["ick".to_string()];
 
   let match_rows = lib::cmd::search::ends_with(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -337,42 +222,23 @@ async fn test_ends_with() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 1);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Patrick", "4", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Patrick,4,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_not_ends_with() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["ick".to_string()];
 
   let match_rows = lib::cmd::search::not_ends_with(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -383,46 +249,28 @@ async fn test_not_ends_with() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 3);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    vec!["Tom", "18", "male"],
-    vec!["Jerry", "19", "male"],
-    vec!["Sandy", "24", "female"],
+    "name,age,gender",
+    "Tom,18,male",
+    "Jerry,19,male",
+    "Sandy,24,female",
   ];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_regex() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let regex_char = r"^J.*".to_string(); // Matches any string that starts with 'J'
 
   let match_rows = lib::cmd::search::regex_search(
-    file_path,
+    path,
     sep,
     column,
     regex_char,
@@ -433,42 +281,23 @@ async fn test_regex() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 1);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Jerry", "19", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Jerry,19,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_is_null() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["".to_string()];
 
   let match_rows = lib::cmd::search::is_null(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -479,42 +308,23 @@ async fn test_is_null() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 0);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec![""]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_is_not_null() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["".to_string()];
 
   let match_rows = lib::cmd::search::is_not_null(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -525,47 +335,29 @@ async fn test_is_not_null() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 4);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    vec!["Tom", "18", "male"],
-    vec!["Jerry", "19", "male"],
-    vec!["Patrick", "4", "male"],
-    vec!["Sandy", "24", "female"],
+    "name,age,gender",
+    "Tom,18,male",
+    "Jerry,19,male",
+    "Patrick,4,male",
+    "Sandy,24,female",
   ];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_gt() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "age".to_string();
   let conditions = "18".to_string();
 
   let match_rows = lib::cmd::search::greater_than(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -576,42 +368,23 @@ async fn test_gt() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 2);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Jerry", "19", "male"], vec!["Sandy", "24", "female"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Jerry,19,male", "Sandy,24,female"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_ge() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "age".to_string();
   let conditions = "18".to_string();
 
   let match_rows = lib::cmd::search::greater_than_or_equal(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -622,46 +395,28 @@ async fn test_ge() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 3);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    vec!["Tom", "18", "male"],
-    vec!["Jerry", "19", "male"],
-    vec!["Sandy", "24", "female"],
+    "name,age,gender",
+    "Tom,18,male",
+    "Jerry,19,male",
+    "Sandy,24,female",
   ];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_lt() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "age".to_string();
   let conditions = "18".to_string();
 
   let match_rows = lib::cmd::search::less_than(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -672,42 +427,23 @@ async fn test_lt() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 1);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Patrick", "4", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Patrick,4,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_le() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "age".to_string();
   let conditions = "18".to_string();
 
   let match_rows = lib::cmd::search::less_than_or_equal(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -718,42 +454,23 @@ async fn test_le() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 2);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Tom", "18", "male"], vec!["Patrick", "4", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Tom,18,male", "Patrick,4,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_between() -> anyhow::Result<()> {
-  let (temp_dir, file_path, output_path) = create_temp_csv()?;
+  let (temp_dir, path, output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "age".to_string();
   let conditions = vec!["18".to_string(), "19".to_string()];
 
   let match_rows = lib::cmd::search::between(
-    file_path,
+    path,
     sep,
     column,
     conditions,
@@ -764,29 +481,10 @@ async fn test_between() -> anyhow::Result<()> {
   .parse::<usize>()?;
   assert_eq!(match_rows, 2);
 
-  let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
-  let expected_headers = ["name", "age", "gender"];
-  for header in expected_headers {
-    assert!(
-      rdr.headers()?.iter().any(|h| h == header),
-      "wrong header: {header}",
-    );
-  }
-
-  let expected = vec![vec!["Tom", "18", "male"], vec!["Jerry", "19", "male"]];
-  for (row, result) in rdr.byte_records().enumerate() {
-    let record = result?;
-    let expected_record = &expected[row];
-    for (col, field) in record.iter().enumerate() {
-      assert_eq!(
-        std::str::from_utf8(field)?,
-        expected_record[col],
-        "Row {}, Column {} do not match",
-        row + 1,
-        col + 1
-      );
-    }
-  }
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "Tom,18,male", "Jerry,19,male"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }
@@ -804,13 +502,13 @@ fn assert_headers_exist<R: std::io::Read>(rdr: &mut csv::Reader<R>, expected: &[
 
 #[tokio::test]
 async fn test_equal_multi() -> anyhow::Result<()> {
-  let (temp_dir, file_path, _output_path) = create_temp_csv()?;
+  let (temp_dir, path, _output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string(), "Jerry".to_string()];
 
   let match_rows = lib::cmd::search::equal_multi(
-    file_path,
+    path,
     sep,
     column,
     conditions.clone(),
@@ -875,13 +573,13 @@ async fn test_equal_multi() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_contains_multi() -> anyhow::Result<()> {
-  let (temp_dir, file_path, _output_path) = create_temp_csv()?;
+  let (temp_dir, path, _output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["To".to_string(), "Jer".to_string()];
 
   let match_rows = lib::cmd::search::contains_multi(
-    file_path,
+    path,
     sep,
     column,
     conditions.clone(),
@@ -946,13 +644,13 @@ async fn test_contains_multi() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_starts_with_multi() -> anyhow::Result<()> {
-  let (temp_dir, file_path, _output_path) = create_temp_csv()?;
+  let (temp_dir, path, _output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string(), "San".to_string()];
 
   let match_rows = lib::cmd::search::starts_with_multi(
-    file_path,
+    path,
     sep,
     column,
     conditions.clone(),
@@ -1017,13 +715,13 @@ async fn test_starts_with_multi() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_ends_with_multi() -> anyhow::Result<()> {
-  let (temp_dir, file_path, _output_path) = create_temp_csv()?;
+  let (temp_dir, path, _output_path) = create_temp_csv()?;
   let sep = b',';
   let column = "name".to_string();
   let conditions = vec!["ick".to_string(), "dy".to_string()];
 
   let match_rows = lib::cmd::search::ends_with_multi(
-    file_path,
+    path,
     sep,
     column,
     conditions.clone(),
