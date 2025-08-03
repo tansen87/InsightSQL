@@ -21,6 +21,7 @@ dependencies = [
  "itoa",
  "lazy_static",
  "log",
+ "memmap2",
  "num_cpus",
  "odbc-api",
  "pinyin",
