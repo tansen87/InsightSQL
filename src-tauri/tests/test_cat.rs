@@ -38,6 +38,5 @@ async fn test_cat_csv() -> anyhow::Result<()> {
   ];
   assert_eq!(expected, result);
 
-
   Ok(temp_dir.close()?)
 }
