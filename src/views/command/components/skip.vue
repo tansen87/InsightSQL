@@ -7,19 +7,23 @@ import {
   Loading,
   Select,
   CloseBold,
-  Delete
+  Delete,
+  Link
 } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
+import { useMarkdown, skipContent } from "@/utils/markdown";
 
-const [isLoading, selectedFiles] = [ref(false), ref([])];
+const selectedFiles = ref([]);
+const [dialog, isLoading] = [ref(false), ref(false)];
 const data = reactive({
   path: "",
   skipRows: "1",
   mode: "nil"
 });
-const { dynamicHeight } = useDynamicHeight(122);
+const { dynamicHeight } = useDynamicHeight(143);
+const { compiledMarkdown } = useMarkdown(skipContent);
 
 listen("update-msg", (event: any) => {
   const [backFilename, rows] = event.payload.split("|");
@@ -97,7 +101,7 @@ async function skipLines() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="dynamicHeight">
+  <div class="page-container">
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -115,19 +119,15 @@ async function skipLines() {
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
-        <el-button
-          @click="skipLines()"
-          :loading="isLoading"
-          :icon="Delete"
-          style="margin-left: 10px"
-        >
-          Skip
-        </el-button>
       </div>
-
-      <el-text>
-        <span>Skip rows from CSV</span>
-      </el-text>
+      <el-button
+        @click="skipLines()"
+        :loading="isLoading"
+        :icon="Delete"
+        style="margin-left: 10px"
+      >
+        Skip
+      </el-button>
     </div>
 
     <el-table
@@ -137,8 +137,8 @@ async function skipLines() {
       empty-text=""
     >
       <el-table-column type="index" width="50" />
-      <el-table-column prop="filename" label="file" style="width: 80%" />
-      <el-table-column prop="status" label="status" width="100">
+      <el-table-column prop="filename" label="File" style="width: 80%" />
+      <el-table-column prop="status" label="Status" width="70">
         <template #default="scope">
           <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
             <Loading />
@@ -173,5 +173,19 @@ async function skipLines() {
         </template>
       </el-table-column>
     </el-table>
-  </el-form>
+    <div class="custom-container1">
+      <div class="custom-container2" />
+      <el-link @click="dialog = true" :icon="Link">
+        <span>
+          About
+          <span style="color: skyblue; font-weight: bold">Skip</span>
+        </span>
+      </el-link>
+    </div>
+    <el-dialog v-model="dialog" title="Skip - Skip rows from CSV" width="800">
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
+  </div>
 </template>

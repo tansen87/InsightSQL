@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { IceCreamRound, FolderOpened } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
+import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { listen } from "@tauri-apps/api/event";
+import { enumerateContent, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
-const [isLoading, isPath] = [ref(false), ref(false)];
+const [dialog, isLoading, isPath] = [ref(false), ref(false), ref(false)];
 const [tableColumn, tableData] = [ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(148);
+const { dynamicHeight } = useDynamicHeight(155);
+const { compiledMarkdown } = useMarkdown(enumerateContent);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -74,23 +76,15 @@ async function enumerate() {
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
-        <el-button
-          @click="enumerate()"
-          :loading="isLoading"
-          :icon="IceCreamRound"
-          style="margin-left: 10px"
-        >
-          Enumerate
-        </el-button>
       </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Add an index for a CSV</span>
-      </el-text>
+      <el-button
+        @click="enumerate()"
+        :loading="isLoading"
+        :icon="IceCreamRound"
+        style="margin-left: 10px"
+      >
+        Enumerate
+      </el-button>
     </div>
     <el-table
       :data="tableData"
@@ -107,9 +101,31 @@ async function enumerate() {
         :key="column.prop"
       />
     </el-table>
-    <el-progress
-      v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-      :percentage="Math.round((currentRows / totalRows) * 100)"
-    />
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-progress
+          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+          :percentage="Math.round((currentRows / totalRows) * 100)"
+          style="width: 75%"
+        />
+      </div>
+      <el-tooltip effect="light" :content="path">
+        <el-link @click="dialog = true" :icon="Link">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Enumerate</span>
+          </span>
+        </el-link>
+      </el-tooltip>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Enumerate - Add a new column enumerating the lines of a CSV"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

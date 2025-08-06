@@ -837,3 +837,53 @@ right anti join result (left_on='idx', right_on='idx')
 \`\`\`
 `;
 }
+
+export function skipContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+\`\`\`
+Skip result, set criteria (skip rows: 2)
+┌─────┬────────┐
+│  2  │ jerry  │
+├─────┼────────┤
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+  `;
+}
+
+export function enumerateContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+\`\`\`
+Enumerate result
+┌───────────────┬──────┬────────┐
+│ enumerate_idx │ idx  │ name   │
+├───────────────┼──────┼────────┤
+│       1       │  1   │ tom    │
+│       2       │  2   │ jerry  │
+│       3       |  3   | hansen │
+└───────────────┴──────┴────────┘
+\`\`\`
+  `;
+}

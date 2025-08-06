@@ -165,9 +165,7 @@ async function countData() {
       </el-table-column>
     </el-table>
     <div class="custom-container1">
-      <div class="custom-container2">
-        <el-text>Count the rows of CSV files</el-text>
-      </div>
+      <div class="custom-container2" />
       <el-link @click="dialog = true" :icon="Link">
         <span>
           About
