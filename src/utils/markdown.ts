@@ -190,7 +190,7 @@ sample file
 │  3  | hansen |
 └─────┴────────┘
 \`\`\`
-Set criteria (Split rows: <u>2</u>, Split mode: <u>Rows</u>)
+(Split rows: <u>2</u>, Split mode: <u>Rows</u>)
 \`\`\`
 split 1
 ┌─────┬────────┐
@@ -218,7 +218,7 @@ say hello.
 this is a test for lines.
 ------------------------
 \`\`\`
-Set criteria (Split rows: <u>2</u>, Split mode: <u>Lines</u>)
+(Split rows: <u>2</u>, Split mode: <u>Lines</u>)
 \`\`\`
 split 1
 ------------------------
@@ -252,7 +252,7 @@ sample file
 \`\`\`
 
 ### 1. Left
-Set criteria (Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Left</u>)
+(Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Left</u>)
 \`\`\`
 ┌─────┬──────────┬────────────┐
 │ idx │ name     │ name_nchar │
@@ -264,7 +264,7 @@ Set criteria (Select column: <u>name</u>, Number of the string: <u>3</u>, String
 \`\`\`
 
 ### 2. Right
-Set criteria (Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Right</u>)
+(Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Right</u>)
 \`\`\`
 ┌─────┬──────────┬────────────┐
 │ idx │ name     │ name_nchar │
@@ -276,7 +276,7 @@ Set criteria (Select column: <u>name</u>, Number of the string: <u>3</u>, String
 \`\`\`
 
 ### 3. StartLength
-Set criteria (Select column: <u>name</u>, Start index: <u>1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
+(Select column: <u>name</u>, Start index: <u>1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
 \`\`\`
 ┌─────┬──────────┬─────────┐
 │ idx │ name     │ name_sl │
@@ -286,7 +286,7 @@ Set criteria (Select column: <u>name</u>, Start index: <u>1</u>, Length of the s
 │  3  | hansen-3 |   han   │
 └─────┴──────────┴─────────┘
 \`\`\`
-Set criteria (Select column: <u>name</u>, Start index: <u>-1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
+(Select column: <u>name</u>, Start index: <u>-1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
 \`\`\`
 ┌─────┬──────────┬─────────┐
 │ idx │ name     │ name_sl │
@@ -298,7 +298,7 @@ Set criteria (Select column: <u>name</u>, Start index: <u>-1</u>, Length of the 
 \`\`\`
 
 ### 4. Nth
-Set criteria (Select column: <u>name</u>, Number of the string: <u>1</u>, String separator: <u>-</u>, String mode: <u>Nth</u>)
+(Select column: <u>name</u>, Number of the string: <u>1</u>, String separator: <u>-</u>, String mode: <u>Nth</u>)
 \`\`\`
 ┌─────┬──────────┬──────────┐
 │ idx │ name     │ name_nth │
@@ -310,7 +310,7 @@ Set criteria (Select column: <u>name</u>, Number of the string: <u>1</u>, String
 \`\`\`
 
 ### 5. Nmax
-Set criteria (Select column: <u>name</u>, Number of the string: <u>2</u>, String separator: <u>-</u>, String mode: <u>Nmax</u>)
+(Select column: <u>name</u>, Number of the string: <u>2</u>, String separator: <u>-</u>, String mode: <u>Nmax</u>)
 \`\`\`
 ┌─────┬──────────┬────────────┬────────────┐
 │ idx │ name     │ name_nmax1 │ name_nmax2 │
@@ -337,7 +337,7 @@ sample file (test.csv)
 \`\`\`
 
 ### 1. Equal
-Set criteria (Select column: <u>name</u>, Search mode: <u>Equal</u>, Search conditions: <u>tom|jerry</u>)
+(Select column: <u>name</u>, Search mode: <u>Equal</u>, Search conditions: <u>tom|jerry</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -348,7 +348,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>Equal</u>, Search cond
 \`\`\`
 
 ### 2. EqualMulti
-Set criteria (Select column: <u>name</u>, Search mode: <u>EqualMulti</u>, Search conditions: <u>tom|jerry</u>)
+(Select column: <u>name</u>, Search mode: <u>EqualMulti</u>, Search conditions: <u>tom|jerry</u>)
 \`\`\`
 test_tom.csv
 ┌─────┬────────┐
@@ -366,7 +366,7 @@ test_jerry.csv
 \`\`\`
 
 ### 3. NotEqual
-Set criteria (Select column: <u>name</u>, Search mode: <u>NotEqual</u>, Search conditions: <u>tom|jerry</u>)
+(Select column: <u>name</u>, Search mode: <u>NotEqual</u>, Search conditions: <u>tom|jerry</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -376,7 +376,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>NotEqual</u>, Search c
 \`\`\`
 
 ### 4. Contains
-Set criteria (Select column: <u>name</u>, Search mode: <u>Contains</u>, Search conditions: <u>om|jer</u>)
+(Select column: <u>name</u>, Search mode: <u>Contains</u>, Search conditions: <u>om|jer</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -387,7 +387,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>Contains</u>, Search c
 \`\`\`
 
 ### 5. ContainsMulti
-Set criteria (Select column: <u>name</u>, Search mode: <u>ContainsMulti</u>, Search conditions: <u>om|jer</u>)
+(Select column: <u>name</u>, Search mode: <u>ContainsMulti</u>, Search conditions: <u>om|jer</u>)
 \`\`\`
 test_om.csv
 ┌─────┬────────┐
@@ -405,7 +405,7 @@ test_jer.csv
 \`\`\`
 
 ### 6. NotContains
-Set criteria (Select column: <u>name</u>, Search mode: <u>NotContains</u>, Search conditions: <u>om|jer</u>)
+(Select column: <u>name</u>, Search mode: <u>NotContains</u>, Search conditions: <u>om|jer</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -415,7 +415,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>NotContains</u>, Searc
 \`\`\`
 
 ### 7. StartsWith
-Set criteria (Select column: <u>name</u>, Search mode: <u>StartsWith</u>, Search conditions: <u>to|jer</u>)
+(Select column: <u>name</u>, Search mode: <u>StartsWith</u>, Search conditions: <u>to|jer</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -426,7 +426,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>StartsWith</u>, Search
 \`\`\`
 
 ### 8. StartsWithMulti
-Set criteria (Select column: <u>name</u>, Search mode: <u>StartsWithMulti</u>, Search conditions: <u>to|jer</u>)
+(Select column: <u>name</u>, Search mode: <u>StartsWithMulti</u>, Search conditions: <u>to|jer</u>)
 \`\`\`
 test_to.csv
 ┌─────┬────────┐
@@ -444,7 +444,7 @@ test_jer.csv
 \`\`\`
 
 ### 9. NotStartsWith
-Set criteria (Select column: <u>name</u>, Search mode: <u>NotStartsWith</u>, Search conditions: <u>to|jer</u>)
+(Select column: <u>name</u>, Search mode: <u>NotStartsWith</u>, Search conditions: <u>to|jer</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -454,7 +454,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>NotStartsWith</u>, Sea
 \`\`\`
 
 ### 10. EndsWith
-Set criteria (Select column: <u>name</u>, Search mode: <u>EndsWith</u>, Search conditions: <u>om|rry</u>)
+(Select column: <u>name</u>, Search mode: <u>EndsWith</u>, Search conditions: <u>om|rry</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -465,7 +465,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>EndsWith</u>, Search c
 \`\`\`
 
 ### 11. EndsWithMulti
-Set criteria (Select column: <u>name</u>, Search mode: <u>EndsWithMulti</u>, Search conditions: <u>om|rry</u>)
+(Select column: <u>name</u>, Search mode: <u>EndsWithMulti</u>, Search conditions: <u>om|rry</u>)
 \`\`\`
 test_om.csv
 ┌─────┬────────┐
@@ -483,7 +483,7 @@ test_rry.csv
 \`\`\`
 
 ### 12. NotEndsWith
-Set criteria (Select column: <u>name</u>, Search mode: <u>NotEndsWith</u>, Search conditions: <u>om|rry</u>)
+(Select column: <u>name</u>, Search mode: <u>NotEndsWith</u>, Search conditions: <u>om|rry</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -493,7 +493,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>NotEndsWith</u>, Searc
 \`\`\`
 
 ### 13. Regex
-Set criteria (Select column: <u>name</u>, Search mode: <u>Regex</u>, Search conditions: <u>hansen</u>)
+(Select column: <u>name</u>, Search mode: <u>Regex</u>, Search conditions: <u>hansen</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -504,7 +504,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>Regex</u>, Search cond
 \`\`\`
 
 ### 14. IsNull
-Set criteria (Select column: <u>name</u>, Search mode: <u>IsNull</u>)
+(Select column: <u>name</u>, Search mode: <u>IsNull</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -514,7 +514,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>IsNull</u>)
 \`\`\`
 
 ### 15. IsNotNull
-Set criteria (Select column: <u>name</u>, Search mode: <u>IsNotNull</u>)
+(Select column: <u>name</u>, Search mode: <u>IsNotNull</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -526,7 +526,7 @@ Set criteria (Select column: <u>name</u>, Search mode: <u>IsNotNull</u>)
 \`\`\`
 
 ### 16. gt
-Set criteria (Select column: <u>idx</u>, Search mode: <u>gt</u>, Search conditions: <u>2</u>)
+(Select column: <u>idx</u>, Search mode: <u>gt</u>, Search conditions: <u>2</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -536,7 +536,7 @@ Set criteria (Select column: <u>idx</u>, Search mode: <u>gt</u>, Search conditio
 \`\`\`
 
 ### 17. ge
-Set criteria (Select column: <u>idx</u>, Search mode: <u>ge</u>, Search conditions: <u>2</u>)
+(Select column: <u>idx</u>, Search mode: <u>ge</u>, Search conditions: <u>2</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -547,7 +547,7 @@ Set criteria (Select column: <u>idx</u>, Search mode: <u>ge</u>, Search conditio
 \`\`\`
 
 ### 18. lt
-Set criteria (Select column: <u>idx</u>, Search mode: <u>lt</u>, Search conditions: <u>2</u>)
+(Select column: <u>idx</u>, Search mode: <u>lt</u>, Search conditions: <u>2</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -557,7 +557,7 @@ Set criteria (Select column: <u>idx</u>, Search mode: <u>lt</u>, Search conditio
 \`\`\`
 
 ### 19. le
-Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>2</u>)
+(Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>2</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -568,7 +568,7 @@ Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditio
 \`\`\`
 
 ### 20. Between
-Set criteria (Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>1|2</u>)
+(Select column: <u>idx</u>, Search mode: <u>le</u>, Search conditions: <u>1|2</u>)
 \`\`\`
 ┌─────┬────────┐
 │ idx │ name   │
@@ -619,7 +619,7 @@ sample file
 \`\`\`
 
 ### 1. Include
-Set criteria (Select column: <u>name,idx</u>, Select mode: <u>Include</u>)
+(Select column: <u>name,idx</u>, Select mode: <u>Include</u>)
 \`\`\`
 ┌────────┬─────┐
 │ name   │ idx │
@@ -631,16 +631,15 @@ Set criteria (Select column: <u>name,idx</u>, Select mode: <u>Include</u>)
 \`\`\`
 
 ### 2. Exclude
-Set criteria (Select column: <u>\\_filename\\_</u>, Select mode: <u>Exclude</u>)
+(Select column: <u>name,idx</u>, Select mode: <u>Exclude</u>)
 \`\`\`
-sample file
-┌─────┬────────┬─────────────┐
-│ idx │ name   │ _filename_  │
-├─────┼────────┼─────────────┤
-│  1  │ tom    │ test1.csv   │
-│  2  │ jerry  │ test1.csv   │
-│  3  | hansen | test1.csv   │
-└─────┴────────┴─────────────┘
+┌─────────────┐
+│ _filename_  │
+├─────────────┤
+│ test1.csv   │
+│ test1.csv   │
+│ test1.csv   │
+└─────────────┘
 \`\`\`
 `;
 }
@@ -659,7 +658,7 @@ sample file
 \`\`\`
 
 ### 1. fill
-Set criteria (Select column: <u>name</u>, fill mode: <u>fill</u>, fill value: <u>jerry</u>)
+(Select column: <u>name</u>, fill mode: <u>fill</u>, fill value: <u>jerry</u>)
 \`\`\`
 ┌─────┬─────────┐
 │ idx │ name    │
@@ -671,7 +670,7 @@ Set criteria (Select column: <u>name</u>, fill mode: <u>fill</u>, fill value: <u
 \`\`\`
 
 ### 2. f-fill
-Set criteria (Select column: <u>name</u>, fill mode: <u>f-fill</u>)
+(Select column: <u>name</u>, fill mode: <u>f-fill</u>)
 \`\`\`
 ┌─────┬─────────┐
 │ idx │ name    │
@@ -852,7 +851,7 @@ sample file
 \`\`\`
 
 \`\`\`
-Skip result, set criteria (skip rows: 2)
+Skip result (skip rows: 2)
 ┌─────┬────────┐
 │  2  │ jerry  │
 ├─────┼────────┤
@@ -885,5 +884,70 @@ Enumerate result
 │       3       |  3   | hansen │
 └───────────────┴──────┴────────┘
 \`\`\`
-  `;
+`;
+}
+
+export function pinyinContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ 汤姆   │
+│  2  │ 杰瑞   │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### upper
+(Select column: <u>name</u>, pinyin style: <u>upper</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ TANGMU │
+│  2  │ JIERUI │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+### lower
+(Select column: <u>name</u>, pinyin style: <u>lower</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tangmu │
+│  2  │ jierui │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+`;
+}
+
+export function replaceContent() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+(Select column: <u>name</u>, regex pattern: <u>tom</u>, replacement: <u>guy</u>)
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ guy    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+`;
 }

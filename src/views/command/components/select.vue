@@ -173,6 +173,7 @@ async function selectColumns() {
         <el-progress
           v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
           :percentage="Math.round((currentRows / totalRows) * 100)"
+          style="width: 75%"
         />
       </div>
       <el-link @click="dialog = true" :icon="Link">

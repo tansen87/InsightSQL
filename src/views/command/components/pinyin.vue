@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { listen } from "@tauri-apps/api/event";
+import { FolderOpened, SwitchFilled, Link } from "@element-plus/icons-vue";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { listen } from "@tauri-apps/api/event";
+import { pinyinContent, useMarkdown } from "@/utils/markdown";
 
 const [mode, pinyinStyle] = [ref("nil"), ref("upper")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [columns, path] = [ref(""), ref("")];
-const [isLoading, isPath] = [ref(false), ref(false)];
+const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(192);
+const { dynamicHeight } = useDynamicHeight(199);
+const { compiledMarkdown } = useMarkdown(pinyinContent);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -22,7 +24,6 @@ listen("total-rows", (event: any) => {
 });
 
 async function selectFile() {
-  isPath.value = false;
   columns.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
@@ -37,7 +38,6 @@ async function selectFile() {
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -78,13 +78,7 @@ async function chineseToPinyin() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-        <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
-            <el-option label="idx" value="idx" />
-            <el-option label="nil" value="nil" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="upper or lower" effect="light">
+        <el-tooltip content="pinyin style" effect="light">
           <el-select
             v-model="pinyinStyle"
             style="margin-left: 10px; width: 80px"
@@ -93,23 +87,21 @@ async function chineseToPinyin() {
             <el-option label="lower" value="lower" />
           </el-select>
         </el-tooltip>
-        <el-button
-          @click="chineseToPinyin()"
-          :loading="isLoading"
-          :icon="SwitchFilled"
-          style="margin-left: 10px"
-        >
-          Convert
-        </el-button>
+        <el-tooltip content="if nil, no progress bar" effect="light">
+          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
+            <el-option label="idx" value="idx" />
+            <el-option label="nil" value="nil" />
+          </el-select>
+        </el-tooltip>
       </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Convert Chinese to Pinyin in CSV</span>
-      </el-text>
+      <el-button
+        @click="chineseToPinyin()"
+        :loading="isLoading"
+        :icon="SwitchFilled"
+        style="margin-left: 10px"
+      >
+        Convert
+      </el-button>
     </div>
     <el-select
       v-model="columns"
@@ -140,9 +132,31 @@ async function chineseToPinyin() {
         :key="column.prop"
       />
     </el-table>
-    <el-progress
-      v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-      :percentage="Math.round((currentRows / totalRows) * 100)"
-    />
+    <div class="custom-container1">
+      <div class="custom-container2">
+        <el-progress
+          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+          :percentage="Math.round((currentRows / totalRows) * 100)"
+          style="width: 75%"
+        />
+      </div>
+      <el-link @click="dialog = true" :icon="Link">
+        <el-tooltip :content="path" effect="light">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Pinyin</span>
+          </span>
+        </el-tooltip>
+      </el-link>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Pinyin - Convert Chinese to Pinyin in CSV"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

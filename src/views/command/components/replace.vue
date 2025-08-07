@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Refresh } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
+import { replaceContent, useMarkdown } from "@/utils/markdown";
 
-const [isLoading, isPath] = [ref(false), ref(false)];
+const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [selectColumn, path, regexPattern, replacement] = [
   ref(""),
@@ -14,10 +15,10 @@ const [selectColumn, path, regexPattern, replacement] = [
   ref(""),
   ref("")
 ];
-const { dynamicHeight } = useDynamicHeight(222);
+const { dynamicHeight } = useDynamicHeight(199);
+const { compiledMarkdown } = useMarkdown(replaceContent);
 
 async function selectFile() {
-  isPath.value = false;
   selectColumn.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
@@ -33,7 +34,6 @@ async function selectFile() {
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -68,29 +68,16 @@ async function replaceData() {
 
 <template>
   <div class="page-container">
-    <div class="custom-container1">
+    <div class="custom-container1" style="margin-bottom: 12px">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-      </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" placement="top" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Replace occurrences of a pattern across a CSV file</span>
-      </el-text>
-    </div>
-
-    <div class="custom-container1">
-      <div class="custom-container1" style="margin-top: 12px">
         <el-select
           v-model="selectColumn"
           filterable
-          style="width: 200px"
-          placeholder="Replace by column"
+          style="width: 150px; margin-left: 10px"
+          placeholder="Select column"
         >
           <el-option
             v-for="item in tableHeader"
@@ -100,29 +87,16 @@ async function replaceData() {
           />
         </el-select>
         <el-input
-          style="margin-left: 10px; width: 200px"
+          style="margin-left: 10px; width: 150px"
           placeholder="regex pattern"
           v-model="regexPattern"
-          clearable
         />
       </div>
-      <el-button
-        @click="replaceData()"
-        :loading="isLoading"
-        :icon="Refresh"
-        style="margin-top: 10px"
-      >
+      <el-button @click="replaceData()" :loading="isLoading" :icon="Refresh">
         Replace
       </el-button>
     </div>
-    <div style="margin-top: 12px">
-      <el-input
-        v-model="replacement"
-        autosize
-        clearable
-        placeholder="Replacement string - Replace with any string"
-      />
-    </div>
+    <el-input v-model="replacement" autosize placeholder="replacement" />
     <el-table
       :data="tableData"
       :height="dynamicHeight"
@@ -138,5 +112,25 @@ async function replaceData() {
         :key="column.prop"
       />
     </el-table>
+    <div class="custom-container1">
+      <div class="custom-container2" />
+      <el-link @click="dialog = true" :icon="Link">
+        <el-tooltip :content="path" effect="light">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Replace</span>
+          </span>
+        </el-tooltip>
+      </el-link>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Replace - Replace CSV data using a regex"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="compiledMarkdown" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>
