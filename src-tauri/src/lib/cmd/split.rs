@@ -1,7 +1,6 @@
 use std::{
   fs::File,
   io::{BufRead, BufWriter, Write},
-  path::Path,
   time::Instant,
 };
 
@@ -148,12 +147,12 @@ pub async fn split(path: String, size: u32, mode: String) -> Result<String, Stri
   let start_time = Instant::now();
 
   let csv_options = CsvOptions::new(path.as_str());
-  let parent_path = Path::new(path.as_str()).parent().unwrap().to_str().unwrap();
-  let file_stem = Path::new(path.as_str())
+  let parent_path = csv_options
+    .parent_path()
+    .map_err(|e| format!("get parent path failed: {e}"))?;
+  let file_stem = csv_options
     .file_stem()
-    .unwrap()
-    .to_str()
-    .unwrap();
+    .map_err(|e| format!("get file stem failed: {e}"))?;
   let output_path = format!("{parent_path}/{file_stem}");
 
   match mode.as_str() {
@@ -162,7 +161,7 @@ pub async fn split(path: String, size: u32, mode: String) -> Result<String, Stri
         Some(idx) => parallel_split_rows(
           &idx,
           csv_options,
-          size.try_into().expect("invalid size"),
+          size.try_into().map_err(|e| format!("invalid size: {e}"))?,
           &output_path,
         )
         .await

@@ -24,32 +24,24 @@ use crate::io::excel::excel_reader::{
 use crate::io::excel::xlsx_writer::XlsxWriter;
 
 /// Unified dataframe writing handler
-fn write_dataframe(df: &DataFrame, output: Option<String>, format: &str, sep: u8) -> Result<()> {
-  match (df.shape().0 < 104_0000, format) {
-    (true, "xlsx") => write_xlsx(&df, output),
-    (_, "parquet") => write_parquet(df.clone(), output),
-    _ => write_csv(df.clone(), output, sep),
+fn write_dataframe(df: &DataFrame, output_path: PathBuf, format: &str, sep: u8) -> Result<()> {
+  match (df.shape().0 < 104_8576, format) {
+    (true, "xlsx") => write_xlsx(&df, output_path),
+    (_, "parquet") => write_parquet(df.clone(), output_path),
+    _ => write_csv(df.clone(), output_path, sep),
   }
 }
 
 /// XLSX writing implementation
-fn write_xlsx(df: &DataFrame, output: Option<String>) -> Result<()> {
-  let output_path = output.map_or_else(
-    || PathBuf::from("default_output.xlsx"),
-    |s| PathBuf::from(format!("{}.xlsx", s)),
-  );
+fn write_xlsx(df: &DataFrame, output_path: PathBuf) -> Result<()> {
   XlsxWriter::new().write_dataframe(&df, output_path)?;
   Ok(())
 }
 
 /// Parquet writing implementation
-fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<()> {
-  let output_path = output.map_or_else(
-    || PathBuf::from("default_output.parquet"),
-    |s| PathBuf::from(format!("{}.parquet", s)),
-  );
+fn write_parquet(mut df: DataFrame, output_path: PathBuf) -> Result<()> {
   let file = File::create(output_path)?;
-  let writer = BufWriter::new(file);
+  let writer = BufWriter::with_capacity(256_000, file);
   ParquetWriter::new(writer)
     .with_row_group_size(Some(768 ^ 2))
     .finish(&mut df)?;
@@ -57,18 +49,14 @@ fn write_parquet(mut df: DataFrame, output: Option<String>) -> Result<()> {
 }
 
 /// CSV writing implementation
-fn write_csv(mut df: DataFrame, output: Option<String>, sep: u8) -> Result<()> {
-  let w: Box<dyn Write> = match output {
-    Some(path) => Box::new(File::create(format!("{}.csv", path))?),
-    None => Box::new(std::io::stdout()),
-  };
-  let mut w = BufWriter::with_capacity(256_000, w);
+fn write_csv(mut df: DataFrame, output_path: PathBuf, sep: u8) -> Result<()> {
+  let file = File::create(output_path)?;
+  let mut w = BufWriter::with_capacity(256_000, file);
   CsvWriter::new(&mut w)
     .with_separator(sep)
     .with_float_precision(Some(2))
     .finish(&mut df)?;
-  w.flush()?;
-  Ok(())
+  Ok(w.flush()?)
 }
 
 async fn prepare_query(
@@ -84,22 +72,14 @@ async fn prepare_query(
   };
 
   let mut ctx = SQLContext::new();
-
-  let mut output: Vec<Option<String>> = Vec::new();
-  let current_time = chrono::Local::now().format("%H%M%S");
-
-  let output_suffix = format!("sqlp_{}", current_time);
-
-  for path in file_path.clone() {
-    let mut output_path = PathBuf::from(path);
-    output_path.set_extension(&output_suffix);
-    let output_str = if let Some(output_path_str) = output_path.to_str() {
-      Some(output_path_str.to_string())
-    } else {
-      None
-    };
-    output.push(output_str);
-  }
+  let csv_options = CsvOptions::new(file_path.get(0).ok_or(anyhow!("No file choice"))?);
+  let mut output_path = PathBuf::from(csv_options.parent_path()?);
+  let file_stem = csv_options.file_stem()?;
+  match write_format {
+    "xlsx" => output_path.push(format!("{file_stem}.sql.xlsx")),
+    "parquet" => output_path.push(format!("{file_stem}.sql.parquet")),
+    _ => output_path.push(format!("{file_stem}.sql.csv")),
+  };
 
   let mut opt_state = OptFlags::from_bits_truncate(0);
   opt_state |= OptFlags::default();
@@ -194,7 +174,6 @@ async fn prepare_query(
     current_query = current_query.replace(table_alias, &format!(r#""{table_name}""#));
   }
 
-  let output_path = Some(format!("{}", output[0].clone().unwrap()));
   let mut ctx = ctx.clone();
 
   let mut df = tokio::task::spawn_blocking(move || -> Result<_> {
