@@ -18,9 +18,11 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
   let path = file_path.to_str().unwrap().to_string();
   let output_path = temp_dir
     .path()
-    .join("input.search.csv")
-    .to_str()
-    .unwrap()
+    .join(format!(
+      "{}.search.csv",
+      file_path.file_stem().unwrap().to_str().unwrap()
+    ))
+    .to_string_lossy()
     .to_string();
 
   Ok((temp_dir, path, output_path))

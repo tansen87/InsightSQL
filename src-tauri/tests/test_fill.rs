@@ -1,13 +1,7 @@
-use std::fs::{self, File};
-use std::io::Write;
-
-use anyhow::Result;
-use tempfile::TempDir;
-
-use lib::cmd::fill;
-
 #[tokio::test]
-async fn test_fill() -> Result<()> {
+async fn test_fill() -> anyhow::Result<()> {
+  let temp_dir = tempfile::TempDir::new()?;
+
   let data = vec![
     "name,age,gender",
     "Jerry,19,",
@@ -15,21 +9,18 @@ async fn test_fill() -> Result<()> {
     "Sandy,24,female",
   ];
 
-  let temp_dir = TempDir::new()?;
-  let file_path = temp_dir.path().join("data.csv");
-
-  let mut file = File::create(&file_path)?;
+  let file_path = temp_dir.path().join("input.csv");
+  let mut wtr = csv::Writer::from_path(&file_path)?;
   for line in &data {
-    writeln!(file, "{}", line)?;
+    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
+  wtr.flush()?;
 
-  let fill_column = "gender|age".to_string();
-  let fill_value = "unknown".to_string();
-  fill::fill_null(
+  lib::cmd::fill::fill_null(
     file_path.to_str().unwrap(),
-    fill_column,
-    fill_value,
-    "fill"
+    "gender|age".to_string(),
+    "unknown".to_string(),
+    "fill",
   )
   .await?;
 
@@ -38,17 +29,15 @@ async fn test_fill() -> Result<()> {
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 
-  let fill_data = fs::read_to_string(output_path)?;
-  let expected_data = vec![
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec![
     "name,age,gender",
     "Jerry,19,unknown",
     "Patrick,4,male",
     "Sandy,24,female",
-  ]
-  .join("\n")
-    + "\n";
-
-  assert_eq!(fill_data, expected_data);
+  ];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }

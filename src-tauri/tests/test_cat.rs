@@ -18,15 +18,18 @@ async fn test_cat_csv() -> anyhow::Result<()> {
   }
   wtr2.flush()?;
 
-  let output_path = temp_dir
-    .path()
-    .join("input1.cat.csv")
-    .to_str()
-    .unwrap()
-    .to_string();
+  let output_path = temp_dir.path().join(format!(
+    "{}.cat.csv",
+    file_path1.file_stem().unwrap().to_str().unwrap()
+  ));
   let p1 = file_path1.to_string_lossy().to_string();
   let p2 = file_path2.to_string_lossy().to_string();
-  lib::cmd::cat::cat_with_csv(format!("{p1}|{p2}"), "0".to_string(), output_path.clone()).await?;
+  lib::cmd::cat::cat_with_csv(
+    format!("{p1}|{p2}"),
+    "0".to_string(),
+    output_path.to_string_lossy().to_string(),
+  )
+  .await?;
   let binding = std::fs::read_to_string(&output_path)?;
   let result = binding.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![

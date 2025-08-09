@@ -1,16 +1,6 @@
-use std::fs::File;
-use std::io::Write;
-
-use anyhow::Result;
-use csv::ReaderBuilder;
-use tempfile::TempDir;
-
-// use lib::cmd::pinyin;
-
 #[tokio::test]
-async fn test_pinyin() -> Result<()> {
-  let temp_dir = TempDir::new()?;
-  let file_path = temp_dir.path().join("data.csv");
+async fn test_pinyin() -> anyhow::Result<()> {
+  let temp_dir = tempfile::TempDir::new()?;
 
   let data = vec![
     "name,age,gender",
@@ -18,39 +8,36 @@ async fn test_pinyin() -> Result<()> {
     "杰瑞,19,male",
     "Sandy,24,female",
   ];
-
-  let mut file = File::create(&file_path)?;
-  for line in data.iter() {
-    writeln!(file, "{}", line)?;
+  let file_path = temp_dir.path().join("input.csv");
+  let mut wtr = csv::Writer::from_path(&file_path)?;
+  for line in &data {
+    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
+  wtr.flush()?;
 
-  // pinyin::chinese_to_pinyin(
-  //   file_path.to_str().unwrap(),
-  //   "name|gender".to_string(),
-  //   "nil",
-  // )
-  // .await?;
+  lib::cmd::pinyin::chinese_to_pinyin(
+    file_path.to_str().unwrap(),
+    "name|gender".to_string(),
+    "nil",
+    "upper",
+    lib::utils::MockEmitter::default(),
+  )
+  .await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.pinyin.csv",
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 
-  let mut rdr = ReaderBuilder::new()
-    .has_headers(true)
-    .from_path(output_path)?;
-
-  let expected_data = vec![
-    vec!["TANGMU", "18", "NAN"],
-    vec!["JIERUI", "19", "male"],
-    vec!["Sandy", "24", "female"],
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec![
+    "name,age,gender",
+    "TANGMU,18,NAN",
+    "JIERUI,19,male",
+    "Sandy,24,female",
   ];
-
-  for (i, result) in rdr.records().enumerate() {
-    let record = result?;
-    let fields: Vec<String> = record.iter().map(|s| s.to_string()).collect();
-    assert_eq!(fields, expected_data[i], "record {} does not match", i);
-  }
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }

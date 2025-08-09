@@ -14,12 +14,10 @@ async fn test_reverse() -> anyhow::Result<()> {
     wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
   wtr.flush()?;
-  let output_path = temp_dir
-    .path()
-    .join("input.reverse.csv")
-    .to_str()
-    .unwrap()
-    .to_string();
+  let output_path = temp_dir.path().join(format!(
+    "{}.reverse.csv",
+    file_path.file_stem().unwrap().to_str().unwrap()
+  ));
 
   lib::cmd::reverse::reverse_csv(file_path.to_string_lossy().to_string()).await?;
   let context = std::fs::read_to_string(output_path)?;

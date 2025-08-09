@@ -1,9 +1,6 @@
-use std::io::Write;
-
 #[tokio::test]
 async fn test_rename() -> anyhow::Result<()> {
   let temp_dir = tempfile::TempDir::new()?;
-  let file_path = temp_dir.path().join("data.csv");
 
   let data = vec![
     "name,age,gender",
@@ -11,17 +8,16 @@ async fn test_rename() -> anyhow::Result<()> {
     "Patrick,4,male",
     "Sandy,24,female",
   ];
-
-  let mut file = std::fs::File::create(&file_path)?;
+  let file_path = temp_dir.path().join("input.csv");
+  let mut wtr = csv::Writer::from_path(&file_path)?;
   for line in &data {
-    writeln!(file, "{}", line)?;
+    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
   }
-
-  let new_header = "first_name,years_old,sex";
+  wtr.flush()?;
 
   lib::cmd::rename::rename_headers(
     file_path.to_str().unwrap(),
-    new_header.to_string(),
+    "first_name,years_old,sex".to_string(),
     "idx",
     lib::utils::MockEmitter::default(),
   )
@@ -32,17 +28,15 @@ async fn test_rename() -> anyhow::Result<()> {
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 
-  let content = std::fs::read_to_string(output_path)?;
-  let expected_content = vec![
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec![
     "first_name,years_old,sex",
     "Jerry,19,male",
     "Patrick,4,male",
     "Sandy,24,female",
-  ]
-  .join("\n")
-    + "\n";
-
-  assert_eq!(content, expected_content);
+  ];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }

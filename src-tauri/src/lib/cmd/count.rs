@@ -12,7 +12,7 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 
   let count = match csv_options.indexed()? {
     Some(idx) => idx.count(),
-    None => count_record(true, &csv_options)?,
+    None => count_record(true, &csv_options).await?,
   };
 
   Ok(count)
@@ -21,8 +21,8 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 /// Used to check for counting errors caused by double quotation marks in CSV files
 pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
   let csv_options = CsvOptions::new(&path);
-  let quoting_true = count_record(true, &csv_options)?;
-  let quoting_false = count_record(false, &csv_options)?;
+  let quoting_true = count_record(true, &csv_options).await?;
+  let quoting_false = count_record(false, &csv_options).await?;
 
   let max_count = std::cmp::max(quoting_true, quoting_false);
   let min_count = std::cmp::min(quoting_true, quoting_false);
@@ -30,7 +30,7 @@ pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
   Ok(max_count - min_count)
 }
 
-fn count_record<P: AsRef<Path> + Send + Sync>(
+async fn count_record<P: AsRef<Path> + Send + Sync>(
   quoting: bool,
   csv_options: &CsvOptions<P>,
 ) -> Result<u64> {
@@ -54,7 +54,11 @@ async fn single_process(
   start_time: Instant,
   window: &Window,
 ) -> Result<(), String> {
-  let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+  let filename = Path::new(file)
+    .file_name()
+    .ok_or("get file name filed")?
+    .to_str()
+    .ok_or("to str failed")?;
 
   if let Err(e) = window
     .emit("start-count", &filename)

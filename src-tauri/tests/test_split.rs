@@ -1,16 +1,9 @@
-use std::{
-  fs::{self, File},
-  io::{BufRead, BufReader, BufWriter, Write},
-};
-
-use anyhow::Result;
-use tempfile::TempDir;
-
-use lib::cmd::split;
-use lib::io::csv::options::CsvOptions;
+use std::io::{BufRead, Write};
 
 #[tokio::test]
-async fn test_split_rows() -> Result<()> {
+async fn test_split_rows() -> anyhow::Result<()> {
+  let temp_dir = tempfile::TempDir::new()?;
+
   let data = vec![
     "name,age,gender",
     "Tom,18,male",
@@ -18,10 +11,7 @@ async fn test_split_rows() -> Result<()> {
     "Patrick,4,male",
     "Sandy,24,female",
   ];
-
-  let temp_dir = TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
-
   let mut wtr = csv::Writer::from_path(&file_path)?;
   for line in &data {
     wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
@@ -30,13 +20,14 @@ async fn test_split_rows() -> Result<()> {
 
   let size: usize = 2;
 
-  let csv_options = CsvOptions::new(file_path.to_str().unwrap());
+  let csv_options = lib::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_stem}");
-  split::sequential_split_rows(csv_options, size.try_into()?, &output_path).await?;
 
-  let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
+  lib::cmd::split::sequential_split_rows(csv_options, size.try_into()?, &output_path).await?;
+
+  let output_files: Vec<_> = std::fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
     .filter(|entry| entry.path().is_file())
     .filter(|entry| {
@@ -50,8 +41,8 @@ async fn test_split_rows() -> Result<()> {
   assert_eq!(output_files.len(), 2);
 
   for (i, entry) in output_files.iter().enumerate() {
-    let file = File::open(entry.path())?;
-    let reader = BufReader::new(file);
+    let file = std::fs::File::open(entry.path())?;
+    let reader = std::io::BufReader::new(file);
     let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
 
     let expected_headers = "name,age,gender\n";
@@ -69,7 +60,9 @@ async fn test_split_rows() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_split_lines() -> Result<()> {
+async fn test_split_lines() -> anyhow::Result<()> {
+  let temp_dir = tempfile::TempDir::new()?;
+
   let data = vec![
     "name,age,gender",
     "Tom,18",
@@ -77,23 +70,22 @@ async fn test_split_lines() -> Result<()> {
     "Patrick,4,male",
     "Sandy,24,female",
   ];
-
-  let temp_dir = TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
 
-  let mut wtr = BufWriter::new(File::create(&file_path)?);
+  let mut wtr = std::io::BufWriter::new(std::fs::File::create(&file_path)?);
   for line in data.iter() {
     writeln!(wtr, "{}", line.to_string())?;
   }
   wtr.flush()?;
 
-  let csv_options = CsvOptions::new(file_path.to_str().unwrap());
+  let csv_options = lib::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_stem}");
-  split::split_lines(csv_options, 2, &output_path).await?;
 
-  let output_files: Vec<_> = fs::read_dir(temp_dir.path())?
+  lib::cmd::split::split_lines(csv_options, 2, &output_path).await?;
+
+  let output_files: Vec<_> = std::fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
     .filter(|entry| entry.path().is_file())
     .filter(|entry| {

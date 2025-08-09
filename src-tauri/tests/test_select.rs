@@ -25,12 +25,10 @@ async fn test_select() -> anyhow::Result<()> {
   )
   .await?;
 
-  let output_path = temp_dir
-    .path()
-    .join("input.select.csv")
-    .to_str()
-    .unwrap()
-    .to_string();
+  let output_path = temp_dir.path().join(format!(
+    "{}.select.csv",
+    file_path.file_stem().unwrap().to_str().unwrap()
+  ));
 
   let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
   let expected_headers = ["name", "age"];

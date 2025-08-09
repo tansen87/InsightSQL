@@ -1,5 +1,7 @@
 #[tokio::test]
 async fn test_skip() -> anyhow::Result<()> {
+  let temp_dir = tempfile::TempDir::new()?;
+
   let data = vec![
     "汤姆,18,男",
     "Patrick,4,male",
@@ -7,10 +9,7 @@ async fn test_skip() -> anyhow::Result<()> {
     "杰瑞,19,male",
     "Sandy,24,female",
   ];
-
-  let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
-
   let mut wtr = csv::WriterBuilder::new().from_path(&file_path)?;
   for line in &data {
     wtr.write_record(line.split(','))?;
@@ -22,7 +21,7 @@ async fn test_skip() -> anyhow::Result<()> {
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let output_path = temp_dir
     .path()
-    .join(format!("{parent_path}/{file_stem}.skiprows.csv"));
+    .join(format!("{parent_path}/{file_stem}.skip.csv"));
 
   lib::cmd::skip::skip_csv(
     file_path.to_str().unwrap(),
@@ -33,12 +32,10 @@ async fn test_skip() -> anyhow::Result<()> {
   )
   .await?;
 
-  let binding = std::fs::read_to_string(&output_path)?;
-  let skip_data = binding.lines().collect::<Vec<_>>();
-
-  let expected_data = vec!["name,age,gender", "杰瑞,19,male", "Sandy,24,female"];
-
-  assert_eq!(skip_data, expected_data);
+  let context = std::fs::read_to_string(output_path)?;
+  let result = context.trim().split('\n').collect::<Vec<_>>();
+  let expected = vec!["name,age,gender", "杰瑞,19,male", "Sandy,24,female"];
+  assert_eq!(expected, result);
 
   Ok(temp_dir.close()?)
 }

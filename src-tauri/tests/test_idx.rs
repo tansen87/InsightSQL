@@ -11,7 +11,12 @@ async fn test_idx() -> anyhow::Result<()> {
   wtr.flush()?;
 
   lib::cmd::idx::create_index(&file_path).await?;
-  let idx_file = std::fs::File::open(temp_dir.path().join("input.csv.idx"))?;
+
+  let output_path = temp_dir.path().join(format!(
+    "{}.csv.idx",
+    file_path.file_stem().unwrap().to_str().unwrap()
+  ));
+  let idx_file = std::fs::File::open(output_path)?;
   let idx = csv_index::RandomAccessSimple::open(idx_file)?;
   assert_eq!(idx.len(), 5);
 

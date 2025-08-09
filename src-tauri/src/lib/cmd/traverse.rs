@@ -1,4 +1,7 @@
-use std::{fs, path::Path};
+use std::{
+  fs,
+  path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 
@@ -50,14 +53,13 @@ fn write_xlsx(data: Vec<String>, output: String) -> Result<()> {
 
 #[tauri::command]
 pub async fn traverse(folder_path: String, output: String) -> Result<String, String> {
-  let directory_path = Path::new(folder_path.as_str());
+  let path_buf = PathBuf::from(folder_path);
+  let data = tokio::task::spawn_blocking(move || traverse_directory(&path_buf, String::new()))
+    .await
+    .map_err(|e| format!("join error: {e}"))?
+    .map_err(|e| format!("traverse error: {e}"))?;
 
-  let data = match (async { traverse_directory(directory_path, String::new()) }).await {
-    Ok(result) => Ok(result),
-    Err(err) => Err(format!("{err}")),
-  };
-
-  match (async { write_xlsx(data.unwrap(), output) }).await {
+  match (async { write_xlsx(data, output) }).await {
     Ok(_) => Ok("traverse done".to_string()),
     Err(err) => Err(format!("traverse failed: {err}")),
   }

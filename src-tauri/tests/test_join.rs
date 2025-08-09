@@ -21,9 +21,11 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String, Strin
   let p2 = file_path2.to_string_lossy().to_string();
   let output_path = temp_dir
     .path()
-    .join("input1.join.csv")
-    .to_str()
-    .unwrap()
+    .join(format!(
+      "{}.join.csv",
+      file_path1.file_stem().unwrap().to_str().unwrap()
+    ))
+    .to_string_lossy()
     .to_string();
 
   Ok((temp_dir, p1, p2, output_path))
