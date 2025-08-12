@@ -67,7 +67,7 @@ function deleteBtn() {
           Str
         </span>
         <el-select
-          v-if="mode !== 'dynfmt'"
+          v-if="mode !== 'dynfmt' && mode !== 'calcconv'"
           v-model="columns"
           filterable
           placeholder="Select column"
@@ -82,6 +82,7 @@ function deleteBtn() {
         </el-select>
         <el-select v-model="mode" filterable style="margin-bottom: 6px">
           <el-option label="DynFmt" value="dynfmt" />
+          <el-option label="CalcConv" value="calcconv" />
           <el-option label="copy" value="copy" />
           <el-option label="abs" value="abs" />
           <el-option label="neg" value="neg" />
@@ -112,9 +113,9 @@ function deleteBtn() {
           placeholder="comparand"
         />
         <el-input
-          v-if="mode === 'dynfmt'"
+          v-if="mode === 'dynfmt' || mode === 'calcconv'"
           v-model="comparand"
-          placeholder="{col1}-{col2}:{col3}"
+          placeholder="{col1}-{col2}+{col3}"
         />
         <el-input
           v-if="mode === 'slice'"

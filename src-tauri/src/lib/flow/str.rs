@@ -1,4 +1,6 @@
 use anyhow::{Result, anyhow};
+use cpc::eval;
+use cpc::units::Unit;
 use csv::StringRecord;
 use dynfmt::Format;
 use dynfmt::SimpleCurlyFormat;
@@ -48,6 +50,57 @@ pub fn str_process(
         str_results.push(formatted.to_string());
       } else {
         str_results.push(String::new());
+      }
+    } else if str_op.mode == "calcconv" {
+      let template = str_op.comparand.as_deref().unwrap_or("");
+      let mut dynfmt_template_wrk = template.to_string();
+      let mut dynfmt_fields = Vec::new();
+
+      let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
+      for cap in formatstr_re.captures_iter(template) {
+        if let Some(key) = cap.name("key") {
+          dynfmt_fields.push(key.as_str());
+        }
+      }
+      dynfmt_fields.sort_unstable();
+
+      for (i, field) in headers.iter().enumerate() {
+        if dynfmt_fields.binary_search(&field.as_str()).is_ok() {
+          let field_with_curly = format!("{{{field}}}");
+          let field_index = format!("{{{i}}}");
+          dynfmt_template_wrk = dynfmt_template_wrk.replace(&field_with_curly, &field_index);
+        }
+      }
+
+      let record_strings: Vec<String> = record.iter().map(|field| field.to_string()).collect();
+
+      let formatted = match SimpleCurlyFormat.format(&dynfmt_template_wrk, &record_strings) {
+        Ok(s) => s.to_string(),
+        Err(_) => {
+          str_results.push(String::new());
+          continue;
+        }
+      };
+
+      let (expr_str, append_unit) = if formatted.ends_with("<UNIT>") {
+        (formatted.trim_end_matches("<UNIT>").trim(), true)
+      } else {
+        (formatted.trim(), false)
+      };
+
+      match eval(expr_str, true, Unit::Celsius, false) {
+        Ok(answer) => {
+          let value_str = if append_unit {
+            format!("{} {:?}", answer.value, answer.unit)
+          } else {
+            answer.value.to_string()
+          };
+          str_results.push(value_str);
+        }
+        Err(e) => {
+          // str_results.push(formatted);  // fallback initial value
+          str_results.push(format!("ERROR: {}", e));
+        }
       }
     } else if let Some(idx) = headers.iter().position(|h| h == &str_op.column) {
       let cell = row_fields[idx].clone();

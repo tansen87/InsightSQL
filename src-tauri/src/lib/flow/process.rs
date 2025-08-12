@@ -85,7 +85,7 @@ pub async fn process_operations(
             op.alias.clone(),
           );
         } else if let Some(mode) = &op.mode {
-          if mode == "dynfmt" {
+          if mode == "dynfmt" || mode == "calcconv" {
             context.add_str(
               "",
               mode,
@@ -152,6 +152,8 @@ pub async fn process_operations(
         alias.clone()
       } else if str_op.mode == "dynfmt" {
         "_dynfmt".to_string()
+      } else if str_op.mode == "calcconv" {
+        "_calcconv".to_string()
       } else {
         format!("{}_{}", str_op.column, str_op.mode)
       };
@@ -188,6 +190,8 @@ pub async fn process_operations(
         alias.clone()
       } else if str_op.mode == "dynfmt" {
         "_dynfmt".to_string()
+      } else if str_op.mode == "calcconv" {
+        "_calcconv".to_string()
       } else {
         format!("{}_{}", str_op.column, str_op.mode)
       };
@@ -226,6 +230,8 @@ pub async fn process_operations(
         alias.clone()
       } else if str_op.mode == "dynfmt" {
         "_dynfmt".to_string()
+      } else if str_op.mode == "calcconv" {
+        "_calcconv".to_string()
       } else {
         format!("{}_{}", str_op.column, str_op.mode)
       };
