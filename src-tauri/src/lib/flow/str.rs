@@ -19,8 +19,8 @@ pub fn str_process(
   let mut row_fields: Vec<String> = record.iter().map(|s| s.to_string()).collect();
   let mut str_results = Vec::new();
   for (i, str_op) in context.str_ops.iter().enumerate() {
-    if str_op.mode == "dynfmt" {
-      // dynfmt操作不依赖特定列，直接处理整个记录
+    if str_op.mode == "cat" {
+      // cat操作不依赖特定列，直接处理整个记录
       let template = str_op.comparand.as_deref().unwrap_or("");
       let mut dynfmt_template_wrk = template.to_string();
       let mut dynfmt_fields = Vec::new();

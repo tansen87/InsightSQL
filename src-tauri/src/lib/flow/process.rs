@@ -78,19 +78,21 @@ pub async fn process_operations(
       "str" => {
         if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
           context.add_str(
+            &op.id,
             col,
             mode,
-            op.comparand.clone(),
-            op.replacement.clone(),
+            op.comparand.as_deref(),
+            op.replacement.as_deref(),
             op.alias.clone(),
           );
         } else if let Some(mode) = &op.mode {
-          if mode == "dynfmt" || mode == "calcconv" {
+          if mode == "cat" || mode == "calcconv" {
             context.add_str(
+              &op.id,
               "",
               mode,
-              op.comparand.clone(),
-              op.replacement.clone(),
+              op.comparand.as_deref(),
+              op.replacement.as_deref(),
               op.alias.clone(),
             )
           }
@@ -121,41 +123,25 @@ pub async fn process_operations(
     }
 
     let mut new_field_names = Vec::new();
-    let mut new_field_is_slice = Vec::new(); // true=slice, false=string
+    let mut new_field_is_slice = Vec::new(); // true=slice, false=str
     let mut new_field_aliases = Vec::new();
 
     for str_op in &context.str_ops {
-      if str_op.mode == "fill"
-        || str_op.mode == "f_fill"
-        || str_op.mode == "lower"
-        || str_op.mode == "upper"
-        || str_op.mode == "trim"
-        || str_op.mode == "ltrim"
-        || str_op.mode == "rtrim"
-        || str_op.mode == "squeeze"
-        || str_op.mode == "strip"
-        || str_op.mode == "replace"
-        || str_op.mode == "regex_replace"
-        || str_op.mode == "round"
-        || str_op.mode == "reverse"
-        || str_op.mode == "abs"
-        || str_op.mode == "neg"
-        || str_op.mode == "pinyin"
-        || str_op.mode == "left"
-        || str_op.mode == "right"
-        || str_op.mode == "slice"
-        || str_op.mode == "split"
-      {
-        continue;
+      match str_op.mode.as_str() {
+        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "pinyin" | "left" | "right" | "slice" | "split" => {
+          continue;
+        }
+        _ => {}
       }
-      let str_name = if let Some(ref alias) = str_op.alias {
-        alias.clone()
-      } else if str_op.mode == "dynfmt" {
-        "_dynfmt".to_string()
-      } else if str_op.mode == "calcconv" {
-        "_calcconv".to_string()
-      } else {
-        format!("{}_{}", str_op.column, str_op.mode)
+      let str_name = match &str_op.alias {
+        Some(alias) => alias.clone(),
+        None => match str_op.mode.as_str() {
+          "cat" => format!("cat{}", str_op.id),
+          "calcconv" => format!("calcconv{}", str_op.id),
+          mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
+        },
       };
       new_field_names.push(str_name.clone());
       new_field_is_slice.push(false);
@@ -163,37 +149,21 @@ pub async fn process_operations(
     }
 
     for str_op in &context.str_ops {
-      if str_op.mode == "fill"
-        || str_op.mode == "f_fill"
-        || str_op.mode == "lower"
-        || str_op.mode == "upper"
-        || str_op.mode == "trim"
-        || str_op.mode == "ltrim"
-        || str_op.mode == "rtrim"
-        || str_op.mode == "squeeze"
-        || str_op.mode == "strip"
-        || str_op.mode == "replace"
-        || str_op.mode == "regex_replace"
-        || str_op.mode == "round"
-        || str_op.mode == "reverse"
-        || str_op.mode == "abs"
-        || str_op.mode == "neg"
-        || str_op.mode == "pinyin"
-        || str_op.mode == "left"
-        || str_op.mode == "right"
-        || str_op.mode == "slice"
-        || str_op.mode == "split"
-      {
-        continue;
-      }
-      let str_name = if let Some(ref alias) = str_op.alias {
-        alias.clone()
-      } else if str_op.mode == "dynfmt" {
-        "_dynfmt".to_string()
-      } else if str_op.mode == "calcconv" {
-        "_calcconv".to_string()
-      } else {
-        format!("{}_{}", str_op.column, str_op.mode)
+      match str_op.mode.as_str() {
+        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "pinyin" | "left" | "right" | "slice" | "split" => {
+          continue;
+        }
+        _ => {}
+      };
+      let str_name = match &str_op.alias {
+        Some(alias) => alias.clone(),
+        None => match str_op.mode.as_str() {
+          "cat" => format!("cat{}", str_op.id),
+          "calcconv" => format!("calcconv{}", str_op.id),
+          mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
+        },
       };
       selected_headers.push(str_name);
     }
@@ -203,37 +173,21 @@ pub async fn process_operations(
     let mut all_headers: Vec<String> = headers.iter().map(|s| s.to_string()).collect();
 
     for str_op in &context.str_ops {
-      if str_op.mode == "fill"
-        || str_op.mode == "f_fill"
-        || str_op.mode == "lower"
-        || str_op.mode == "upper"
-        || str_op.mode == "trim"
-        || str_op.mode == "ltrim"
-        || str_op.mode == "rtrim"
-        || str_op.mode == "squeeze"
-        || str_op.mode == "strip"
-        || str_op.mode == "replace"
-        || str_op.mode == "regex_replace"
-        || str_op.mode == "round"
-        || str_op.mode == "reverse"
-        || str_op.mode == "abs"
-        || str_op.mode == "neg"
-        || str_op.mode == "pinyin"
-        || str_op.mode == "left"
-        || str_op.mode == "right"
-        || str_op.mode == "slice"
-        || str_op.mode == "split"
-      {
-        continue;
-      }
-      let str_name = if let Some(ref alias) = str_op.alias {
-        alias.clone()
-      } else if str_op.mode == "dynfmt" {
-        "_dynfmt".to_string()
-      } else if str_op.mode == "calcconv" {
-        "_calcconv".to_string()
-      } else {
-        format!("{}_{}", str_op.column, str_op.mode)
+      match str_op.mode.as_str() {
+        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "pinyin" | "left" | "right" | "slice" | "split" => {
+          continue;
+        }
+        _ => {}
+      };
+      let str_name = match &str_op.alias {
+        Some(alias) => alias.clone(),
+        None => match str_op.mode.as_str() {
+          "cat" => format!("cat{}", str_op.id),
+          "calcconv" => format!("calcconv{}", str_op.id),
+          mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
+        },
       };
       all_headers.push(str_name);
     }

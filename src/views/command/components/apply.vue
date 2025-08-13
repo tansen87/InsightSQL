@@ -195,7 +195,7 @@ async function applyData() {
             <el-select v-model="applyMode" style="width: 100%">
               <el-option label="Operations" value="operations" />
               <el-option label="CalcConv" value="calcconv" />
-              <el-option label="DynFmt" value="dynfmt" />
+              <el-option label="Cat" value="cat" />
             </el-select>
           </el-tooltip>
         </div>
@@ -228,13 +228,10 @@ async function applyData() {
         </div>
 
         <div
-          v-if="applyMode === 'calcconv' || applyMode === 'dynfmt'"
+          v-if="applyMode === 'calcconv' || applyMode === 'cat'"
           style="flex: 3; margin-left: 5px; margin-top: 12px"
         >
-          <el-tooltip
-            content="formatstr with CalcConv or DynFmt"
-            effect="light"
-          >
+          <el-tooltip content="formatstr with CalcConv or Cat" effect="light">
             <el-input
               v-model="formatstr"
               style="width: 100%"

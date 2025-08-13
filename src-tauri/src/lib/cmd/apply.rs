@@ -74,7 +74,7 @@ impl Operations {
 enum ApplyCmd {
   Operations,
   CalcConv,
-  DynFmt,
+  Cat,
 }
 
 fn replace_column_value(
@@ -296,7 +296,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   }
   wtr.write_record(&headers)?;
 
-  let dynfmt_template = if (apply_mode == "calcconv") || (apply_mode == "dynfmt") {
+  let dynfmt_template = if (apply_mode == "calcconv") || (apply_mode == "cat") {
     let mut dynfmt_template_wrk = formatstr.clone();
     let mut dynfmt_fields = Vec::new();
 
@@ -340,7 +340,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   } else if apply_mode == "calcconv" {
     ApplyCmd::CalcConv
   } else {
-    ApplyCmd::DynFmt
+    ApplyCmd::Cat
   };
 
   #[allow(unused_assignments)]
@@ -430,7 +430,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
               record = replace_column_value(&record, column_index_next, &result);
             }
           }
-          ApplyCmd::DynFmt => {
+          ApplyCmd::Cat => {
             let mut cell = record[column_index_next].to_owned();
             if !cell.is_empty() {
               let mut record_vec: Vec<String> = Vec::with_capacity(record.len());
