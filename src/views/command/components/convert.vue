@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ElIcon } from "element-plus";
@@ -14,8 +14,15 @@ import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const btnShow = ref("CONVERT ALL");
-const typeTo = ref("excel");
+const [activeTab, chunksize, csvMode, progress, wtrSep, skipRows] = [
+  ref("excel"),
+  ref("700000"),
+  ref("csv"),
+  ref("nil"),
+  ref("|"),
+  ref("0")
+];
+const typeTo = computed(() => activeTab.value);
 const [backendInfo, path] = [ref(""), ref("")];
 const [selectedFiles, sheetOptions, fileSheet] = [ref([]), ref([]), ref([])];
 const [allSheets, isLoading, backendCompleted, writeSheetname] = [
@@ -25,22 +32,7 @@ const [allSheets, isLoading, backendCompleted, writeSheetname] = [
   ref(false)
 ];
 const sheetsData = ref({});
-const data = reactive({
-  skipRows: "0",
-  sep: "|",
-  mode: "nil"
-});
-const { dynamicHeight } = useDynamicHeight(172);
-watch(
-  () => allSheets.value,
-  val => {
-    if (val === true) {
-      btnShow.value = "CONVERT ALL";
-    } else if (val === false) {
-      btnShow.value = "CONVERT ONE";
-    }
-  }
-);
+const { dynamicHeight } = useDynamicHeight(176);
 
 listen("update-rows", (event: any) => {
   const [backFilename, rows] = event.payload.split("|");
@@ -67,18 +59,18 @@ listen("start-to", event => {
   });
 });
 listen("to-err", event => {
-  const rowCountErr: any = event.payload;
+  const toErr: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === rowCountErr.split("|")[0]) {
+    if (file.filename === toErr.split("|")[0]) {
       file.status = "error";
-      file.errMessage = rowCountErr.split("|")[1];
+      file.errMessage = toErr.split("|")[1];
     }
   });
 });
 listen("to-msg", (event: any) => {
-  const e2cMsg: any = event.payload;
+  const toMsg: any = event.payload;
   selectedFiles.value.forEach(file => {
-    if (file.filename === e2cMsg) {
+    if (file.filename === toMsg) {
       file.status = "success";
     }
   });
@@ -166,10 +158,10 @@ async function selectFile() {
   }
 }
 
-// invoke excel2csv
-async function toCsv() {
+// invoke toCsv
+async function convert() {
   if (path.value === "") {
-    message("Excel file not selected", { type: "warning" });
+    message("File not selected", { type: "warning" });
     return;
   }
   try {
@@ -181,29 +173,37 @@ async function toCsv() {
       }));
       const rtime: string = await invoke("excel2csv", {
         path: path.value,
-        skipRows: data.skipRows,
+        skipRows: skipRows.value,
         mapFileSheet: mapFileSheet,
         allSheets: allSheets.value,
         writeSheetname: writeSheetname.value
       });
       message(`Done, elapsed time: ${rtime} s`, { type: "success" });
-    } else if (typeTo.value === "csv") {
+    } else if (typeTo.value === "fmt") {
       const rtime: string = await invoke("csv2csv", {
         path: path.value,
-        sep: data.sep,
-        mode: data.mode
+        wtrSep: wtrSep.value,
+        progress: progress.value
       });
       message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     } else if (typeTo.value === "access") {
+      console.log(path.value);
       const rtime: string = await invoke("access2csv", {
         path: path.value,
-        sep: data.sep
+        wtrSep: wtrSep.value
       });
       message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     } else if (typeTo.value === "dbf") {
       const rtime: string = await invoke("dbf2csv", {
         path: path.value,
-        sep: data.sep
+        wtrSep: wtrSep.value
+      });
+      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
+    } else if (typeTo.value === "csv") {
+      const rtime: string = await invoke("csv2xlsx", {
+        path: path.value,
+        csvMode: csvMode.value,
+        chunksize: chunksize.value
       });
       message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     }
@@ -215,82 +215,95 @@ async function toCsv() {
 </script>
 
 <template>
-  <el-form class="page-container" :style="dynamicHeight">
+  <div class="page-container">
+    <el-tabs v-model="activeTab">
+      <el-tab-pane name="excel" label="Excel2Csv" />
+      <el-tab-pane name="fmt" label="FmtCsv" />
+      <el-tab-pane name="access" label="Access2Csv" />
+      <el-tab-pane name="dbf" label="Dbf2Csv" />
+      <el-tab-pane name="csv" label="Csv2Xlsx" />
+    </el-tabs>
     <div class="custom-container1">
-      <el-button @click="selectFile()" :icon="FolderOpened">
-        Open File
-      </el-button>
-      <el-form-item>
-        <el-select v-model="typeTo" style="width: 95px; margin-right: 10px">
-          <el-option label="Excel" value="excel" />
-          <el-option label="CSV" value="csv" />
-          <el-option label="Access" value="access" />
-          <el-option label="DBF" value="dbf" />
-        </el-select>
-        <span> TO CSV </span>
-      </el-form-item>
-    </div>
-
-    <div class="custom-container1">
-      <div class="custom-container2" v-if="typeTo === 'excel'">
+      <div class="custom-container2">
+        <el-button @click="selectFile()" :icon="FolderOpened">
+          Open File
+        </el-button>
         <el-tooltip content="Convert all sheets or not" effect="light">
           <el-select
             v-model="allSheets"
-            style="width: 75px; margin-right: 10px"
+            v-if="activeTab === 'excel'"
+            style="width: 75px; margin-right: 8px; margin-left: 8px"
           >
             <el-option label="All" :value="true" />
             <el-option label="One" :value="false" />
           </el-select>
         </el-tooltip>
-        <el-tooltip content="write sheetname or not" effect="light">
+        <el-tooltip content="Write sheet name or not" effect="light">
           <el-select
             v-model="writeSheetname"
-            style="width: 55px; margin-right: 10px"
+            v-if="activeTab === 'excel'"
+            style="width: 55px; margin-right: 8px"
           >
             <el-option label="Y" :value="true" />
             <el-option label="N" :value="false" />
           </el-select>
         </el-tooltip>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input v-model="data.skipRows" style="width: 50px" />
+        <el-tooltip content="Skip rows" effect="light">
+          <el-input
+            v-model="skipRows"
+            v-if="activeTab === 'excel'"
+            style="width: 50px"
+          />
         </el-tooltip>
-      </div>
-      <div class="custom-container2" v-if="typeTo !== 'excel'">
-        <el-tooltip content="write delimiter" effect="light">
-          <el-select v-model="data.sep" style="width: 50px">
+        <span
+          v-if="backendCompleted && activeTab === 'excel'"
+          style="margin-left: 8px"
+          >{{ backendInfo }}</span
+        >
+        <el-tooltip content="Write delimiter" effect="light">
+          <el-select
+            v-model="wtrSep"
+            style="width: 50px; margin-left: 8px"
+            v-if="activeTab !== 'excel' && activeTab !== 'csv'"
+          >
             <el-option label="|" value="|" />
             <el-option label="\t" value="\t" />
             <el-option label="," value="," />
             <el-option label=";" value=";" />
           </el-select>
         </el-tooltip>
-      </div>
-      <div class="custom-container2">
-        <el-tooltip content="if nil, do not add progress bar" effect="light">
+        <el-tooltip content="If nil, no progress" effect="light">
           <el-select
-            v-if="typeTo === 'csv'"
-            v-model="data.mode"
-            style="margin-left: 10px; width: 70px"
+            v-model="progress"
+            style="margin-left: 8px; width: 70px"
+            v-if="activeTab === 'fmt'"
           >
             <el-option label="idx" value="idx" />
-            <el-option label="std" value="std" />
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
-        <span v-if="backendCompleted && typeTo === 'excel'">
-          {{ backendInfo }}
-        </span>
+        <el-tooltip content="Polars or Csv engine" effect="light">
+          <el-select
+            v-model="csvMode"
+            v-if="activeTab === 'csv'"
+            style="margin-left: 8px; width: 85px"
+          >
+            <el-option label="Csv" value="csv" />
+            <el-option label="Polars" value="polars" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="Split every N rows into a sheet" effect="light">
+          <el-input
+            v-model="chunksize"
+            v-if="activeTab === 'csv' && csvMode === 'csv'"
+            style="margin-left: 10px; width: 80px"
+          />
+        </el-tooltip>
       </div>
-      <el-button
-        @click="toCsv()"
-        :loading="isLoading"
-        :icon="SwitchFilled"
-        style="width: 157px"
-      >
-        {{ btnShow }}
+      <el-button @click="convert()" :loading="isLoading" :icon="SwitchFilled">
+        Convert
       </el-button>
     </div>
-
     <el-table
       :data="selectedFiles"
       :height="dynamicHeight"
@@ -330,7 +343,7 @@ async function toCsv() {
             v-if="
               scope.row.errMessage &&
               scope.row.status !== 'loading' &&
-              typeTo === 'excel'
+              activeTab === 'excel'
             "
           >
             {{ scope.row.errMessage || scope.row.status }}
@@ -338,50 +351,44 @@ async function toCsv() {
         </template>
       </el-table-column>
       <el-table-column
-        v-if="typeTo === 'excel'"
         prop="message"
         label="Message"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
         <template #default="scope">
-          <el-select
-            v-model="scope.row.selectedSheet"
-            placeholder="Select a sheet"
-            @change="updateFileSheet(scope.row)"
-          >
-            <el-option
-              v-for="(sheet, index) in getSheetsForFile(scope.row.filename)"
-              :key="index"
-              :label="sheet"
-              :value="sheet"
+          <template v-if="activeTab === 'excel'">
+            <el-select
+              v-model="scope.row.selectedSheet"
+              placeholder="Select a sheet"
+              @change="updateFileSheet(scope.row)"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="sheet in scope.row.sheets"
+                :key="sheet"
+                :label="sheet"
+                :value="sheet"
+              />
+            </el-select>
+          </template>
+          <template v-else>
+            <span v-if="scope.row.status === 'error'" style="color: #ff0000">
+              {{ scope.row.errMessage }}
+            </span>
+            <el-progress
+              v-else-if="
+                activeTab === 'fmt' &&
+                scope.row.totalRows > 0 &&
+                isFinite(scope.row.currentRows / scope.row.totalRows)
+              "
+              :percentage="
+                Math.round((scope.row.currentRows / scope.row.totalRows) * 100)
+              "
             />
-          </el-select>
-        </template>
-      </el-table-column>
-      <el-table-column
-        v-if="typeTo !== 'excel'"
-        prop="errMessage"
-        label="Message"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 60%"
-      >
-        <template #default="scope">
-          <span v-if="scope.row.status === 'error'">
-            {{ scope.row.errMessage }}
-          </span>
-          <el-progress
-            v-if="
-              scope.row.totalRows !== 0 &&
-              isFinite(scope.row.currentRows / scope.row.totalRows) &&
-              typeTo === 'csv'
-            "
-            :percentage="
-              Math.round((scope.row.currentRows / scope.row.totalRows) * 100)
-            "
-          />
+          </template>
         </template>
       </el-table-column>
     </el-table>
-  </el-form>
+  </div>
 </template>

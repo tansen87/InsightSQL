@@ -12,7 +12,7 @@ pub mod excel_to_csv;
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub async fn access2csv(path: String, sep: String, window: Window) -> Result<String, String> {
+pub async fn access2csv(path: String, wtr_sep: String, window: Window) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
@@ -21,7 +21,7 @@ pub async fn access2csv(path: String, sep: String, window: Window) -> Result<Str
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
-    match access_to_csv::access_to_csv(fp, sep.clone()).await {
+    match access_to_csv::access_to_csv(fp, wtr_sep.clone()).await {
       Ok(_) => {
         window.emit("to-msg", filename).map_err(|e| e.to_string())?;
       }
@@ -42,8 +42,8 @@ pub async fn access2csv(path: String, sep: String, window: Window) -> Result<Str
 #[tauri::command]
 pub async fn csv2csv(
   path: String,
-  sep: String,
-  mode: String,
+  wtr_sep: String,
+  progress: String,
   window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -56,9 +56,9 @@ pub async fn csv2csv(
       .map_err(|e| e.to_string())?;
     match csv_to_csv::csv_to_csv(
       fp,
-      sep.clone(),
+      wtr_sep.clone(),
       filename.to_string(),
-      mode.as_str(),
+      progress.as_str(),
       window.clone(),
     )
     .await
@@ -83,15 +83,15 @@ pub async fn csv2csv(
 #[tauri::command]
 pub async fn csv2xlsx(
   path: String,
-  mode: String,
-  chunk_size: String,
+  csv_mode: String,
+  chunksize: String,
   window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  let chunk_size = chunk_size.parse::<usize>().map_err(|e| e.to_string())?;
-  let use_polars = mode != "csv";
+  let chunksize = chunksize.parse::<usize>().map_err(|e| e.to_string())?;
+  let use_polars = csv_mode != "csv";
 
   for file in paths.iter() {
     let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
@@ -99,15 +99,15 @@ pub async fn csv2xlsx(
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
 
-    match csv_to_excel::csv_to_xlsx(file, use_polars, chunk_size).await {
+    match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize).await {
       Ok(_) => {
         window
-          .emit("c2x-msg", filename)
+          .emit("to-msg", filename)
           .map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
-          .emit("rows-err", format!("{filename}|{err}"))
+          .emit("to-err", format!("{filename}|{err}"))
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -120,7 +120,11 @@ pub async fn csv2xlsx(
 }
 
 #[tauri::command]
-pub async fn dbf2csv(path: String, sep: String, window: tauri::Window) -> Result<String, String> {
+pub async fn dbf2csv(
+  path: String,
+  wtr_sep: String,
+  window: tauri::Window,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
@@ -129,7 +133,7 @@ pub async fn dbf2csv(path: String, sep: String, window: tauri::Window) -> Result
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
-    match dbf_to_csv::dbf_to_csv(fp, sep.clone()).await {
+    match dbf_to_csv::dbf_to_csv(fp, wtr_sep.clone()).await {
       Ok(_) => {
         window.emit("to-msg", filename).map_err(|e| e.to_string())?;
       }

@@ -34,20 +34,11 @@ export default {
       }
     },
     {
-      path: "/command/components/toCsv",
-      name: "toCsv",
-      component: () => import("@/views/command/components/toCsv.vue"),
+      path: "/command/components/convert",
+      name: "convert",
+      component: () => import("@/views/command/components/convert.vue"),
       meta: {
-        title: "To csv",
-        showLink: false
-      }
-    },
-    {
-      path: "/command/components/toExcel",
-      name: "toExcel",
-      component: () => import("@/views/command/components/toExcel.vue"),
-      meta: {
-        title: "To xlsx",
+        title: "convert",
         showLink: false
       }
     },

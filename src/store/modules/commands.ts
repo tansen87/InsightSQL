@@ -21,14 +21,9 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/count"
       },
       {
-        title: "ToCsv",
-        description: "Batch convert files to CSV",
-        route: "/command/components/toCsv"
-      },
-      {
-        title: "ToExcel",
-        description: "Batch convert files to Excel",
-        route: "/command/components/toExcel"
+        title: "Convert",
+        description: "File type conversion",
+        route: "/command/components/convert"
       },
       {
         title: "Rename",

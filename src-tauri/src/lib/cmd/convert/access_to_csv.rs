@@ -21,16 +21,17 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
 
   while let Some(row_set) = row_set_cursor.fetch()? {
     for row_index in 0..row_set.num_rows() {
-      let mut values = Vec::new();
-      for col_index in 0..row_set.num_cols() {
-        let value = row_set
-          .at_as_str(col_index, row_index)?
-          .ok_or(anyhow!("text column is null"))?;
-        values.push(value);
-      }
+      let table_type = match row_set.at_as_str(3, row_index)? {
+        Some(s) => s,
+        None => continue,
+      };
+      let table_name = match row_set.at_as_str(2, row_index)? {
+        Some(s) => s,
+        None => continue,
+      };
 
-      if values.len() >= 4 && values[3] == "TABLE" && values[2] != "NULL" {
-        tables.push(values[2].to_string());
+      if table_type == "TABLE" {
+        tables.push(table_name.to_string());
       }
     }
   }
@@ -38,14 +39,14 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
   Ok(tables)
 }
 
-pub async fn access_to_csv(path: &str, sep: String) -> Result<()> {
+pub async fn access_to_csv(path: &str, wtr_sep: String) -> Result<()> {
   let driver = "{Microsoft Access Driver (*.mdb, *.accdb)}";
   let batch_size = 5000;
 
-  let sep = if sep == "\\t" {
+  let sep = if wtr_sep == "\\t" {
     b'\t'
   } else {
-    sep.as_bytes()[0]
+    wtr_sep.as_bytes()[0]
   };
 
   let parent_path = Path::new(path)
@@ -63,9 +64,10 @@ pub async fn access_to_csv(path: &str, sep: String) -> Result<()> {
   let conn = connection(&c)?;
   let tables = get_all_table(&conn)?;
 
-  for table in tables.iter() {
+  for (idx, table) in tables.iter().enumerate() {
     let mut fname = PathBuf::from(parent_path);
-    fname.push(format!("{file_stem}.access.csv"));
+    let tbl_name: String = table.chars().take(30).collect();
+    fname.push(format!("{file_stem}.{idx:03}.{tbl_name}.csv"));
     let query = format!("select * from {table}");
 
     match conn.execute(&query, ())? {

@@ -14,25 +14,24 @@ use crate::io::csv::options::CsvOptions;
 /// convert csv to csv (only replace the delimiter)
 pub async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
-  write_sep: String,
+  wtr_sep: String,
   filename: String,
-  mode: &str,
+  progress: &str,
   window: Window,
 ) -> Result<()> {
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
-  let write_sep = if write_sep == "\\t" {
+  let wtr_sep = if wtr_sep == "\\t" {
     b'\t'
   } else {
-    write_sep.into_bytes()[0]
+    wtr_sep.into_bytes()[0]
   };
   let file_stem = csv_options.file_stem()?;
   let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_stem}.fmt.csv"));
 
-  let total_rows = match mode {
+  let total_rows = match progress {
     "idx" => csv_options.idx_count_rows().await?,
-    "std" => csv_options.std_count_rows()?,
     _ => 0,
   };
   window.emit("total-rows", format!("{filename}|{total_rows}"))?;
@@ -42,7 +41,7 @@ pub async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
     .from_reader(csv_options.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new()
-    .delimiter(write_sep)
+    .delimiter(wtr_sep)
     .from_path(output_path)?;
   wtr.write_record(rdr.headers()?)?;
 

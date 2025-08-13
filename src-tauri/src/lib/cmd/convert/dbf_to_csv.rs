@@ -7,11 +7,11 @@ use dbase::FieldValue;
 use crate::io::csv::options::CsvOptions;
 
 /// convert dbf to csv
-pub async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
-  let sep = if sep == "\\t" {
+pub async fn dbf_to_csv(path: &str, wtr_sep: String) -> Result<()> {
+  let sep = if wtr_sep == "\\t" {
     b'\t'
   } else {
-    sep.into_bytes()[0]
+    wtr_sep.into_bytes()[0]
   };
   let csv_options = CsvOptions::new(path);
   let file_stem = csv_options.file_stem()?;
@@ -53,7 +53,6 @@ pub async fn dbf_to_csv(path: &str, sep: String) -> Result<()> {
     }
     wtr.write_record(&row)?;
   }
-  wtr.flush()?;
 
-  Ok(())
+  Ok(wtr.flush()?)
 }
