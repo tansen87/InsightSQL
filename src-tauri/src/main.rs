@@ -72,6 +72,7 @@ fn main() {
       sort::sort,
       split::split,
       sqlp::query,
+      string::str_pad,
       string::str_slice,
       string::str_split,
       transpose::transpose,

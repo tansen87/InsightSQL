@@ -1,9 +1,7 @@
 use anyhow::{Result, anyhow};
-use cpc::eval;
 use cpc::units::Unit;
 use csv::StringRecord;
-use dynfmt::Format;
-use dynfmt::SimpleCurlyFormat;
+use dynfmt::{Format, SimpleCurlyFormat};
 use pinyin::ToPinyin;
 use regex::Regex;
 
@@ -88,7 +86,7 @@ pub fn str_process(
         (formatted.trim(), false)
       };
 
-      match eval(expr_str, true, Unit::Celsius, false) {
+      match cpc::eval(expr_str, true, Unit::Celsius, false) {
         Ok(answer) => {
           let value_str = if append_unit {
             format!("{} {:?}", answer.value, answer.unit)
@@ -105,7 +103,7 @@ pub fn str_process(
     } else if let Some(idx) = headers.iter().position(|h| h == &str_op.column) {
       let cell = row_fields[idx].clone();
       let length = match str_op.mode.as_str() {
-        "left" | "right" | "slice" | "split" => str_op
+        "left" | "right" | "slice" | "split" | "pad_left" | "pad_right" | "pad_both" => str_op
           .replacement
           .clone()
           .ok_or(anyhow!("length is invalid number"))?
@@ -227,6 +225,48 @@ pub fn str_process(
             row_fields[idx] = "".to_string();
           }
         }
+        "pad_left" => {
+          let fill_char = str_op
+            .comparand
+            .clone()
+            .ok_or(anyhow!("fill char is empty"))?;
+          if cell.len() >= length {
+            row_fields[idx] = cell.to_string();
+          } else {
+            let pad_len = length - cell.len();
+            let pad = fill_char.repeat(pad_len);
+            row_fields[idx] = format!("{}{}", pad, cell);
+          }
+        }
+        "pad_right" => {
+          let fill_char = str_op
+            .comparand
+            .clone()
+            .ok_or(anyhow!("fill char is empty"))?;
+          if cell.len() >= length {
+            row_fields[idx] = cell.to_string();
+          } else {
+            let pad_len = length - cell.len();
+            let pad = fill_char.repeat(pad_len);
+            row_fields[idx] = format!("{}{}", cell, pad);
+          }
+        }
+        "pad_both" => {
+          let fill_char = str_op
+            .comparand
+            .clone()
+            .ok_or(anyhow!("fill char is empty"))?;
+          if cell.len() >= length {
+            row_fields[idx] = cell.to_string();
+          } else {
+            let total_pad = length - cell.len();
+            let left_pad = total_pad / 2;
+            let right_pad = total_pad - left_pad;
+            let left_pad_str = fill_char.to_string().repeat(left_pad);
+            let right_pad_str = fill_char.to_string().repeat(right_pad);
+            row_fields[idx] = format!("{}{}{}", left_pad_str, cell, right_pad_str);
+          }
+        }
         // add new column
         "len" => str_results.push(cell.chars().count().to_string()),
         "copy" => str_results.push(cell.clone()),
@@ -234,28 +274,14 @@ pub fn str_process(
       }
     } else {
       // 字段找不到时,只有新增列的操作才追加空字符串
-      if str_op.mode != "fill"
-        && str_op.mode != "f_fill"
-        && str_op.mode != "lower"
-        && str_op.mode != "upper"
-        && str_op.mode != "trim"
-        && str_op.mode != "ltrim"
-        && str_op.mode != "rtrim"
-        && str_op.mode != "squeeze"
-        && str_op.mode != "strip"
-        && str_op.mode != "replace"
-        && str_op.mode != "regex_replace"
-        && str_op.mode != "round"
-        && str_op.mode != "reverse"
-        && str_op.mode != "abs"
-        && str_op.mode != "neg"
-        && str_op.mode != "pinyin"
-        && str_op.mode == "left"
-        && str_op.mode == "right"
-        && str_op.mode == "slice"
-        && str_op.mode == "split"
-      {
-        str_results.push(String::new());
+      match str_op.mode.as_str() {
+        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "pinyin" | "left" | "right" | "slice" | "split" | "pad_left" | "pad_right"
+        | "pad_both" => {}
+        _ => {
+          str_results.push(String::new());
+        }
       }
     }
   }

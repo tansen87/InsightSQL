@@ -67,7 +67,7 @@ function deleteBtn() {
           Str
         </span>
         <el-select
-          v-if="mode !== 'cat' && mode !== 'calcconv'"
+          v-if="!new Set(['cat', 'calcconv']).has(mode)"
           v-model="columns"
           filterable
           placeholder="Select column"
@@ -105,51 +105,63 @@ function deleteBtn() {
           <el-option label="right" value="right" />
           <el-option label="slice" value="slice" />
           <el-option label="split" value="split" />
+          <el-option label="PadLeft" value="pad_left" />
+          <el-option label="PadRight" value="pad_right" />
+          <el-option label="PadBoth" value="pad_both" />
         </el-select>
+        <template v-if="['replace', 'regex_replace'].includes(mode)">
+          <el-input
+            v-model="comparand"
+            style="margin-bottom: 6px"
+            placeholder="comparand"
+          />
+          <el-input v-model="replacement" placeholder="replacement" />
+        </template>
+        <template v-if="['split'].includes(mode)">
+          <el-input
+            v-model="comparand"
+            style="margin-bottom: 6px"
+            placeholder="delimiter"
+          />
+          <el-input v-model="replacement" placeholder="n" />
+        </template>
         <el-input
-          v-if="mode === 'replace' || mode === 'regex_replace'"
-          v-model="comparand"
-          style="margin-bottom: 6px"
-          placeholder="comparand"
-        />
-        <el-input
-          v-if="mode === 'cat' || mode === 'calcconv'"
+          v-if="['cat', 'calcconv'].includes(mode)"
           v-model="comparand"
           placeholder="{col1}-{col2}+{col3}"
         />
         <el-input
-          v-if="mode === 'slice'"
+          v-if="['slice'].includes(mode)"
           v-model="comparand"
           style="margin-bottom: 6px"
           placeholder="start index"
         />
         <el-input
-          v-if="mode === 'split'"
-          v-model="comparand"
-          style="margin-bottom: 6px"
-          placeholder="delimiter"
-        />
-        <el-input
-          v-if="mode === 'left' || mode === 'right' || mode === 'slice'"
+          v-if="
+            [
+              'left',
+              'right',
+              'slice',
+              'pad_left',
+              'pad_right',
+              'pad_both'
+            ].includes(mode)
+          "
           v-model="replacement"
+          style="margin-bottom: 6px"
           placeholder="length"
         />
         <el-input
-          v-if="mode === 'split'"
-          v-model="replacement"
-          placeholder="n"
+          v-if="['pad_left', 'pad_right', 'pad_both'].includes(mode)"
+          v-model="comparand"
+          placeholder="fill char"
         />
         <el-input
-          v-if="mode === 'replace' || mode === 'regex_replace'"
-          v-model="replacement"
-          placeholder="replacement"
-        />
-        <el-input
-          v-if="mode === 'fill'"
+          v-if="['fill'].includes(mode)"
           v-model="replacement"
           placeholder="fill value"
         />
-        <el-select v-if="mode === 'pinyin'" v-model="replacement">
+        <el-select v-if="['pinyin'].includes(mode)" v-model="replacement">
           <el-option label="upper" value="upper" />
           <el-option label="lower" value="lower" />
         </el-select>

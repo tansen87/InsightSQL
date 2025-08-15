@@ -151,11 +151,11 @@ export default {
       }
     },
     {
-      path: "/command/components/slice",
-      name: "slice",
-      component: () => import("@/views/command/components/slice.vue"),
+      path: "/command/components/string",
+      name: "string",
+      component: () => import("@/views/command/components/string.vue"),
       meta: {
-        title: "slice",
+        title: "string",
         showLink: false
       }
     },

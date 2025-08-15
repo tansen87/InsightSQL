@@ -56,10 +56,10 @@ function usePrismTheme(isDark: Ref<Boolean>) {
   });
 }
 
-export function useMarkdown(initialMarkdownFn: () => string) {
+export function useMarkdown(mdInitFn: () => string) {
   const { isDark } = useDark();
-  const markdownContent = ref(initialMarkdownFn());
-  const compiledMarkdown = ref(marked.parse(markdownContent.value));
+  const markdown = ref(mdInitFn());
+  const mdShow = ref(marked.parse(markdown.value));
 
   usePrismTheme(isDark);
 
@@ -72,16 +72,16 @@ export function useMarkdown(initialMarkdownFn: () => string) {
     highlightCode();
   });
 
-  watch(markdownContent, async newContent => {
-    compiledMarkdown.value = marked.parse(newContent);
+  watch(markdown, async newContent => {
+    mdShow.value = marked.parse(newContent);
     await highlightCode();
   });
 
   return {
-    markdownContent,
-    compiledMarkdown,
-    updateMarkdownContent: (newMarkdownFn: () => string) => {
-      markdownContent.value = newMarkdownFn();
+    markdown,
+    mdShow,
+    mdUpdate: (newMarkdownFn: () => string) => {
+      markdown.value = newMarkdownFn();
     }
   };
 }
@@ -238,7 +238,7 @@ this is a test for lines.
 `;
 }
 
-export function sliceContent() {
+export function mdStr() {
   return `
 \`\`\`
 sample file

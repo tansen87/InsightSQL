@@ -11,17 +11,17 @@ type ByteString = Vec<u8>;
 type _GetField = for<'c> fn(&mut &'c ByteRecord, &usize) -> Option<&'c [u8]>;
 
 impl Selection {
-  pub fn from_headers(headers: &ByteRecord, field_names: &[&str]) -> Result<Self> {
+  pub fn from_headers(headers: &ByteRecord, columns: &[&str]) -> Result<Self> {
     let header_map: HashMap<_, _> = headers
       .iter()
       .enumerate()
       .map(|(idx, name)| (String::from_utf8_lossy(name).into_owned(), idx))
       .collect();
     let mut indices = Vec::new();
-    for &field_name in field_names {
-      match header_map.get(field_name) {
+    for &column in columns {
+      match header_map.get(column) {
         Some(&index) => indices.push(index),
-        None => return Err(anyhow!("Field '{}' not found in headers.", field_name).into()),
+        None => return Err(anyhow!("Column '{}' not found in headers.", column).into()),
       }
     }
 

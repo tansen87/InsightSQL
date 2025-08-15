@@ -13,7 +13,7 @@ use crate::io::csv::{options::CsvOptions, selection::Selection};
 pub enum SliceMode {
   Left,
   Right,
-  StartLength,
+  Slice,
 }
 
 impl From<&str> for SliceMode {
@@ -21,7 +21,7 @@ impl From<&str> for SliceMode {
     match mode {
       "left" => SliceMode::Left,
       "right" => SliceMode::Right,
-      "startlen" => SliceMode::StartLength,
+      "slice" => SliceMode::Slice,
       _ => SliceMode::Left,
     }
   }
@@ -32,7 +32,7 @@ impl SliceMode {
     match self {
       SliceMode::Left => "left",
       SliceMode::Right => "right",
-      SliceMode::StartLength => "startlen",
+      SliceMode::Slice => "slice",
     }
   }
 }
@@ -40,17 +40,17 @@ impl SliceMode {
 pub async fn slice_nchar(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
-  select_column: &str,
+  column: &str,
   n: usize,
   reverse: bool,
   mode: &str,
 ) -> Result<()> {
   let headers = rdr.headers()?.clone();
 
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
   let mut new_headers = headers.clone();
-  let new_column_name = format!("{}_nchar", select_column);
+  let new_column_name = format!("{}_nchar", column);
   new_headers.push_field(&new_column_name);
 
   wtr.write_record(&new_headers)?;
@@ -89,20 +89,20 @@ pub async fn slice_nchar(
   Ok(wtr.flush()?)
 }
 
-pub async fn slice_start_length(
+pub async fn slice(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
-  select_column: &str,
+  column: &str,
   start_idx: i32,
   length: usize,
   reverse: bool,
 ) -> Result<()> {
   let headers = rdr.headers()?.clone();
 
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
   let mut new_headers = headers.clone();
-  let new_column_name = format!("{}_slen", select_column);
+  let new_column_name = format!("{}_slice", column);
   new_headers.push_field(&new_column_name);
 
   wtr.write_record(&new_headers)?;
@@ -165,14 +165,14 @@ pub async fn slice_start_length(
 
 pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   path: P,
-  select_column: &str,
+  column: &str,
   n: i32,
   length: usize,
   reverse: bool,
   mode: SliceMode,
 ) -> Result<()> {
   let num = n as usize;
-  if n < 1 && mode.to_str() != "startlen" {
+  if n < 1 && mode.to_str() != "slice" {
     return Err(anyhow!(
       "Number of the slice must be greater than or equal 1"
     ));
@@ -199,7 +199,7 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
       slice_nchar(
         rdr,
         wtr,
-        select_column,
+        column,
         num,
         reverse,
         SliceMode::Left.to_str(),
@@ -210,15 +210,15 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
       slice_nchar(
         rdr,
         wtr,
-        select_column,
+        column,
         num,
         reverse,
         SliceMode::Right.to_str(),
       )
       .await?
     }
-    SliceMode::StartLength => {
-      slice_start_length(rdr, wtr, select_column, n, length, reverse).await?
+    SliceMode::Slice => {
+      slice(rdr, wtr, column, n, length, reverse).await?
     }
   }
 

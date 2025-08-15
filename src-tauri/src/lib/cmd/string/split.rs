@@ -12,38 +12,38 @@ use crate::io::csv::{options::CsvOptions, selection::Selection};
 #[derive(Debug)]
 pub enum SplitMode {
   Nth,
-  Nmax,
+  Max,
 }
 
 impl From<&str> for SplitMode {
   fn from(mode: &str) -> Self {
     match mode {
-      "nth" => SplitMode::Nth,
-      "nmax" => SplitMode::Nmax,
+      "split_n" => SplitMode::Nth,
+      "split_max" => SplitMode::Max,
       _ => SplitMode::Nth,
     }
   }
 }
 
-pub async fn split_nth(
+pub async fn split_n(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
-  select_column: &str,
+  column: &str,
   n: usize,
-  str_sep: &str,
+  by: &str,
 ) -> Result<()> {
   let mut headers = rdr.headers()?.clone();
 
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
-  let new_column_name = format!("{}_nth", select_column);
+  let new_column_name = format!("{}_nth", column);
   headers.push_field(&new_column_name);
   wtr.write_record(&headers)?;
 
   for result in rdr.records() {
     let record = result?;
     if let Some(value) = record.get(sel.first_indices()?) {
-      let split_parts: Vec<&str> = value.split(str_sep).collect();
+      let split_parts: Vec<&str> = value.split(by).collect();
       let selected_part = if split_parts.len() >= n {
         split_parts[n - 1]
       } else {
@@ -59,25 +59,25 @@ pub async fn split_nth(
   Ok(wtr.flush()?)
 }
 
-pub async fn split_nmax(
+pub async fn split_max(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
-  select_column: &str,
+  column: &str,
   n: usize,
-  str_sep: &str,
+  by: &str,
 ) -> Result<()> {
   let mut headers = rdr.headers()?.clone();
 
-  let sel = Selection::from_headers(rdr.byte_headers()?, &[select_column][..])?;
+  let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
   let mut first_record = true;
   for result in rdr.records() {
     let record = result?;
     if let Some(value) = record.get(sel.first_indices()?) {
-      let split_parts: Vec<&str> = value.split(str_sep).collect();
+      let split_parts: Vec<&str> = value.split(by).collect();
       if first_record {
         for i in 1..=n {
-          headers.push_field(&format!("{}_nmax{}", select_column, i));
+          headers.push_field(&format!("{}_max{}", column, i));
         }
         wtr.write_record(&headers)?;
         first_record = false;
@@ -99,11 +99,11 @@ pub async fn split_nmax(
   Ok(wtr.flush()?)
 }
 
-pub async fn perform_split<P: AsRef<Path> + Send + Sync>(
+pub async fn split<P: AsRef<Path> + Send + Sync>(
   path: P,
-  select_column: &str,
+  column: &str,
   n: i32,
-  str_sep: &str,
+  by: &str,
   mode: SplitMode,
 ) -> Result<()> {
   let num = n as usize;
@@ -112,12 +112,15 @@ pub async fn perform_split<P: AsRef<Path> + Send + Sync>(
       "Number of the split must be greater than or equal 1"
     ));
   }
+  if by.chars().count() != 1 {
+    return Err(anyhow!("by must be a single character"));
+  }
 
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
   let file_stem = csv_options.file_stem()?;
   let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.slice.csv"));
+  output_path.push(format!("{file_stem}.split.csv"));
 
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -127,8 +130,8 @@ pub async fn perform_split<P: AsRef<Path> + Send + Sync>(
   let wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
   match mode {
-    SplitMode::Nth => split_nth(rdr, wtr, select_column, num, str_sep).await?,
-    SplitMode::Nmax => split_nmax(rdr, wtr, select_column, num, str_sep).await?,
+    SplitMode::Nth => split_n(rdr, wtr, column, num, by).await?,
+    SplitMode::Max => split_max(rdr, wtr, column, num, by).await?,
   }
 
   Ok(())

@@ -79,10 +79,10 @@ async fn test_slice_right() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_split_nth() -> anyhow::Result<()> {
+async fn test_split_n() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::split::split_nth(rdr, wtr, "name", 2, "-").await?;
+  lib::cmd::string::split::split_n(rdr, wtr, "name", 2, "-").await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -98,15 +98,15 @@ async fn test_split_nth() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_split_nmax() -> anyhow::Result<()> {
+async fn test_split_max() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::split::split_nmax(rdr, wtr, "name", 2, "-").await?;
+  lib::cmd::string::split::split_max(rdr, wtr, "name", 2, "-").await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    "name,age,gender,name_nmax1,name_nmax2",
+    "name,age,gender,name_max1,name_max2",
     "汤-姆-1,18,男,汤,姆",
     "杰-瑞-2,19,male,杰,瑞",
     "Sa-n-dy,24,female,Sa,n",
@@ -117,10 +117,10 @@ async fn test_split_nmax() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_slice_start_length() -> anyhow::Result<()> {
+async fn test_slice() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::slice::slice_start_length(rdr, wtr, "name", 2, 3, false).await?;
+  lib::cmd::string::slice::slice(rdr, wtr, "name", 2, 3, false).await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();

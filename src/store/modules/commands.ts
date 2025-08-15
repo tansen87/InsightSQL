@@ -81,9 +81,9 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/sort"
       },
       {
-        title: "Slice",
-        description: "Slicing of CSV column",
-        route: "/command/components/slice"
+        title: "String",
+        description: "String expr: slice, split, pad...",
+        route: "/command/components/string"
       },
       {
         title: "Reverse",

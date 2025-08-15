@@ -67,6 +67,16 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
       .ok_or(anyhow!("file name is null"))
   }
 
+  /// return the output path based on the filename
+  pub fn output_path(&self, cmd: Option<&str>, ext: Option<&str>) -> Result<PathBuf> {
+    let mut output_path = PathBuf::from(self.parent_path()?);
+    let file_stem = self.file_stem()?;
+    let cmd = cmd.unwrap_or("cmd");
+    let ext = ext.unwrap_or("csv");
+    output_path.push(format!("{file_stem}.{cmd}.{ext}"));
+    Ok(output_path)
+  }
+
   /// Check the delimiter of CSV
   pub fn detect_separator(&self) -> Result<u8> {
     let file = File::open(&self.path)?;
