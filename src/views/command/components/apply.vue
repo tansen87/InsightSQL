@@ -2,29 +2,20 @@
 import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Refresh, FolderOpened, Link } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { CheckboxValueType } from "element-plus";
-import { applyContent, useMarkdown } from "@/utils/markdown";
+import { mdApply, useMarkdown } from "@/utils/markdown";
 
 const [
   isLoading,
-  isPath,
   checkAll,
   indeterminate,
   newColumn,
-  infoDialog,
+  dialog,
   backendCompleted
-] = [
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(false)
-];
+] = [ref(false), ref(false), ref(false), ref(false), ref(false), ref(false)];
 const [operations, tableHeader, tableColumn, tableData] = [
   ref([]),
   ref([]),
@@ -39,9 +30,9 @@ const [path, comparand, replacement, formatstr, backendInfo] = [
   ref("")
 ];
 const applyMode = ref("operations");
-const selColumns = ref<CheckboxValueType[]>([]);
-const { dynamicHeight } = useDynamicHeight(266);
-watch(selColumns, val => {
+const columns = ref<CheckboxValueType[]>([]);
+const { dynamicHeight } = useDynamicHeight(258);
+watch(columns, val => {
   if (val.length === 0) {
     checkAll.value = false;
     indeterminate.value = false;
@@ -55,32 +46,28 @@ watch(selColumns, val => {
 const handleCheckAll = (val: CheckboxValueType) => {
   indeterminate.value = false;
   if (val) {
-    selColumns.value = tableHeader.value.map(_ => _.value);
+    columns.value = tableHeader.value.map(_ => _.value);
   } else {
-    selColumns.value = [];
+    columns.value = [];
   }
 };
-const { compiledMarkdown } = useMarkdown(applyContent);
+const { mdShow } = useMarkdown(mdApply);
 
 async function selectFile() {
-  isPath.value = false;
-  selColumns.value = [];
+  columns.value = [];
   operations.value = [];
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -88,12 +75,11 @@ async function selectFile() {
 
 // invoke apply
 async function applyData() {
-  console.log(applyContent());
   if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (selColumns.value.length === 0) {
+  if (columns.value.length === 0) {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -102,7 +88,7 @@ async function applyData() {
     isLoading.value = true;
     const result: string = await invoke("apply", {
       path: path.value,
-      selectColumns: Object.values(selColumns.value).join("|"),
+      columns: Object.values(columns.value).join("|"),
       applyMode: applyMode.value,
       operations: operations.value.join("|"),
       comparand: comparand.value,
@@ -126,26 +112,22 @@ async function applyData() {
           Open File
         </el-button>
       </div>
-      <el-link @click="infoDialog = true" :icon="Link">
+      <el-link @click="dialog = true" :icon="Link">
         <span v-if="backendCompleted"> {{ backendInfo }} </span>
-        <span v-if="isPath">
-          <el-tooltip :content="path" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>
-          About
-          <span style="color: skyblue; font-weight: bold">Apply</span>
-        </span>
+        <el-tooltip :content="path" effect="light">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Apply</span>
+          </span>
+        </el-tooltip>
       </el-link>
     </div>
-
     <el-select
-      v-model="selColumns"
+      v-model="columns"
       filterable
       multiple
       placeholder="Apply by column(s)"
-      style="width: 100%; margin-top: 12px"
+      style="width: 100%; margin-top: 10px"
     >
       <template #header>
         <el-checkbox
@@ -163,14 +145,13 @@ async function applyData() {
         :value="item.value"
       />
     </el-select>
-
     <el-select
       v-if="applyMode === 'operations'"
       v-model="operations"
       filterable
       multiple
       placeholder="Operations"
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
     >
       <el-option label="Copy" value="copy" />
       <el-option label="Len" value="len" />
@@ -187,10 +168,9 @@ async function applyData() {
       <el-option label="Abs" value="abs" />
       <el-option label="Neg" value="neg" />
     </el-select>
-
     <div class="custom-container1">
       <div style="width: 90%; display: flex; align-items: center">
-        <div style="flex: 1; margin-top: 12px">
+        <div style="flex: 1; margin-top: 10px">
           <el-tooltip content="apply mode" effect="light">
             <el-select v-model="applyMode" style="width: 100%">
               <el-option label="Operations" value="operations" />
@@ -199,48 +179,42 @@ async function applyData() {
             </el-select>
           </el-tooltip>
         </div>
-
         <div
           v-if="applyMode === 'operations'"
-          style="flex: 1; margin-left: 5px; margin-top: 12px"
+          style="flex: 1; margin-left: 5px; margin-top: 10px"
         >
           <el-tooltip content="replace - from" effect="light">
             <el-input
               v-model="comparand"
               style="width: 100%"
               placeholder="replace - from"
-              clearable
             />
           </el-tooltip>
         </div>
         <div
           v-if="applyMode === 'operations'"
-          style="flex: 1; margin-left: 5px; margin-top: 12px"
+          style="flex: 1; margin-left: 5px; margin-top: 10px"
         >
           <el-tooltip content="replace - to" effect="light">
             <el-input
               v-model="replacement"
               style="width: 100%"
               placeholder="replace - to"
-              clearable
             />
           </el-tooltip>
         </div>
-
         <div
           v-if="applyMode === 'calcconv' || applyMode === 'cat'"
-          style="flex: 3; margin-left: 5px; margin-top: 12px"
+          style="flex: 3; margin-left: 5px; margin-top: 10px"
         >
           <el-tooltip content="formatstr with CalcConv or Cat" effect="light">
             <el-input
               v-model="formatstr"
               style="width: 100%"
               placeholder="{col1} + {col2}"
-              clearable
             />
           </el-tooltip>
         </div>
-
         <div style="flex: 1; margin-left: 5px">
           <el-switch
             v-model="newColumn"
@@ -250,33 +224,31 @@ async function applyData() {
               --el-switch-on-color: #43cd80;
               --el-switch-off-color: #b0c4de;
               width: 100%;
-              margin-top: 12px;
+              margin-top: 10px;
             "
             active-text="column"
             inactive-text="no column"
           />
         </div>
       </div>
-
       <div style="width: 10%; text-align: right">
         <el-button
           @click="applyData()"
           :loading="isLoading"
           :icon="Refresh"
-          style="margin-top: 12px; width: 100%"
+          style="margin-top: 10px; width: 100%"
         >
           Apply
         </el-button>
       </div>
     </div>
-
     <div class="custom-container1">
       <el-table
         :data="tableData"
         :height="dynamicHeight"
         border
         empty-text=""
-        style="margin-top: 12px; width: 100%"
+        style="margin-top: 10px; width: 100%"
         show-overflow-tooltip
       >
         <el-table-column
@@ -287,14 +259,13 @@ async function applyData() {
         />
       </el-table>
     </div>
-
     <el-dialog
-      v-model="infoDialog"
+      v-model="dialog"
       title="Apply - Apply a series of transformation functions to given CSV column/s"
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

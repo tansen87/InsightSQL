@@ -5,14 +5,14 @@ import { Refresh, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { fillContent, useMarkdown } from "@/utils/markdown";
+import { mdFill, useMarkdown } from "@/utils/markdown";
 
-const [fillValue, mode] = [ref("0"), ref("fill")];
+const [fillChar, mode] = [ref("0"), ref("fill")];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [columns, path] = [ref(""), ref("")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(200);
-const { compiledMarkdown } = useMarkdown(fillContent);
+const { dynamicHeight } = useDynamicHeight(196);
+const { mdShow } = useMarkdown(mdFill);
 
 async function selectFile() {
   path.value = "";
@@ -51,7 +51,7 @@ async function fillData() {
     const rtime: string = await invoke("fill", {
       path: path.value,
       columns: cols,
-      values: fillValue.value,
+      values: fillChar.value,
       mode: mode.value
     });
     message(`Fill done, elapsed time: ${rtime} s`, { type: "success" });
@@ -71,9 +71,8 @@ async function fillData() {
         </el-button>
         <el-tooltip content="The value of fill" effect="light">
           <el-input
-            v-model="fillValue"
+            v-model="fillChar"
             style="width: 120px; margin-left: 10px"
-            clearable
           />
         </el-tooltip>
         <el-tooltip content="fill mode" effect="light">
@@ -91,7 +90,7 @@ async function fillData() {
       v-model="columns"
       multiple
       filterable
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       placeholder="Select the columns to be filled in"
     >
       <el-option
@@ -106,7 +105,7 @@ async function fillData() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -135,7 +134,7 @@ async function fillData() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

@@ -14,7 +14,6 @@ sample file
 
 transpose result
 ```
-sample file
 ┌─────┬─────┬──────┬───────┐
 │ idx │ 1   │ 2    │ 3     │
 ├─────┼─────┼──────┼───────┤

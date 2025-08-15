@@ -16,7 +16,7 @@ pub async fn skip_csv<E, F, P>(
   path: P,
   file_name: F,
   skip_rows: usize,
-  mode: &str,
+  progress: &str,
   emitter: E,
 ) -> Result<()>
 where
@@ -35,7 +35,7 @@ where
   let mut output_path = PathBuf::from(csv_options.parent_path()?);
   output_path.push(format!("{file_stem}.skip.csv"));
 
-  let total_rows = match mode {
+  let total_rows = match progress {
     "idx" => {
       csv_options
         .idx_count_rows()
@@ -120,7 +120,7 @@ where
 pub async fn skip(
   path: String,
   skip_rows: String,
-  mode: String,
+  progress: String,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -143,7 +143,7 @@ pub async fn skip(
       fp,
       file_name.to_string(),
       skip_rows,
-      mode.as_str(),
+      progress.as_str(),
       app_handle.clone(),
     )
     .await

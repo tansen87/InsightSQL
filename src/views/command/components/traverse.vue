@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { appConfigDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, SwitchFilled } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
 
+const folderPath = ref("");
 const [isLoading, isPath] = [ref(false), ref(false)];
-const data = reactive({
-  folderPath: ""
-});
 
 async function selectFolder() {
   isPath.value = false;
@@ -20,18 +18,18 @@ async function selectFolder() {
     defaultPath: await appConfigDir()
   });
   if (Array.isArray(selected)) {
-    data.folderPath = selected.toString();
+    folderPath.value = selected.toString();
   } else if (selected === null) {
     return;
   } else {
-    data.folderPath = selected;
+    folderPath.value = selected;
   }
   isPath.value = true;
 }
 
 // invoke traverse
 async function traverseDirectory() {
-  if (data.folderPath === "") {
+  if (folderPath.value === "") {
     message("No folder selected", { type: "warning" });
     return;
   }
@@ -48,12 +46,10 @@ async function traverseDirectory() {
 
   try {
     isLoading.value = true;
-
     const result: string = await invoke("traverse", {
-      folderPath: data.folderPath,
+      folderPath: folderPath.value,
       output: output
     });
-
     message(`${result}`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error", duration: 10000 });
@@ -78,7 +74,7 @@ async function traverseDirectory() {
         </el-button>
       </div>
       <el-text>
-        <span v-if="isPath">{{ data.folderPath }}</span>
+        <span v-if="isPath">{{ folderPath }}</span>
         <span v-else>Traverse the directory to obtain filenames</span>
       </el-text>
     </div>

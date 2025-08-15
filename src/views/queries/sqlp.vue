@@ -11,14 +11,14 @@ import { message } from "@/utils/message";
 
 const currentPage = ref(1);
 const pageSize = ref(10);
+const counter = ref(0);
 const total = ref(0);
 const tableColumn = shallowRef<any[]>([]);
+const tables = ref([]);
 const treeHeaders = ref([]);
 const tableData = shallowRef<any[]>([]);
 const isLoading = ref(false);
 const viewTable = ref(false);
-const counter = ref(0);
-const tables = ref([]);
 const isDataLoaded = ref(false);
 const headersByFile = reactive({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
@@ -32,6 +32,7 @@ const data = reactive({
 const { dynamicHeight } = useDynamicHeight(84);
 const { isDark } = useDark();
 const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
+
 const initializeEditor = editor => {
   editor.completers.push({
     getCompletions: (editor, session, pos, prefix, callback) => {
@@ -67,7 +68,6 @@ const queryViewData = async () => {
     viewTable.value = true;
   }
 };
-
 const pagedTableData = computed(() => {
   return tableData.value.slice(
     (currentPage.value - 1) * pageSize.value,
@@ -100,7 +100,6 @@ async function queryData() {
 
   try {
     isLoading.value = true;
-
     const result: string[] = await invoke("query", {
       path: data.path,
       sqlQuery: sqlQuery.value,
@@ -109,12 +108,10 @@ async function queryData() {
       skipRows: data.skipRows,
       schemaLength: data.schemaLength
     });
-
     const q = Array.isArray(result[0]) ? result[0][0] : null;
     if (q.startsWith("Query failed")) {
       throw q;
     }
-
     const jsonData = JSON.parse(result[0]);
     const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
     tableColumn.value = Object.keys(arrayData[0]).map(key => ({
@@ -124,7 +121,6 @@ async function queryData() {
     }));
     tableData.value = markRaw(arrayData);
     total.value = arrayData.length;
-
     message(`Query done, elapsed time: ${result[1]} s`, { type: "success" });
     isLoading.value = false;
     return true;
@@ -132,7 +128,6 @@ async function queryData() {
     isLoading.value = false;
     message(err.toString(), { type: "error", duration: 10000 });
   }
-
   return false;
 }
 
@@ -213,13 +208,12 @@ async function selectFile() {
   return false;
 }
 
-// 处理文件路径，提取文件名
+// 提取文件名
 const viewFileName = computed(() => {
   const paths = data.path.split("|");
   return paths.map(path => {
     const pathParts = path.split(/[/\\]/);
     let fileName = pathParts[pathParts.length - 1];
-
     // 去除文件后缀
     const dotIndex = fileName.lastIndexOf(".");
     if (dotIndex !== -1 && dotIndex < fileName.length - 1) {
@@ -325,7 +319,6 @@ const handleNodeClick = async data => {
           </el-scrollbar>
         </div>
       </div>
-
       <div
         style="
           flex: 0 0 50%;

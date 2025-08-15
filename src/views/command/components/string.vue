@@ -26,9 +26,7 @@ async function selectFile() {
   tableData.value = [];
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
@@ -53,8 +51,9 @@ async function StrData() {
 
   try {
     isLoading.value = true;
+    let rtime: string;
     if (["left", "right", "slice"].includes(mode.value)) {
-      const rtime: string = await invoke("str_slice", {
+      rtime = await invoke("str_slice", {
         path: path.value,
         column: column.value,
         n: n.value,
@@ -62,28 +61,28 @@ async function StrData() {
         reverse: reverse.value,
         mode: mode.value
       });
-      message(`Slice done, elapsed time: ${rtime} s`, { type: "success" });
     }
     if (["split_n", "split_max"].includes(mode.value)) {
-      const rtime: string = await invoke("str_split", {
+      rtime = await invoke("str_split", {
         path: path.value,
         column: column.value,
         n: n.value,
         by: by.value,
         mode: mode.value
       });
-      message(`Split done, elapsed time: ${rtime} s`, { type: "success" });
     }
     if (["pad_left", "pad_right", "pad_both"].includes(mode.value)) {
-      const rtime: string = await invoke("str_pad", {
+      rtime = await invoke("str_pad", {
         path: path.value,
         column: column.value,
         length: length.value,
         fillChar: by.value,
         mode: mode.value
       });
-      message(`Pad done, elapsed time: ${rtime} s`, { type: "success" });
     }
+    message(`${mode.value} done, elapsed time: ${rtime} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }

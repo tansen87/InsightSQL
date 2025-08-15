@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { message } from "@/utils/message";
-import { Search, FolderOpened, Link } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
-import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
 import { listen } from "@tauri-apps/api/event";
-import { searchContent, useMarkdown } from "@/utils/markdown";
+import { Search, FolderOpened, Link } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
+import { useDynamicHeight } from "@/utils/utils";
+import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
+import { mdSearch, useMarkdown } from "@/utils/markdown";
 
-const [mode, countMode] = [ref("equal"), ref("nil")];
+const [mode, progress] = [ref("equal"), ref("nil")];
 const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
-const [columns, path, condition] = [ref(""), ref(""), ref("")];
+const [column, path, condition] = [ref(""), ref(""), ref("")];
 const [dialog, isLoading, isBtnShow] = [ref(false), ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(324);
-const { compiledMarkdown } = useMarkdown(searchContent);
+const { dynamicHeight } = useDynamicHeight(320);
+const { mdShow } = useMarkdown(mdSearch);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -26,7 +26,7 @@ listen("total-rows", (event: any) => {
 async function selectFile() {
   isBtnShow.value = false;
   path.value = "";
-  columns.value = "";
+  column.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
@@ -51,7 +51,7 @@ async function searchData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (columns.value.length === 0) {
+  if (column.value.length === 0) {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -60,10 +60,10 @@ async function searchData() {
     isLoading.value = true;
     const res: string[] = await invoke("search", {
       path: path.value,
-      selectColumn: columns.value,
+      column: column.value,
       mode: mode.value,
       condition: condition.value,
-      countMode: countMode.value
+      progress: progress.value
     });
     matchRows.value = Number(res[0]);
     isBtnShow.value = true;
@@ -85,9 +85,9 @@ async function searchData() {
           Open File
         </el-button>
         <el-select
-          v-model="columns"
+          v-model="column"
           filterable
-          style="margin-left: 10px; margin-right: 10px; width: 140px"
+          style="margin-left: 8px; margin-right: 8px; width: 140px"
           placeholder="Select column"
         >
           <el-option
@@ -121,19 +121,19 @@ async function searchData() {
             <el-option label="Between" value="between" />
           </el-select>
         </el-tooltip>
-        <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="countMode" style="margin-left: 10px; width: 70px">
+        <el-tooltip content="If nil, no progress bar" effect="light">
+          <el-select v-model="progress" style="margin-left: 8px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
       </div>
       <el-button @click="searchData()" :loading="isLoading" :icon="Search">
-        <el-text v-if="isBtnShow"> {{ matchRows }} rows filtered </el-text>
+        <el-text v-if="isBtnShow"> {{ matchRows }} rows matched </el-text>
         <el-text v-else> Search </el-text>
       </el-button>
     </div>
-    <div class="custom-container1" style="margin-top: 12px">
+    <div class="custom-container1" style="margin-top: 8px">
       <div style="flex: 7; width: 70%">
         <el-input
           v-model="condition"
@@ -142,20 +142,13 @@ async function searchData() {
           placeholder="Search conditions......Separate by |. (Example: tom|jack|jerry)"
         />
       </div>
-      <div style="flex: 0; margin-left: 10px">
-        <el-progress
-          type="circle"
-          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-          :percentage="Math.round((currentRows / totalRows) * 100)"
-        />
-      </div>
     </div>
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -167,15 +160,19 @@ async function searchData() {
     </el-table>
     <div class="custom-container1">
       <div class="custom-container2">
-        <el-tooltip :content="path" effect="light">
-          <el-text>{{ shortFileName(path) }}</el-text>
-        </el-tooltip>
+        <el-progress
+          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+          :percentage="Math.round((currentRows / totalRows) * 100)"
+          style="width: 75%"
+        />
       </div>
       <el-link @click="dialog = true" :icon="Link">
-        <span>
-          About
-          <span style="color: skyblue; font-weight: bold">Search</span>
-        </span>
+        <el-tooltip :content="path" effect="light">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Search</span>
+          </span>
+        </el-tooltip>
       </el-link>
     </div>
     <el-dialog
@@ -184,7 +181,7 @@ async function searchData() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

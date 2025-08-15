@@ -5,29 +5,27 @@ import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { replaceContent, useMarkdown } from "@/utils/markdown";
+import { mdReplace, useMarkdown } from "@/utils/markdown";
 
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const [selectColumn, path, regexPattern, replacement] = [
+const [column, path, regexPattern, replacement] = [
   ref(""),
   ref(""),
   ref(""),
   ref("")
 ];
-const { dynamicHeight } = useDynamicHeight(199);
-const { compiledMarkdown } = useMarkdown(replaceContent);
+const { dynamicHeight } = useDynamicHeight(153);
+const { mdShow } = useMarkdown(mdReplace);
 
 async function selectFile() {
-  selectColumn.value = "";
+  column.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
@@ -45,7 +43,7 @@ async function replaceData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (selectColumn.value.length === 0) {
+  if (column.value.length === 0) {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -54,7 +52,7 @@ async function replaceData() {
     isLoading.value = true;
     const rtime: string = await invoke("replace", {
       path: path.value,
-      selectColumn: selectColumn.value,
+      column: column.value,
       regexPattern: regexPattern.value,
       replacement: replacement.value
     });
@@ -68,15 +66,15 @@ async function replaceData() {
 
 <template>
   <div class="page-container">
-    <div class="custom-container1" style="margin-bottom: 12px">
+    <div class="custom-container1" style="margin-bottom: 10px">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
         <el-select
-          v-model="selectColumn"
+          v-model="column"
           filterable
-          style="width: 150px; margin-left: 10px"
+          style="width: 141px; margin-left: 8px"
           placeholder="Select column"
         >
           <el-option
@@ -87,22 +85,26 @@ async function replaceData() {
           />
         </el-select>
         <el-input
-          style="margin-left: 10px; width: 150px"
+          style="margin-left: 8px; width: 141px"
           placeholder="regex pattern"
           v-model="regexPattern"
+        />
+        <el-input
+          v-model="replacement"
+          style="margin-left: 8px; width: 141px"
+          placeholder="replacement"
         />
       </div>
       <el-button @click="replaceData()" :loading="isLoading" :icon="Refresh">
         Replace
       </el-button>
     </div>
-    <el-input v-model="replacement" autosize placeholder="replacement" />
     <el-table
       :data="tableData"
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -129,7 +131,7 @@ async function replaceData() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

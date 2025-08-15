@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -13,17 +13,14 @@ import {
 import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
-import { useMarkdown, skipContent } from "@/utils/markdown";
+import { useMarkdown, mdSkip } from "@/utils/markdown";
 
+const path = ref("");
 const selectedFiles = ref([]);
+const [skipRows, progress] = [ref("1"), ref("nil")];
 const [dialog, isLoading] = [ref(false), ref(false)];
-const data = reactive({
-  path: "",
-  skipRows: "1",
-  mode: "nil"
-});
 const { dynamicHeight } = useDynamicHeight(143);
-const { compiledMarkdown } = useMarkdown(skipContent);
+const { mdShow } = useMarkdown(mdSkip);
 
 listen("update-msg", (event: any) => {
   const [backFilename, rows] = event.payload.split("|");
@@ -73,14 +70,13 @@ async function selectFile() {
   const trimFile = await trimOpenFile(true, "csv", ["*"], {
     includeStatus: true
   });
-  data.path = trimFile.filePath;
+  path.value = trimFile.filePath;
   selectedFiles.value = trimFile.fileInfo;
-  if (data.path === null) return;
 }
 
 // invoke skip
 async function skipLines() {
-  if (data.path === "") {
+  if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
   }
@@ -88,9 +84,9 @@ async function skipLines() {
   try {
     isLoading.value = true;
     const result: string = await invoke("skip", {
-      path: data.path,
-      mode: data.mode,
-      skipRows: data.skipRows
+      path: path.value,
+      progress: progress.value,
+      skipRows: skipRows.value
     });
     message(`Skip done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {
@@ -108,13 +104,10 @@ async function skipLines() {
           Open File
         </el-button>
         <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 10px; width: 50px"
-          />
+          <el-input v-model="skipRows" style="margin-left: 8px; width: 50px" />
         </el-tooltip>
         <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="data.mode" style="margin-left: 10px; width: 70px">
+          <el-select v-model="progress" style="margin-left: 8px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="nil" value="nil" />
           </el-select>
@@ -124,7 +117,7 @@ async function skipLines() {
         @click="skipLines()"
         :loading="isLoading"
         :icon="Delete"
-        style="margin-left: 10px"
+        style="margin-left: 8px"
       >
         Skip
       </el-button>
@@ -184,7 +177,7 @@ async function skipLines() {
     </div>
     <el-dialog v-model="dialog" title="Skip - Skip rows from CSV" width="800">
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

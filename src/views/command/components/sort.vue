@@ -1,40 +1,38 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Refresh } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
+import { mdSort, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("Sort");
-const [selectColumn, path] = [ref(""), ref("")];
+const [column, path] = [ref(""), ref("")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const [isLoading, isPath, numeric, reverse] = [
+const [isLoading, dialog, numeric, reverse] = [
   ref(false),
   ref(false),
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(178);
+const { dynamicHeight } = useDynamicHeight(153);
+const { mdShow } = useMarkdown(mdSort);
 
 async function selectFile() {
-  isPath.value = false;
-  selectColumn.value = "";
+  column.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -46,7 +44,7 @@ async function sortData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (selectColumn.value.length === 0 && mode.value !== "index") {
+  if (column.value.length === 0 && mode.value !== "index") {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -57,14 +55,14 @@ async function sortData() {
     if (mode.value == "Sort") {
       rtime = await invoke("sort", {
         path: path.value,
-        selectColumn: selectColumn.value,
+        column: column.value,
         numeric: numeric.value,
         reverse: reverse.value
       });
     } else if (mode.value == "ExtSort") {
       rtime = await invoke("extsort", {
         path: path.value,
-        selectColumn: selectColumn.value,
+        column: column.value,
         reverse: reverse.value
       });
     } else if (mode.value == "Index") {
@@ -89,23 +87,11 @@ async function sortData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-      </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" placement="top" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Sorts CSV data lexicographically</span>
-      </el-text>
-    </div>
-    <div class="custom-container1">
-      <div class="custom-container1" style="margin-top: 12px">
         <el-select
-          v-model="selectColumn"
+          v-model="column"
           filterable
-          style="width: 200px"
-          placeholder="Sort by column"
+          style="width: 140px; margin-left: 8px"
+          placeholder="Select column"
         >
           <el-option
             v-for="item in tableHeader"
@@ -115,14 +101,14 @@ async function sortData() {
           />
         </el-select>
         <el-tooltip content="Sort, ExtSort or create index" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 90px">
+          <el-select v-model="mode" style="margin-left: 8px; width: 90px">
             <el-option label="Sort" value="Sort" />
             <el-option label="ExtSort" value="ExtSort" />
             <el-option label="Index" value="Index" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="Numeric" effect="light">
-          <el-select v-model="numeric" style="margin-left: 10px; width: 80px">
+          <el-select v-model="numeric" style="margin-left: 8px; width: 80px">
             <el-option label="true" :value="true" />
             <el-option label="false" :value="false" />
           </el-select>
@@ -131,18 +117,13 @@ async function sortData() {
           content="Reverse (when set to false, sort from small to large)"
           effect="light"
         >
-          <el-select v-model="reverse" style="margin-left: 10px; width: 80px">
+          <el-select v-model="reverse" style="margin-left: 8px; width: 80px">
             <el-option label="true" :value="true" />
             <el-option label="false" :value="false" />
           </el-select>
         </el-tooltip>
       </div>
-      <el-button
-        @click="sortData()"
-        :loading="isLoading"
-        :icon="Refresh"
-        style="margin-top: 10px"
-      >
+      <el-button @click="sortData()" :loading="isLoading" :icon="Refresh">
         {{ mode }}
       </el-button>
     </div>
@@ -151,7 +132,7 @@ async function sortData() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -161,5 +142,25 @@ async function sortData() {
         :key="column.prop"
       />
     </el-table>
+    <div class="custom-container1">
+      <div class="custom-container2" />
+      <el-link @click="dialog = true" :icon="Link">
+        <el-tooltip :content="path" effect="light">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Sort</span>
+          </span>
+        </el-tooltip>
+      </el-link>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Sort - Sorts CSV data lexicographically"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="mdShow" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

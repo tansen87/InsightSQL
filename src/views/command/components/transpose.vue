@@ -1,33 +1,31 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Refresh, FolderOpened } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { Refresh, FolderOpened, Link } from "@element-plus/icons-vue";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
+import { mdTranspose, useMarkdown } from "@/utils/markdown";
 
 const [path, mode] = [ref(""), ref("memory")];
-const [isLoading, isPath] = [ref(false), ref(false)];
+const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(178);
+const { dynamicHeight } = useDynamicHeight(153);
+const { mdShow } = useMarkdown(mdTranspose);
 
 async function selectFile() {
-  isPath.value = false;
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) {
-    return;
-  }
+  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, "0");
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -61,32 +59,15 @@ async function transposeData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
-      </div>
-      <el-text>
-        <span v-if="isPath">
-          <el-tooltip :content="path" effect="light">
-            <span>{{ shortFileName(path) }}</span>
-          </el-tooltip>
-        </span>
-        <span v-else>Transpose rows/columns of a CSV</span>
-      </el-text>
-    </div>
-    <div class="custom-container1">
-      <div clas="custom-container2" style="margin-top: 12px">
-        <el-tooltip content="transpose mode" effect="light">
-          <el-select v-model="mode" style="width: 110px">
-            <el-option label="memory" value="memory" />
-            <el-option label="multipass" value="multipass" />
+        <el-tooltip content="Transpose mode" effect="light">
+          <el-select v-model="mode" style="width: 110px; margin-left: 8px">
+            <el-option label="Memory" value="memory" />
+            <el-option label="Multipass" value="multipass" />
           </el-select>
         </el-tooltip>
       </div>
-      <el-button
-        style="margin-top: 12px"
-        @click="transposeData()"
-        :loading="isLoading"
-        :icon="Refresh"
-      >
-        {{ mode }}
+      <el-button @click="transposeData()" :loading="isLoading" :icon="Refresh">
+        Transpose
       </el-button>
     </div>
     <el-table
@@ -94,7 +75,7 @@ async function transposeData() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -104,5 +85,25 @@ async function transposeData() {
         :key="column.prop"
       />
     </el-table>
+    <div class="custom-container1">
+      <div class="custom-container2" />
+      <el-link @click="dialog = true" :icon="Link">
+        <el-tooltip :content="path" effect="light">
+          <span>
+            About
+            <span style="color: skyblue; font-weight: bold">Transpose</span>
+          </span>
+        </el-tooltip>
+      </el-link>
+    </div>
+    <el-dialog
+      v-model="dialog"
+      title="Transpose - Transpose rows/columns of a CSV"
+      width="800"
+    >
+      <el-scrollbar :height="dynamicHeight * 0.8">
+        <div v-html="mdShow" />
+      </el-scrollbar>
+    </el-dialog>
   </div>
 </template>

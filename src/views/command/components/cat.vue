@@ -9,19 +9,20 @@ import {
   Loading
 } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
-import { catContent, useMarkdown } from "@/utils/markdown";
+import { mdCat, useMarkdown } from "@/utils/markdown";
 import { message, closeAllMessage } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
 const [mode, skipRows] = [ref("polars"), ref("0")];
 const [columns, backendInfo, path] = [ref(""), ref(""), ref("")];
 const [selectedFiles, originalColumns] = [ref([]), ref([])];
-const [isLoading, backendCompleted, infoDialog] = [
+const [isLoading, backendCompleted, dialog] = [
   ref(false),
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(166);
+const { dynamicHeight } = useDynamicHeight(164);
+const { mdShow } = useMarkdown(mdCat);
 
 async function selectFile() {
   columns.value = "";
@@ -112,8 +113,6 @@ async function concatData() {
   }
   isLoading.value = false;
 }
-
-const { compiledMarkdown } = useMarkdown(catContent);
 </script>
 
 <template>
@@ -142,10 +141,10 @@ const { compiledMarkdown } = useMarkdown(catContent);
           :icon="Connection"
           style="margin-left: 10px"
         >
-          {{ mode }}
+          Cat
         </el-button>
       </div>
-      <el-link @click="infoDialog = true" :icon="Link">
+      <el-link @click="dialog = true" :icon="Link">
         <span v-if="backendCompleted"> {{ backendInfo }} </span>
         <span v-else>
           About
@@ -157,7 +156,7 @@ const { compiledMarkdown } = useMarkdown(catContent);
       v-model="columns"
       multiple
       filterable
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       placeholder="Cat specific column (If column is empty, files have no common headers)"
     >
       <el-option
@@ -193,12 +192,12 @@ const { compiledMarkdown } = useMarkdown(catContent);
       </el-table-column>
     </el-table>
     <el-dialog
-      v-model="infoDialog"
+      v-model="dialog"
       title="Cat - Merge multiple CSV or Excel files into one CSV or xlsx file"
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </el-form>

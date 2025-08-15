@@ -4,14 +4,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
-import { splitContent, useMarkdown } from "@/utils/markdown";
+import { mdSplit, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 
 const [path, size, mode] = [ref(""), ref(1000000), ref("rows")];
 const [tableColumn, tableData] = [ref([]), ref([])];
 const [isLoading, dialog] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(155);
-const { compiledMarkdown } = useMarkdown(splitContent);
+const { dynamicHeight } = useDynamicHeight(153);
+const { mdShow } = useMarkdown(mdSplit);
 
 async function selectFile() {
   path.value = "";
@@ -63,11 +63,11 @@ async function splitData() {
           <el-input-number
             v-model="size"
             controls-position="right"
-            style="width: 172px; margin-left: 10px"
+            style="width: 172px; margin-left: 8px"
           />
         </el-tooltip>
         <el-tooltip content="Split mode" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 80px">
+          <el-select v-model="mode" style="margin-left: 8px; width: 80px">
             <el-option label="Rows" value="rows" />
             <el-option label="Lines" value="lines" />
             <el-option label="Index" value="index" />
@@ -87,7 +87,7 @@ async function splitData() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -116,7 +116,7 @@ async function splitData() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

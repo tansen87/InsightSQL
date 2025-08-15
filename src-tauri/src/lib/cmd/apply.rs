@@ -225,7 +225,7 @@ fn apply_operations(
 
 async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   path: P,
-  select_columns: String,
+  columns: String,
   apply_mode: String,
   operations: &str,
   comparand: String,
@@ -233,7 +233,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   formatstr: String,
   new_column: bool,
 ) -> Result<()> {
-  let select_columns: Vec<&str> = select_columns.split('|').collect();
+  let columns: Vec<&str> = columns.split('|').collect();
   let csv_options = CsvOptions::new(&path);
   let sep = csv_options.detect_separator()?;
   let sep_char = sep as char;
@@ -243,7 +243,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 
   let new_column: Option<String> = if new_column {
     Some(
-      select_columns
+      columns
         .iter()
         .map(|col| format!("{col}_new"))
         .collect::<Vec<_>>()
@@ -266,7 +266,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     .enumerate()
     .map(|(i, field)| (field.to_vec(), i))
     .collect();
-  let select_column_bytes: Vec<_> = select_columns
+  let select_column_bytes: Vec<_> = columns
     .iter()
     .map(|&col| col.as_bytes().to_vec())
     .collect();
@@ -468,7 +468,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 #[tauri::command]
 pub async fn apply(
   path: String,
-  select_columns: String,
+  columns: String,
   apply_mode: String,
   operations: String,
   comparand: String,
@@ -480,7 +480,7 @@ pub async fn apply(
 
   match apply_perform(
     path,
-    select_columns,
+    columns,
     apply_mode,
     operations.as_str(),
     comparand,

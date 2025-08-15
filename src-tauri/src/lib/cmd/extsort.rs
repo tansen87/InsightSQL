@@ -141,7 +141,7 @@ pub async fn sort_csv(
 }
 
 #[tauri::command]
-pub async fn extsort(path: String, select_column: String, reverse: bool) -> Result<String, String> {
+pub async fn extsort(path: String, column: String, reverse: bool) -> Result<String, String> {
   let start_time = Instant::now();
   let tmp_dir = "./".to_string();
 
@@ -159,7 +159,7 @@ pub async fn extsort(path: String, select_column: String, reverse: bool) -> Resu
       }
     };
 
-  match sort_csv(path, select_column, reverse, &tmp_dir, &sorter).await {
+  match sort_csv(path, column, reverse, &tmp_dir, &sorter).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

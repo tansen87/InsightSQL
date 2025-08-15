@@ -7,7 +7,7 @@ import { FolderOpened, Select, Link } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { useDynamicHeight } from "@/utils/utils";
-import { selectContent, useMarkdown } from "@/utils/markdown";
+import { mdSelect, useMarkdown } from "@/utils/markdown";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -19,8 +19,8 @@ const [isLoading, dialog, checkAll, indeterminate] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(199);
-const { compiledMarkdown } = useMarkdown(selectContent);
+const { dynamicHeight } = useDynamicHeight(195);
+const { mdShow } = useMarkdown(mdSelect);
 const selColumns = ref<CheckboxValueType[]>([]);
 
 watch(selColumns, val => {
@@ -108,13 +108,13 @@ async function selectColumns() {
           Open File
         </el-button>
         <el-tooltip content="Select mode" effect="light">
-          <el-select v-model="selMode" style="width: 95px; margin-left: 10px">
+          <el-select v-model="selMode" style="width: 95px; margin-left: 8px">
             <el-option label="Include" value="include" />
             <el-option label="Exclude" value="exclude" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="pgsMode" style="margin-left: 10px; width: 70px">
+          <el-select v-model="pgsMode" style="margin-left: 8px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="nil" value="nil" />
           </el-select>
@@ -124,7 +124,7 @@ async function selectColumns() {
         @click="selectColumns()"
         :loading="isLoading"
         :icon="Select"
-        style="margin-left: 10px"
+        style="margin-left: 8px"
       >
         Select
       </el-button>
@@ -134,7 +134,7 @@ async function selectColumns() {
       v-model="selColumns"
       multiple
       filterable
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       placeholder="Select columns"
     >
       <template #header>
@@ -158,7 +158,7 @@ async function selectColumns() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -191,7 +191,7 @@ async function selectColumns() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

@@ -6,7 +6,7 @@ import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { listen } from "@tauri-apps/api/event";
-import { renameContent, useMarkdown } from "@/utils/markdown";
+import { mdRename, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
 const tableData = ref([]);
@@ -14,7 +14,7 @@ const [search, path] = [ref(""), ref("")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [dialog, isLoading] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(143);
-const { compiledMarkdown } = useMarkdown(renameContent);
+const { mdShow } = useMarkdown(mdRename);
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -91,18 +91,13 @@ async function headerEdit(row: any) {
           Open File
         </el-button>
         <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
+          <el-select v-model="mode" style="margin-left: 8px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="nil" value="nil" />
           </el-select>
         </el-tooltip>
       </div>
-      <el-button
-        @click="renameData()"
-        :loading="isLoading"
-        :icon="Refresh"
-        style="margin-left: 10px"
-      >
+      <el-button @click="renameData()" :loading="isLoading" :icon="Refresh">
         Rename
       </el-button>
     </div>
@@ -159,7 +154,7 @@ async function headerEdit(row: any) {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

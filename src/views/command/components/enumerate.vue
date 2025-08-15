@@ -6,15 +6,15 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { listen } from "@tauri-apps/api/event";
-import { enumerateContent, useMarkdown } from "@/utils/markdown";
+import { mdEnumer, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
-const [dialog, isLoading, isPath] = [ref(false), ref(false), ref(false)];
+const [dialog, isLoading] = [ref(false), ref(false)];
 const [tableColumn, tableData] = [ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(155);
-const { compiledMarkdown } = useMarkdown(enumerateContent);
+const { dynamicHeight } = useDynamicHeight(153);
+const { mdShow } = useMarkdown(mdEnumer);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -24,7 +24,6 @@ listen("total-rows", (event: any) => {
 });
 
 async function selectFile() {
-  isPath.value = false;
   tableColumn.value = [];
   tableData.value = [];
   totalRows.value = 0;
@@ -36,7 +35,6 @@ async function selectFile() {
     const { columnView, dataView } = await toJson(path.value);
     tableColumn.value = columnView;
     tableData.value = dataView;
-    isPath.value = true;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -91,7 +89,7 @@ async function enumerate() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -124,7 +122,7 @@ async function enumerate() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

@@ -6,15 +6,15 @@ import { FolderOpened, SwitchFilled, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { pinyinContent, useMarkdown } from "@/utils/markdown";
+import { mdPinyin, useMarkdown } from "@/utils/markdown";
 
 const [mode, pinyinStyle] = [ref("nil"), ref("upper")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [columns, path] = [ref(""), ref("")];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(199);
-const { compiledMarkdown } = useMarkdown(pinyinContent);
+const { dynamicHeight } = useDynamicHeight(195);
+const { mdShow } = useMarkdown(mdPinyin);
 
 listen("update-rows", (event: any) => {
   currentRows.value = event.payload;
@@ -100,15 +100,15 @@ async function chineseToPinyin() {
         :icon="SwitchFilled"
         style="margin-left: 10px"
       >
-        Convert
+        Pinyin
       </el-button>
     </div>
     <el-select
       v-model="columns"
       multiple
       filterable
-      style="margin-top: 12px; width: 100%"
-      placeholder="please choose columns"
+      style="margin-top: 10px; width: 100%"
+      placeholder="Select columns"
     >
       <el-option
         v-for="item in tableHeader"
@@ -122,7 +122,7 @@ async function chineseToPinyin() {
       :height="dynamicHeight"
       border
       empty-text=""
-      style="margin-top: 12px; width: 100%"
+      style="margin-top: 10px; width: 100%"
       show-overflow-tooltip
     >
       <el-table-column
@@ -155,7 +155,7 @@ async function chineseToPinyin() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

@@ -13,14 +13,14 @@ import {
 } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
-import { useMarkdown, countContent } from "@/utils/markdown";
+import { useMarkdown, mdCount } from "@/utils/markdown";
 
 const mode = ref("count");
 const path = ref("");
 const [dialog, isLoading] = [ref(false), ref(false)];
 const selectedFiles = ref([]);
 const { dynamicHeight } = useDynamicHeight(143);
-const { compiledMarkdown } = useMarkdown(countContent);
+const { mdShow } = useMarkdown(mdCount);
 
 listen("start-count", (event: any) => {
   const startConvert: string = event.payload;
@@ -114,9 +114,9 @@ async function countData() {
         @click="countData()"
         :loading="isLoading"
         :icon="Select"
-        style="margin-left: 10px"
+        style="margin-left: 8px"
       >
-        {{ mode }}
+        Count
       </el-button>
     </div>
     <el-table
@@ -179,7 +179,7 @@ async function countData() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

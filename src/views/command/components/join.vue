@@ -5,7 +5,7 @@ import { FolderOpened, Connection, Link } from "@element-plus/icons-vue";
 import { shortFileName, useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { joinContent, useMarkdown } from "@/utils/markdown";
+import { mdJoin, useMarkdown } from "@/utils/markdown";
 
 const joinType = ref("left");
 const [sel1, sel2] = [ref(""), ref("")];
@@ -19,8 +19,8 @@ const [
   tableData2
 ] = [ref([]), ref([]), ref([]), ref([]), ref([]), ref([])];
 const data = reactive({ path1: "", path2: "" });
-const { dynamicHeight } = useDynamicHeight(200);
-const { compiledMarkdown } = useMarkdown(joinContent);
+const { dynamicHeight } = useDynamicHeight(194);
+const { mdShow } = useMarkdown(mdJoin);
 
 async function selectFile(fileIndex: number) {
   const selectColumn = fileIndex === 1 ? sel1 : sel2;
@@ -95,9 +95,8 @@ async function joinData() {
         </span>
       </el-link>
     </div>
-
     <div class="custom-container1">
-      <div class="custom-container2" style="margin-top: 12px">
+      <div class="custom-container2" style="margin-top: 10px">
         <el-tooltip content="column of file1" effect="light">
           <el-select
             v-model="sel1"
@@ -155,14 +154,13 @@ async function joinData() {
         @click="joinData()"
         :loading="isLoading"
         :icon="Connection"
-        style="margin-top: 12px"
+        style="margin-top: 10px"
       >
         Join
       </el-button>
     </div>
-
     <div
-      style="display: flex; justify-content: space-between; margin-top: 12px"
+      style="display: flex; justify-content: space-between; margin-top: 10px"
     >
       <div style="display: flex; flex-direction: column; width: 49%">
         <el-table
@@ -213,7 +211,7 @@ async function joinData() {
       width="800"
     >
       <el-scrollbar :height="dynamicHeight * 0.8">
-        <div v-html="compiledMarkdown" />
+        <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
   </div>

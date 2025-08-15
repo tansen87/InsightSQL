@@ -13,7 +13,7 @@ use crate::io::csv::{options::CsvOptions, selection::Selection};
 
 pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
-  select_column: String,
+  column: String,
   numeric: bool,
   reverse: bool,
 ) -> Result<()> {
@@ -29,7 +29,7 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
 
   let headers = rdr.byte_headers()?.clone();
 
-  let sel = Selection::from_headers(&headers, &[select_column.as_str()][..])?;
+  let sel = Selection::from_headers(&headers, &[column.as_str()][..])?;
 
   let mut all = rdr.byte_records().collect::<Result<Vec<_>, _>>()?;
   match (numeric, reverse) {
@@ -150,13 +150,13 @@ where
 #[tauri::command]
 pub async fn sort(
   path: String,
-  select_column: String,
+  column: String,
   numeric: bool,
   reverse: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match sort_csv(path, select_column, numeric, reverse).await {
+  match sort_csv(path, column, numeric, reverse).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

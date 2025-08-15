@@ -86,7 +86,7 @@ export function useMarkdown(mdInitFn: () => string) {
   };
 }
 
-export function applyContent() {
+export function mdApply() {
   return `
   ### OPERATIONS
   | Operations | Description                                       |
@@ -112,7 +112,7 @@ export function applyContent() {
 `;
 }
 
-export function catContent() {
+export function mdCat() {
   return `
 \`\`\`
 sample file
@@ -177,7 +177,7 @@ duplicate result: {"name"}
 `;
 }
 
-export function splitContent() {
+export function mdSplit() {
   return `
 ### 1. Rows (standard csv file)
 \`\`\`
@@ -323,7 +323,7 @@ sample file
 `;
 }
 
-export function searchContent() {
+export function mdSearch() {
   return `
 \`\`\`
 sample file (test.csv)
@@ -580,7 +580,7 @@ test_rry.csv
 `;
 }
 
-export function renameContent() {
+export function mdRename() {
   return `
 \`\`\`
 sample file
@@ -605,7 +605,7 @@ Set new headers: idx1, name1
 `;
 }
 
-export function selectContent() {
+export function mdSelect() {
   return `
 \`\`\`
 sample file
@@ -644,7 +644,7 @@ sample file
 `;
 }
 
-export function fillContent() {
+export function mdFill() {
   return `
 \`\`\`
 sample file
@@ -683,7 +683,7 @@ sample file
   `;
 }
 
-export function countContent() {
+export function mdCount() {
   return `
 ### 1. Count
 \`\`\`
@@ -713,7 +713,7 @@ Check result: 2 (This is an incorrect result)
   `;
 }
 
-export function joinContent() {
+export function mdJoin() {
   return `
 \`\`\`
 sample file
@@ -837,7 +837,7 @@ right anti join result (left_on='idx', right_on='idx')
 `;
 }
 
-export function skipContent() {
+export function mdSkip() {
   return `
 \`\`\`
 sample file
@@ -861,7 +861,7 @@ Skip result (skip rows: 2)
   `;
 }
 
-export function enumerateContent() {
+export function mdEnumer() {
   return `
 \`\`\`
 sample file
@@ -887,7 +887,7 @@ Enumerate result
 `;
 }
 
-export function pinyinContent() {
+export function mdPinyin() {
   return `
 \`\`\`
 sample file
@@ -926,7 +926,7 @@ sample file
 `;
 }
 
-export function replaceContent() {
+export function mdReplace() {
   return `
 \`\`\`
 sample file
@@ -948,6 +948,62 @@ sample file
 │  2  │ jerry  │
 │  3  | hansen |
 └─────┴────────┘
+\`\`\`
+`;
+}
+
+export function mdReverse() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+\`\`\`
+Reverse result
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  3  │ hansen │
+│  2  │ jerry  │
+│  1  | tom    |
+└─────┴────────┘
+\`\`\`
+`;
+}
+
+export function mdSort() {
+  return `
+### Documents to be added...
+`;
+}
+
+export function mdTranspose() {
+  return `
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom    │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+\`\`\`
+Transpose result
+┌─────┬─────┬──────┬───────┐
+│ idx │ 1   │ 2    │ 3     │
+├─────┼─────┼──────┼───────┤
+│ name│ tom │ jerry│ hansen│
+└─────┴─────┴──────┴───────┘
 \`\`\`
 `;
 }
