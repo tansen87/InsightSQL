@@ -29,7 +29,7 @@ const [path, comparand, replacement, formatstr, backendInfo] = [
   ref(""),
   ref("")
 ];
-const applyMode = ref("operations");
+const mode = ref("operations");
 const columns = ref<CheckboxValueType[]>([]);
 const { dynamicHeight } = useDynamicHeight(258);
 watch(columns, val => {
@@ -89,7 +89,7 @@ async function applyData() {
     const result: string = await invoke("apply", {
       path: path.value,
       columns: Object.values(columns.value).join("|"),
-      applyMode: applyMode.value,
+      mode: mode.value,
       operations: operations.value.join("|"),
       comparand: comparand.value,
       replacement: replacement.value,
@@ -111,6 +111,13 @@ async function applyData() {
         <el-button @click="selectFile()" :icon="FolderOpened">
           Open File
         </el-button>
+        <el-tooltip content="apply mode" effect="light">
+          <el-select v-model="mode" style="margin-left: 5px; width: 120px">
+            <el-option label="Operations" value="operations" />
+            <el-option label="CalcConv" value="calcconv" />
+            <el-option label="Cat" value="cat" />
+          </el-select>
+        </el-tooltip>
       </div>
       <el-link @click="dialog = true" :icon="Link">
         <span v-if="backendCompleted"> {{ backendInfo }} </span>
@@ -146,7 +153,7 @@ async function applyData() {
       />
     </el-select>
     <el-select
-      v-if="applyMode === 'operations'"
+      v-if="mode === 'operations'"
       v-model="operations"
       filterable
       multiple
@@ -170,41 +177,24 @@ async function applyData() {
     </el-select>
     <div class="custom-container1">
       <div style="width: 90%; display: flex; align-items: center">
-        <div style="flex: 1; margin-top: 10px">
-          <el-tooltip content="apply mode" effect="light">
-            <el-select v-model="applyMode" style="width: 100%">
-              <el-option label="Operations" value="operations" />
-              <el-option label="CalcConv" value="calcconv" />
-              <el-option label="Cat" value="cat" />
-            </el-select>
-          </el-tooltip>
-        </div>
-        <div
-          v-if="applyMode === 'operations'"
-          style="flex: 1; margin-left: 5px; margin-top: 10px"
-        >
+        <template v-if="['operations'].includes(mode)">
           <el-tooltip content="replace - from" effect="light">
             <el-input
               v-model="comparand"
-              style="width: 100%"
+              style="width: 100%; flex: 1; margin-top: 10px"
               placeholder="replace - from"
             />
           </el-tooltip>
-        </div>
-        <div
-          v-if="applyMode === 'operations'"
-          style="flex: 1; margin-left: 5px; margin-top: 10px"
-        >
           <el-tooltip content="replace - to" effect="light">
             <el-input
               v-model="replacement"
-              style="width: 100%"
+              style="width: 100%; flex: 1; margin-left: 5px; margin-top: 10px"
               placeholder="replace - to"
             />
           </el-tooltip>
-        </div>
+        </template>
         <div
-          v-if="applyMode === 'calcconv' || applyMode === 'cat'"
+          v-if="['cat', 'calcconv'].includes(mode)"
           style="flex: 3; margin-left: 5px; margin-top: 10px"
         >
           <el-tooltip content="formatstr with CalcConv or Cat" effect="light">

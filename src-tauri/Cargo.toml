@@ -16,6 +16,14 @@ name = "lib"
 path = "src/lib/mod.rs"
 crate-type = ["lib", "staticlib", "cdylib"]
 
+[profile.release]
+lto = "fat"
+opt-level = 3
+strip = true
+debug = false
+codegen-units = 1
+panic = "abort"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -40,23 +48,22 @@ num_cpus = "1"
 odbc-api = "9.0.0"
 pinyin = { version = "0.10.0", features = ["plain"] }
 polars = { version = "0.50.0", features = [
-    "asof_join",
-    "cross_join",
     "cse",
-    "csv",
-    "diagonal_concat",
-    "dtype-decimal",
-    "lazy",
-    "parquet",
-    "semi_anti_join",
     "sql",
+    "lazy",
+    "diagonal_concat",
+    "cross_join",
+    "semi_anti_join",
+    "dtype-decimal",
+    "csv",
     "json",
+    "parquet",
     ] }
 rayon = "1.10.0"
 regex = "1.11.1"
 rust_decimal = "1.37.2"
 rustc-hash = "2.1.1"
-rust_xlsxwriter = "0.89.1"
+rust_xlsxwriter = "0.90"
 ryu = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

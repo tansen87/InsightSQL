@@ -220,7 +220,7 @@ fn apply_operations(
 async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   path: P,
   columns: String,
-  apply_mode: String,
+  mode: String,
   operations: &str,
   comparand: String,
   replacement: String,
@@ -285,7 +285,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   }
   wtr.write_record(&headers)?;
 
-  let dynfmt_template = if (apply_mode == "calcconv") || (apply_mode == "cat") {
+  let dynfmt_template = if (mode == "calcconv") || (mode == "cat") {
     let mut dynfmt_template_wrk = formatstr.clone();
     let mut dynfmt_fields = Vec::new();
 
@@ -314,7 +314,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 
   let mut ops_vec = SmallVec::<[Operations; 4]>::new();
 
-  let apply_cmd = if apply_mode == "operations" {
+  let apply_cmd = if mode == "operations" {
     match validate_operations(
       &operations.split('|').collect(),
       &comparand,
@@ -326,7 +326,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
       Err(e) => return Err(e),
     }
     ApplyCmd::Operations
-  } else if apply_mode == "calcconv" {
+  } else if mode == "calcconv" {
     ApplyCmd::CalcConv
   } else {
     ApplyCmd::Cat
@@ -458,7 +458,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 pub async fn apply(
   path: String,
   columns: String,
-  apply_mode: String,
+  mode: String,
   operations: String,
   comparand: String,
   replacement: String,
@@ -470,7 +470,7 @@ pub async fn apply(
   match apply_perform(
     path,
     columns,
-    apply_mode,
+    mode,
     operations.as_str(),
     comparand,
     replacement,

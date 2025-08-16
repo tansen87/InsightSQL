@@ -266,7 +266,7 @@ async function convert() {
           <el-select
             v-model="wtrSep"
             style="width: 50px; margin-left: 8px"
-            v-if="activeTab !== 'excel' && activeTab !== 'csv'"
+            v-if="!new Set(['excel', 'csv']).has(activeTab)"
           >
             <el-option label="|" value="|" />
             <el-option label="\t" value="\t" />
