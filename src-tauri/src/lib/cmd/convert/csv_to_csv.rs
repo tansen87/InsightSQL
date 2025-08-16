@@ -8,19 +8,22 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
-use tauri::{Emitter, Window};
 use tokio::sync::oneshot;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
 
 /// convert csv to csv (only replace the delimiter)
-pub async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
+pub async fn csv_to_csv<E, P>(
   path: P,
   wtr_sep: String,
   filename: String,
   progress: &str,
-  window: Window,
-) -> Result<()> {
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let opts = CsvOptions::new(&path);
   let rdr_sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("fmt"), None)?;
@@ -34,7 +37,9 @@ pub async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
     "idx" => opts.idx_count_rows().await?,
     _ => 0,
   };
-  window.emit("total-rows", format!("{filename}|{total_rows}"))?;
+  emitter
+    .emit_total_msg(&format!("{filename}|{total_rows}"))
+    .await?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(rdr_sep)
@@ -62,13 +67,13 @@ pub async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
               0
             }
           };
-          if let Err(err) = window.emit("update-rows", format!("{filename}|{current_rows}")) {
-            let _ = window.emit("to-err", format!("{filename}|{err}"));
+          if let Err(err) = emitter.emit_update_msg(&format!("{filename}|{current_rows}")).await {
+            let _ = emitter.emit_err(&format!("{filename}|{err}")).await;
           }
         },
         Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = window.emit("update-rows", format!("{filename}|{final_rows}")) {
-            let _ = window.emit("to-err", format!("{filename}|{err}"));
+          if let Err(err) = emitter.emit_update_msg(&format!("{filename}|{final_rows}")).await {
+            let _ = emitter.emit_err(&format!("{filename}|{err}")).await;
           }
           break;
         },

@@ -115,7 +115,7 @@ pub async fn skip(
   path: String,
   skip_rows: String,
   progress: String,
-  app_handle: AppHandle,
+  emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -130,27 +130,27 @@ pub async fn skip(
       .ok_or(format!("get file_name failed"))?
       .to_str()
       .ok_or(format!("file_name to str failed"))?;
-    app_handle
-      .emit("start-skip", file_name)
-      .map_err(|e| format!("emit start-skip error: {e}"))?;
+    emitter
+      .emit("info", file_name)
+      .map_err(|e| format!("emit info error: {e}"))?;
     match skip_csv(
       fp,
       file_name.to_string(),
       skip_rows,
       progress.as_str(),
-      app_handle.clone(),
+      emitter.clone(),
     )
     .await
     {
       Ok(_) => {
-        app_handle
-          .emit("skip-msg", file_name)
-          .map_err(|e| format!("emit skip-msg error: {e}"))?;
+        emitter
+          .emit("success", file_name)
+          .map_err(|e| format!("emit success error: {e}"))?;
       }
       Err(err) => {
-        app_handle
-          .emit("skip-err", format!("{file_name}|{err}"))
-          .map_err(|e| format!("emit skip-err error: {e}"))?;
+        emitter
+          .emit("err", format!("{file_name}|{err}"))
+          .map_err(|e| format!("emit err error: {e}"))?;
         continue;
       }
     }

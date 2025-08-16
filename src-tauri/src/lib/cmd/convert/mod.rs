@@ -1,9 +1,9 @@
 use std::{collections::HashMap, path::Path, time::Instant};
 
 use anyhow::Result;
-use tauri::{Emitter, Window};
+use tauri::AppHandle;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
 
 #[cfg(target_os = "windows")]
 pub mod access_to_csv;
@@ -14,7 +14,11 @@ pub mod excel_to_csv;
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub async fn access2csv(path: String, wtr_sep: String, window: Window) -> Result<String, String> {
+pub async fn access2csv(
+  path: String,
+  wtr_sep: String,
+  emitter: AppHandle,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
@@ -23,16 +27,21 @@ pub async fn access2csv(path: String, wtr_sep: String, window: Window) -> Result
     let filename = opts
       .file_name()
       .map_err(|e| format!("opts.file_name failed: {e}"))?;
-    window
-      .emit("start-to", filename)
+    emitter
+      .emit_info(filename)
+      .await
       .map_err(|e| e.to_string())?;
     match access_to_csv::access_to_csv(file, wtr_sep.clone()).await {
       Ok(_) => {
-        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+        emitter
+          .emit_success(filename)
+          .await
+          .map_err(|e| e.to_string())?;
       }
       Err(err) => {
-        window
-          .emit("to-err", format!("{filename}|{err}"))
+        emitter
+          .emit_err(&format!("{filename}|{err}"))
+          .await
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -49,7 +58,7 @@ pub async fn csv2csv(
   path: String,
   wtr_sep: String,
   progress: String,
-  window: Window,
+  emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -59,24 +68,29 @@ pub async fn csv2csv(
     let filename = opts
       .file_name()
       .map_err(|e| format!("opts.file_name failed: {e}"))?;
-    window
-      .emit("start-to", filename)
+    emitter
+      .emit_info(filename)
+      .await
       .map_err(|e| e.to_string())?;
     match csv_to_csv::csv_to_csv(
       file,
       wtr_sep.clone(),
       filename.to_string(),
       progress.as_str(),
-      window.clone(),
+      emitter.clone(),
     )
     .await
     {
       Ok(_) => {
-        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+        emitter
+          .emit_success(filename)
+          .await
+          .map_err(|e| e.to_string())?;
       }
       Err(err) => {
-        window
-          .emit("to-err", format!("{filename}|{err}"))
+        emitter
+          .emit_err(&format!("{filename}|{err}"))
+          .await
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -93,7 +107,7 @@ pub async fn csv2xlsx(
   path: String,
   csv_mode: String,
   chunksize: String,
-  window: Window,
+  emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -106,17 +120,21 @@ pub async fn csv2xlsx(
     let filename = opts
       .file_name()
       .map_err(|e| format!("opts.file_name failed: {e}"))?;
-    window
-      .emit("start-to", filename)
+    emitter
+      .emit_info(filename)
+      .await
       .map_err(|e| e.to_string())?;
-
     match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize).await {
       Ok(_) => {
-        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+        emitter
+          .emit_success(filename)
+          .await
+          .map_err(|e| e.to_string())?;
       }
       Err(err) => {
-        window
-          .emit("to-err", format!("{filename}|{err}"))
+        emitter
+          .emit_err(&format!("{filename}|{err}"))
+          .await
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -129,11 +147,7 @@ pub async fn csv2xlsx(
 }
 
 #[tauri::command]
-pub async fn dbf2csv(
-  path: String,
-  wtr_sep: String,
-  window: tauri::Window,
-) -> Result<String, String> {
+pub async fn dbf2csv(path: String, wtr_sep: String, emitter: AppHandle) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
@@ -142,16 +156,21 @@ pub async fn dbf2csv(
     let filename = opts
       .file_name()
       .map_err(|e| format!("opts.file_name failed: {e}"))?;
-    window
-      .emit("start-to", filename)
+    emitter
+      .emit_info(filename)
+      .await
       .map_err(|e| e.to_string())?;
     match dbf_to_csv::dbf_to_csv(file, wtr_sep.clone()).await {
       Ok(_) => {
-        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+        emitter
+          .emit_success(filename)
+          .await
+          .map_err(|e| e.to_string())?;
       }
       Err(err) => {
-        window
-          .emit("to-err", format!("{filename}|{err}"))
+        emitter
+          .emit_err(&format!("{filename}|{err}"))
+          .await
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -170,7 +189,7 @@ pub async fn excel2csv(
   map_file_sheet: Vec<HashMap<String, String>>,
   all_sheets: bool,
   write_sheetname: bool,
-  window: Window,
+  emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -182,12 +201,13 @@ pub async fn excel2csv(
     let filename = opts
       .file_name()
       .map_err(|e| format!("opts.file_name failed: {e}"))?;
-    window
-      .emit("start-to", filename)
+    emitter
+      .emit_info(filename)
+      .await
       .map_err(|e| e.to_string())?;
 
     let path = Path::new(file);
-    let file_stem = path.file_stem().unwrap().to_str().unwrap();
+    let file_stem = opts.file_stem().map_err(|e| e.to_string())?;
 
     if !all_sheets {
       let sheet_name = excel_to_csv::get_sheetname_by_filename(&map_file_sheet, filename);
@@ -203,11 +223,15 @@ pub async fn excel2csv(
 
       match excel_to_csv::excel_to_csv(file, skip_rows, sheet_name, &output_path).await {
         Ok(_) => {
-          window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+          emitter
+            .emit_success(filename)
+            .await
+            .map_err(|e| e.to_string())?;
         }
         Err(err) => {
-          window
-            .emit("to-err", format!("{filename}|{err}"))
+          emitter
+            .emit_err(&format!("{filename}|{err}"))
+            .await
             .map_err(|e| e.to_string())?;
           continue;
         }
@@ -215,8 +239,9 @@ pub async fn excel2csv(
     } else {
       let sheet_names = excel_to_csv::get_all_sheetnames(file).await;
       if sheet_names.is_empty() {
-        window
-          .emit("to-err", format!("{filename}|It's not an Excel file"))
+        emitter
+          .emit_err(&format!("{filename}||Not an Excel file"))
+          .await
           .map_err(|e| e.to_string())?;
         continue;
       }
@@ -229,12 +254,16 @@ pub async fn excel2csv(
           Ok(_) => {
             // check if it is the last sheet
             if index == sheet_names.len() - 1 {
-              window.emit("to-msg", filename).map_err(|e| e.to_string())?;
+              emitter
+                .emit_success(filename)
+                .await
+                .map_err(|e| e.to_string())?;
             }
           }
           Err(err) => {
-            window
-              .emit("to-err", format!("{filename}|{sheet}:{err}"))
+            emitter
+              .emit_err(&format!("{filename}|{sheet}:{err}"))
+              .await
               .map_err(|e| e.to_string())?;
             continue;
           }

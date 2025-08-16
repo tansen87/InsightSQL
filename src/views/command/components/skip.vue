@@ -35,13 +35,13 @@ listen("total-msg", (event: Event<string>) => {
     file.totalRows = rows;
   });
 });
-listen("start-skip", (event: Event<string>) => {
+listen("info", (event: Event<string>) => {
   const filename = event.payload;
   updateEvent(fileSelect, filename, file => {
     file.status = "loading";
   });
 });
-listen("skip-err", (event: Event<string>) => {
+listen("err", (event: Event<string>) => {
   const [filename, message] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
     file.status = "error";
@@ -49,7 +49,7 @@ listen("skip-err", (event: Event<string>) => {
   });
   isLoading.value = false;
 });
-listen("skip-msg", (event: Event<string>) => {
+listen("success", (event: Event<string>) => {
   const filename = event.payload;
   updateEvent(fileSelect, filename, file => {
     file.status = "success";

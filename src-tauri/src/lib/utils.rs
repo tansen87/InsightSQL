@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
@@ -20,11 +21,13 @@ pub fn num_of_chunks(nitems: usize, chunk_size: usize) -> usize {
 }
 
 pub trait EventEmitter {
-  fn emit_total_rows(&self, count: usize) -> impl std::future::Future<Output = Result<()>> + Send;
-  fn emit_update_rows(&self, count: usize) -> impl std::future::Future<Output = Result<()>> + Send;
-  fn emit_total_msg(&self, msg: &str) -> impl std::future::Future<Output = Result<()>> + Send;
-  fn emit_update_msg(&self, msg: &str) -> impl std::future::Future<Output = Result<()>> + Send;
-  fn emit_err(&self, err: &str) -> impl std::future::Future<Output = Result<()>> + Send;
+  fn emit_total_rows(&self, count: usize) -> impl Future<Output = Result<()>> + Send;
+  fn emit_update_rows(&self, count: usize) -> impl Future<Output = Result<()>> + Send;
+  fn emit_total_msg(&self, msg: &str) -> impl Future<Output = Result<()>> + Send;
+  fn emit_update_msg(&self, msg: &str) -> impl Future<Output = Result<()>> + Send;
+  fn emit_info(&self, info: &str) -> impl Future<Output = Result<()>> + Send;
+  fn emit_err(&self, err: &str) -> impl Future<Output = Result<()>> + Send;
+  fn emit_success(&self, success: &str) -> impl Future<Output = Result<()>> + Send;
 }
 
 impl EventEmitter for AppHandle {
@@ -52,10 +55,22 @@ impl EventEmitter for AppHandle {
       .map_err(|e| anyhow!("emit update msg failed: {e}"))
   }
 
+  async fn emit_info(&self, info: &str) -> Result<()> {
+    self
+      .emit("info", info)
+      .map_err(|e| anyhow!("emit info failed: {e}"))
+  }
+
   async fn emit_err(&self, err: &str) -> Result<()> {
     self
       .emit("err", err)
       .map_err(|e| anyhow!("emit err failed: {e}"))
+  }
+
+  async fn emit_success(&self, success: &str) -> Result<()> {
+    self
+      .emit("success", success)
+      .map_err(|e| anyhow!("emit success failed: {e}"))
   }
 }
 
@@ -65,7 +80,9 @@ pub struct MockEmitter {
   pub update_rows: Arc<Mutex<Vec<usize>>>,
   pub total_msg: Arc<Mutex<String>>,
   pub update_msg: Arc<Mutex<String>>,
+  pub info: Arc<Mutex<String>>,
   pub err: Arc<Mutex<String>>,
+  pub success: Arc<Mutex<String>>,
 }
 
 impl EventEmitter for MockEmitter {
@@ -92,7 +109,7 @@ impl EventEmitter for MockEmitter {
       .total_msg
       .lock()
       .map_err(|poison| anyhow!("total msg lock poisoned: {poison}"))?
-      .push_str(&msg);
+      .push_str(msg);
     Ok(())
   }
 
@@ -101,7 +118,16 @@ impl EventEmitter for MockEmitter {
       .update_msg
       .lock()
       .map_err(|poison| anyhow!("update msg lock poisoned: {poison}"))?
-      .push_str(&msg);
+      .push_str(msg);
+    Ok(())
+  }
+
+  async fn emit_info(&self, info: &str) -> Result<()> {
+    self
+      .info
+      .lock()
+      .map_err(|poison| anyhow!("info lock poisoned: {poison}"))?
+      .push_str(info);
     Ok(())
   }
 
@@ -111,6 +137,15 @@ impl EventEmitter for MockEmitter {
       .lock()
       .map_err(|poison| anyhow!("err lock poisoned: {poison}"))?
       .push_str(err);
+    Ok(())
+  }
+
+  async fn emit_success(&self, success: &str) -> Result<()> {
+    self
+      .success
+      .lock()
+      .map_err(|poison| anyhow!("success lock poisoned: {poison}"))?
+      .push_str(success);
     Ok(())
   }
 }

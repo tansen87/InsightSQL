@@ -53,20 +53,20 @@ listen("total-rows", (event: Event<string>) => {
     file.totalRows = rows;
   });
 });
-listen("start-to", (event: Event<string>) => {
+listen("info", (event: Event<string>) => {
   const filename = event.payload;
   updateEvent(fileSelect, filename, file => {
     file.status = "loading";
   });
 });
-listen("to-err", (event: Event<string>) => {
+listen("err", (event: Event<string>) => {
   const [filename, message] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
     file.status = "error";
     file.message = message;
   });
 });
-listen("to-msg", (event: Event<string>) => {
+listen("success", (event: Event<string>) => {
   const filename = event.payload;
   updateEvent(fileSelect, filename, file => {
     file.status = "success";

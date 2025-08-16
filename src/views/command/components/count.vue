@@ -23,20 +23,20 @@ const fileSelect = ref([]);
 const { dynamicHeight } = useDynamicHeight(143);
 const { mdShow } = useMarkdown(mdCount);
 
-listen("start-count", (event: Event<string>) => {
+listen("info", (event: Event<string>) => {
   const filename = event.payload;
   updateEvent(fileSelect, filename, file => {
     file.status = "";
   });
 });
-listen("count-err", (event: Event<string>) => {
+listen("err", (event: Event<string>) => {
   const [filename, message] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
     file.status = "error";
     file.message = message;
   });
 });
-listen("count-msg", (event: Event<string>) => {
+listen("success", (event: Event<string>) => {
   const [filename, message] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
     file.status = "success";
