@@ -1,9 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Result, anyhow};
 use csv::{StringRecord, WriterBuilder};
 use lazy_static::lazy_static;
 use odbc_api::{ConnectionOptions, Cursor, Environment, ResultSetMetadata, buffers::TextRowSet};
+
+use crate::io::csv::options::CsvOptions;
 
 fn connection(odbc_conn: &str) -> Result<odbc_api::Connection<'_>, odbc_api::Error> {
   lazy_static! {
@@ -42,23 +44,15 @@ fn get_all_table(conn: &odbc_api::Connection) -> Result<Vec<String>> {
 pub async fn access_to_csv(path: &str, wtr_sep: String) -> Result<()> {
   let driver = "{Microsoft Access Driver (*.mdb, *.accdb)}";
   let batch_size = 5000;
-
   let sep = if wtr_sep == "\\t" {
     b'\t'
   } else {
     wtr_sep.as_bytes()[0]
   };
 
-  let parent_path = Path::new(path)
-    .parent()
-    .ok_or(anyhow!("path is null"))?
-    .to_str()
-    .ok_or(anyhow!("path to str is null"))?;
-  let file_stem = Path::new(path)
-    .file_stem()
-    .ok_or(anyhow!("path is null"))?
-    .to_str()
-    .ok_or(anyhow!("path to str is null"))?;
+  let opts = CsvOptions::new(path);
+  let parent_path = opts.parent_path()?;
+  let file_stem = opts.file_stem()?;
 
   let c = format!("Driver={};Dbq={};", driver, path);
   let conn = connection(&c)?;

@@ -28,15 +28,15 @@ fn new_writer(
 }
 
 pub async fn sequential_split_rows(
-  csv_options: CsvOptions<&str>,
+  opts: CsvOptions<&str>,
   size: u32,
   output_path: &str,
 ) -> Result<()> {
-  let sep = csv_options.detect_separator()?;
+  let sep = opts.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let headers = rdr.byte_headers()?.clone();
 
@@ -59,7 +59,7 @@ pub async fn sequential_split_rows(
 
 pub async fn parallel_split_rows(
   idx: &Indexed<File, File>,
-  csv_options: CsvOptions<&str>,
+  opts: CsvOptions<&str>,
   chunk_size: usize,
   output_path: &str,
 ) -> Result<()> {
@@ -67,15 +67,15 @@ pub async fn parallel_split_rows(
   if nchunks == 1 {
     // there's only one chunk, we can just do a sequential split
     // which has less overhead and better error handling
-    return sequential_split_rows(csv_options, chunk_size.try_into()?, output_path).await;
+    return sequential_split_rows(opts, chunk_size.try_into()?, output_path).await;
   }
 
-  let sep = csv_options.detect_separator()?;
+  let sep = opts.detect_separator()?;
 
   // safety: we cannot use ? here because we're in a closure
   (0..nchunks).into_par_iter().for_each(|i| {
     // safety: safe to unwrap because we know the file is indexed
-    let mut idx = csv_options.indexed().unwrap().unwrap();
+    let mut idx = opts.indexed().unwrap().unwrap();
     // safety: the only way this can fail is if the file first row of the chunk
     // is not a valid CSV record, which is impossible because we're reading
     // from a file with a valid index
@@ -116,11 +116,11 @@ fn new_lines_writer(
 }
 
 pub async fn split_lines(
-  csv_options: CsvOptions<&str>,
+  opts: CsvOptions<&str>,
   size: u32,
   output_path: &str,
 ) -> Result<()> {
-  let reader = csv_options.rdr_skip_rows()?;
+  let reader = opts.rdr_skip_rows()?;
   let mut lines = reader.lines();
   let headers = lines.next().transpose()?;
 
@@ -146,27 +146,27 @@ pub async fn split_lines(
 pub async fn split(path: String, size: u32, mode: String) -> Result<String, String> {
   let start_time = Instant::now();
 
-  let csv_options = CsvOptions::new(path.as_str());
-  let parent_path = csv_options
+  let opts = CsvOptions::new(path.as_str());
+  let parent_path = opts
     .parent_path()
     .map_err(|e| format!("get parent path failed: {e}"))?;
-  let file_stem = csv_options
+  let file_stem = opts
     .file_stem()
     .map_err(|e| format!("get file stem failed: {e}"))?;
   let output_path = format!("{parent_path}/{file_stem}");
 
   match mode.as_str() {
     "rows" => {
-      match csv_options.indexed().map_err(|e| e.to_string())? {
+      match opts.indexed().map_err(|e| e.to_string())? {
         Some(idx) => parallel_split_rows(
           &idx,
-          csv_options,
+          opts,
           size.try_into().map_err(|e| format!("invalid size: {e}"))?,
           &output_path,
         )
         .await
         .map_err(|e| e.to_string())?,
-        None => sequential_split_rows(csv_options, size, &output_path)
+        None => sequential_split_rows(opts, size, &output_path)
           .await
           .map_err(|e| e.to_string())?,
       };
@@ -182,7 +182,7 @@ pub async fn split(path: String, size: u32, mode: String) -> Result<String, Stri
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match split_lines(csv_options, size, &output_path).await {
+    _ => match split_lines(opts, size, &output_path).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

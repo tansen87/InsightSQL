@@ -203,12 +203,12 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
           )
         } else {
           // use `csv` to get the headers
-          let mut csv_options = CsvOptions::new(f);
-          csv_options.set_skip_rows(self.skip_rows);
+          let mut opts = CsvOptions::new(f);
+          opts.set_skip_rows(self.skip_rows);
           let mut rdr = ReaderBuilder::new()
-            .delimiter(csv_options.detect_separator().ok()?)
+            .delimiter(opts.detect_separator().ok()?)
             .has_headers(false)
-            .from_reader(csv_options.rdr_skip_rows().ok()?);
+            .from_reader(opts.rdr_skip_rows().ok()?);
 
           rdr
             .headers()

@@ -8,11 +8,11 @@ use tauri::{Emitter, Window};
 use crate::io::csv::options::CsvOptions;
 
 pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
-  let csv_options = CsvOptions::new(&path);
+  let opts = CsvOptions::new(&path);
 
-  let count = match csv_options.indexed()? {
+  let count = match opts.indexed()? {
     Some(idx) => idx.count(),
-    None => count_record(true, &csv_options).await?,
+    None => count_record(true, &opts).await?,
   };
 
   Ok(count)
@@ -20,9 +20,9 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 
 /// Used to check for counting errors caused by double quotation marks in CSV files
 pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
-  let csv_options = CsvOptions::new(&path);
-  let quoting_true = count_record(true, &csv_options).await?;
-  let quoting_false = count_record(false, &csv_options).await?;
+  let opts = CsvOptions::new(&path);
+  let quoting_true = count_record(true, &opts).await?;
+  let quoting_false = count_record(false, &opts).await?;
 
   let max_count = std::cmp::max(quoting_true, quoting_false);
   let min_count = std::cmp::min(quoting_true, quoting_false);
@@ -32,12 +32,12 @@ pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 
 async fn count_record<P: AsRef<Path> + Send + Sync>(
   quoting: bool,
-  csv_options: &CsvOptions<P>,
+  opts: &CsvOptions<P>,
 ) -> Result<u64> {
   let mut rdr = ReaderBuilder::new()
-    .delimiter(csv_options.detect_separator()?)
+    .delimiter(opts.detect_separator()?)
     .quoting(quoting)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let mut record = ByteRecord::new();
   let mut count: u64 = 0;
@@ -54,11 +54,8 @@ async fn single_process(
   start_time: Instant,
   window: &Window,
 ) -> Result<(), String> {
-  let filename = Path::new(file)
-    .file_name()
-    .ok_or("get file name filed")?
-    .to_str()
-    .ok_or("to str failed")?;
+  let opts = CsvOptions::new(file);
+  let filename = opts.file_name().map_err(|e| e.to_string())?;
 
   if let Err(e) = window
     .emit("start-count", &filename)
@@ -117,7 +114,8 @@ fn parallel_process(
   start_time: Instant,
   window: &Window,
 ) -> Result<(), String> {
-  let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+  let opts = CsvOptions::new(file);
+  let filename = opts.file_name().map_err(|e| e.to_string())?;
 
   if let Err(e) = window
     .emit("start-count", &filename)

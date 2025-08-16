@@ -1,5 +1,5 @@
 use std::{
-  path::{Path, PathBuf},
+  path::Path,
   sync::{Arc, Mutex},
   time::{Duration, Instant},
 };
@@ -16,21 +16,19 @@ where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.rename.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("rename"), None)?;
 
   let total_rows = match mode {
-    "idx" => csv_options.idx_count_rows().await?,
+    "idx" => opts.idx_count_rows().await?,
     _ => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
   let new_headers = new_rdr.byte_headers()?;
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;

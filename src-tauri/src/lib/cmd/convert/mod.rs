@@ -3,6 +3,8 @@ use std::{collections::HashMap, path::Path, time::Instant};
 use anyhow::Result;
 use tauri::{Emitter, Window};
 
+use crate::io::csv::options::CsvOptions;
+
 #[cfg(target_os = "windows")]
 pub mod access_to_csv;
 pub mod csv_to_csv;
@@ -16,12 +18,15 @@ pub async fn access2csv(path: String, wtr_sep: String, window: Window) -> Result
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  for fp in paths.iter() {
-    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
+  for file in paths.iter() {
+    let opts = CsvOptions::new(file);
+    let filename = opts
+      .file_name()
+      .map_err(|e| format!("opts.file_name failed: {e}"))?;
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
-    match access_to_csv::access_to_csv(fp, wtr_sep.clone()).await {
+    match access_to_csv::access_to_csv(file, wtr_sep.clone()).await {
       Ok(_) => {
         window.emit("to-msg", filename).map_err(|e| e.to_string())?;
       }
@@ -49,13 +54,16 @@ pub async fn csv2csv(
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  for fp in paths.iter() {
-    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
+  for file in paths.iter() {
+    let opts = CsvOptions::new(file);
+    let filename = opts
+      .file_name()
+      .map_err(|e| format!("opts.file_name failed: {e}"))?;
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
     match csv_to_csv::csv_to_csv(
-      fp,
+      file,
       wtr_sep.clone(),
       filename.to_string(),
       progress.as_str(),
@@ -94,16 +102,17 @@ pub async fn csv2xlsx(
   let use_polars = csv_mode != "csv";
 
   for file in paths.iter() {
-    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+    let opts = CsvOptions::new(file);
+    let filename = opts
+      .file_name()
+      .map_err(|e| format!("opts.file_name failed: {e}"))?;
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
 
     match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize).await {
       Ok(_) => {
-        window
-          .emit("to-msg", filename)
-          .map_err(|e| e.to_string())?;
+        window.emit("to-msg", filename).map_err(|e| e.to_string())?;
       }
       Err(err) => {
         window
@@ -128,12 +137,15 @@ pub async fn dbf2csv(
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  for fp in paths.iter() {
-    let filename = Path::new(fp).file_name().unwrap().to_str().unwrap();
+  for file in paths.iter() {
+    let opts = CsvOptions::new(file);
+    let filename = opts
+      .file_name()
+      .map_err(|e| format!("opts.file_name failed: {e}"))?;
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;
-    match dbf_to_csv::dbf_to_csv(fp, wtr_sep.clone()).await {
+    match dbf_to_csv::dbf_to_csv(file, wtr_sep.clone()).await {
       Ok(_) => {
         window.emit("to-msg", filename).map_err(|e| e.to_string())?;
       }
@@ -166,7 +178,10 @@ pub async fn excel2csv(
   let paths: Vec<&str> = path.split('|').collect();
 
   for file in paths.iter() {
-    let filename = Path::new(file).file_name().unwrap().to_str().unwrap();
+    let opts = CsvOptions::new(file);
+    let filename = opts
+      .file_name()
+      .map_err(|e| format!("opts.file_name failed: {e}"))?;
     window
       .emit("start-to", filename)
       .map_err(|e| e.to_string())?;

@@ -1,7 +1,7 @@
 use std::{
   fs::File,
   io::{BufReader, BufWriter},
-  path::{Path, PathBuf},
+  path::Path,
 };
 
 use anyhow::{Result, anyhow};
@@ -98,7 +98,6 @@ pub async fn slice(
   reverse: bool,
 ) -> Result<()> {
   let headers = rdr.headers()?.clone();
-
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
   let mut new_headers = headers.clone();
@@ -181,45 +180,25 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
     return Err(anyhow!("Number of the slice cannot be equal to 0"));
   }
 
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.slice.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("slice"), None)?;
 
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
   match mode {
     SliceMode::Left => {
-      slice_nchar(
-        rdr,
-        wtr,
-        column,
-        num,
-        reverse,
-        SliceMode::Left.to_str(),
-      )
-      .await?
+      slice_nchar(rdr, wtr, column, num, reverse, SliceMode::Left.to_str()).await?
     }
     SliceMode::Right => {
-      slice_nchar(
-        rdr,
-        wtr,
-        column,
-        num,
-        reverse,
-        SliceMode::Right.to_str(),
-      )
-      .await?
+      slice_nchar(rdr, wtr, column, num, reverse, SliceMode::Right.to_str()).await?
     }
-    SliceMode::Slice => {
-      slice(rdr, wtr, column, n, length, reverse).await?
-    }
+    SliceMode::Slice => slice(rdr, wtr, column, n, length, reverse).await?,
   }
 
   Ok(())

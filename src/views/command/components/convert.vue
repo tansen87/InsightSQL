@@ -2,6 +2,7 @@
 import { ref, watch, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { ElIcon } from "element-plus";
 import {
   CloseBold,
@@ -10,7 +11,12 @@ import {
   SwitchFilled,
   Loading
 } from "@element-plus/icons-vue";
-import { useDynamicHeight, filterFileStatus } from "@/utils/utils";
+import {
+  useDynamicHeight,
+  filterFileStatus,
+  ListenEvent,
+  updateEvent
+} from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
@@ -22,9 +28,8 @@ const [activeTab, chunksize, csvMode, progress, wtrSep, skipRows] = [
   ref("|"),
   ref("0")
 ];
-const typeTo = computed(() => activeTab.value);
 const [backendInfo, path] = [ref(""), ref("")];
-const [selectedFiles, sheetOptions, fileSheet] = [ref([]), ref([]), ref([])];
+const [sheetOptions, fileSheet] = [ref([]), ref([])];
 const [allSheets, isLoading, backendCompleted, writeSheetname] = [
   ref(true),
   ref(false),
@@ -32,47 +37,39 @@ const [allSheets, isLoading, backendCompleted, writeSheetname] = [
   ref(false)
 ];
 const sheetsData = ref({});
+const fileSelect = ref<ListenEvent[]>([]);
+const typeTo = computed(() => activeTab.value);
 const { dynamicHeight } = useDynamicHeight(176);
 
-listen("update-rows", (event: any) => {
-  const [backFilename, rows] = event.payload.split("|");
-  selectedFiles.value.forEach(file => {
-    if (file.filename === backFilename) {
-      file.currentRows = rows;
-    }
+listen("update-rows", (event: Event<string>) => {
+  const [filename, rows] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.currentRows = rows;
   });
 });
-listen("total-rows", (event: any) => {
-  const [backFilename, rows] = event.payload.split("|");
-  selectedFiles.value.forEach(file => {
-    if (file.filename === backFilename) {
-      file.totalRows = rows;
-    }
+listen("total-rows", (event: Event<string>) => {
+  const [filename, rows] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.totalRows = rows;
   });
 });
-listen("start-to", event => {
-  const startConvert: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
-      file.status = "loading";
-    }
+listen("start-to", (event: Event<string>) => {
+  const filename = event.payload;
+  updateEvent(fileSelect, filename, file => {
+    file.status = "loading";
   });
 });
-listen("to-err", event => {
-  const toErr: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === toErr.split("|")[0]) {
-      file.status = "error";
-      file.errMessage = toErr.split("|")[1];
-    }
+listen("to-err", (event: Event<string>) => {
+  const [filename, message] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.status = "error";
+    file.message = message;
   });
 });
-listen("to-msg", (event: any) => {
-  const toMsg: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === toMsg) {
-      file.status = "success";
-    }
+listen("to-msg", (event: Event<string>) => {
+  const filename = event.payload;
+  updateEvent(fileSelect, filename, file => {
+    file.status = "success";
   });
 });
 
@@ -81,15 +78,20 @@ const getSheetsForFile = fileName => {
 };
 
 watch(
-  () => selectedFiles.value.map(file => file.selectedSheet),
+  () => fileSelect.value.map(file => file.selectSheet),
   (newVal, oldVal) => {
-    newVal.forEach((selectedSheet, index) => {
-      if (selectedSheet !== oldVal[index]) {
+    newVal.forEach((selectSheet, index) => {
+      if (selectSheet !== oldVal?.[index]) {
         const fileSheetRecord = {
-          filename: selectedFiles.value[index].filename,
-          sheetname: selectedSheet
+          filename: fileSelect.value[index].filename,
+          sheetname: selectSheet
         };
-
+        const existingIndex = fileSheet.value.findIndex(
+          record => record.filename === fileSheetRecord.filename
+        );
+        if (existingIndex > -1) {
+          fileSheet.value.splice(existingIndex, 1);
+        }
         fileSheet.value.push(fileSheetRecord);
       }
     });
@@ -97,22 +99,23 @@ watch(
   { deep: true }
 );
 
-function updateFileSheet(file) {
-  const existingRecordIndex = fileSheet.value.findIndex(
+function updateFileSheet(file: ListenEvent) {
+  if (!file.selectSheet) return;
+  const existingIndex = fileSheet.value.findIndex(
     record => record.filename === file.filename
   );
-  if (existingRecordIndex > -1) {
-    fileSheet.value[existingRecordIndex].sheetname = file.selectedSheet;
+  if (existingIndex > -1) {
+    fileSheet.value[existingIndex].sheetname = file.selectSheet;
   } else {
     fileSheet.value.push({
       filename: file.filename,
-      sheetname: file.selectedSheet
+      sheetname: file.selectSheet
     });
   }
 }
 
 async function selectFile() {
-  selectedFiles.value = [];
+  fileSelect.value = [];
   sheetsData.value = [];
   sheetOptions.value = [];
   fileSheet.value = [];
@@ -123,7 +126,7 @@ async function selectFile() {
       includeStatus: true
     });
     path.value = trimFile.filePath;
-    selectedFiles.value = trimFile.fileInfo;
+    fileSelect.value = trimFile.fileInfo;
 
     if (typeTo.value === "excel") {
       message("get excel sheets...", {
@@ -143,10 +146,11 @@ async function selectFile() {
           });
         });
       }
-      selectedFiles.value.forEach(file => {
-        if (!file.selectedSheet && getSheetsForFile(file.filename).length > 0) {
-          file.selectedSheet = getSheetsForFile(file.filename)[0];
+      fileSelect.value.forEach(file => {
+        if (!file.selectSheet && getSheetsForFile(file.filename).length > 0) {
+          file.selectSheet = getSheetsForFile(file.filename)[0];
         }
+        file.sheets = getSheetsForFile(file.filename);
       });
       closeAllMessage();
       backendInfo.value = "get excel sheets done";
@@ -158,7 +162,7 @@ async function selectFile() {
   }
 }
 
-// invoke toCsv
+// invoke convert
 async function convert() {
   if (path.value === "") {
     message("File not selected", { type: "warning" });
@@ -166,47 +170,45 @@ async function convert() {
   }
   try {
     isLoading.value = true;
+    let rtime: string;
     if (typeTo.value === "excel") {
       const mapFileSheet = fileSheet.value.map(item => ({
         filename: item.filename,
         sheetname: item.sheetname
       }));
-      const rtime: string = await invoke("excel2csv", {
+      rtime = await invoke("excel2csv", {
         path: path.value,
         skipRows: skipRows.value,
         mapFileSheet: mapFileSheet,
         allSheets: allSheets.value,
         writeSheetname: writeSheetname.value
       });
-      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     } else if (typeTo.value === "fmt") {
-      const rtime: string = await invoke("csv2csv", {
+      rtime = await invoke("csv2csv", {
         path: path.value,
         wtrSep: wtrSep.value,
         progress: progress.value
       });
-      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     } else if (typeTo.value === "access") {
-      console.log(path.value);
-      const rtime: string = await invoke("access2csv", {
+      rtime = await invoke("access2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     } else if (typeTo.value === "dbf") {
-      const rtime: string = await invoke("dbf2csv", {
+      rtime = await invoke("dbf2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     } else if (typeTo.value === "csv") {
-      const rtime: string = await invoke("csv2xlsx", {
+      rtime = await invoke("csv2xlsx", {
         path: path.value,
         csvMode: csvMode.value,
         chunksize: chunksize.value
       });
-      message(`Done, elapsed time: ${rtime} s`, { type: "success" });
     }
+    message(`${typeTo.value} done, elapsed time: ${rtime} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -305,7 +307,7 @@ async function convert() {
       </el-button>
     </div>
     <el-table
-      :data="selectedFiles"
+      :data="fileSelect"
       :height="dynamicHeight"
       style="width: 100%"
       show-overflow-tooltip
@@ -341,12 +343,12 @@ async function convert() {
           </ElIcon>
           <span
             v-if="
-              scope.row.errMessage &&
+              scope.row.message &&
               scope.row.status !== 'loading' &&
               activeTab === 'excel'
             "
           >
-            {{ scope.row.errMessage || scope.row.status }}
+            {{ scope.row.message || scope.row.status }}
           </span>
         </template>
       </el-table-column>
@@ -359,7 +361,7 @@ async function convert() {
         <template #default="scope">
           <template v-if="activeTab === 'excel'">
             <el-select
-              v-model="scope.row.selectedSheet"
+              v-model="scope.row.selectSheet"
               placeholder="Select a sheet"
               @change="updateFileSheet(scope.row)"
               style="width: 100%"
@@ -373,8 +375,8 @@ async function convert() {
             </el-select>
           </template>
           <template v-else>
-            <span v-if="scope.row.status === 'error'" style="color: #ff0000">
-              {{ scope.row.errMessage }}
+            <span v-if="scope.row.status === 'error'">
+              {{ scope.row.message }}
             </span>
             <el-progress
               v-else-if="

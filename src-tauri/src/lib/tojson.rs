@@ -6,12 +6,12 @@ use crate::io::csv::options::CsvOptions;
 
 pub fn csv_to_json(path: String) -> Result<String> {
   let n_rows = 20;
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let headers = rdr.headers()?.clone();
 

@@ -5,7 +5,7 @@ use std::{
   io::{Cursor, Read, Seek, Write},
   iter::repeat,
   mem::swap,
-  path::{Path, PathBuf},
+  path::Path,
   time::Instant,
 };
 
@@ -194,13 +194,11 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
   sel2: String,
   nulls: bool,
 ) -> Result<IoState<File, Box<dyn Write + 'static>>> {
-  let csv_options1 = CsvOptions::new(&path1);
-  let sep1 = csv_options1.detect_separator()?;
-  let csv_options2 = CsvOptions::new(&path2);
-  let sep2 = csv_options2.detect_separator()?;
-  let file_stem = csv_options1.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options1.parent_path()?);
-  output_path.push(format!("{file_stem}.join.csv"));
+  let opts1 = CsvOptions::new(&path1);
+  let sep1 = opts1.detect_separator()?;
+  let opts2 = CsvOptions::new(&path2);
+  let sep2 = opts2.detect_separator()?;
+  let output_path = opts1.output_path(Some("join"), None)?;
 
   let mut rdr1 = ReaderBuilder::new()
     .delimiter(sep1)

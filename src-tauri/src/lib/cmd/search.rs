@@ -90,11 +90,11 @@ where
   F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let csv_options = CsvOptions::new(&path);
+  let opts = CsvOptions::new(&path);
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column.as_str()][..])?;
 
@@ -190,11 +190,11 @@ where
     .collect::<Vec<_>>();
   let conditions = Arc::new(unique_conditions);
   let match_fn = Arc::new(match_fn);
-  let csv_options = CsvOptions::new(&path);
+  let opts = CsvOptions::new(&path);
 
   // prepare writers for each condition with sanitized output paths
-  let parent_path = csv_options.parent_path()?;
-  let file_stem = csv_options.file_stem()?;
+  let parent_path = opts.parent_path()?;
+  let file_stem = opts.file_stem()?;
   let output_paths: HashMap<String, String> = conditions
     .iter()
     .map(|cond| {
@@ -249,10 +249,10 @@ where
       );
     }
 
-    let csv_options = CsvOptions::new(&path);
+    let opts = CsvOptions::new(&path);
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(csv_options.rdr_skip_rows()?);
+      .from_reader(opts.rdr_skip_rows()?);
     let headers = rdr.headers()?.clone();
 
     for wtr in writers.values_mut() {
@@ -846,11 +846,11 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   progress: &str,
   app_handle: AppHandle,
 ) -> Result<String> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
 
   let total_rows = match progress {
-    "idx" => csv_options.idx_count_rows().await?,
+    "idx" => opts.idx_count_rows().await?,
     _ => 0,
   };
   app_handle.emit("total-rows", total_rows)?;
@@ -891,9 +891,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
     }
     _ => {
       let vec_conditions = multi_conditions.to_vec();
-      let file_stem = csv_options.file_stem()?;
-      let mut output_path = PathBuf::from(csv_options.parent_path()?);
-      output_path.push(format!("{file_stem}.search.csv"));
+      let output_path = opts.output_path(Some("search"), None)?;
 
       match search_mode {
         SearchMode::Equal => {

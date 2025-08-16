@@ -18,12 +18,12 @@ pub async fn process_operations(
   operations: &[Operation],
   output_path: PathBuf,
 ) -> Result<()> {
-  let csv_options = CsvOptions::new(input_path);
-  let sep = csv_options.detect_separator()?;
+  let opts = CsvOptions::new(input_path);
+  let sep = opts.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
   let headers = rdr
     .headers()?
     .clone()

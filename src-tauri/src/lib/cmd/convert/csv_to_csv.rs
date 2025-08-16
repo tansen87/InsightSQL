@@ -1,5 +1,7 @@
 use std::{
-  path::{Path, PathBuf},
+  fs::File,
+  io::BufWriter,
+  path::Path,
   sync::{Arc, Mutex},
   time::Duration,
 };
@@ -19,30 +21,28 @@ pub async fn csv_to_csv<P: AsRef<Path> + Send + Sync>(
   progress: &str,
   window: Window,
 ) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let wtr_sep = if wtr_sep == "\\t" {
+  let opts = CsvOptions::new(&path);
+  let rdr_sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("fmt"), None)?;
+  let sep = if wtr_sep == "\\t" {
     b'\t'
   } else {
     wtr_sep.into_bytes()[0]
   };
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.fmt.csv"));
 
   let total_rows = match progress {
-    "idx" => csv_options.idx_count_rows().await?,
+    "idx" => opts.idx_count_rows().await?,
     _ => 0,
   };
   window.emit("total-rows", format!("{filename}|{total_rows}"))?;
 
   let mut rdr = ReaderBuilder::new()
-    .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .delimiter(rdr_sep)
+    .from_reader(opts.rdr_skip_rows()?);
 
-  let mut wtr = WriterBuilder::new()
-    .delimiter(wtr_sep)
-    .from_path(output_path)?;
+  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
+
   wtr.write_record(rdr.headers()?)?;
 
   let rows = Arc::new(Mutex::new(0));

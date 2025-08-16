@@ -1,6 +1,6 @@
 use std::{
   fmt::Display,
-  path::{Path, PathBuf},
+  path::Path,
   sync::{Arc, Mutex},
   time::{Duration, Instant},
 };
@@ -28,30 +28,24 @@ where
     return Err(anyhow!("The skip rows must be greater than or equal to 1"));
   }
 
-  let mut csv_options = CsvOptions::new(&path);
-  csv_options.set_skip_rows(skip_rows);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.skip.csv"));
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skip_rows(skip_rows);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("skip"), None)?;
 
   let total_rows = match progress {
-    "idx" => {
-      csv_options
-        .idx_count_rows()
-        .await?
-        .saturating_sub(skip_rows)
-        + 1
-    }
-    "std" => csv_options.std_count_rows()?.saturating_sub(skip_rows) + 1,
+    "idx" => opts.idx_count_rows().await?.saturating_sub(skip_rows) + 1,
+    "std" => opts.std_count_rows()?.saturating_sub(skip_rows) + 1,
     _ => 0,
   };
-  emitter.emit_total_msg(&format!("{file_name}|{total_rows}")).await?;
+  emitter
+    .emit_total_msg(&format!("{file_name}|{total_rows}"))
+    .await?;
 
   let mut rdr = ReaderBuilder::new()
     .has_headers(false)
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 

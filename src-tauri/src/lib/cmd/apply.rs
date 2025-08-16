@@ -1,10 +1,4 @@
-use std::{
-  collections::HashMap,
-  ops::Neg,
-  path::{Path, PathBuf},
-  sync::OnceLock,
-  time::Instant,
-};
+use std::{collections::HashMap, ops::Neg, path::Path, sync::OnceLock, time::Instant};
 
 use anyhow::{Result, anyhow};
 use cpc::{eval, units::Unit};
@@ -234,12 +228,10 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   new_column: bool,
 ) -> Result<()> {
   let columns: Vec<&str> = columns.split('|').collect();
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
   let sep_char = sep as char;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.apply.csv"));
+  let output_path = opts.output_path(Some("apply"), None)?;
 
   let new_column: Option<String> = if new_column {
     Some(
@@ -255,7 +247,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
@@ -266,10 +258,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     .enumerate()
     .map(|(i, field)| (field.to_vec(), i))
     .collect();
-  let select_column_bytes: Vec<_> = columns
-    .iter()
-    .map(|&col| col.as_bytes().to_vec())
-    .collect();
+  let select_column_bytes: Vec<_> = columns.iter().map(|&col| col.as_bytes().to_vec()).collect();
   let column_index = select_column_bytes
     .iter()
     .map(|col_bytes| {

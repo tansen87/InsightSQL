@@ -60,15 +60,14 @@ pub async fn pad<P: AsRef<Path> + Send + Sync>(
   fill_char: &str,
   mode: &str,
 ) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let output_path = csv_options.output_path(Some("pad"), None)?;
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("pad"), None)?;
   let length = length.parse::<usize>()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
-
+    .from_reader(opts.rdr_skip_rows()?);
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);

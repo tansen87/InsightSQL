@@ -1,9 +1,4 @@
-use std::{
-  cmp,
-  path::{Path, PathBuf},
-  str::from_utf8,
-  time::Instant,
-};
+use std::{cmp, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
@@ -17,18 +12,14 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   numeric: bool,
   reverse: bool,
 ) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.sort.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("sort"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
-
+    .from_reader(opts.rdr_skip_rows()?);
   let headers = rdr.byte_headers()?.clone();
-
   let sel = Selection::from_headers(&headers, &[column.as_str()][..])?;
 
   let mut all = rdr.byte_records().collect::<Result<Vec<_>, _>>()?;
@@ -135,7 +126,7 @@ where
   X: Iterator<Item = &'a [u8]>,
 {
   xs.next()
-    .and_then(|bytes| from_utf8(bytes).ok())
+    .and_then(|bytes| std::str::from_utf8(bytes).ok())
     .and_then(|s| {
       if let Ok(i) = s.parse::<i64>() {
         Some(Number::Int(i))

@@ -12,13 +12,13 @@ use csv_index::RandomAccessSimple;
 use crate::io::csv::options::CsvOptions;
 
 pub async fn create_index<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let file_name = csv_options.file_name()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
+  let opts = CsvOptions::new(&path);
+  let file_name = opts.file_name()?;
+  let mut output_path = PathBuf::from(opts.parent_path()?);
   output_path.push(format!("{file_name}.idx"));
 
   let mut rdr = ReaderBuilder::new()
-    .delimiter(csv_options.detect_separator()?)
+    .delimiter(opts.detect_separator()?)
     .from_reader(File::open(&path)?);
   let mut wtr = BufWriter::new(File::create(output_path)?);
   RandomAccessSimple::create(&mut rdr, &mut wtr)?;

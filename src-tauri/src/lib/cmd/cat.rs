@@ -57,9 +57,9 @@ async fn cat_with_polars(
         vec_sep.push(b'|');
       }
       _ => {
-        let mut csv_options = CsvOptions::new(file);
-        csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-        vec_sep.push(csv_options.detect_separator()?);
+        let mut opts = CsvOptions::new(file);
+        opts.set_skip_rows(skip_rows.parse::<usize>()?);
+        vec_sep.push(opts.detect_separator()?);
       }
     }
 
@@ -136,14 +136,14 @@ pub async fn cat_with_csv(path: String, skip_rows: String, output_path: String) 
   let paths: Vec<&str> = path.split('|').collect();
 
   for p in &paths {
-    let mut csv_options = CsvOptions::new(p);
-    csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-    let sep = csv_options.detect_separator()?;
+    let mut opts = CsvOptions::new(p);
+    opts.set_skip_rows(skip_rows.parse::<usize>()?);
+    let sep = opts.detect_separator()?;
     vec_sep.push(sep);
 
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
-      .from_reader(csv_options.rdr_skip_rows()?);
+      .from_reader(opts.rdr_skip_rows()?);
 
     for field in rdr.byte_headers()? {
       let fi = field.to_vec().into_boxed_slice();
@@ -161,11 +161,11 @@ pub async fn cat_with_csv(path: String, skip_rows: String, output_path: String) 
   wtr.write_byte_record(&ByteRecord::new())?;
 
   for (idx, p) in paths.iter().enumerate() {
-    let mut csv_options = CsvOptions::new(p);
-    csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
+    let mut opts = CsvOptions::new(p);
+    opts.set_skip_rows(skip_rows.parse::<usize>()?);
     let mut rdr = ReaderBuilder::new()
       .delimiter(vec_sep[idx])
-      .from_reader(csv_options.rdr_skip_rows()?);
+      .from_reader(opts.rdr_skip_rows()?);
 
     let h = rdr.byte_headers()?;
 

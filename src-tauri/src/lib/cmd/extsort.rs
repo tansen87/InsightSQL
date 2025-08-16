@@ -1,7 +1,7 @@
 use std::{
   fs::File,
   io::{self, BufRead, BufReader, BufWriter, Write},
-  path::{Path, PathBuf},
+  path::Path,
   time::Instant,
 };
 
@@ -22,10 +22,10 @@ pub async fn sort_csv(
   tmp_dir: &str,
   sorter: &ExternalSorter<String, io::Error, LimitedBufferBuilder>,
 ) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
 
-  let mut idxfile = match csv_options.indexed() {
+  let mut idxfile = match opts.indexed() {
     Ok(idx) => {
       if idx.is_none() {
         return Err(anyhow!("extsort CSV mode requires an index"));
@@ -39,7 +39,7 @@ pub async fn sort_csv(
 
   let mut input_rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let linewtr_tfile = tempfile::NamedTempFile::new_in(tmp_dir)?;
   let mut line_wtr = BufWriter::with_capacity(RW_BUFFER_CAPACITY, linewtr_tfile.as_file());
@@ -111,9 +111,7 @@ pub async fn sort_csv(
   let sorted_lines = File::open(sorted_tfile.path())?;
   let sorted_line_rdr = BufReader::with_capacity(RW_BUFFER_CAPACITY, sorted_lines);
 
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.extsort.csv"));
+  let output_path = opts.output_path(Some("extsort"), None)?;
 
   let mut sorted_csv_wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 

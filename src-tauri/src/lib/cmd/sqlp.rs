@@ -72,9 +72,9 @@ async fn prepare_query(
   };
 
   let mut ctx = SQLContext::new();
-  let csv_options = CsvOptions::new(file_path.get(0).ok_or(anyhow!("No file choice"))?);
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  let file_stem = csv_options.file_stem()?;
+  let opts = CsvOptions::new(file_path.get(0).ok_or(anyhow!("No file choice"))?);
+  let mut output_path = PathBuf::from(opts.parent_path()?);
+  let file_stem = opts.file_stem()?;
   match write_format {
     "xlsx" => output_path.push(format!("{file_stem}.sql.xlsx")),
     "parquet" => output_path.push(format!("{file_stem}.sql.parquet")),
@@ -111,9 +111,9 @@ async fn prepare_query(
         vec_sep.push(b'|');
       }
       _ => {
-        let mut csv_options = CsvOptions::new(table);
-        csv_options.set_skip_rows(skip_rows.parse::<usize>()?);
-        vec_sep.push(csv_options.detect_separator()?);
+        let mut opts = CsvOptions::new(table);
+        opts.set_skip_rows(skip_rows.parse::<usize>()?);
+        vec_sep.push(opts.detect_separator()?);
       }
     }
 

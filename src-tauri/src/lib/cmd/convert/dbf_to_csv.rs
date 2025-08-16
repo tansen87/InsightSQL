@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs::File, io::BufWriter};
 
 use anyhow::Result;
 use csv::WriterBuilder;
@@ -13,10 +13,8 @@ pub async fn dbf_to_csv(path: &str, wtr_sep: String) -> Result<()> {
   } else {
     wtr_sep.into_bytes()[0]
   };
-  let csv_options = CsvOptions::new(path);
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.dbf.csv"));
+  let opts = CsvOptions::new(path);
+  let output_path = opts.output_path(Some("dbf"), None)?;
 
   let mut rdr = dbase::Reader::from_path(path)?;
 
@@ -26,7 +24,8 @@ pub async fn dbf_to_csv(path: &str, wtr_sep: String) -> Result<()> {
     .map(|field| field.name().to_string())
     .collect();
 
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
   wtr.write_record(&headers)?;
 
   for result in rdr.iter_records() {

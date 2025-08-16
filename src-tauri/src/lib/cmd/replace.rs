@@ -1,8 +1,4 @@
-use std::{
-  borrow::Cow,
-  path::{Path, PathBuf},
-  time::Instant,
-};
+use std::{borrow::Cow, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -17,20 +13,16 @@ pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
   replacement: String,
 ) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.replace.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("replace"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
-
+    .from_reader(opts.rdr_skip_rows()?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
   let headers = rdr.byte_headers()?;
-
   let sel = Selection::from_headers(headers, &[sel.as_str()][..])?;
 
   wtr.write_record(headers)?;

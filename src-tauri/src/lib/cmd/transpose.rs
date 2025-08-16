@@ -1,9 +1,4 @@
-use std::{
-  fs::File,
-  io::BufWriter,
-  path::{Path, PathBuf},
-  time::Instant,
-};
+use std::{fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -12,15 +7,13 @@ use memmap2::MmapOptions;
 use crate::io::csv::options::CsvOptions;
 
 pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.transpose.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("transpose"), None)?;
 
   let nrows = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?)
+    .from_reader(opts.rdr_skip_rows()?)
     .byte_headers()?
     .len();
 
@@ -50,11 +43,9 @@ pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
 }
 
 pub async fn multipass_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.transpose.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("transpose"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)

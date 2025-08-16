@@ -1,7 +1,4 @@
-use std::{
-  path::{Path, PathBuf},
-  time::Instant,
-};
+use std::{path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
@@ -9,19 +6,17 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use crate::io::csv::options::CsvOptions;
 
 pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
-  let csv_options = CsvOptions::new(&path);
-  let sep = csv_options.detect_separator()?;
-  let file_stem = csv_options.file_stem()?;
-  let mut output_path = PathBuf::from(csv_options.parent_path()?);
-  output_path.push(format!("{file_stem}.reverse.csv"));
+  let opts = CsvOptions::new(&path);
+  let sep = opts.detect_separator()?;
+  let output_path = opts.output_path(Some("reverse"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(csv_options.rdr_skip_rows()?);
+    .from_reader(opts.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
 
-  if let Some(mut idx_file) = csv_options.indexed()? {
+  if let Some(mut idx_file) = opts.indexed()? {
     // we have an index, no need to check avail mem,
     // we're reading the file in reverse streaming
     wtr.write_record(rdr.byte_headers()?)?;
