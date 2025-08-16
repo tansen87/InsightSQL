@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { FolderOpened, SwitchFilled, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -16,10 +17,10 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(195);
 const { mdShow } = useMarkdown(mdPinyin);
 
-listen("update-rows", (event: any) => {
+listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
 });
-listen("total-rows", (event: any) => {
+listen("total-rows", (event: Event<number>) => {
   totalRows.value = event.payload;
 });
 
@@ -81,14 +82,14 @@ async function chineseToPinyin() {
         <el-tooltip content="pinyin style" effect="light">
           <el-select
             v-model="pinyinStyle"
-            style="margin-left: 10px; width: 80px"
+            style="margin-left: 8px; width: 80px"
           >
             <el-option label="upper" value="upper" />
             <el-option label="lower" value="lower" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
+          <el-select v-model="mode" style="margin-left: 8px; width: 70px">
             <el-option label="idx" value="idx" />
             <el-option label="nil" value="nil" />
           </el-select>
@@ -98,7 +99,7 @@ async function chineseToPinyin() {
         @click="chineseToPinyin()"
         :loading="isLoading"
         :icon="SwitchFilled"
-        style="margin-left: 10px"
+        style="margin-left: 8px"
       >
         Pinyin
       </el-button>

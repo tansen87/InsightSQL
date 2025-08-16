@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { listen } from "@tauri-apps/api/event";
 import { mdEnumer, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
@@ -16,10 +17,10 @@ const [tableColumn, tableData] = [ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(153);
 const { mdShow } = useMarkdown(mdEnumer);
 
-listen("update-rows", (event: any) => {
+listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
 });
-listen("total-rows", (event: any) => {
+listen("total-rows", (event: Event<number>) => {
   totalRows.value = event.payload;
 });
 

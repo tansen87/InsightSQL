@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
 import { useDynamicHeight, shortFileName } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
-import { listen } from "@tauri-apps/api/event";
 import { mdRename, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
@@ -23,10 +24,10 @@ const filterTableData = computed(() =>
   )
 );
 
-listen("update-rows", (event: any) => {
+listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
 });
-listen("total-rows", (event: any) => {
+listen("total-rows", (event: Event<number>) => {
   totalRows.value = event.payload;
 });
 

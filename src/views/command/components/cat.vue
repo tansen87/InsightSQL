@@ -15,7 +15,7 @@ import { trimOpenFile } from "@/utils/view";
 
 const [mode, skipRows] = [ref("polars"), ref("0")];
 const [columns, backendInfo, path] = [ref(""), ref(""), ref("")];
-const [selectedFiles, originalColumns] = [ref([]), ref([])];
+const [fileSelect, originalColumns] = [ref([]), ref([])];
 const [isLoading, backendCompleted, dialog] = [
   ref(false),
   ref(false),
@@ -26,7 +26,7 @@ const { mdShow } = useMarkdown(mdCat);
 
 async function selectFile() {
   columns.value = "";
-  selectedFiles.value = [];
+  fileSelect.value = [];
   originalColumns.value = [];
   backendInfo.value = "";
   backendCompleted.value = false;
@@ -35,7 +35,7 @@ async function selectFile() {
       includeStatus: false
     });
     path.value = trimFile.filePath;
-    selectedFiles.value = trimFile.fileInfo;
+    fileSelect.value = trimFile.fileInfo;
     message("fetching headers...", {
       type: "info",
       duration: 0,
@@ -126,20 +126,20 @@ async function concatData() {
           content="Polars memory Cat, Csv stream Cat, or find duplicate headers"
           effect="light"
         >
-          <el-select v-model="mode" style="margin-left: 10px; width: 100px">
+          <el-select v-model="mode" style="margin-left: 8px; width: 100px">
             <el-option label="Polars" value="polars" />
             <el-option label="Csv" value="csv" />
             <el-option label="Duplicate" value="duplicate" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="skip rows" effect="light">
-          <el-input v-model="skipRows" style="margin-left: 10px; width: 50px" />
+          <el-input v-model="skipRows" style="margin-left: 8px; width: 50px" />
         </el-tooltip>
         <el-button
           @click="concatData()"
           :loading="isLoading"
           :icon="Connection"
-          style="margin-left: 10px"
+          style="margin-left: 8px"
         >
           Cat
         </el-button>
@@ -167,7 +167,7 @@ async function concatData() {
       />
     </el-select>
     <el-table
-      :data="selectedFiles"
+      :data="fileSelect"
       :height="dynamicHeight"
       empty-text=""
       show-overflow-tooltip

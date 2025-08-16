@@ -132,8 +132,8 @@ async function queryData() {
 }
 
 const selectViewFile = async () => {
-  const selectedFile = await selectFile();
-  if (selectedFile) {
+  const fileSelect = await selectFile();
+  if (fileSelect) {
     viewTable.value = true;
   }
 };

@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { ElIcon } from "element-plus";
 import {
   Loading,
@@ -11,41 +12,35 @@ import {
   Select,
   Link
 } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicHeight } from "@/utils/utils";
+import { shortFileName, useDynamicHeight, updateEvent } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { useMarkdown, mdCount } from "@/utils/markdown";
 
 const mode = ref("count");
 const path = ref("");
 const [dialog, isLoading] = [ref(false), ref(false)];
-const selectedFiles = ref([]);
+const fileSelect = ref([]);
 const { dynamicHeight } = useDynamicHeight(143);
 const { mdShow } = useMarkdown(mdCount);
 
-listen("start-count", (event: any) => {
-  const startConvert: string = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
-      file.status = "";
-    }
+listen("start-count", (event: Event<string>) => {
+  const filename = event.payload;
+  updateEvent(fileSelect, filename, file => {
+    file.status = "";
   });
 });
-listen("count-err", (event: any) => {
-  const countErr: string = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === countErr.split("|")[0]) {
-      file.status = "error";
-      file.infoMsg = countErr.split("|")[1];
-    }
+listen("count-err", (event: Event<string>) => {
+  const [filename, message] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.status = "error";
+    file.message = message;
   });
 });
-listen("count-msg", (event: any) => {
-  const countMsg: any = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === countMsg.split("|")[0]) {
-      file.status = "completed";
-      file.infoMsg = countMsg.split("|")[1];
-    }
+listen("count-msg", (event: Event<string>) => {
+  const [filename, message] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.status = "success";
+    file.message = message;
   });
 });
 
@@ -62,7 +57,7 @@ async function selectFile() {
   if (Array.isArray(selected)) {
     path.value = selected.join("|").toString();
     const nonEmptyRows = selected.filter((row: any) => row.trim() !== "");
-    selectedFiles.value = nonEmptyRows.map((file: any) => {
+    fileSelect.value = nonEmptyRows.map((file: any) => {
       return { filename: shortFileName(file), status: " " };
     });
   } else if (selected === null) {
@@ -120,7 +115,7 @@ async function countData() {
       </el-button>
     </div>
     <el-table
-      :data="selectedFiles"
+      :data="fileSelect"
       :height="dynamicHeight"
       style="width: 100%"
       show-overflow-tooltip
@@ -143,7 +138,7 @@ async function countData() {
           <ElIcon v-if="scope.row.status === ''" class="is-loading">
             <Loading />
           </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
+          <ElIcon v-else-if="scope.row.status === 'success'" color="#00CD66">
             <Select />
           </ElIcon>
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
@@ -152,14 +147,14 @@ async function countData() {
         </template>
       </el-table-column>
       <el-table-column
-        prop="infoMsg"
+        prop="message"
         label="Message"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
         <template #default="scope">
           <span v-if="scope.row.status === 'error'">
-            {{ scope.row.infoMsg }}
+            {{ scope.row.message }}
           </span>
         </template>
       </el-table-column>

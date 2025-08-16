@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import {
   FolderOpened,
   Loading,
@@ -10,68 +11,58 @@ import {
   Delete,
   Link
 } from "@element-plus/icons-vue";
-import { useDynamicHeight } from "@/utils/utils";
+import { useDynamicHeight, updateEvent } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import { useMarkdown, mdSkip } from "@/utils/markdown";
 
 const path = ref("");
-const selectedFiles = ref([]);
+const fileSelect = ref([]);
 const [skipRows, progress] = [ref("1"), ref("nil")];
 const [dialog, isLoading] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(143);
 const { mdShow } = useMarkdown(mdSkip);
 
-listen("update-msg", (event: any) => {
-  const [backFilename, rows] = event.payload.split("|");
-  selectedFiles.value.forEach(file => {
-    if (file.filename === backFilename) {
-      file.currentRows = rows;
-    }
+listen("update-msg", (event: Event<string>) => {
+  const [filename, rows] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.currentRows = rows;
   });
 });
-listen("total-msg", (event: any) => {
-  const [backFilename, rows] = event.payload.split("|");
-  selectedFiles.value.forEach(file => {
-    if (file.filename === backFilename) {
-      file.totalRows = rows;
-    }
+listen("total-msg", (event: Event<string>) => {
+  const [filename, rows] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.totalRows = rows;
   });
 });
-listen("start-skip", (event: any) => {
-  const startConvert: string = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === startConvert) {
-      file.status = "loading";
-    }
+listen("start-skip", (event: Event<string>) => {
+  const filename = event.payload;
+  updateEvent(fileSelect, filename, file => {
+    file.status = "loading";
   });
 });
-listen("skip-err", (event: any) => {
-  const beheadErr: string = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === beheadErr.split("|")[0]) {
-      file.status = "error";
-      file.errorMessage = beheadErr.split("|")[1];
-    }
+listen("skip-err", (event: Event<string>) => {
+  const [filename, message] = event.payload.split("|");
+  updateEvent(fileSelect, filename, file => {
+    file.status = "error";
+    file.message = message;
   });
   isLoading.value = false;
 });
-listen("skip-msg", (event: any) => {
-  const skipMsg: string = event.payload;
-  selectedFiles.value.forEach(file => {
-    if (file.filename === skipMsg) {
-      file.status = "completed";
-    }
+listen("skip-msg", (event: Event<string>) => {
+  const filename = event.payload;
+  updateEvent(fileSelect, filename, file => {
+    file.status = "success";
   });
 });
 
 async function selectFile() {
-  selectedFiles.value = [];
+  fileSelect.value = [];
   const trimFile = await trimOpenFile(true, "csv", ["*"], {
     includeStatus: true
   });
   path.value = trimFile.filePath;
-  selectedFiles.value = trimFile.fileInfo;
+  fileSelect.value = trimFile.fileInfo;
 }
 
 // invoke skip
@@ -124,7 +115,7 @@ async function skipLines() {
     </div>
 
     <el-table
-      :data="selectedFiles"
+      :data="fileSelect"
       :height="dynamicHeight"
       style="width: 100%"
       empty-text=""
@@ -136,7 +127,7 @@ async function skipLines() {
           <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
             <Loading />
           </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'completed'" color="#00CD66">
+          <ElIcon v-else-if="scope.row.status === 'success'" color="#00CD66">
             <Select />
           </ElIcon>
           <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
@@ -145,14 +136,14 @@ async function skipLines() {
         </template>
       </el-table-column>
       <el-table-column
-        prop="errorMessage"
+        prop="message"
         label="Message"
         :class="{ 'custom-width': true }"
         style="flex: 0 0 60%"
       >
         <template #default="scope">
           <span v-if="scope.row.status === 'error'">
-            {{ scope.row.errorMessage }}
+            {{ scope.row.message }}
           </span>
           <el-progress
             v-if="
