@@ -257,7 +257,7 @@ const handleNodeClick = async data => {
       await navigator.clipboard.writeText(textToCopy);
     }
   } catch (err) {
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error", duration: 5000 });
   }
 };
 </script>
@@ -356,7 +356,7 @@ const handleNodeClick = async data => {
         <el-tooltip content="skip rows" effect="light">
           <el-input
             v-model="data.skipRows"
-            style="margin-left: 10px; width: 30px"
+            style="margin-left: 8px; width: 30px"
           />
         </el-tooltip>
       </div>
@@ -389,11 +389,13 @@ const handleNodeClick = async data => {
         <el-tooltip content="Export type" effect="light">
           <el-select
             v-model="data.writeFormat"
-            style="margin-left: 10px; width: 70px"
+            style="margin-left: 8px; width: 92px"
           >
             <el-option label="csv" value="csv" />
             <el-option label="xlsx" value="xlsx" />
             <el-option label="parquet" value="parquet" />
+            <el-option label="json" value="json" />
+            <el-option label="jsonl" value="jsonl" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="execute" effect="light">
@@ -401,7 +403,7 @@ const handleNodeClick = async data => {
             @click="queryViewData"
             :loading="isLoading"
             :icon="Search"
-            style="margin-left: 10px"
+            style="margin-left: 8px"
             circle
           />
         </el-tooltip>

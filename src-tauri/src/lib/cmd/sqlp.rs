@@ -23,40 +23,108 @@ use crate::io::excel::excel_reader::{
 };
 use crate::io::excel::xlsx_writer::XlsxWriter;
 
-/// Unified dataframe writing handler
-fn write_dataframe(df: &DataFrame, output_path: PathBuf, format: &str, sep: u8) -> Result<()> {
-  match (df.shape().0 < 104_8576, format) {
-    (true, "xlsx") => write_xlsx(&df, output_path),
-    (_, "parquet") => write_parquet(df.clone(), output_path),
-    _ => write_csv(df.clone(), output_path, sep),
+const EXCEL_MAX_ROW: usize = 104_8575; // no headers
+const BUFFER_SIZE: usize = 256_000;
+
+trait FileWriter {
+  fn write_xlsx(&self, df: &DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
+  fn write_csv(&self, df: DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
+  fn write_parquet(&self, df: DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
+  fn write_json(&self, df: DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
+  fn write_jsonl(&self, df: DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
+}
+
+#[derive(Clone)]
+enum OutputFormat {
+  Xlsx,
+  Csv,
+  Parquet,
+  Json,
+  Jsonl,
+}
+
+impl From<&str> for OutputFormat {
+  fn from(format: &str) -> Self {
+    match format {
+      "xlsx" => OutputFormat::Xlsx,
+      "csv" => OutputFormat::Csv,
+      "parquet" => OutputFormat::Parquet,
+      "json" => OutputFormat::Json,
+      "jsonl" => OutputFormat::Jsonl,
+      _ => OutputFormat::Csv,
+    }
   }
 }
 
-/// XLSX writing implementation
-fn write_xlsx(df: &DataFrame, output_path: PathBuf) -> Result<()> {
-  XlsxWriter::new().write_dataframe(&df, output_path)?;
-  Ok(())
+struct DataFrameWriter {
+  format: OutputFormat,
+  separator: u8,
 }
 
-/// Parquet writing implementation
-fn write_parquet(mut df: DataFrame, output_path: PathBuf) -> Result<()> {
-  let file = File::create(output_path)?;
-  let writer = BufWriter::with_capacity(256_000, file);
-  ParquetWriter::new(writer)
-    .with_row_group_size(Some(768 ^ 2))
-    .finish(&mut df)?;
-  Ok(())
+impl DataFrameWriter {
+  pub fn new(format: OutputFormat) -> Self {
+    Self { format, separator: b',' }
+  }
+
+  fn with_separator(mut self, sep: u8) -> Self {
+    self.separator = sep;
+    self
+  }
+
+  pub fn write_dataframe(&self, df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
+    match (&self.format, df.height() <= EXCEL_MAX_ROW) {
+      (OutputFormat::Xlsx, true) => self.write_xlsx(&df, output_path),
+      (OutputFormat::Csv, _) => self.write_csv(df, output_path),
+      (OutputFormat::Parquet, _) => self.write_parquet(df, output_path),
+      (OutputFormat::Json, _) => self.write_json(df, output_path),
+      (OutputFormat::Jsonl, _) => self.write_jsonl(df, output_path),
+      _ => self.write_csv(df, output_path),
+    }
+  }
 }
 
-/// CSV writing implementation
-fn write_csv(mut df: DataFrame, output_path: PathBuf, sep: u8) -> Result<()> {
-  let file = File::create(output_path)?;
-  let mut w = BufWriter::with_capacity(256_000, file);
-  CsvWriter::new(&mut w)
-    .with_separator(sep)
-    .with_float_precision(Some(2))
-    .finish(&mut df)?;
-  Ok(w.flush()?)
+impl FileWriter for DataFrameWriter {
+  fn write_xlsx(&self, df: &DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
+    XlsxWriter::new().write_dataframe(&df, output_path.as_ref().to_path_buf())?;
+    Ok(())
+  }
+
+  fn write_csv(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
+    let file = File::create(output_path)?;
+    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    CsvWriter::new(&mut wtr)
+      .with_separator(self.separator)
+      .with_float_precision(Some(2))
+      .finish(&mut df)?;
+    Ok(wtr.flush()?)
+  }
+
+  fn write_parquet(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
+    let file = File::create(output_path)?;
+    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    ParquetWriter::new(&mut wtr)
+      .with_row_group_size(Some(768 * 768))
+      .finish(&mut df)?;
+    Ok(wtr.flush()?)
+  }
+
+  fn write_json(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
+    let file = File::create(output_path)?;
+    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    JsonWriter::new(&mut wtr)
+      .with_json_format(JsonFormat::Json)
+      .finish(&mut df)?;
+    Ok(wtr.flush()?)
+  }
+
+  fn write_jsonl(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
+    let file = File::create(output_path)?;
+    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    JsonWriter::new(&mut wtr)
+    .with_json_format(JsonFormat::JsonLines)
+        .finish(&mut df)?;
+    Ok(wtr.flush()?)
+  }
 }
 
 async fn prepare_query(
@@ -78,6 +146,7 @@ async fn prepare_query(
   match write_format {
     "xlsx" => output_path.push(format!("{file_stem}.sql.xlsx")),
     "parquet" => output_path.push(format!("{file_stem}.sql.parquet")),
+    "json" | "jsonl" => output_path.push(format!("{file_stem}.sql.json")),
     _ => output_path.push(format!("{file_stem}.sql.csv")),
   };
 
@@ -176,16 +245,18 @@ async fn prepare_query(
 
   let mut ctx = ctx.clone();
 
-  let mut df = tokio::task::spawn_blocking(move || -> Result<_> {
+  let df = tokio::task::spawn_blocking(move || -> Result<_> {
     Ok(ctx.execute(&current_query)?.collect()?)
   })
   .await??;
 
-  if write {
-    write_dataframe(&mut df, output_path, write_format, vec_sep[0])?;
-  }
-
   vec_result.push(query_df_to_json(df.head(Some(500)))?);
+
+  if write {
+    DataFrameWriter::new(write_format.into())
+      .with_separator(vec_sep[0])
+      .write_dataframe(df, output_path)?;
+  }
 
   Ok(vec_result)
 }
