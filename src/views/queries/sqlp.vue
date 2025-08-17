@@ -20,7 +20,7 @@ const tableData = shallowRef<any[]>([]);
 const isLoading = ref(false);
 const viewTable = ref(false);
 const isDataLoaded = ref(false);
-const headersByFile = reactive({});
+const headersByFile = reactive<Record<string, string[]>>({});
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const data = reactive({
   path: "",
@@ -108,9 +108,9 @@ async function queryData() {
       skipRows: data.skipRows,
       schemaLength: data.schemaLength
     });
-    const q = Array.isArray(result[0]) ? result[0][0] : null;
-    if (q.startsWith("Query failed")) {
-      throw q;
+    const q = result.length > 0 ? result[0] : null;
+    if (q === "{}") {
+      throw new Error(`unsupported file type, invoke query return empty`);
     }
     const jsonData = JSON.parse(result[0]);
     const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
@@ -126,7 +126,7 @@ async function queryData() {
     return true;
   } catch (err) {
     isLoading.value = false;
-    message(err.toString(), { type: "error", duration: 10000 });
+    message(err.toString(), { type: "error", duration: 5000 });
   }
   return false;
 }
@@ -177,10 +177,9 @@ async function selectFile() {
           skipRows: data.skipRows,
           schemaLength: "0"
         });
-
-        const q = Array.isArray(result[0]) ? result[0][0] : null;
-        if (q.startsWith("Query failed")) {
-          throw q;
+        const q = result.length > 0 ? result[0] : null;
+        if (q === "{}") {
+          throw new Error(`${basename}: unsupported file type`);
         }
 
         const jsonData = JSON.parse(result[0]);
@@ -191,14 +190,13 @@ async function selectFile() {
           prop: key
         }));
         tableData.value = markRaw(arrayData);
-
         headersByFile[basename] = Object.keys(arrayData[0]);
         treeHeaders.value = {
           ...treeHeaders.value,
           [basename]: headersByFile[basename]
         };
       } catch (err) {
-        message(err.toString(), { type: "error", duration: 10000 });
+        message(err.toString(), { type: "error", duration: 5000 });
       }
     })
   );
@@ -229,20 +227,24 @@ const viewFileName = computed(() => {
 const fileTreeData = computed(() => {
   if (!isDataLoaded.value) return []; // 如果数据未加载完成，则返回空数组
 
-  return viewFileName.value.map((fileName, index) => {
-    const basename = fileName;
-    const headers = headersByFile[basename] || [];
-    const children = headers.map(header => ({
-      label: header,
-      key: `${basename}-${header}`
-    }));
+  // 只显示 headersByFile 中存在的文件
+  return viewFileName.value
+    .map((fileName, index) => {
+      const basename = fileName;
+      const headers = headersByFile[basename];
+      if (!headers) return null;
+      const children = headers.map(header => ({
+        label: header,
+        key: `${basename}-${header}`
+      }));
 
-    return {
-      label: fileName,
-      children: children,
-      key: index
-    };
-  });
+      return {
+        label: fileName,
+        children: children,
+        key: index
+      };
+    })
+    .filter(Boolean); // 过滤掉null
 });
 
 const defaultProps = {

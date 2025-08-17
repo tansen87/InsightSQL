@@ -2,7 +2,8 @@ use std::{
   borrow::Cow,
   collections::HashMap,
   fs::File,
-  io::{BufWriter, Write},
+  io::{BufReader, BufWriter, Write},
+  num::NonZero,
   path::{Path, PathBuf},
   sync::Arc,
   time::Instant,
@@ -10,9 +11,10 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use polars::{
+  io::SerReader,
   prelude::{
-    CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonWriter, LazyCsvReader, LazyFileListReader,
-    LazyFrame, OptFlags, ParquetWriter, PlPath, SerWriter,
+    CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonReader, JsonWriter, LazyCsvReader,
+    LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, PlPath, SerWriter,
   },
   sql::SQLContext,
 };
@@ -63,7 +65,10 @@ struct DataFrameWriter {
 
 impl DataFrameWriter {
   pub fn new(format: OutputFormat) -> Self {
-    Self { format, separator: b',' }
+    Self {
+      format,
+      separator: b',',
+    }
   }
 
   fn with_separator(mut self, sep: u8) -> Self {
@@ -121,8 +126,8 @@ impl FileWriter for DataFrameWriter {
     let file = File::create(output_path)?;
     let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
     JsonWriter::new(&mut wtr)
-    .with_json_format(JsonFormat::JsonLines)
-        .finish(&mut df)?;
+      .with_json_format(JsonFormat::JsonLines)
+      .finish(&mut df)?;
     Ok(wtr.flush()?)
   }
 }
@@ -134,7 +139,7 @@ async fn prepare_query(
   write_format: &str,
   skip_rows: String,
   schema_length: &str,
-) -> Result<Vec<String>> {
+) -> Result<String> {
   let infer_schema_length = match schema_length {
     schema_legth => Some(schema_legth.parse::<usize>()?),
   };
@@ -146,7 +151,8 @@ async fn prepare_query(
   match write_format {
     "xlsx" => output_path.push(format!("{file_stem}.sql.xlsx")),
     "parquet" => output_path.push(format!("{file_stem}.sql.parquet")),
-    "json" | "jsonl" => output_path.push(format!("{file_stem}.sql.json")),
+    "json" => output_path.push(format!("{file_stem}.sql.json")),
+    "jsonl" => output_path.push(format!("{file_stem}.sql.jsonl")),
     _ => output_path.push(format!("{file_stem}.sql.csv")),
   };
 
@@ -176,8 +182,8 @@ async fn prepare_query(
     };
 
     match file_extension.as_str() {
-      "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" | "parquet" => {
-        vec_sep.push(b'|');
+      "parquet" | "json" | "jsonl" => {
+        vec_sep.push(b',');
       }
       _ => {
         let mut opts = CsvOptions::new(table);
@@ -191,12 +197,20 @@ async fn prepare_query(
         let p: Arc<Path> = Arc::from(PathBuf::from(table));
         LazyFrame::scan_parquet(PlPath::Local(p), Default::default())?
       }
-      "xls" | "xlsm" | "xlsb" | "ods" => {
-        let df: DataFrame = ExcelReader::from_path(table)?
-          .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
-          .to_df()?;
-        df.lazy()
-      }
+      "json" => JsonReader::new(BufReader::new(File::open(table)?))
+        .with_json_format(JsonFormat::Json)
+        .infer_schema_len(NonZero::new(infer_schema_length.unwrap_or(0)))
+        .finish()?
+        .lazy(),
+      "jsonl" => JsonReader::new(BufReader::new(File::open(table)?))
+        .with_json_format(JsonFormat::JsonLines)
+        .infer_schema_len(NonZero::new(infer_schema_length.unwrap_or(0)))
+        .finish()?
+        .lazy(),
+      "xls" | "xlsm" | "xlsb" | "ods" => ExcelReader::from_path(table)?
+        .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+        .to_df()?
+        .lazy(),
       "xlsx" => {
         let re = regex::Regex::new(r"limit\s+(\d+)")?;
         let n = re
@@ -231,8 +245,6 @@ async fn prepare_query(
     ctx.register(table_name, lf.with_optimizations(opt_state));
   }
 
-  let mut vec_result = Vec::new();
-
   let mut current_query = String::new();
 
   // replace aliases in query
@@ -250,7 +262,7 @@ async fn prepare_query(
   })
   .await??;
 
-  vec_result.push(query_df_to_json(df.head(Some(500)))?);
+  let json_res = query_df_to_json(df.head(Some(500)))?;
 
   if write {
     DataFrameWriter::new(write_format.into())
@@ -258,7 +270,7 @@ async fn prepare_query(
       .write_dataframe(df, output_path)?;
   }
 
-  Ok(vec_result)
+  Ok(json_res)
 }
 
 fn query_df_to_json(mut df: DataFrame) -> Result<String> {
@@ -283,7 +295,7 @@ pub async fn query(
   write_format: String,
   skip_rows: String,
   schema_length: String,
-) -> Result<(Vec<String>, String), String> {
+) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
   let file_path: Vec<&str> = path.split('|').collect();
@@ -304,6 +316,6 @@ pub async fn query(
       let runtime = format!("{elapsed_time:.2}");
       Ok((result, runtime))
     }
-    Err(err) => Err(format!("Query failed: {err}")),
+    Err(err) => Err(format!("{err}")),
   }
 }
