@@ -83,6 +83,7 @@ tauri-plugin-http = "2"
 tauri-plugin-os = "2"
 
 xl = { git = "https://github.com/tansen87/xl.git", branch = "main" }
+json-objects-to-csv = { git = "https://github.com/tansen87/json-objects-to-csv", branch = "main"}
 
 [features]
 # by default Tauri runs in production mode

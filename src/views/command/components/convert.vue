@@ -205,6 +205,11 @@ async function convert() {
         csvMode: csvMode.value,
         chunksize: chunksize.value
       });
+    } else if (toTab.value === "json") {
+      rtime = await invoke("json2csv", {
+        path: path.value,
+        wtrSep: wtrSep.value
+      });
     }
     message(`${toTab.value} done, elapsed time: ${rtime} s`, {
       type: "success"
@@ -224,6 +229,7 @@ async function convert() {
       <el-tab-pane name="access" label="Access2Csv" />
       <el-tab-pane name="dbf" label="Dbf2Csv" />
       <el-tab-pane name="csv" label="Csv2Xlsx" />
+      <el-tab-pane name="json" label="Json2Csv" />
     </el-tabs>
     <div class="custom-container1">
       <div class="custom-container2">

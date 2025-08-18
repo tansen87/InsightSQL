@@ -19,6 +19,7 @@ dependencies = [
  "ext-sort",
  "indexmap 2.10.0",
  "itoa",
+ "json-objects-to-csv",
  "lazy_static",
  "log",
  "memmap2",
@@ -1790,6 +1791,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "flatten-json-object"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9539d6d8c87acbf7c3189fb4d1c8ce926de16369212e97ba1629b62febb3d512"
+dependencies = [
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "float-cmp"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2869,6 +2880,18 @@ checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json-objects-to-csv"
+version = "0.1.3"
+source = "git+https://github.com/tansen87/json-objects-to-csv?branch=main#2ca219d9b0d11b587b064ea5380ca3c64d92743c"
+dependencies = [
+ "csv",
+ "flatten-json-object",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
