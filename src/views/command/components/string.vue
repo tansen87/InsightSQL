@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import {
   FolderOpened,
@@ -14,10 +14,11 @@ import { mdStr, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 
 const [column, path] = [ref(""), ref("")];
-const [n, length, by, mode] = [ref("4"), ref("5"), ref("-"), ref("left")];
+const [n, length, by, activeTab] = [ref("4"), ref("5"), ref("-"), ref("left")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, dialog, reverse] = [ref(false), ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(153);
+const toTab = computed(() => activeTab.value);
+const { dynamicHeight } = useDynamicHeight(207);
 
 async function selectFile() {
   column.value = "";
@@ -52,35 +53,35 @@ async function StrData() {
   try {
     isLoading.value = true;
     let rtime: string;
-    if (["left", "right", "slice"].includes(mode.value)) {
+    if (["left", "right", "slice"].includes(toTab.value)) {
       rtime = await invoke("str_slice", {
         path: path.value,
         column: column.value,
         n: n.value,
         length: length.value,
         reverse: reverse.value,
-        mode: mode.value
+        mode: toTab.value
       });
     }
-    if (["split_n", "split_max"].includes(mode.value)) {
+    if (["split_n", "split_max"].includes(toTab.value)) {
       rtime = await invoke("str_split", {
         path: path.value,
         column: column.value,
         n: n.value,
         by: by.value,
-        mode: mode.value
+        mode: toTab.value
       });
     }
-    if (["pad_left", "pad_right", "pad_both"].includes(mode.value)) {
+    if (["pad_left", "pad_right", "pad_both"].includes(toTab.value)) {
       rtime = await invoke("str_pad", {
         path: path.value,
         column: column.value,
         length: length.value,
         fillChar: by.value,
-        mode: mode.value
+        mode: toTab.value
       });
     }
-    message(`${mode.value} done, elapsed time: ${rtime} s`, {
+    message(`${toTab.value} done, elapsed time: ${rtime} s`, {
       type: "success"
     });
   } catch (err) {
@@ -94,6 +95,15 @@ const { mdShow } = useMarkdown(mdStr);
 
 <template>
   <div class="page-container">
+    <el-tabs v-model="activeTab">
+      <el-tab-pane name="left" label="Left" />
+      <el-tab-pane name="right" label="Right" />
+      <el-tab-pane name="split_n" label="SplitN" />
+      <el-tab-pane name="split_max" label="SplitMax" />
+      <el-tab-pane name="pad_left" label="PadLeft" />
+      <el-tab-pane name="pad_right" label="PadRight" />
+      <el-tab-pane name="pad_both" label="PadBoth" />
+    </el-tabs>
     <div class="custom-container1">
       <div class="custom-container2">
         <el-button @click="selectFile()" :icon="FolderOpened">
@@ -112,26 +122,14 @@ const { mdShow } = useMarkdown(mdStr);
             :value="item.value"
           />
         </el-select>
-        <el-tooltip content="String mode" effect="light">
-          <el-select v-model="mode" style="margin-left: 8px; width: 102px">
-            <el-option label="Left" value="left" />
-            <el-option label="Right" value="right" />
-            <el-option label="Slice" value="slice" />
-            <el-option label="SplitN" value="split_n" />
-            <el-option label="SplitMax" value="split_max" />
-            <el-option label="PadLeft" value="pad_left" />
-            <el-option label="PadRight" value="pad_right" />
-            <el-option label="PadBoth" value="pad_both" />
-          </el-select>
-        </el-tooltip>
         <el-tooltip
-          v-if="['left', 'right'].includes(mode)"
+          v-if="['left', 'right'].includes(toTab)"
           content="Length of the slice"
           effect="light"
         >
           <el-input v-model="n" style="margin-left: 8px; width: 50px" />
         </el-tooltip>
-        <template v-if="mode === 'slice'">
+        <template v-if="toTab === 'slice'">
           <el-tooltip content="Start index" effect="light">
             <el-input v-model="n" style="margin-left: 8px; width: 50px" />
           </el-tooltip>
@@ -139,7 +137,7 @@ const { mdShow } = useMarkdown(mdStr);
             <el-input v-model="length" style="margin-left: 8px; width: 50px" />
           </el-tooltip>
         </template>
-        <template v-if="['split_n', 'split_max'].includes(mode)">
+        <template v-if="['split_n', 'split_max'].includes(toTab)">
           <el-tooltip
             content="nth/max number of items to return"
             effect="light"
@@ -150,7 +148,7 @@ const { mdShow } = useMarkdown(mdStr);
             <el-input v-model="by" style="margin-left: 8px; width: 50px" />
           </el-tooltip>
         </template>
-        <template v-if="['pad_left', 'pad_right', 'pad_both'].includes(mode)">
+        <template v-if="['pad_left', 'pad_right', 'pad_both'].includes(toTab)">
           <el-tooltip
             content="Pad the string until it reaches this length"
             effect="light"
@@ -167,7 +165,7 @@ const { mdShow } = useMarkdown(mdStr);
         <el-tooltip content="Reverse or not" effect="light">
           <el-switch
             v-model="reverse"
-            v-if="['left', 'right', 'slice'].includes(mode)"
+            v-if="['left', 'right', 'slice'].includes(toTab)"
             inline-prompt
             style="
               --el-switch-on-color: #43cd80;

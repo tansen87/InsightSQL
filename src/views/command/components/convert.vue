@@ -38,7 +38,7 @@ const [allSheets, isLoading, backendCompleted, writeSheetname] = [
 ];
 const sheetsData = ref({});
 const fileSelect = ref<ListenEvent[]>([]);
-const typeTo = computed(() => activeTab.value);
+const toTab = computed(() => activeTab.value);
 const { dynamicHeight } = useDynamicHeight(176);
 
 listen("update-rows", (event: Event<string>) => {
@@ -128,7 +128,7 @@ async function selectFile() {
     path.value = trimFile.filePath;
     fileSelect.value = trimFile.fileInfo;
 
-    if (typeTo.value === "excel") {
+    if (toTab.value === "excel") {
       message("get excel sheets...", {
         type: "info",
         duration: 0,
@@ -171,7 +171,7 @@ async function convert() {
   try {
     isLoading.value = true;
     let rtime: string;
-    if (typeTo.value === "excel") {
+    if (toTab.value === "excel") {
       const mapFileSheet = fileSheet.value.map(item => ({
         filename: item.filename,
         sheetname: item.sheetname
@@ -183,30 +183,30 @@ async function convert() {
         allSheets: allSheets.value,
         writeSheetname: writeSheetname.value
       });
-    } else if (typeTo.value === "fmt") {
+    } else if (toTab.value === "fmt") {
       rtime = await invoke("csv2csv", {
         path: path.value,
         wtrSep: wtrSep.value,
         progress: progress.value
       });
-    } else if (typeTo.value === "access") {
+    } else if (toTab.value === "access") {
       rtime = await invoke("access2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-    } else if (typeTo.value === "dbf") {
+    } else if (toTab.value === "dbf") {
       rtime = await invoke("dbf2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-    } else if (typeTo.value === "csv") {
+    } else if (toTab.value === "csv") {
       rtime = await invoke("csv2xlsx", {
         path: path.value,
         csvMode: csvMode.value,
         chunksize: chunksize.value
       });
     }
-    message(`${typeTo.value} done, elapsed time: ${rtime} s`, {
+    message(`${toTab.value} done, elapsed time: ${rtime} s`, {
       type: "success"
     });
   } catch (err) {
