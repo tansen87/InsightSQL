@@ -4,6 +4,8 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Result, anyhow};
 use tauri::{AppHandle, Emitter};
 
+pub const RDR_BUFFER_CAPACITY: usize = 128 * (1 << 10);
+
 #[inline]
 pub fn num_cpus() -> usize {
   num_cpus::get()

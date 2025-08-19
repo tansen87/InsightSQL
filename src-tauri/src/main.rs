@@ -58,6 +58,7 @@ fn main() {
       convert::dbf2csv,
       convert::excel2csv,
       convert::json2csv,
+      convert::jsonl2csv,
       count::count,
       enumerate::enumer,
       extsort::extsort,

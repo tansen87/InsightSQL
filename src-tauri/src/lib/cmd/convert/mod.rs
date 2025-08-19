@@ -12,6 +12,7 @@ pub mod csv_to_excel;
 pub mod dbf_to_csv;
 pub mod excel_to_csv;
 pub mod json_to_csv;
+pub mod jsonl_to_csv;
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
@@ -297,6 +298,47 @@ pub async fn json2csv(
       .await
       .map_err(|e| e.to_string())?;
     match json_to_csv::json_to_csv(file, wtr_sep.clone()).await {
+      Ok(_) => {
+        emitter
+          .emit_success(filename)
+          .await
+          .map_err(|e| e.to_string())?;
+      }
+      Err(err) => {
+        emitter
+          .emit_err(&format!("{filename}|{err}"))
+          .await
+          .map_err(|e| e.to_string())?;
+        continue;
+      }
+    }
+  }
+
+  let end_time = Instant::now();
+  let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+  Ok(format!("{:.2}", elapsed_time))
+}
+
+#[tauri::command]
+pub async fn jsonl2csv(
+  path: String,
+  wtr_sep: String,
+  ignore_err : bool,
+  emitter: AppHandle,
+) -> Result<String, String> {
+  let start_time = Instant::now();
+
+  let paths: Vec<&str> = path.split('|').collect();
+  for file in paths.iter() {
+    let opts = CsvOptions::new(file);
+    let filename = opts
+      .file_name()
+      .map_err(|e| format!("opts.file_name failed: {e}"))?;
+    emitter
+      .emit_info(filename)
+      .await
+      .map_err(|e| e.to_string())?;
+    match jsonl_to_csv::jsonl_to_csv(file, &wtr_sep, ignore_err).await {
       Ok(_) => {
         emitter
           .emit_success(filename)

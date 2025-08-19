@@ -131,6 +131,14 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(total_rows)
   }
 
+  /// Count the lines of file
+  pub fn count_lines(&self) -> Result<usize> {
+    let reader = BufReader::new(File::open(&self.path)?);
+    let line_count = reader.lines().count();
+
+    Ok(line_count)
+  }
+
   /// Skip the first n lines of csv
   pub fn rdr_skip_rows(&self) -> Result<BufReader<File>> {
     let mut reader = BufReader::new(File::open(&self.path)?);

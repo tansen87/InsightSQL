@@ -30,8 +30,9 @@ const [activeTab, chunksize, csvMode, progress, wtrSep, skipRows] = [
 ];
 const [backendInfo, path] = [ref(""), ref("")];
 const [sheetOptions, fileSheet] = [ref([]), ref([])];
-const [allSheets, isLoading, backendCompleted, writeSheetname] = [
+const [allSheets, isLoading, backendCompleted, writeSheetname, ignoreErr] = [
   ref(true),
+  ref(false),
   ref(false),
   ref(false),
   ref(false)
@@ -210,6 +211,12 @@ async function convert() {
         path: path.value,
         wtrSep: wtrSep.value
       });
+    } else if (toTab.value === "jsonl") {
+      rtime = await invoke("jsonl2csv", {
+        path: path.value,
+        wtrSep: wtrSep.value,
+        ignoreErr: ignoreErr.value
+      });
     }
     message(`${toTab.value} done, elapsed time: ${rtime} s`, {
       type: "success"
@@ -230,6 +237,7 @@ async function convert() {
       <el-tab-pane name="dbf" label="Dbf2Csv" />
       <el-tab-pane name="csv" label="Csv2Xlsx" />
       <el-tab-pane name="json" label="Json2Csv" />
+      <el-tab-pane name="jsonl" label="Jsonl2Csv" />
     </el-tabs>
     <div class="custom-container1">
       <div class="custom-container2">
@@ -271,7 +279,7 @@ async function convert() {
         <el-tooltip content="Write delimiter" effect="light">
           <el-select
             v-model="wtrSep"
-            style="width: 50px; margin-left: 8px"
+            style="width: 52px; margin-left: 8px"
             v-if="!new Set(['excel', 'csv']).has(activeTab)"
           >
             <el-option label="|" value="|" />
@@ -304,8 +312,18 @@ async function convert() {
           <el-input
             v-model="chunksize"
             v-if="activeTab === 'csv' && csvMode === 'csv'"
-            style="margin-left: 10px; width: 80px"
+            style="margin-left: 8px; width: 80px"
           />
+        </el-tooltip>
+        <el-tooltip content="Ignore errors" effect="light">
+          <el-select
+            v-model="ignoreErr"
+            style="margin-left: 8px; width: 75px"
+            v-if="activeTab === 'jsonl'"
+          >
+            <el-option label="true" :value="true" />
+            <el-option label="false" :value="false" />
+          </el-select>
         </el-tooltip>
       </div>
       <el-button @click="convert()" :loading="isLoading" :icon="SwitchFilled">
