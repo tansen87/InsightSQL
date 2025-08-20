@@ -19,12 +19,12 @@
 ## ✨Features
 | Function | Description |
 | ------- | ----------- |
-| Sqlp | 对多个文件执行Polars SQL查询 (支持Excel, CSV, Parquet) |
-| Apply | 对给定的CSV列应用一系列字符串和数学转换 |
+| [Sqlp](./src-tauri/src/lib/cmd/sqlp.rs) | 对多个文件执行Polars SQL查询 (支持Excel, CSV, Parquet, Json, Jsonl) |
+| [Flow](./src-tauri/src/lib/flow/mod.rs) | Csv Flow |
+| [Apply](./docs/apply.md) | 对给定的CSV列应用一系列字符串和数学转换 |
 | [Cat](./docs/cat.md) | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 (支持Polars和CSV引擎) |
-| Excel  to CSV | 批量将Excel转换为CSV (支持转换所有工作表或指定工作表) |
+| [Convert](./src-tauri/src/lib/cmd/convert/mod.rs) | 未见类型转换 (access转csv, 格式化csv, csv转xlsx, dbf转csv, excel转csv, json转csv, jsonl转csv) |
 | [Count](./docs/count.md) | 统计CSV文件的行数 (带索引的瞬时值) |
-| CSV to xlsx | 批量将CSV转换为xlsx |
 | [Rename](./docs/rename.md) | 重命名CSV的列 |
 | [Select](./docs/select.md) | 选择、重新排序CSV的列 |
 | [Search](./docs/search.md) | 匹配列中的相应行 (包含模式: equal, contains, starts with, ends with, regex) |
@@ -35,8 +35,8 @@
 | [Pinyin](./docs/pinyin.md) | 将CSV中特定列的中文转换为拼音 |
 | [Replace](./docs/replace.md) | 使用正则表达式替换CSV数据 |
 | [Join](./docs/join.md) | 在指定列上连接两组CSV数据,可参考SQL的join |
-| Sort | 对CSV排序 |
-| [Slice](./docs/str_slice.md) | CSV列的切片 (如pandas.str.slice和str.split('').str[n]) |
+| [Sort](./docs/sort.md) | 对CSV排序 |
+| [Slice](./docs/str_slice.md) | CSV列的切片 (如polars: left-str.head, right-str.tail, slice-str.slice) |
 | [Reverse](./docs/reverse.md) | 颠倒CSV的行 |
 | [Transpose](./docs/transpose.md) | CSV行列转换,可参考Excel的transpose |
 
@@ -77,10 +77,10 @@
    ```
 
 
-## 演示视频
+### 演示视频
 * [bilibili](https://www.bilibili.com/video/BV1XS411c7zd/?spm_id_from=333.999.0.0&vd_source=5ee5270944c6e7a459e1311330bf455c) (视频很久未更新了)
 
 
-## 致谢
+### See also
 * [tauri-pure-admin](https://github.com/pure-admin/tauri-pure-admin)
 * [qsv](https://github.com/jqnatividad/qsv)

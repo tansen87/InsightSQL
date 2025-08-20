@@ -19,12 +19,12 @@ English | [中文](./README_CN.md)
 ## ✨Features
 | Function | Description |
 | ------- | ----------- |
-| Sqlp | Execute Polars SQL queries against several files (Support Excel, CSV, Parquet) |
-| Apply | Apply series of string, math transformations to given CSV column/s |
+| [Sqlp](./src-tauri/src/lib/cmd/sqlp.rs) | Execute Polars SQL queries against several files (Support Excel, CSV, Parquet, Json, Jsonl) |
+| [Flow](./src-tauri/src/lib/flow/mod.rs) | Csv Flow |
+| [Apply](./docs/apply.md) | Apply series of string, math transformations to given CSV column/s |
 | [Cat](./docs/cat.md) | Merge multiple CSV or Excel files into one CSV or xlsx file (Support Polars and CSV engine) |
-| Excel  to CSV | Batch convert Excel to CSV (Support converting all sheets or specifying sheets) |
+| [Convert](./src-tauri/src/lib/cmd/convert/mod.rs) | File type conversion (access to csv, format csv, csv to xlsx, dbf to csv, excel to csv, json to csv, jsonl to csv) |
 | [Count](./docs/count.md) | Count the rows of CSV files (Instantaneous with an index) |
-| CSV to xlsx | Batch convert CSV to xlsx |
 | [Rename](./docs/rename.md) | Rename the columns of a CSV |
 | [Select](./docs/select.md) | Select, re-order columns |
 | [Search](./docs/search.md) | Match the corresponding row in a column (equal, contains, starts with, ends with, regex) |
@@ -35,8 +35,8 @@ English | [中文](./README_CN.md)
 | [Pinyin](./docs/pinyin.md) | Convert Chinese to Pinyin for specific column in CSV |
 | [Replace](./docs/replace.md) | Replace CSV data using a regex |
 | [Join](./docs/join.md) | Joins two sets of CSV data on the specified columns |
-| Sort | Sorts CSV data lexicographically |
-| [Slice](./docs/str_slice.md) | Slicing of CSV column (like pandas str.slice and str.split('').str[n]) |
+| [Sort](./docs/sort.md) | Sorts CSV data lexicographically |
+| [Slice](./docs/str_slice.md) | Slicing of CSV column (like polars: left-str.head, right-str.tail, slice-str.slice) |
 | [Reverse](./docs/reverse.md) | Reverse order of rows in a CSV |
 | [Transpose](./docs/transpose.md) | Transpose rows/columns of a CSV |
 
