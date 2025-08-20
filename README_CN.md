@@ -19,7 +19,7 @@
 ## ✨Features
 | Function | Description |
 | ------- | ----------- |
-| [Sqlp](./src-tauri/src/lib/cmd/sqlp.rs) | 对多个文件执行Polars SQL查询 (支持Excel, CSV, Parquet, Json, Jsonl) |
+| [SQL](./src-tauri/src/lib/cmd/sqlp.rs) | 对多个文件执行Polars SQL查询 (支持Excel, CSV, Parquet, Json, Jsonl) |
 | [Flow](./src-tauri/src/lib/flow/mod.rs) | Csv Flow |
 | [Apply](./docs/apply.md) | 对给定的CSV列应用一系列字符串和数学转换 |
 | [Cat](./docs/cat.md) | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 (支持Polars和CSV引擎) |
