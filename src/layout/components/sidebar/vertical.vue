@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed, watch, onBeforeMount } from "vue";
 import Logo from "./logo.vue";
 import { useRoute } from "vue-router";
 import { emitter } from "@/utils/mitt";
@@ -7,7 +8,6 @@ import leftCollapse from "./leftCollapse.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import { storageLocal } from "@pureadmin/utils";
 import { responsiveStorageNameSpace } from "@/config";
-import { ref, computed, watch, onBeforeMount } from "vue";
 import { findRouteByPath, getParentPaths } from "@/router/utils";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 
@@ -17,18 +17,14 @@ const showLogo = ref(
     `${responsiveStorageNameSpace()}configure`
   )?.showLogo ?? true
 );
-
 const { routers, device, pureApp, isCollapse, menuSelect, toggleSideBar } =
   useNav();
-
 const subMenuData = ref([]);
-
 const menuData = computed(() => {
   return pureApp.layout === "mix" && device.value !== "mobile"
     ? subMenuData.value
     : usePermissionStoreHook().wholeMenus;
 });
-
 const loading = computed(() =>
   pureApp.layout === "mix" ? false : menuData.value.length === 0 ? true : false
 );

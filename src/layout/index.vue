@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "animate.css";
 // 引入 src/components/ReIcon/src/offlineIcon.ts 文件中所有使用addIcon添加过的本地图标
 import "@/components/ReIcon/src/offlineIcon";
@@ -22,7 +23,33 @@ const { layout } = useLayout();
 const isMobile = deviceDetection();
 const pureSetting = useSettingStoreHook();
 const { $storage } = useGlobal<GlobalPropertiesApi>();
-
+const appWindow = getCurrentWindow();
+const handleMouseDown = e => {
+  if (
+    e.target.closest(".sub-menu-icon") ||
+    e.target.closest(".search-container") ||
+    e.target.closest(".set-icon") ||
+    e.target.closest(".project-configuration") ||
+    e.target.closest(".container") ||
+    e.target.closest(".el-form") ||
+    e.target.closest(".el-button") ||
+    e.target.closest(".el-switch") ||
+    e.target.closest(".el-tooltip__trigger") ||
+    e.target.closest(".el-card__body") ||
+    e.target.closest(".draggable-node") ||
+    e.target.closest(".el-icon") ||
+    e.target.closest(".el-dialog") ||
+    e.target.closest(".el-menu-item") ||
+    e.target.closest(".el-backtop") ||
+    e.target.closest(".el-tabs") ||
+    e.target.closest(".el-table")
+  ) {
+    return;
+  }
+  if (e.buttons === 1) {
+    appWindow.startDragging();
+  }
+};
 const set: setType = reactive({
   sidebar: computed(() => {
     return useAppStoreHook().sidebar;
@@ -128,7 +155,11 @@ const layoutHeader = defineComponent({
 </script>
 
 <template>
-  <div :class="['app-wrapper', set.classes]" v-resize>
+  <div
+    :class="['app-wrapper', set.classes]"
+    v-resize
+    @mousedown="handleMouseDown"
+  >
     <div
       v-show="
         set.device === 'mobile' &&

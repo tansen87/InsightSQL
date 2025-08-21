@@ -39,8 +39,8 @@ emitter.on("openPanel", () => {
       <div class="right-panel-items">
         <el-scrollbar>
           <div class="project-configuration">
-            <h4 class="dark:text-white">项目配置</h4>
-            <span title="关闭配置" :class="iconClass">
+            <h4 class="dark:text-white">Project Config</h4>
+            <span title="Close Setting" :class="iconClass">
               <IconifyIconOffline
                 class="dark:text-white"
                 width="20px"

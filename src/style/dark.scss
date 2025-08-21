@@ -4,7 +4,7 @@
 html.dark {
   /* 自定义深色背景颜色 */
   // --el-bg-color: #020409;
-  $border-style: #303030;
+  $border-style: #535252;
   $color-white: #fff;
 
   .navbar,
@@ -16,6 +16,13 @@ html.dark {
   .horizontal-header .el-sub-menu__title,
   .horizontal-header .submenu-title-noDropdown {
     background: var(--el-bg-color) !important;
+    color: #e0e0e0 !important;
+  }
+  .horizontal-header .el-menu--horizontal > .el-menu-item:hover,
+  .horizontal-header .el-menu--horizontal > .el-sub-menu .el-sub-menu__title:hover,
+  .horizontal-header .el-menu--horizontal > .el-menu-item.is-active {
+    color: #e0e0e0 !important;
+    background-color: #383838 !important;
   }
 
   .app-main {
@@ -147,5 +154,20 @@ html.dark {
     border: 2px solid white;
     border-radius: 50%;
     z-index: 10;
+  }
+  .cmd-list {
+    border: 2px solid var(--cmd-list-border);
+    height: 200px;
+    position: absolute;
+    z-index: 1000;
+    background: var(--cmd-list-bg);
+  }
+  .cmd-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--cmd-item-color);
+  }
+  .cmd-item:hover {
+    background-color: rgba(157, 152, 152, 0.3);
   }
 }
