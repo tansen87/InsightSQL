@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { VueFlow, Panel, addEdge, applyChanges } from "@vue-flow/core";
+import {
+  VueFlow,
+  useVueFlow,
+  applyChanges,
+  NodeChange,
+  EdgeChange,
+  Connection,
+  MarkerType
+} from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/controls/dist/style.css";
@@ -22,6 +30,7 @@ const customNodeTypes = {
   start: InputNode,
   end: OutputNode
 };
+const { addEdges } = useVueFlow();
 const nodeStore = useNodeStore();
 let nodeIdCounter = 1;
 
@@ -29,26 +38,37 @@ function generateId() {
   return `${nodeIdCounter++}`;
 }
 
-const onNodesChange = changes => {
+const onNodesChange = (changes: NodeChange[]) => {
   const newNodes = applyChanges(changes, nodes.value);
   nodes.value = newNodes;
   nodeStore.addNode(newNodes);
 };
-const onEdgesChange = changes => {
+const onEdgesChange = (changes: EdgeChange[]) => {
   const newEdge = applyChanges(changes, edges.value);
   edges.value = newEdge;
   nodeStore.addEdge(newEdge);
 };
-const onConnect = params => {
-  edges.value = addEdge(params, edges.value);
+const handleConnect = (connection: Connection) => {
+  if (!connection.target) return;
+  addEdges([
+    {
+      ...connection,
+      markerEnd: {
+        type: MarkerType.Arrow,
+        color: "#666",
+        width: 20,
+        height: 20
+      }
+    }
+  ]);
 };
-const onDragStart = (event, type) => {
-  event.dataTransfer.setData("application/vueflow", type);
+const onDragStart = (event: DragEvent, type: string) => {
+  event.dataTransfer?.setData("application/vueflow", type);
   event.dataTransfer.effectAllowed = "move";
 };
-const onDrop = event => {
+const onDrop = (event: DragEvent) => {
   const vueFlow = vueFlowRef.value;
-  const type = event.dataTransfer.getData("application/vueflow");
+  const type = event.dataTransfer?.getData("application/vueflow");
   const position = vueFlow.project({ x: event.offsetX, y: event.offsetY });
   const newNode = {
     id: generateId(),
@@ -60,7 +80,7 @@ const onDrop = event => {
   };
   nodes.value = [...nodes.value, newNode];
 };
-const onDragOver = event => {
+const onDragOver = (event: DragEvent) => {
   event.preventDefault();
   event.dataTransfer.dropEffect = "move";
 };
@@ -87,13 +107,10 @@ const onDragOver = event => {
         :node-types="customNodeTypes"
         @nodes-change="onNodesChange"
         @edges-change="onEdgesChange"
-        @connect="onConnect"
+        @connect="handleConnect"
         @drop="onDrop"
         @dragover="onDragOver"
       >
-        <Panel position="top-right">
-          <span>Csv Flow</span>
-        </Panel>
         <Background />
       </VueFlow>
     </div>

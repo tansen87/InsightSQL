@@ -42,7 +42,9 @@ const handleMouseDown = e => {
     e.target.closest(".el-menu-item") ||
     e.target.closest(".el-backtop") ||
     e.target.closest(".el-tabs") ||
-    e.target.closest(".el-table")
+    e.target.closest(".el-table") ||
+    e.target.closest(".vue-flow__handle") ||
+    e.target.closest(".vue-flow__edge-interaction")
   ) {
     return;
   }

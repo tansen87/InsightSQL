@@ -31,7 +31,7 @@ watch(
   strData,
   newData => {
     if (nodeId && (newData.mode || newData.column)) {
-      strStore.addString({
+      strStore.addStr({
         id: nodeId,
         ...newData
       });

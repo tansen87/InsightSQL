@@ -11,7 +11,7 @@ import {
   useStr,
   useNodeStore,
   getExecutionConfig,
-  getNodesInEdgeOrder
+  isValidExecutionPath
 } from "@/store/modules/flow";
 
 const isLoading = ref(false);
@@ -31,25 +31,31 @@ function deleteBtn() {
 async function endFlow() {
   try {
     isLoading.value = true;
+    const nodes = nodeStore.nodes;
+    const edges = nodeStore.edges;
+    const { isValid, path } = isValidExecutionPath(nodes, edges);
+    if (!isValid) {
+      message(
+        "Flow must start with the <Start> node and end with the <End> node",
+        {
+          type: "warning"
+        }
+      );
+      isLoading.value = false;
+      return;
+    }
     if (pathStore.path === null || pathStore.path === "") {
       message("CSV file not selected", { type: "warning" });
       isLoading.value = false;
       return;
     }
-    const nodes = nodeStore.nodes;
-    const edges = nodeStore.edges;
-    const order = getNodesInEdgeOrder(nodes, edges);
-    const config = getExecutionConfig(order, {
+    // const path = getNodesInEdgeOrder(nodes, edges);
+    const config = getExecutionConfig(path, {
       selectStore,
       filterStore,
       strStore
     });
     const jsonConfig = JSON.stringify(config);
-    if (jsonConfig === "{}" || jsonConfig === "[]") {
-      message("operation is null", { type: "warning" });
-      isLoading.value = false;
-      return;
-    }
     const rtime: string = await invoke("flow", {
       path: pathStore.path,
       jsonConfig: jsonConfig
