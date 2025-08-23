@@ -4,6 +4,13 @@ import { type MessageHandler, ElMessage } from "element-plus";
 
 type messageStyle = "el" | "antd";
 type messageTypes = "info" | "success" | "warning" | "error";
+type messagePlacement =
+  | "top"
+  | "bottom"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
 
 interface MessageParams {
   /** 消息类型, 可选 `info` 、`success` 、`warning` 、`error` , 默认 `info` */
@@ -18,14 +25,14 @@ interface MessageParams {
   duration?: number;
   /** 是否显示关闭按钮, 默认值 `true` */
   showClose?: boolean;
-  /** 文字是否居中, 默认值 `false` */
-  center?: boolean;
-  /** `Message` 距离窗口顶部的偏移量, 默认 `11` */
+  /** `Message` 距离窗口顶部/底部的偏移量, 默认 `11` */
   offset?: number;
   /** 设置组件的根元素, 默认 `document.body` */
   appendTo?: string | HTMLElement;
   /** 合并内容相同的消息, 不支持 `VNode` 类型的消息, 默认值 `true` */
   grouping?: boolean;
+  /** 消息放置位置, 默认值 `bottom-left` */
+  placement?: messagePlacement;
   /** 关闭时的回调函数, 参数为被关闭的 `message` 实例 */
   onClose?: Function | null;
 }
@@ -52,10 +59,10 @@ const message = (
       customClass = "antd",
       duration = 5000,
       showClose = false,
-      center = false,
       offset = 11,
       appendTo = document.body,
       grouping = true,
+      placement = "bottom-left",
       onClose
     } = params;
 
@@ -66,7 +73,6 @@ const message = (
       dangerouslyUseHTMLString,
       duration,
       showClose,
-      center,
       offset,
       appendTo,
       grouping,
