@@ -20,13 +20,24 @@ import {
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [activeTab, chunksize, csvMode, progress, wtrSep, skipRows] = [
+const [
+  activeTab,
+  chunksize,
+  csvMode,
+  progress,
+  wtrSep,
+  skipRows,
+  quote,
+  quoteStyle
+] = [
   ref("excel"),
   ref("700000"),
   ref("csv"),
   ref("nil"),
   ref("|"),
-  ref("0")
+  ref("0"),
+  ref('"'),
+  ref("necessary")
 ];
 const [backendInfo, path] = [ref(""), ref("")];
 const [sheetOptions, fileSheet] = [ref([]), ref([])];
@@ -42,13 +53,13 @@ const fileSelect = ref<ListenEvent[]>([]);
 const toTab = computed(() => activeTab.value);
 const { dynamicHeight } = useDynamicHeight(176);
 
-listen("update-rows", (event: Event<string>) => {
+listen("update-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
     file.currentRows = rows;
   });
 });
-listen("total-rows", (event: Event<string>) => {
+listen("total-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
     file.totalRows = rows;
@@ -188,8 +199,11 @@ async function convert() {
       rtime = await invoke("csv2csv", {
         path: path.value,
         wtrSep: wtrSep.value,
+        quote: quote.value,
+        quoteStyle: quoteStyle.value,
         progress: progress.value
       });
+      console.log(progress.value);
     } else if (toTab.value === "access") {
       rtime = await invoke("access2csv", {
         path: path.value,
@@ -286,6 +300,28 @@ async function convert() {
             <el-option label="\t" value="\t" />
             <el-option label="," value="," />
             <el-option label=";" value=";" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="quote character" effect="light">
+          <el-select
+            v-model="quote"
+            style="width: 52px; margin-left: 8px"
+            v-if="activeTab === 'fmt'"
+          >
+            <el-option label="'" value="'" />
+            <el-option label='"' value='"' />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="quote style" effect="light">
+          <el-select
+            v-model="quoteStyle"
+            style="width: 122px; margin-left: 8px"
+            v-if="activeTab === 'fmt'"
+          >
+            <el-option label="Necessary" value="necessary" />
+            <el-option label="Always" value="always" />
+            <el-option label="NonNumeric" value="non_numeric" />
+            <el-option label="Never" value="never" />
           </el-select>
         </el-tooltip>
         <el-tooltip content="If nil, no progress" effect="light">

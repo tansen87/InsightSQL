@@ -12,10 +12,12 @@ use tokio::sync::oneshot;
 
 use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
 
-/// convert csv to csv (only replace the delimiter)
+/// Reformat a CSV with different delimiters, quoting rules
 pub async fn csv_to_csv<E, P>(
   path: P,
-  wtr_sep: String,
+  wtr_sep: &str,
+  quote: &str,
+  quote_style: &str,
   filename: String,
   progress: &str,
   emitter: E,
@@ -30,7 +32,14 @@ where
   let sep = if wtr_sep == "\\t" {
     b'\t'
   } else {
-    wtr_sep.into_bytes()[0]
+    wtr_sep.as_bytes().get(0).copied().unwrap_or(b',')
+  };
+  let quote = quote.as_bytes().get(0).copied().unwrap_or(b'"');
+  let quote_style = match quote_style {
+    "always" => csv::QuoteStyle::Always,
+    "non_numeric" => csv::QuoteStyle::NonNumeric,
+    "never" => csv::QuoteStyle::Never,
+    _ => csv::QuoteStyle::Necessary
   };
 
   let total_rows = match progress {
@@ -46,7 +55,11 @@ where
     .from_reader(opts.rdr_skip_rows()?);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
+  let mut wtr = WriterBuilder::new()
+    .delimiter(sep)
+    .quote(quote)
+    .quote_style(quote_style)
+    .from_writer(buf_writer);
 
   wtr.write_record(rdr.headers()?)?;
 

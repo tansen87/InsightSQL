@@ -59,6 +59,8 @@ pub async fn access2csv(
 pub async fn csv2csv(
   path: String,
   wtr_sep: String,
+  quote: String,
+  quote_style: String,
   progress: String,
   emitter: AppHandle,
 ) -> Result<String, String> {
@@ -76,9 +78,11 @@ pub async fn csv2csv(
       .map_err(|e| e.to_string())?;
     match csv_to_csv::csv_to_csv(
       file,
-      wtr_sep.clone(),
+      &wtr_sep,
+      &quote,
+      &quote_style,
       filename.to_string(),
-      progress.as_str(),
+      &progress,
       emitter.clone(),
     )
     .await
