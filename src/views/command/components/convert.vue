@@ -28,7 +28,8 @@ const [
   wtrSep,
   skipRows,
   quote,
-  quoteStyle
+  quoteStyle,
+  encoding
 ] = [
   ref("excel"),
   ref("700000"),
@@ -37,7 +38,8 @@ const [
   ref("|"),
   ref("0"),
   ref('"'),
-  ref("necessary")
+  ref("necessary"),
+  ref("gbk")
 ];
 const [backendInfo, path] = [ref(""), ref("")];
 const [sheetOptions, fileSheet] = [ref([]), ref([])];
@@ -204,6 +206,12 @@ async function convert() {
         progress: progress.value
       });
       console.log(progress.value);
+    } else if (toTab.value === "encoding") {
+      rtime = await invoke("encoding2utf8", {
+        path: path.value,
+        encoding: encoding.value
+      });
+      console.log(progress.value);
     } else if (toTab.value === "access") {
       rtime = await invoke("access2csv", {
         path: path.value,
@@ -247,6 +255,7 @@ async function convert() {
     <el-tabs v-model="activeTab">
       <el-tab-pane name="excel" label="Excel2Csv" />
       <el-tab-pane name="fmt" label="FmtCsv" />
+      <el-tab-pane name="encoding" label="CsvEncoding" />
       <el-tab-pane name="access" label="Access2Csv" />
       <el-tab-pane name="dbf" label="Dbf2Csv" />
       <el-tab-pane name="csv" label="Csv2Xlsx" />
@@ -294,7 +303,7 @@ async function convert() {
           <el-select
             v-model="wtrSep"
             style="width: 52px; margin-left: 8px"
-            v-if="!new Set(['excel', 'csv']).has(activeTab)"
+            v-if="!new Set(['excel', 'csv', 'encoding']).has(activeTab)"
           >
             <el-option label="|" value="|" />
             <el-option label="\t" value="\t" />
@@ -359,6 +368,18 @@ async function convert() {
           >
             <el-option label="true" :value="true" />
             <el-option label="false" :value="false" />
+          </el-select>
+        </el-tooltip>
+        <el-tooltip content="Read Encoding" effect="light">
+          <el-select
+            v-model="encoding"
+            style="margin-left: 8px; width: 111px"
+            v-if="activeTab === 'encoding'"
+          >
+            <el-option label="GBK" value="gbk" />
+            <el-option label="UTF-8" value="utf_8" />
+            <el-option label="UTF-16LE" value="utf_16le" />
+            <el-option label="UTF-16BE" value="utf_16be" />
           </el-select>
         </el-tooltip>
       </div>

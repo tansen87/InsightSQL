@@ -54,6 +54,7 @@ fn main() {
       #[cfg(target_os = "windows")]
       convert::access2csv,
       convert::csv2csv,
+      convert::encoding2utf8,
       convert::csv2xlsx,
       convert::dbf2csv,
       convert::excel2csv,

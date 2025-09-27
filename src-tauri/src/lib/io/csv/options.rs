@@ -7,6 +7,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::ReaderBuilder;
+use encoding_rs_io::{DecodeReaderBytes, DecodeReaderBytesBuilder};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
@@ -154,6 +155,19 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     }
 
     Ok(reader)
+  }
+
+  pub fn rdr_encoding(
+    &self,
+    encoding: Option<&'static encoding_rs::Encoding>,
+  ) -> Result<BufReader<DecodeReaderBytes<File, Vec<u8>>>> {
+    let file = File::open(&self.path)?;
+    let decoder = DecodeReaderBytesBuilder::new()
+      .encoding(encoding)
+      .build(file);
+    let buf_reader = BufReader::new(decoder);
+
+    Ok(buf_reader)
   }
 
   /// The intersection of all headers between many csv or excel files

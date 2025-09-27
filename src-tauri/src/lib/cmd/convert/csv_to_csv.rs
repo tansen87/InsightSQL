@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
+use encoding_rs::{GBK, UTF_16BE, UTF_16LE, UTF_8};
 use tokio::sync::oneshot;
 
 use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
@@ -39,7 +40,7 @@ where
     "always" => csv::QuoteStyle::Always,
     "non_numeric" => csv::QuoteStyle::NonNumeric,
     "never" => csv::QuoteStyle::Never,
-    _ => csv::QuoteStyle::Necessary
+    _ => csv::QuoteStyle::Necessary,
   };
 
   let total_rows = match progress {
@@ -116,6 +117,30 @@ where
   counter_task.await??;
   let _ = stop_tx.send(());
   timer_task.await?;
+
+  Ok(())
+}
+
+pub async fn encoding_to_utf8<P>(path: P, encoding: &str) -> Result<()>
+where
+  P: AsRef<Path> + Send + Sync,
+{
+  let encoding = match encoding {
+    "gbk" => GBK,
+    "utf_16le" => UTF_16LE,
+    "utf_16be" => UTF_16BE,
+    _ => UTF_8
+  };
+  let opts = CsvOptions::new(&path);
+  let buf_rdr = opts.rdr_encoding(Some(encoding))?;
+  let mut rdr = csv::Reader::from_reader(buf_rdr);
+  let output_path = opts.output_path(Some("encoding"), None)?;
+  let mut wtr = csv::Writer::from_writer(File::create(output_path)?);
+  for result in rdr.records() {
+    let record = result?;
+    wtr.write_record(&record)?;
+  }
+  wtr.flush()?;
 
   Ok(())
 }

@@ -109,6 +109,22 @@ pub async fn csv2csv(
 }
 
 #[tauri::command]
+pub async fn encoding2utf8(path: String, encoding: String) -> Result<String, String> {
+  let start_time = Instant::now();
+  let paths: Vec<&str> = path.split('|').collect();
+  let p = paths.first().unwrap();
+
+  match csv_to_csv::encoding_to_utf8(p, &encoding).await {
+    Ok(_) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok(format!("{elapsed_time:.2}"))
+    }
+    Err(err) => Err(format!("{err}")),
+  }
+}
+
+#[tauri::command]
 pub async fn csv2xlsx(
   path: String,
   csv_mode: String,
@@ -284,11 +300,7 @@ pub async fn excel2csv(
 }
 
 #[tauri::command]
-pub async fn json2csv(
-  path: String,
-  wtr_sep: String,
-  emitter: AppHandle,
-) -> Result<String, String> {
+pub async fn json2csv(path: String, wtr_sep: String, emitter: AppHandle) -> Result<String, String> {
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
@@ -327,7 +339,7 @@ pub async fn json2csv(
 pub async fn jsonl2csv(
   path: String,
   wtr_sep: String,
-  ignore_err : bool,
+  ignore_err: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
