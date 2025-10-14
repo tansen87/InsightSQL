@@ -11,6 +11,7 @@ import { CloseBold } from "@element-plus/icons-vue";
 import { useHeaders, useFilter } from "@/store/modules/flow";
 
 const [columns, condition] = [ref(""), ref("")];
+const logic = ref("or");
 const mode = ref("equal");
 const node = useNode();
 const { removeNodes } = useVueFlow();
@@ -20,6 +21,7 @@ const filterStore = useFilter();
 const filterData = computed(() => {
   return {
     op: "filter",
+    logic: logic.value,
     mode: mode.value,
     column: columns.value,
     value: condition.value
@@ -29,7 +31,10 @@ const filterData = computed(() => {
 watch(
   filterData,
   newData => {
-    if (nodeId && (newData.mode || newData.column || newData.value)) {
+    if (
+      nodeId &&
+      (newData.logic || newData.mode || newData.column || newData.value)
+    ) {
       filterStore.addFilter({
         id: nodeId,
         ...newData
@@ -98,6 +103,10 @@ function deleteBtn() {
           v-model="condition"
           placeholder="Filter conditions"
         />
+        <el-select v-model="logic" style="margin-top: 6px">
+          <el-option label="OR" value="or" />
+          <el-option label="AND" value="and" />
+        </el-select>
       </div>
       <Handle
         type="source"
