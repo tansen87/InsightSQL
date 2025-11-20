@@ -66,34 +66,6 @@ export async function trimOpenFile(
   }
 }
 
-export async function viewSqlp(path: string, skipRows: string) {
-  const result = await invoke("query", {
-    path: path,
-    sqlQuery: "select * from _t_1 limit 10",
-    write: false,
-    writeFormat: "csv",
-    skipRows: skipRows,
-    schemaLength: "0"
-  });
-
-  const q = Array.isArray(result[0]) ? result[0][0] : null;
-  if (q.startsWith("Query failed")) {
-    throw q;
-  }
-
-  const jsonData = JSON.parse(result[0]);
-  const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-
-  return {
-    columnView: Object.keys(arrayData[0]).map(key => ({
-      name: key,
-      label: key,
-      prop: key
-    })),
-    dataView: arrayData
-  };
-}
-
 export async function toJson(path: string) {
   const result: string = await invoke("to_json", {
     path: path

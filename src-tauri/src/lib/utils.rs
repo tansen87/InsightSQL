@@ -5,6 +5,8 @@ use anyhow::{Result, anyhow};
 use tauri::{AppHandle, Emitter};
 
 pub const RDR_BUFFER_CAPACITY: usize = 128 * (1 << 10);
+pub const EXCEL_MAX_ROW: usize = 104_8575; // no headers
+pub const BUFFER_SIZE: usize = 256_000;
 
 #[inline]
 pub fn num_cpus() -> usize {

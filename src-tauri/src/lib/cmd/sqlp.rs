@@ -19,14 +19,11 @@ use polars::{
   sql::SQLContext,
 };
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::{BUFFER_SIZE, EXCEL_MAX_ROW}};
 use crate::io::excel::excel_reader::{
   ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame,
 };
 use crate::io::excel::xlsx_writer::XlsxWriter;
-
-const EXCEL_MAX_ROW: usize = 104_8575; // no headers
-const BUFFER_SIZE: usize = 256_000;
 
 trait FileWriter {
   fn write_xlsx(&self, df: &DataFrame, output_path: impl AsRef<Path>) -> Result<()>;

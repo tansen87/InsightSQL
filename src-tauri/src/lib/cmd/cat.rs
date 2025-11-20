@@ -12,14 +12,19 @@ use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    col, CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, PlPath, SerWriter, UnionArgs
+    CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, PlPath, SerWriter, UnionArgs, col,
   },
 };
 
 use crate::{
-  io::csv::options::CsvOptions,
-  io::excel::excel_reader::{ExcelReader, ToPolarsDataFrame},
-  io::excel::xlsx_writer::XlsxWriter,
+  io::{
+    csv::options::CsvOptions,
+    excel::{
+      excel_reader::{ExcelReader, ToPolarsDataFrame},
+      xlsx_writer::XlsxWriter,
+    },
+  },
+  utils::EXCEL_MAX_ROW,
 };
 
 async fn cat_with_polars(
@@ -29,7 +34,7 @@ async fn cat_with_polars(
   skip_rows: String,
   use_cols: String,
 ) -> Result<()> {
-  /* concat csv and excel files into a xlsx or csv file */
+  /* merge csv and excel files into a xlsx or csv file */
   let paths: Vec<&str> = path.split('|').collect();
   let use_cols: Vec<&str> = use_cols.split('|').collect();
   let use_cols = match use_cols.len() {
@@ -117,7 +122,7 @@ async fn cat_with_polars(
   let mut cat_df =
     tokio::task::spawn_blocking(move || -> Result<_> { Ok(cat_lf.collect()?) }).await??;
   let row_len = cat_df.shape().0;
-  if row_len < 104_0000 && file_type.to_lowercase() == "xlsx" {
+  if row_len < EXCEL_MAX_ROW && file_type.to_lowercase() == "xlsx" {
     XlsxWriter::new().write_dataframe(&cat_df, output_path.into())?;
   } else {
     CsvWriter::new(File::create(output_path)?)
