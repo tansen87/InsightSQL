@@ -19,11 +19,14 @@ use polars::{
   sql::SQLContext,
 };
 
-use crate::{io::csv::options::CsvOptions, utils::{BUFFER_SIZE, EXCEL_MAX_ROW}};
 use crate::io::excel::excel_reader::{
   ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame,
 };
 use crate::io::excel::xlsx_writer::XlsxWriter;
+use crate::{
+  io::csv::options::CsvOptions,
+  utils::{BUFFER_SIZE, EXCEL_MAX_ROW},
+};
 
 trait FileWriter {
   fn write_xlsx(&self, df: &DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
@@ -135,10 +138,12 @@ async fn prepare_query(
   write: bool,
   write_format: &str,
   skip_rows: String,
-  schema_length: &str,
+  varchar: bool,
+  limit: bool,
 ) -> Result<String> {
-  let infer_schema_length = match schema_length {
-    schema_legth => Some(schema_legth.parse::<usize>()?),
+  let infer_schema_length = match varchar {
+    true => Some(0),
+    false => Some(1000),
   };
 
   let mut ctx = SQLContext::new();
@@ -259,15 +264,18 @@ async fn prepare_query(
   })
   .await??;
 
-  let json_res = query_df_to_json(df.head(Some(500)))?;
-
   if write {
     DataFrameWriter::new(write_format.into())
       .with_separator(vec_sep[0])
       .write_dataframe(df, output_path)?;
+    Ok("[]".to_string())
+  } else {
+    let json_res = match limit {
+      true => query_df_to_json(df.head(Some(500)))?,
+      false => query_df_to_json(df)?
+    };
+    Ok(json_res)
   }
-
-  Ok(json_res)
 }
 
 fn query_df_to_json(mut df: DataFrame) -> Result<String> {
@@ -291,7 +299,8 @@ pub async fn query(
   write: bool,
   write_format: String,
   skip_rows: String,
-  schema_length: String,
+  varchar: bool,
+  limit: bool,
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
@@ -303,7 +312,8 @@ pub async fn query(
     write,
     &write_format,
     skip_rows,
-    schema_length.as_str(),
+    varchar,
+    limit
   )
   .await
   {

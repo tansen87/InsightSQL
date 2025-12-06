@@ -2,7 +2,15 @@
 import { ref, reactive, computed, markRaw, shallowRef } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Search, View, Download } from "@element-plus/icons-vue";
+import {
+  FolderOpened,
+  ArrowRight,
+  Download,
+  View,
+  Hide,
+  Smoking,
+  NoSmoking
+} from "@element-plus/icons-vue";
 import { VAceEditor } from "vue3-ace-editor";
 import { useDark } from "@pureadmin/utils";
 import "./ace-config";
@@ -21,13 +29,16 @@ const isLoading = ref(false);
 const viewTable = ref(false);
 const isDataLoaded = ref(false);
 const headersByFile = reactive<Record<string, string[]>>({});
+const limitContent = ref("limit 500");
+const varcharContent = ref("dtype: string");
 const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
 const data = reactive({
   path: "",
   write: false,
   writeFormat: "xlsx",
   skipRows: "0",
-  schemaLength: "0"
+  limit: true,
+  varchar: true
 });
 const { dynamicHeight } = useDynamicHeight(84);
 const { isDark } = useDark();
@@ -82,55 +93,71 @@ const handleCurrentChange = (newPage: number) => {
   currentPage.value = newPage;
 };
 
-// invoke query
-async function queryData() {
-  tableColumn.value = [];
-  tableData.value = [];
-  currentPage.value = 1;
-  total.value = 0;
-
-  if (data.path === "") {
-    message("File not selected", { type: "warning" });
+/**
+ * 执行查询,invoke query(用于预览或导出)
+ * @param write - 是否导出
+ * @returns boolean - 是否成功
+ */
+async function executeQuery(write: boolean): Promise<boolean> {
+  if (data.path === "" || sqlQuery.value === "") {
+    message(data.path === "" ? "File not selected" : "SQL script is empty", {
+      type: "warning"
+    });
     return false;
   }
-  if (sqlQuery.value === "") {
-    message("SQL script is empty", { type: "warning" });
-    return false;
+
+  // 仅预览时重置分页
+  if (!write) {
+    tableColumn.value = [];
+    tableData.value = [];
+    currentPage.value = 1;
+    total.value = 0;
   }
 
   try {
     isLoading.value = true;
-    const result: string[] = await invoke("query", {
+    const result = await invoke("query", {
       path: data.path,
       sqlQuery: sqlQuery.value,
-      write: data.write,
+      write,
       writeFormat: data.writeFormat,
       skipRows: data.skipRows,
-      schemaLength: data.schemaLength
+      varchar: data.varchar,
+      limit: data.limit
     });
-    const q = result.length > 0 ? result[0] : null;
-    if (q === "{}") {
-      throw new Error(`unsupported file type, invoke query return empty`);
-    }
-    const jsonData = JSON.parse(result[0]);
+
+    const q = result[0];
+    if (q === "{}") throw new Error("Unsupported file type");
+
+    const jsonData = JSON.parse(q);
     const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-    tableColumn.value = Object.keys(arrayData[0]).map(key => ({
-      name: key,
-      label: key,
-      prop: key
-    }));
-    tableData.value = markRaw(arrayData);
-    total.value = arrayData.length;
-    message(`Query done, elapsed time: ${result[1]} s`, { type: "success" });
-    isLoading.value = false;
+
+    // 仅在预览时更新表格
+    if (!write) {
+      tableColumn.value = Object.keys(arrayData[0]).map(key => ({
+        name: key,
+        label: key,
+        prop: key
+      }));
+      tableData.value = markRaw(arrayData);
+      total.value = arrayData.length;
+    }
+
+    if (write) {
+      message(`Export done, elapsed time: ${result[1]} s`, { type: "success" });
+    }
+
     return true;
   } catch (err) {
-    isLoading.value = false;
     message(err.toString(), { type: "error", duration: 5000 });
+    return false;
+  } finally {
+    isLoading.value = false;
   }
-  return false;
 }
 
+const queryData = () => executeQuery(false);
+const exportData = () => executeQuery(true);
 const selectViewFile = async () => {
   const fileSelect = await selectFile();
   if (fileSelect) {
@@ -175,7 +202,8 @@ async function selectFile() {
           write: false,
           writeFormat: "csv",
           skipRows: data.skipRows,
-          schemaLength: "0"
+          varchar: true,
+          limit: true
         });
         const q = result.length > 0 ? result[0] : null;
         if (q === "{}") {
@@ -262,154 +290,179 @@ const handleNodeClick = async data => {
     message(err.toString(), { type: "error", duration: 5000 });
   }
 };
+
+function limitRows() {
+  data.limit = !data.limit;
+  if (data.limit === true) {
+    limitContent.value = "limit 500";
+  } else {
+    limitContent.value = "not limit";
+  }
+}
+
+function allVarchar() {
+  data.varchar = !data.varchar;
+  if (data.varchar === true) {
+    varcharContent.value = "dtype: string";
+  } else {
+    varcharContent.value = "dtype: auto";
+  }
+}
 </script>
 
 <template>
   <el-form class="page-container" :style="{ height: dynamicHeight + 'px' }">
-    <div
-      style="
-        display: flex;
-        flex-direction: column;
-        height: calc(100% - 35px);
-        overflow: hidden;
-      "
-    >
-      <div style="flex: 0 0 50%; display: flex; overflow: hidden">
-        <div
-          style="
-            flex: 3;
-            box-sizing: border-box;
-            height: 100%;
-            overflow: hidden;
-          "
-        >
-          <VAceEditor
-            v-model:value="sqlQuery"
-            ref="editor"
-            lang="sql"
-            :options="{
-              useWorker: true,
-              enableBasicAutocompletion: true,
-              enableSnippets: true,
-              enableLiveAutocompletion: true,
-              customScrollbar: true,
-              showPrintMargin: false,
-              fontSize: '1.0rem'
-            }"
-            :key="counter"
-            @init="initializeEditor"
-            :theme="theme"
-            style="height: 100%"
-          />
-        </div>
-        <div
-          style="
-            flex: 1;
-            box-sizing: border-box;
-            height: 100%;
-            overflow: hidden;
-          "
-        >
-          <el-scrollbar style="height: 100%; overflow: auto">
-            <el-tree
-              :data="fileTreeData"
-              :props="defaultProps"
-              @node-click="handleNodeClick"
-              empty-text=""
-              style="max-height: 100%; overflow-y: auto"
-            />
-          </el-scrollbar>
-        </div>
-      </div>
-      <div
-        style="
-          flex: 0 0 50%;
-          box-sizing: border-box;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        "
-      >
-        <el-table
-          :data="pagedTableData"
-          border
-          empty-text=""
-          style="width: 100%"
-          show-overflow-tooltip
-          :height="dynamicHeight * 0.45"
-        >
-          >
-          <el-table-column
-            v-for="column in tableColumn"
-            :prop="column.prop"
-            :label="column.label"
-            :key="column.prop"
-            width="150px"
-          />
-        </el-table>
-      </div>
-    </div>
-    <div class="custom-container1" style="margin-bottom: -10px">
-      <div class="custom-container2">
-        <el-tooltip content="open file" effect="light">
-          <el-button @click="selectViewFile()" :icon="FolderOpened" circle />
-        </el-tooltip>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input
-            v-model="data.skipRows"
-            style="margin-left: 8px; width: 30px"
-          />
-        </el-tooltip>
-      </div>
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :pager-count="5"
-        :total="total"
-        layout="pager"
-        hide-on-single-page
-        :simplified="true"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-      <el-form-item>
-        <el-tooltip content="Export data or not" effect="light">
-          <el-switch
-            v-model="data.write"
-            inline-prompt
-            style="
-              --el-switch-on-color: #43cd80;
-              --el-switch-off-color: #b0c4de;
-            "
-            active-text="Y"
-            inactive-text="N"
-            :active-action-icon="Download"
-            :inactive-action-icon="View"
-          />
-        </el-tooltip>
-        <el-tooltip content="Export type" effect="light">
-          <el-select
-            v-model="data.writeFormat"
-            style="margin-left: 8px; width: 92px"
-          >
-            <el-option label="csv" value="csv" />
-            <el-option label="xlsx" value="xlsx" />
-            <el-option label="parquet" value="parquet" />
-            <el-option label="json" value="json" />
-            <el-option label="jsonl" value="jsonl" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="execute" effect="light">
-          <el-button
-            @click="queryViewData"
-            :loading="isLoading"
-            :icon="Search"
-            style="margin-left: 8px"
-            circle
-          />
-        </el-tooltip>
-      </el-form-item>
+    <div style="height: calc(100% - 0px)">
+      <el-splitter>
+        <el-splitter-panel size="15%">
+          <div style="display: flex; flex-direction: column; height: 100%">
+            <el-tooltip content="Add data" effect="light">
+              <el-button
+                @click="selectViewFile()"
+                :icon="FolderOpened"
+                circle
+                text
+              />
+            </el-tooltip>
+            <el-scrollbar style="flex: 1">
+              <el-tree
+                :data="fileTreeData"
+                :props="defaultProps"
+                @node-click="handleNodeClick"
+                empty-text=""
+              />
+            </el-scrollbar>
+          </div>
+        </el-splitter-panel>
+        <el-splitter-panel>
+          <el-splitter layout="vertical">
+            <el-splitter-panel :collapsible="true">
+              <div style="display: flex; flex-direction: column; height: 100%">
+                <div style="display: flex; align-items: center">
+                  <el-tooltip content="Run" effect="light">
+                    <el-button
+                      @click="queryViewData"
+                      :loading="isLoading"
+                      :icon="ArrowRight"
+                      circle
+                      text
+                    />
+                  </el-tooltip>
+                  <el-tooltip :content="limitContent" effect="light">
+                    <el-button @click="limitRows" circle text>
+                      <el-icon>
+                        <Hide v-if="data.limit" />
+                        <View v-else />
+                      </el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip :content="varcharContent" effect="light">
+                    <el-button @click="allVarchar" circle text>
+                      <el-icon>
+                        <NoSmoking v-if="data.varchar" />
+                        <Smoking v-else />
+                      </el-icon>
+                    </el-button>
+                  </el-tooltip>
+                </div>
+
+                <VAceEditor
+                  v-model:value="sqlQuery"
+                  ref="editor"
+                  lang="sql"
+                  :options="{
+                    useWorker: true,
+                    enableBasicAutocompletion: true,
+                    enableSnippets: true,
+                    enableLiveAutocompletion: true,
+                    customScrollbar: true,
+                    showPrintMargin: false,
+                    fontSize: '1.0rem'
+                  }"
+                  :key="counter"
+                  @init="initializeEditor"
+                  :theme="theme"
+                  style="height: 100%"
+                />
+              </div>
+            </el-splitter-panel>
+
+            <el-splitter-panel
+              :collapsible="true"
+              style="display: flex; flex-direction: column"
+            >
+              <div
+                style="
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  overflow: hidden;
+                "
+              >
+                <el-table :data="pagedTableData" height="100%">
+                  <el-table-column
+                    v-for="column in tableColumn"
+                    :prop="column.prop"
+                    :label="column.label"
+                    :key="column.prop"
+                    width="150px"
+                  />
+                </el-table>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-shrink: 0;
+                  "
+                >
+                  <el-pagination
+                    v-model:current-page="currentPage"
+                    v-model:page-size="pageSize"
+                    :total="total"
+                    :page-sizes="[10, 50, 100]"
+                    layout="total, sizes, prev, next, jumper"
+                    size="small"
+                    :simplified="true"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                  />
+                  <div style="display: flex; align-items: center">
+                    <el-tooltip content="Export type" effect="light">
+                      <el-select
+                        v-model="data.writeFormat"
+                        size="small"
+                        style="width: 90px"
+                      >
+                        <el-option label="csv" value="csv" />
+                        <el-option label="xlsx" value="xlsx" />
+                        <el-option label="parquet" value="parquet" />
+                        <el-option label="json" value="json" />
+                        <el-option label="jsonl" value="jsonl" />
+                      </el-select>
+                    </el-tooltip>
+                    <el-tooltip content="Export" effect="light">
+                      <el-button
+                        @click="exportData"
+                        :loading="isLoading"
+                        :icon="Download"
+                        circle
+                        text
+                      />
+                    </el-tooltip>
+                  </div>
+                </div>
+              </div>
+            </el-splitter-panel>
+          </el-splitter>
+        </el-splitter-panel>
+      </el-splitter>
     </div>
   </el-form>
 </template>
+
+<style>
+.ace_gutter {
+  background: transparent !important;
+}
+</style>

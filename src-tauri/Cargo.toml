@@ -31,7 +31,7 @@ tauri-build = { version = "2", features = [] }
 anyhow = "1"
 atoi_simd = "0.17.0"
 byteorder = "1.5.0"
-calamine = { version = "0.31.0", features = ["dates"] }
+calamine = { version = "0.32.0", features = ["dates"] }
 cpc = "1.9.3"
 chrono = "0.4.42"
 csv = "1.4.0"
@@ -56,10 +56,11 @@ polars = { version = "0.52.0", features = [
     "diagonal_concat",
     "cross_join",
     "semi_anti_join",
-    "dtype-decimal",
+    "dtype-full",
     "csv",
     "json",
     "parquet",
+    "rank"
     ] }
 rayon = "1.10.0"
 regex = "1.11.3"
@@ -74,7 +75,7 @@ sysinfo = "0.37.0"
 smallvec = "1.15.1"
 tempfile = "3.23.0"
 tokio = { version = "1.48.0", features = ["test-util"] }
-tauri = { version = "2.9.3", features = [] }
+tauri = { version = "2.9.4", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-process = "2"
