@@ -18,7 +18,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 
 const currentPage = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(50);
 const counter = ref(0);
 const total = ref(0);
 const tableColumn = shallowRef<any[]>([]);
@@ -178,8 +178,28 @@ async function selectFile() {
     multiple: true,
     filters: [
       {
-        name: "",
+        name: "All",
         extensions: ["*"]
+      },
+      {
+        name: "csv",
+        extensions: ["csv", "tsv", "psv", "txt", "dat"]
+      },
+      {
+        name: "excel",
+        extensions: ["xls", "xlsx", "xlsb", "xlsm", "ods"]
+      },
+      {
+        name: "json",
+        extensions: ["json"]
+      },
+      {
+        name: "jsonl",
+        extensions: ["jsonl", "ndjson"]
+      },
+      {
+        name: "parquet",
+        extensions: ["parquet"]
       }
     ]
   });
@@ -314,7 +334,7 @@ function allVarchar() {
   <el-form class="page-container" :style="{ height: dynamicHeight + 'px' }">
     <div style="height: calc(100% - 0px)">
       <el-splitter>
-        <el-splitter-panel size="15%">
+        <el-splitter-panel size="150">
           <div style="display: flex; flex-direction: column; height: 100%">
             <el-tooltip content="Add data" effect="light">
               <el-button
@@ -334,6 +354,7 @@ function allVarchar() {
             </el-scrollbar>
           </div>
         </el-splitter-panel>
+
         <el-splitter-panel>
           <el-splitter layout="vertical">
             <el-splitter-panel :collapsible="true">
@@ -388,7 +409,7 @@ function allVarchar() {
             </el-splitter-panel>
 
             <el-splitter-panel
-              :collapsible="true"
+              min="35"
               style="display: flex; flex-direction: column"
             >
               <div
@@ -420,8 +441,7 @@ function allVarchar() {
                     v-model:current-page="currentPage"
                     v-model:page-size="pageSize"
                     :total="total"
-                    :page-sizes="[10, 50, 100]"
-                    layout="total, sizes, prev, next, jumper"
+                    layout="total, prev, next, jumper"
                     size="small"
                     :simplified="true"
                     @size-change="handleSizeChange"

@@ -184,13 +184,13 @@ async fn prepare_query(
     };
 
     match file_extension.as_str() {
-      "parquet" | "json" | "jsonl" => {
-        vec_sep.push(b',');
-      }
-      _ => {
+      "csv" | "tsv" | "psv" | "txt" | "dat" => {
         let mut opts = CsvOptions::new(table);
         opts.set_skip_rows(skip_rows.parse::<usize>()?);
         vec_sep.push(opts.detect_separator()?);
+      }
+      _ => {
+        vec_sep.push(b',');
       }
     }
 
@@ -272,7 +272,7 @@ async fn prepare_query(
   } else {
     let json_res = match limit {
       true => query_df_to_json(df.head(Some(500)))?,
-      false => query_df_to_json(df)?
+      false => query_df_to_json(df)?,
     };
     Ok(json_res)
   }
@@ -313,7 +313,7 @@ pub async fn query(
     &write_format,
     skip_rows,
     varchar,
-    limit
+    limit,
   )
   .await
   {
