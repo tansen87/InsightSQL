@@ -137,7 +137,6 @@ async fn prepare_query(
   sql_query: &str,
   write: bool,
   write_format: &str,
-  skip_rows: String,
   varchar: bool,
   limit: bool,
 ) -> Result<String> {
@@ -185,8 +184,7 @@ async fn prepare_query(
 
     match file_extension.as_str() {
       "csv" | "tsv" | "psv" | "txt" | "dat" => {
-        let mut opts = CsvOptions::new(table);
-        opts.set_skip_rows(skip_rows.parse::<usize>()?);
+        let opts = CsvOptions::new(table);
         vec_sep.push(opts.detect_separator()?);
       }
       _ => {
@@ -210,7 +208,7 @@ async fn prepare_query(
         .finish()?
         .lazy(),
       "xls" | "xlsm" | "xlsb" | "ods" => ExcelReader::from_path(table)?
-        .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+        .worksheet_range_at(0, 0)?
         .to_df()?
         .lazy(),
       "xlsx" => {
@@ -222,10 +220,10 @@ async fn prepare_query(
 
         let df: DataFrame = match n {
           Some(n) => {
-            FastExcelReader::from_path(table)?.fast_to_df(n, skip_rows.parse::<usize>()?)?
+            FastExcelReader::from_path(table)?.fast_to_df(n, 0)?
           }
           None => ExcelReader::from_path(table)?
-            .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+            .worksheet_range_at(0, 0)?
             .to_df()?,
         };
         df.lazy()
@@ -237,7 +235,6 @@ async fn prepare_query(
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(infer_schema_length)
-          .with_skip_rows(skip_rows.parse::<usize>()?)
           .finish()?;
 
         csv_reader
@@ -298,7 +295,6 @@ pub async fn query(
   sql_query: String,
   write: bool,
   write_format: String,
-  skip_rows: String,
   varchar: bool,
   limit: bool,
 ) -> Result<(String, String), String> {
@@ -311,7 +307,6 @@ pub async fn query(
     &sql_query,
     write,
     &write_format,
-    skip_rows,
     varchar,
     limit,
   )

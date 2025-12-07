@@ -36,7 +36,6 @@ const data = reactive({
   path: "",
   write: false,
   writeFormat: "xlsx",
-  skipRows: "0",
   limit: true,
   varchar: true
 });
@@ -121,7 +120,6 @@ async function executeQuery(write: boolean): Promise<boolean> {
       sqlQuery: sqlQuery.value,
       write,
       writeFormat: data.writeFormat,
-      skipRows: data.skipRows,
       varchar: data.varchar,
       limit: data.limit
     });
@@ -221,7 +219,6 @@ async function selectFile() {
           sqlQuery: `select * from "${basename}" limit 10`,
           write: false,
           writeFormat: "csv",
-          skipRows: data.skipRows,
           varchar: true,
           limit: true
         });
