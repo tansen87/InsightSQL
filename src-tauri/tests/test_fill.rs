@@ -16,7 +16,7 @@ async fn test_fill() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  lib::cmd::fill::fill_null(
+  insight::cmd::fill::fill_null(
     file_path.to_str().unwrap(),
     "gender|age".to_string(),
     "unknown".to_string(),

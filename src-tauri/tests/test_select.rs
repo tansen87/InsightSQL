@@ -16,12 +16,12 @@ async fn test_select() -> anyhow::Result<()> {
   wtr.flush()?;
   let cols = "name|age".to_string();
 
-  lib::cmd::select::select_columns(
+  insight::cmd::select::select_columns(
     file_path.to_str().unwrap(),
     cols,
     "nil".into(),
     "include".into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?;
 

@@ -15,7 +15,7 @@ async fn test_replace() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  lib::cmd::replace::regex_replace(
+  insight::cmd::replace::regex_replace(
     file_path.to_str().unwrap(),
     "age".to_string(),
     r"^\d+$".to_string(),

@@ -219,16 +219,14 @@ async fn prepare_query(
           .and_then(|num_match| num_match.as_str().parse::<usize>().ok());
 
         let df: DataFrame = match n {
-          Some(n) => {
-            FastExcelReader::from_path(table)?.fast_to_df(n, 0)?
-          }
+          Some(n) => FastExcelReader::from_path(table)?.fast_to_df(n, 0)?,
           None => ExcelReader::from_path(table)?
             .worksheet_range_at(0, 0)?
             .to_df()?,
         };
         df.lazy()
       }
-      _ => {
+      "csv" | "tsv" | "psv" | "txt" | "dat" => {
         let p: Arc<Path> = Arc::from(PathBuf::from(table));
         let csv_reader = LazyCsvReader::new(PlPath::Local(p))
           .with_has_header(true)
@@ -238,6 +236,9 @@ async fn prepare_query(
           .finish()?;
 
         csv_reader
+      }
+      _ => {
+        return Err(anyhow!("Unsupported file extension: '{}'.", file_extension));
       }
     };
 
@@ -302,16 +303,7 @@ pub async fn query(
 
   let file_path: Vec<&str> = path.split('|').collect();
 
-  match prepare_query(
-    file_path,
-    &sql_query,
-    write,
-    &write_format,
-    varchar,
-    limit,
-  )
-  .await
-  {
+  match prepare_query(file_path, &sql_query, write, &write_format, varchar, limit).await {
     Ok(result) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

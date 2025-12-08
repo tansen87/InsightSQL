@@ -15,12 +15,12 @@ async fn test_pinyin() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  lib::cmd::pinyin::chinese_to_pinyin(
+  insight::cmd::pinyin::chinese_to_pinyin(
     file_path.to_str().unwrap(),
     "name|gender".to_string(),
     "nil",
     "upper",
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?;
 

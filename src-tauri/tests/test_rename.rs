@@ -15,11 +15,11 @@ async fn test_rename() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  lib::cmd::rename::rename_headers(
+  insight::cmd::rename::rename_headers(
     file_path.to_str().unwrap(),
     "first_name,years_old,sex".to_string(),
     "idx",
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?;
 

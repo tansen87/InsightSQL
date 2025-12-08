@@ -23,12 +23,12 @@ async fn test_skip() -> anyhow::Result<()> {
     .path()
     .join(format!("{parent_path}/{file_stem}.skip.csv"));
 
-  lib::cmd::skip::skip_csv(
+  insight::cmd::skip::skip_csv(
     file_path.to_str().unwrap(),
     file_name,
     2,
     "nil",
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?;
 

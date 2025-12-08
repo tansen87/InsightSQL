@@ -35,13 +35,13 @@ async fn test_equal() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string()];
 
-  let match_rows = lib::cmd::search::contains(
+  let match_rows = insight::cmd::search::contains(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -62,13 +62,13 @@ async fn test_not_equal() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string()];
 
-  let match_rows = lib::cmd::search::not_equal(
+  let match_rows = insight::cmd::search::not_equal(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -94,13 +94,13 @@ async fn test_contains() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["at".to_string()];
 
-  let match_rows = lib::cmd::search::contains(
+  let match_rows = insight::cmd::search::contains(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -121,13 +121,13 @@ async fn test_not_contains() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["at".to_string()];
 
-  let match_rows = lib::cmd::search::not_contains(
+  let match_rows = insight::cmd::search::not_contains(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -153,13 +153,13 @@ async fn test_starts_with() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string()];
 
-  let match_rows = lib::cmd::search::starts_with(
+  let match_rows = insight::cmd::search::starts_with(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -180,13 +180,13 @@ async fn test_not_starts_with() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string()];
 
-  let match_rows = lib::cmd::search::not_starts_with(
+  let match_rows = insight::cmd::search::not_starts_with(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -212,13 +212,13 @@ async fn test_ends_with() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["ick".to_string()];
 
-  let match_rows = lib::cmd::search::ends_with(
+  let match_rows = insight::cmd::search::ends_with(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -239,13 +239,13 @@ async fn test_not_ends_with() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["ick".to_string()];
 
-  let match_rows = lib::cmd::search::not_ends_with(
+  let match_rows = insight::cmd::search::not_ends_with(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -271,13 +271,13 @@ async fn test_regex() -> anyhow::Result<()> {
   let column = "name".to_string();
   let regex_char = r"^J.*".to_string(); // Matches any string that starts with 'J'
 
-  let match_rows = lib::cmd::search::regex_search(
+  let match_rows = insight::cmd::search::regex_search(
     path,
     sep,
     column,
     regex_char,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -298,13 +298,13 @@ async fn test_is_null() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["".to_string()];
 
-  let match_rows = lib::cmd::search::is_null(
+  let match_rows = insight::cmd::search::is_null(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -325,13 +325,13 @@ async fn test_is_not_null() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["".to_string()];
 
-  let match_rows = lib::cmd::search::is_not_null(
+  let match_rows = insight::cmd::search::is_not_null(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -358,13 +358,13 @@ async fn test_gt() -> anyhow::Result<()> {
   let column = "age".to_string();
   let conditions = "18".to_string();
 
-  let match_rows = lib::cmd::search::greater_than(
+  let match_rows = insight::cmd::search::greater_than(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -385,13 +385,13 @@ async fn test_ge() -> anyhow::Result<()> {
   let column = "age".to_string();
   let conditions = "18".to_string();
 
-  let match_rows = lib::cmd::search::greater_than_or_equal(
+  let match_rows = insight::cmd::search::greater_than_or_equal(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -417,13 +417,13 @@ async fn test_lt() -> anyhow::Result<()> {
   let column = "age".to_string();
   let conditions = "18".to_string();
 
-  let match_rows = lib::cmd::search::less_than(
+  let match_rows = insight::cmd::search::less_than(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -444,13 +444,13 @@ async fn test_le() -> anyhow::Result<()> {
   let column = "age".to_string();
   let conditions = "18".to_string();
 
-  let match_rows = lib::cmd::search::less_than_or_equal(
+  let match_rows = insight::cmd::search::less_than_or_equal(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -471,13 +471,13 @@ async fn test_between() -> anyhow::Result<()> {
   let column = "age".to_string();
   let conditions = vec!["18".to_string(), "19".to_string()];
 
-  let match_rows = lib::cmd::search::between(
+  let match_rows = insight::cmd::search::between(
     path,
     sep,
     column,
     conditions,
     output_path.clone().into(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -509,12 +509,12 @@ async fn test_equal_multi() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string(), "Jerry".to_string()];
 
-  let match_rows = lib::cmd::search::equal_multi(
+  let match_rows = insight::cmd::search::equal_multi(
     path,
     sep,
     column,
     conditions.clone(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -580,12 +580,12 @@ async fn test_contains_multi() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["To".to_string(), "Jer".to_string()];
 
-  let match_rows = lib::cmd::search::contains_multi(
+  let match_rows = insight::cmd::search::contains_multi(
     path,
     sep,
     column,
     conditions.clone(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -651,12 +651,12 @@ async fn test_starts_with_multi() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string(), "San".to_string()];
 
-  let match_rows = lib::cmd::search::starts_with_multi(
+  let match_rows = insight::cmd::search::starts_with_multi(
     path,
     sep,
     column,
     conditions.clone(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;
@@ -722,12 +722,12 @@ async fn test_ends_with_multi() -> anyhow::Result<()> {
   let column = "name".to_string();
   let conditions = vec!["ick".to_string(), "dy".to_string()];
 
-  let match_rows = lib::cmd::search::ends_with_multi(
+  let match_rows = insight::cmd::search::ends_with_multi(
     path,
     sep,
     column,
     conditions.clone(),
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?
   .parse::<usize>()?;

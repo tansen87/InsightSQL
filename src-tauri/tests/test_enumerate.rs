@@ -15,10 +15,10 @@ async fn test_enumerate() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  lib::cmd::enumerate::enumerate_index(
+  insight::cmd::enumerate::enumerate_index(
     file_path.to_str().unwrap(),
     "nil",
-    lib::utils::MockEmitter::default(),
+    insight::utils::MockEmitter::default(),
   )
   .await?;
 

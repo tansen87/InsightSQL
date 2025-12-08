@@ -16,7 +16,6 @@ pub mod select;
 pub mod skip;
 pub mod sort;
 pub mod split;
-pub mod sqlp;
 pub mod string;
 pub mod transpose;
 pub mod traverse;

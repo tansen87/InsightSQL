@@ -20,12 +20,12 @@ async fn test_split_rows() -> anyhow::Result<()> {
 
   let size: usize = 2;
 
-  let csv_options = lib::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
+  let csv_options = insight::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_stem}");
 
-  lib::cmd::split::sequential_split_rows(csv_options, size.try_into()?, &output_path).await?;
+  insight::cmd::split::sequential_split_rows(csv_options, size.try_into()?, &output_path).await?;
 
   let output_files: Vec<_> = std::fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
@@ -78,12 +78,12 @@ async fn test_split_lines() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  let csv_options = lib::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
+  let csv_options = insight::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_stem}");
 
-  lib::cmd::split::split_lines(csv_options, 2, &output_path).await?;
+  insight::cmd::split::split_lines(csv_options, 2, &output_path).await?;
 
   let output_files: Vec<_> = std::fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)

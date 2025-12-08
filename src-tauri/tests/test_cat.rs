@@ -24,7 +24,7 @@ async fn test_cat_csv() -> anyhow::Result<()> {
   ));
   let p1 = file_path1.to_string_lossy().to_string();
   let p2 = file_path2.to_string_lossy().to_string();
-  lib::cmd::cat::cat_with_csv(
+  insight::cmd::cat::cat_with_csv(
     format!("{p1}|{p2}"),
     "0".to_string(),
     output_path.to_string_lossy().to_string(),

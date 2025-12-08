@@ -3,33 +3,53 @@
   windows_subsystem = "windows"
 )]
 
-use lib::command;
-use lib::flow;
+use insight::command;
+use insight::flow;
+use insight::sql;
 
-use lib::cmd::apply;
-use lib::cmd::cat;
-use lib::cmd::convert;
-use lib::cmd::count;
-use lib::cmd::enumerate;
-use lib::cmd::extsort;
-use lib::cmd::fill;
-use lib::cmd::idx;
-use lib::cmd::join;
-use lib::cmd::pinyin;
-use lib::cmd::rename;
-use lib::cmd::replace;
-use lib::cmd::reverse;
-use lib::cmd::search;
-use lib::cmd::select;
-use lib::cmd::skip;
-use lib::cmd::sort;
-use lib::cmd::split;
-use lib::cmd::sqlp;
-use lib::cmd::string;
-use lib::cmd::transpose;
-use lib::cmd::traverse;
+use insight::cmd::apply;
+use insight::cmd::cat;
+use insight::cmd::convert;
+use insight::cmd::count;
+use insight::cmd::enumerate;
+use insight::cmd::extsort;
+use insight::cmd::fill;
+use insight::cmd::idx;
+use insight::cmd::join;
+use insight::cmd::pinyin;
+use insight::cmd::rename;
+use insight::cmd::replace;
+use insight::cmd::reverse;
+use insight::cmd::search;
+use insight::cmd::select;
+use insight::cmd::skip;
+use insight::cmd::sort;
+use insight::cmd::split;
+use insight::cmd::string;
+use insight::cmd::transpose;
+use insight::cmd::traverse;
 
 fn main() {
+  #[cfg(debug_assertions)]
+  {
+    use std::io::Write;
+
+    env_logger::Builder::new()
+      .filter_module("insight", log::LevelFilter::Debug)
+      .format(|buf, record| {
+        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        writeln!(
+          buf,
+          "[{} {} {}] {}",
+          now,
+          record.level(),
+          record.target(),
+          record.args()
+        )
+      })
+      .init();
+  }
+
   tauri::Builder::default()
     .plugin(tauri_plugin_os::init())
     .plugin(tauri_plugin_http::init())
@@ -74,7 +94,7 @@ fn main() {
       select::select,
       sort::sort,
       split::split,
-      sqlp::query,
+      sql::sqlp::query,
       string::str_pad,
       string::str_slice,
       string::str_split,

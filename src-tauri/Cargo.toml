@@ -12,8 +12,8 @@ rust-version = "1.89.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "lib"
-path = "src/lib/mod.rs"
+name = "insight"
+path = "src/insight/mod.rs"
 crate-type = ["lib", "staticlib", "cdylib"]
 
 [profile.release]
@@ -40,6 +40,7 @@ dbase = { version = "0.6.1", features = ["encoding_rs"] }
 dynfmt = { version = "0.1.5", default-features = false, features = ["curly"] }
 encoding_rs = "0.8"
 encoding_rs_io = "0.1.7"
+env_logger = "0.11"
 ext-sort = { version = "0.1.5", default-features = false }
 indexmap = { version = "2.12.0", features = ["serde"] }
 itoa = "1"

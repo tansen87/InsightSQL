@@ -29,7 +29,7 @@ fn create_temp_csv() -> anyhow::Result<(
     .to_string_lossy()
     .to_string();
 
-  let mut csv_options = lib::io::csv::options::CsvOptions::new(file_path);
+  let mut csv_options = insight::io::csv::options::CsvOptions::new(file_path);
   csv_options.set_skip_rows(1);
   let rdr = csv::ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
@@ -44,7 +44,7 @@ fn create_temp_csv() -> anyhow::Result<(
 async fn test_slice_left() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::slice::slice_nchar(rdr, wtr, "name", 1, false, "left").await?;
+  insight::cmd::string::slice::slice_nchar(rdr, wtr, "name", 1, false, "left").await?;
 
   let context = std::fs::read_to_string(output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -63,7 +63,7 @@ async fn test_slice_left() -> anyhow::Result<()> {
 async fn test_slice_right() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::slice::slice_nchar(rdr, wtr, "name", 1, false, "right").await?;
+  insight::cmd::string::slice::slice_nchar(rdr, wtr, "name", 1, false, "right").await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -82,7 +82,7 @@ async fn test_slice_right() -> anyhow::Result<()> {
 async fn test_split_n() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::split::split_n(rdr, wtr, "name", 2, "-").await?;
+  insight::cmd::string::split::split_n(rdr, wtr, "name", 2, "-").await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -101,7 +101,7 @@ async fn test_split_n() -> anyhow::Result<()> {
 async fn test_split_max() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::split::split_max(rdr, wtr, "name", 2, "-").await?;
+  insight::cmd::string::split::split_max(rdr, wtr, "name", 2, "-").await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -120,7 +120,7 @@ async fn test_split_max() -> anyhow::Result<()> {
 async fn test_slice() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  lib::cmd::string::slice::slice(rdr, wtr, "name", 2, 3, false).await?;
+  insight::cmd::string::slice::slice(rdr, wtr, "name", 2, 3, false).await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
