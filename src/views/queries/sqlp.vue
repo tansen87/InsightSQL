@@ -17,11 +17,12 @@ import fileTextIcon from "@iconify-icons/ri/file-text-line";
 import fileExcelIcon from "@iconify-icons/ri/file-excel-2-line";
 import fileJsonIcon from "@iconify-icons/ri/file-code-line";
 import fileParquetIcon from "@iconify-icons/ri/database-2-line";
-import textIcon from "@iconify-icons/ri/text"; // 字符串
-import numberIcon from "@iconify-icons/ri/numbers-line"; // 数值
-import boolIcon from "@iconify-icons/ri/checkbox-circle-line"; // 布尔
-import dataIcon from "@iconify-icons/ri/calendar-event-line"; // 时间
-import listIcon from "@iconify-icons/ri/list-unordered"; // 列表/数组
+import textIcon from "@iconify-icons/ri/text";
+import intIcon from "@iconify-icons/ri/number-1";
+import floatIcon from "@iconify-icons/ri/hashtag";
+import boolIcon from "@iconify-icons/ri/checkbox-circle-line";
+import dateIcon from "@iconify-icons/ri/calendar-event-line";
+import listIcon from "@iconify-icons/ri/list-unordered";
 import unknowIcon from "@iconify-icons/ri/question-mark";
 import { VAceEditor } from "vue3-ace-editor";
 import { useDark } from "@pureadmin/utils";
@@ -341,9 +342,10 @@ const getFileIcon = (ext: string) => {
 const getFieldIcon = (dtype: string) => {
   const d = dtype.toLowerCase();
   if (d.includes("str") || d.includes("utf8")) return textIcon;
-  if (d.includes("i64") || d.includes("f64")) return numberIcon;
+  if (d.includes("i64")) return intIcon;
+  if (d.includes("f64")) return floatIcon;
   if (d.includes("bool")) return boolIcon;
-  if (d.includes("date") || d.includes("time")) return dataIcon;
+  if (d.includes("date") || d.includes("time")) return dateIcon;
   if (d.includes("list") || d.includes("struct")) return listIcon;
   return unknowIcon;
 };
@@ -415,9 +417,9 @@ function allVarchar() {
                   <span class="flex items-center">
                     <Icon
                       :icon="getNodeIcon(data)"
-                      width="16"
-                      height="16"
-                      class="mr-2"
+                      width="14"
+                      height="14"
+                      class="mr-1"
                     />
                     <span>{{ data.label }}</span>
                   </span>

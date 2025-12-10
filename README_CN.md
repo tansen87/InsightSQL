@@ -7,7 +7,7 @@
 
 ## 📷截图
 * Polars SQL for query
-  ![sqlp.gif](/docs/img/sqlp.gif)
+  ![sqlp.gif](/docs/img/sqlp.mp4)
 
 * Flow
   ![flow.gif](/docs/img/flow.gif)
