@@ -6,7 +6,6 @@ use std::{
   num::NonZero,
   path::{Path, PathBuf},
   sync::Arc,
-  time::Instant,
 };
 
 use anyhow::{Result, anyhow};
@@ -18,6 +17,7 @@ use polars::{
   },
   sql::SQLContext,
 };
+use serde::Serialize;
 
 use crate::io::excel::excel_reader::{
   ExcelReader, FastExcelReader, FastToDataFrame, ToPolarsDataFrame,
@@ -27,6 +27,12 @@ use crate::{
   io::csv::options::CsvOptions,
   utils::{BUFFER_SIZE, EXCEL_MAX_ROW},
 };
+
+#[derive(Serialize)]
+struct QueryResult {
+  data: String,
+  schema: HashMap<String, String>,
+}
 
 trait FileWriter {
   fn write_xlsx(&self, df: &DataFrame, output_path: impl AsRef<Path>) -> Result<()>;
@@ -141,8 +147,8 @@ async fn prepare_query(
   limit: bool,
 ) -> Result<String> {
   let infer_schema_length = match varchar {
-    true => Some(0),
-    false => Some(1000),
+    true => 0,
+    false => 1000,
   };
 
   let mut ctx = SQLContext::new();
@@ -199,12 +205,12 @@ async fn prepare_query(
       }
       "json" => JsonReader::new(BufReader::new(File::open(table)?))
         .with_json_format(JsonFormat::Json)
-        .infer_schema_len(NonZero::new(infer_schema_length.unwrap_or(0)))
+        .infer_schema_len(NonZero::new(infer_schema_length))
         .finish()?
         .lazy(),
       "jsonl" => JsonReader::new(BufReader::new(File::open(table)?))
         .with_json_format(JsonFormat::JsonLines)
-        .infer_schema_len(NonZero::new(infer_schema_length.unwrap_or(0)))
+        .infer_schema_len(NonZero::new(infer_schema_length))
         .finish()?
         .lazy(),
       "xls" | "xlsm" | "xlsb" | "ods" => ExcelReader::from_path(table)?
@@ -232,7 +238,7 @@ async fn prepare_query(
           .with_has_header(true)
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
-          .with_infer_schema_length(infer_schema_length)
+          .with_infer_schema_length(Some(infer_schema_length))
           .finish()?;
 
         csv_reader
@@ -268,12 +274,25 @@ async fn prepare_query(
       .write_dataframe(df, output_path)?;
     Ok("[]".to_string())
   } else {
-    let json_res = match limit {
+    let schema = extract_schema(&df);
+    let data_json = match limit {
       true => query_df_to_json(df.head(Some(500)))?,
       false => query_df_to_json(df)?,
     };
-    Ok(json_res)
+
+    let res = QueryResult {
+      data: data_json,
+      schema,
+    };
+    Ok(serde_json::to_string(&res)?)
   }
+}
+
+fn extract_schema(df: &DataFrame) -> HashMap<String, String> {
+  df.schema()
+    .iter()
+    .map(|(col, dtype)| (col.to_string(), dtype.to_string()))
+    .collect()
 }
 
 fn query_df_to_json(mut df: DataFrame) -> Result<String> {
@@ -298,18 +317,11 @@ pub async fn query(
   write_format: String,
   varchar: bool,
   limit: bool,
-) -> Result<(String, String), String> {
-  let start_time = Instant::now();
-
+) -> Result<String, String> {
   let file_path: Vec<&str> = path.split('|').collect();
 
   match prepare_query(file_path, &sql_query, write, &write_format, varchar, limit).await {
-    Ok(result) => {
-      let end_time = Instant::now();
-      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      let runtime = format!("{elapsed_time:.2}");
-      Ok((result, runtime))
-    }
+    Ok(result) => Ok(result),
     Err(err) => Err(format!("{err}")),
   }
 }

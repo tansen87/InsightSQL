@@ -17,7 +17,7 @@ export function useLayout() {
     /** 导航 */
     if (!$storage.layout) {
       $storage.layout = {
-        layout: $config?.Layout ?? "vertical",
+        layout: $config?.Layout ?? "horizontal",
         theme: $config?.Theme ?? "default",
         darkMode: $config?.DarkMode ?? false,
         sidebarStatus: $config?.SidebarStatus ?? true,
