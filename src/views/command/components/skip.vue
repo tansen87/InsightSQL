@@ -8,10 +8,11 @@ import {
   Loading,
   Select,
   CloseBold,
-  Delete,
-  Link
+  Link,
+  ArrowRight
 } from "@element-plus/icons-vue";
 import { useDynamicHeight, updateEvent } from "@/utils/utils";
+import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import { useMarkdown, mdSkip } from "@/utils/markdown";
@@ -19,9 +20,14 @@ import { useMarkdown, mdSkip } from "@/utils/markdown";
 const path = ref("");
 const fileSelect = ref([]);
 const [skipRows, progress] = [ref("1"), ref("nil")];
+const pgsOptions = [
+  { label: "Nil", value: "nil" },
+  { label: "Idx", value: "idx" }
+];
 const [dialog, isLoading] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(143);
+const { dynamicHeight } = useDynamicHeight(122);
 const { mdShow } = useMarkdown(mdSkip);
+const { isDark } = useDark();
 
 listen("update-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
@@ -88,88 +94,122 @@ async function skipLines() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input v-model="skipRows" style="margin-left: 8px; width: 50px" />
-        </el-tooltip>
-        <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="progress" style="margin-left: 8px; width: 70px">
-            <el-option label="idx" value="idx" />
-            <el-option label="nil" value="nil" />
-          </el-select>
-        </el-tooltip>
-      </div>
-      <el-button
-        @click="skipLines()"
-        :loading="isLoading"
-        :icon="Delete"
-        style="margin-left: 8px"
-      >
-        Skip
-      </el-button>
-    </div>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="160" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
 
-    <el-table
-      :data="fileSelect"
-      :height="dynamicHeight"
-      style="width: 100%"
-      empty-text=""
-    >
-      <el-table-column type="index" width="50" />
-      <el-table-column prop="filename" label="File" style="width: 80%" />
-      <el-table-column prop="status" label="Status" width="70">
-        <template #default="scope">
-          <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
-            <Loading />
-          </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'success'" color="#00CD66">
-            <Select />
-          </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
-            <CloseBold />
-          </ElIcon>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="message"
-        label="Message"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 60%"
-      >
-        <template #default="scope">
-          <span v-if="scope.row.status === 'error'">
-            {{ scope.row.message }}
-          </span>
-          <el-progress
-            v-if="
-              scope.row.totalRows !== 0 &&
-              isFinite(scope.row.currentRows / scope.row.totalRows)
-            "
-            :percentage="
-              Math.round((scope.row.currentRows / scope.row.totalRows) * 100)
-            "
+          <el-tooltip
+            content="if nil, no progress bar"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle">
+              <span
+                v-for="item in pgsOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: progress === item.value,
+                  'active-dark': isDark && progress === item.value
+                }"
+                @click="progress = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-tooltip content="skip rows" effect="light" placement="right">
+            <el-input
+              v-model="skipRows"
+              style="margin-left: 8px; margin-top: 8px; width: 140px"
+            />
+          </el-tooltip>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Skip</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="skipLines()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
           />
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2" />
-      <el-link @click="dialog = true" :icon="Link">
-        <span>
-          About
-          <span style="color: skyblue; font-weight: bold">Skip</span>
-        </span>
-      </el-link>
-    </div>
+        </el-tooltip>
+
+        <el-table
+          :data="fileSelect"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column type="index" width="35" />
+          <el-table-column prop="filename" label="File" style="width: 80%" />
+          <el-table-column prop="status" label="Status" width="70">
+            <template #default="scope">
+              <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
+                <Loading />
+              </ElIcon>
+              <ElIcon
+                v-else-if="scope.row.status === 'success'"
+                color="#00CD66"
+              >
+                <Select />
+              </ElIcon>
+              <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
+                <CloseBold />
+              </ElIcon>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="message"
+            label="Message"
+            :class="{ 'custom-width': true }"
+            style="flex: 0 0 60%"
+          >
+            <template #default="scope">
+              <span v-if="scope.row.status === 'error'">
+                {{ scope.row.message }}
+              </span>
+              <el-progress
+                v-if="
+                  scope.row.totalRows !== 0 &&
+                  isFinite(scope.row.currentRows / scope.row.totalRows)
+                "
+                :percentage="
+                  Math.round(
+                    (scope.row.currentRows / scope.row.totalRows) * 100
+                  )
+                "
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog v-model="dialog" title="Skip - Skip rows from CSV" width="800">
       <el-scrollbar :height="dynamicHeight * 0.8">
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 140px;
+}
+</style>

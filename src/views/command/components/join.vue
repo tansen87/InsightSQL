@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Connection, Link } from "@element-plus/icons-vue";
-import { shortFileName, useDynamicHeight } from "@/utils/utils";
+import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdJoin, useMarkdown } from "@/utils/markdown";
@@ -10,6 +11,10 @@ import { mdJoin, useMarkdown } from "@/utils/markdown";
 const joinType = ref("left");
 const [sel1, sel2] = [ref(""), ref("")];
 const [dialog, isLoading, nulls] = [ref(false), ref(false), ref(false)];
+const nullOptions = [
+  { label: "True", value: true },
+  { label: "False", value: false }
+];
 const [
   tableHeader1,
   tableHeader2,
@@ -19,8 +24,9 @@ const [
   tableData2
 ] = [ref([]), ref([]), ref([]), ref([]), ref([]), ref([])];
 const data = reactive({ path1: "", path2: "" });
-const { dynamicHeight } = useDynamicHeight(194);
+const { dynamicHeight } = useDynamicHeight(84);
 const { mdShow } = useMarkdown(mdJoin);
+const { isDark } = useDark();
 
 async function selectFile(fileIndex: number) {
   const selectColumn = fileIndex === 1 ? sel1 : sel2;
@@ -78,133 +84,179 @@ async function joinData() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile(1)" :icon="FolderOpened">
-          File 1
-        </el-button>
-        <el-button @click="selectFile(2)" :icon="FolderOpened">
-          File 2
-        </el-button>
-      </div>
-      <el-link @click="dialog = true" :icon="Link">
-        <span>
-          About
-          <span style="color: skyblue; font-weight: bold">Join</span>
-        </span>
-      </el-link>
-    </div>
-    <div class="custom-container1">
-      <div class="custom-container2" style="margin-top: 10px">
-        <el-tooltip content="column of file1" effect="light">
-          <el-select
-            v-model="sel1"
-            filterable
-            style="width: 200px; margin-right: 10px"
-            placeholder="column of file1"
+  <el-form class="page-container" :style="{ height: dynamicHeight + 'px' }">
+    <el-splitter>
+      <el-splitter-panel size="180" :resizable="false">
+        <div class="splitter-container">
+          <div class="button-row">
+            <el-tooltip content="Add data 1" effect="light">
+              <el-button
+                @click="selectFile(1)"
+                :icon="FolderOpened"
+                circle
+                text
+              />
+            </el-tooltip>
+            <el-tooltip content="Add data 2" effect="light">
+              <el-button
+                @click="selectFile(2)"
+                :icon="FolderOpened"
+                circle
+                text
+              />
+            </el-tooltip>
+          </div>
+
+          <el-tooltip
+            content="column of file1"
+            effect="light"
+            placement="right"
           >
-            <el-option
-              v-for="item in tableHeader1"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="column of file2" effect="light">
-          <el-select
-            v-model="sel2"
-            filterable
-            style="width: 200px; margin-right: 10px"
-            placeholder="column of file2"
+            <el-select
+              v-model="sel1"
+              filterable
+              style="width: 160px; margin-left: 8px"
+              placeholder="column of file1"
+            >
+              <el-option
+                v-for="item in tableHeader1"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-tooltip>
+
+          <el-tooltip
+            content="column of file2"
+            effect="light"
+            placement="right"
           >
-            <el-option
-              v-for="item in tableHeader2"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip
-          content="When set true, joins will work on empty fields"
-          effect="light"
-        >
-          <el-select v-model="nulls" style="width: 100px">
-            <el-option label="true" :value="true" />
-            <el-option label="false" :value="false" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="join type" effect="light">
-          <el-select v-model="joinType" style="width: 100px; margin-left: 10px">
-            <el-option label="left" value="left" />
-            <el-option label="right" value="right" />
-            <el-option label="full" value="full" />
-            <el-option label="cross" value="cross" />
-            <el-option label="inner" value="inner" />
-            <el-option label="left-semi" value="left_semi" />
-            <el-option label="left-anti" value="left_anti" />
-            <el-option label="right-semi" value="right_semi" />
-            <el-option label="right-anti" value="right_anti" />
-          </el-select>
-        </el-tooltip>
-      </div>
-      <el-button
-        @click="joinData()"
-        :loading="isLoading"
-        :icon="Connection"
-        style="margin-top: 10px"
-      >
-        Join
-      </el-button>
-    </div>
-    <div
-      style="display: flex; justify-content: space-between; margin-top: 10px"
-    >
-      <div style="display: flex; flex-direction: column; width: 49%">
-        <el-table
-          :data="tableData1"
-          :height="dynamicHeight"
-          border
-          empty-text=""
-          style="width: 100%"
-        >
-          <el-table-column
-            v-for="column in tableColumn1"
-            :prop="column.prop"
-            :label="column.label"
-            :key="column.prop"
-          />
-        </el-table>
-      </div>
-      <div style="display: flex; flex-direction: column; width: 49%">
-        <el-table
-          :data="tableData2"
-          :height="dynamicHeight"
-          border
-          empty-text=""
-          style="width: 100%"
-        >
-          <el-table-column
-            v-for="column in tableColumn2"
-            :prop="column.prop"
-            :label="column.label"
-            :key="column.prop"
-          />
-        </el-table>
-      </div>
-    </div>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-tooltip :content="data.path1" effect="light">
-          <el-text>{{ shortFileName(data.path1) }}</el-text>
-        </el-tooltip>
-      </div>
-      <el-tooltip :content="data.path2" effect="light">
-        <el-text>{{ shortFileName(data.path2) }}</el-text>
-      </el-tooltip>
-    </div>
+            <el-select
+              v-model="sel2"
+              filterable
+              style="width: 160px; margin-left: 8px; margin-top: 8px"
+              placeholder="column of file2"
+            >
+              <el-option
+                v-for="item in tableHeader2"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-tooltip>
+
+          <el-tooltip
+            content="When set True, joins will work on empty fields"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle" style="margin-top: 8px">
+              <span
+                v-for="item in nullOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: nulls === item.value,
+                  'active-dark': isDark && nulls === item.value
+                }"
+                @click="nulls = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-tooltip content="Join type" effect="light" placement="right">
+            <el-select
+              v-model="joinType"
+              style="width: 160px; margin-left: 8px; margin-top: 8px"
+            >
+              <el-option label="left" value="left" />
+              <el-option label="right" value="right" />
+              <el-option label="full" value="full" />
+              <el-option label="cross" value="cross" />
+              <el-option label="inner" value="inner" />
+              <el-option label="left-semi" value="left_semi" />
+              <el-option label="left-anti" value="left_anti" />
+              <el-option label="right-semi" value="right_semi" />
+              <el-option label="right-anti" value="right_anti" />
+            </el-select>
+          </el-tooltip>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Join</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-splitter layout="vertical">
+          <el-splitter-panel size="33" :resizable="false">
+            <el-tooltip content="Run" effect="light" placement="right">
+              <el-button
+                @click="joinData()"
+                :loading="isLoading"
+                :icon="ArrowRight"
+                circle
+                text
+              />
+            </el-tooltip>
+          </el-splitter-panel>
+
+          <el-splitter-panel :resizable="false">
+            <el-table
+              :data="tableData1"
+              :height="dynamicHeight / 2 - 49"
+              empty-text="data 1"
+              show-overflow-tooltip
+            >
+              <el-table-column
+                v-for="column in tableColumn1"
+                :prop="column.prop"
+                :label="column.label"
+                :key="column.prop"
+              />
+            </el-table>
+
+            <el-text>
+              <el-icon style="margin-left: 8px">
+                <Files />
+              </el-icon>
+              {{ data.path1 }}
+            </el-text>
+          </el-splitter-panel>
+
+          <el-splitter-panel :resizable="false">
+            <el-table
+              :data="tableData2"
+              :height="dynamicHeight / 2 - 49"
+              empty-text="data 2"
+              show-overflow-tooltip
+            >
+              <el-table-column
+                v-for="column in tableColumn2"
+                :prop="column.prop"
+                :label="column.label"
+                :key="column.prop"
+              />
+            </el-table>
+
+            <el-text>
+              <el-icon style="margin-left: 8px">
+                <Files />
+              </el-icon>
+              {{ data.path2 }}
+            </el-text>
+          </el-splitter-panel>
+        </el-splitter>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Join - Joins two sets of CSV data on the specified columns"
@@ -214,5 +266,15 @@ async function joinData() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 160px;
+}
+.button-row {
+  display: flex;
+  align-items: center;
+}
+</style>

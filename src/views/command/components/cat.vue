@@ -123,7 +123,7 @@ async function concatData() {
   <el-form class="page-container" :style="dynamicHeight">
     <el-splitter>
       <el-splitter-panel size="240" :resizable="false">
-        <div style="display: flex; flex-direction: column; height: 100%">
+        <div class="splitter-container">
           <el-tooltip content="Add data" effect="light">
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>

@@ -6,8 +6,10 @@ import {
   FolderOpened,
   Link,
   CirclePlus,
-  Remove
+  Remove,
+  Files
 } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
@@ -36,9 +38,15 @@ const [path, comparand, replacement, formatstr, backendInfo] = [
   ref("")
 ];
 const mode = ref("operations");
+const modeOptions = [
+  { label: "Operations", value: "operations" },
+  { label: "CalcConv", value: "calcconv" },
+  { label: "DynFmt", value: "cat" }
+];
 const columnContent = ref("no column");
 const columns = ref<CheckboxValueType[]>([]);
-const { dynamicHeight } = useDynamicHeight(256);
+const { dynamicHeight } = useDynamicHeight(146);
+const { isDark } = useDark();
 watch(columns, val => {
   if (val.length === 0) {
     checkAll.value = false;
@@ -121,140 +129,163 @@ function addNewColumn() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-tabs v-model="mode">
-          <el-tab-pane name="operations" label="Operations" />
-          <el-tab-pane name="calcconv" label="CalcConv" />
-          <el-tab-pane name="cat" label="Concat" />
-        </el-tabs>
-      </div>
-      <el-link @click="dialog = true" :icon="Link">
-        <span v-if="backendCompleted"> {{ backendInfo }} </span>
-        <el-tooltip :content="path" effect="light">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Apply</span>
-          </span>
-        </el-tooltip>
-      </el-link>
-    </div>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-tooltip content="Add data" effect="light">
-          <el-button @click="selectFile()" :icon="FolderOpened" text circle />
-        </el-tooltip>
-        <el-tooltip :content="columnContent" effect="light">
-          <el-button @click="addNewColumn" text circle>
-            <el-icon>
-              <CirclePlus v-if="newColumn" />
-              <Remove v-else />
-            </el-icon>
-          </el-button>
-        </el-tooltip>
-      </div>
-      <el-tooltip content="Run" effect="light">
-        <el-button
-          @click="applyData()"
-          :loading="isLoading"
-          :icon="ArrowRight"
-          text
-          circle
-        />
-      </el-tooltip>
-    </div>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="260" :resizable="false">
+        <div class="splitter-container">
+          <div class="button-row">
+            <el-tooltip content="Add data" effect="light">
+              <el-button
+                @click="selectFile()"
+                :icon="FolderOpened"
+                text
+                circle
+              />
+            </el-tooltip>
+            <el-tooltip :content="columnContent" effect="light">
+              <el-button @click="addNewColumn" text circle>
+                <el-icon>
+                  <CirclePlus v-if="newColumn" />
+                  <Remove v-else />
+                </el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
 
-    <div class="custom-container1">
-      <el-select
-        v-model="columns"
-        filterable
-        multiple
-        placeholder="Select column(s)"
-      >
-        <template #header>
-          <el-checkbox
-            v-model="checkAll"
-            :indeterminate="indeterminate"
-            @change="handleCheckAll"
+          <div class="mode-toggle">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+
+          <el-select
+            v-model="columns"
+            filterable
+            multiple
+            placeholder="Select column(s)"
+            style="margin-top: 8px; margin-left: 8px; width: 240px"
           >
-            All
-          </el-checkbox>
-        </template>
-        <el-option
-          v-for="item in tableHeader"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
-        />
-      </el-select>
-      <el-select
-        v-if="mode === 'operations'"
-        v-model="operations"
-        filterable
-        multiple
-        placeholder="Operations"
-        style="margin-left: 5px"
-      >
-        <el-option label="Copy" value="copy" />
-        <el-option label="Len" value="len" />
-        <el-option label="Lower" value="lower" />
-        <el-option label="Upper" value="upper" />
-        <el-option label="Trim" value="trim" />
-        <el-option label="Ltrim" value="ltrim" />
-        <el-option label="Rtrim" value="rtrim" />
-        <el-option label="Replace" value="replace" />
-        <el-option label="Round" value="round" />
-        <el-option label="Squeeze" value="squeeze" />
-        <el-option label="Strip" value="strip" />
-        <el-option label="Reverse" value="reverse" />
-        <el-option label="Abs" value="abs" />
-        <el-option label="Neg" value="neg" />
-      </el-select>
-    </div>
+            <template #header>
+              <el-checkbox
+                v-model="checkAll"
+                :indeterminate="indeterminate"
+                @change="handleCheckAll"
+              >
+                All
+              </el-checkbox>
+            </template>
+            <el-option
+              v-for="item in tableHeader"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
 
-    <div class="custom-container1">
-      <template v-if="['operations'].includes(mode)">
-        <el-tooltip content="replace - from" effect="light">
-          <el-input
-            v-model="comparand"
-            style="margin-top: 8px"
-            placeholder="replace - from"
+          <el-select
+            v-if="mode === 'operations'"
+            v-model="operations"
+            filterable
+            multiple
+            placeholder="Operations"
+            style="margin-top: 8px; margin-left: 8px; width: 240px"
+          >
+            <el-option label="Copy" value="copy" />
+            <el-option label="Len" value="len" />
+            <el-option label="Lower" value="lower" />
+            <el-option label="Upper" value="upper" />
+            <el-option label="Trim" value="trim" />
+            <el-option label="Ltrim" value="ltrim" />
+            <el-option label="Rtrim" value="rtrim" />
+            <el-option label="Replace" value="replace" />
+            <el-option label="Round" value="round" />
+            <el-option label="Squeeze" value="squeeze" />
+            <el-option label="Strip" value="strip" />
+            <el-option label="Reverse" value="reverse" />
+            <el-option label="Abs" value="abs" />
+            <el-option label="Neg" value="neg" />
+          </el-select>
+
+          <div style="margin-top: 8px; margin-left: 8px; width: 240px">
+            <template
+              v-if="
+                ['operations'].includes(mode) && operations.includes('replace')
+              "
+            >
+              <el-tooltip content="old" effect="light" placement="right">
+                <el-input v-model="comparand" placeholder="replace - from" />
+              </el-tooltip>
+              <el-tooltip content="new" effect="light" placement="right">
+                <el-input
+                  v-model="replacement"
+                  placeholder="replace - to"
+                  style="margin-top: 5px"
+                />
+              </el-tooltip>
+            </template>
+
+            <template v-if="['cat', 'calcconv'].includes(mode)">
+              <el-tooltip
+                content="formatstr with CalcConv or Cat"
+                effect="light"
+                placement="right"
+              >
+                <el-input v-model="formatstr" placeholder="{col1} + {col2}" />
+              </el-tooltip>
+            </template>
+          </div>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span v-if="backendCompleted"> {{ backendInfo }} </span>
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Apply</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light">
+          <el-button
+            @click="applyData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            text
+            circle
           />
         </el-tooltip>
-        <el-tooltip content="replace - to" effect="light">
-          <el-input
-            v-model="replacement"
-            style="margin-left: 5px; margin-top: 8px"
-            placeholder="replace - to"
-          />
-        </el-tooltip>
-      </template>
-      <div
-        v-if="['cat', 'calcconv'].includes(mode)"
-        style="width: 100%; margin-top: 8px"
-      >
-        <el-tooltip content="formatstr with CalcConv or Cat" effect="light">
-          <el-input v-model="formatstr" placeholder="{col1} + {col2}" />
-        </el-tooltip>
-      </div>
-    </div>
 
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 8px"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
 
     <el-dialog
       v-model="dialog"
@@ -265,5 +296,15 @@ function addNewColumn() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 240px;
+}
+.button-row {
+  display: flex;
+  align-items: center;
+}
+</style>

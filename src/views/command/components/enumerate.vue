@@ -3,19 +3,25 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
-import { IceCreamRound, FolderOpened, Link } from "@element-plus/icons-vue";
+import { Files, FolderOpened, Link, ArrowRight } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdEnumer, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
+const modeOptions = [
+  { label: "Nil", value: "nil" },
+  { label: "Idx", value: "idx" }
+];
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [dialog, isLoading] = [ref(false), ref(false)];
 const [tableColumn, tableData] = [ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(153);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdEnumer);
+const { isDark } = useDark();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -63,60 +69,84 @@ async function enumerate() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 70px">
-            <el-option label="idx" value="idx" />
-            <el-option label="nil" value="nil" />
-          </el-select>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="200" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <el-tooltip
+            content="if nil, no progress bar"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle">
+              <span
+                v-for="item in modeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: mode === item.value,
+                  'active-dark': isDark && mode === item.value
+                }"
+                @click="mode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <div style="margin-top: auto; display: flex; flex-direction: column">
+            <el-progress
+              v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+              :percentage="Math.round((currentRows / totalRows) * 100)"
+              style="margin-bottom: 8px; margin-left: 8px"
+            />
+            <el-link @click="dialog = true" :icon="Link">
+              <span>
+                About
+                <span style="color: skyblue; font-weight: bold">Enumerate</span>
+              </span>
+            </el-link>
+          </div>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="enumerate()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </div>
-      <el-button
-        @click="enumerate()"
-        :loading="isLoading"
-        :icon="IceCreamRound"
-        style="margin-left: 10px"
-      >
-        Enumerate
-      </el-button>
-    </div>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-progress
-          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-          :percentage="Math.round((currentRows / totalRows) * 100)"
-          style="width: 75%"
-        />
-      </div>
-      <el-tooltip effect="light" :content="path">
-        <el-link @click="dialog = true" :icon="Link">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Enumerate</span>
-          </span>
-        </el-link>
-      </el-tooltip>
-    </div>
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Enumerate - Add a new column enumerating the lines of a CSV"
@@ -126,5 +156,11 @@ async function enumerate() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 180px;
+}
+</style>

@@ -93,3 +93,10 @@
   background-color: #ffffff;
   color: #000000;
 }
+
+/* splitter */
+.splitter-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%
+}

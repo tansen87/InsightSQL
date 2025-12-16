@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
+import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
@@ -15,7 +15,7 @@ const [column, path, regexPattern, replacement] = [
   ref(""),
   ref("")
 ];
-const { dynamicHeight } = useDynamicHeight(153);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdReplace);
 
 async function selectFile() {
@@ -65,66 +65,82 @@ async function replaceData() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1" style="margin-bottom: 10px">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-select
-          v-model="column"
-          filterable
-          style="width: 141px; margin-left: 8px"
-          placeholder="Select column"
-        >
-          <el-option
-            v-for="item in tableHeader"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="180" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <el-select
+            v-model="column"
+            filterable
+            style="width: 160px; margin-left: 8px"
+            placeholder="Select column"
+          >
+            <el-option
+              v-for="item in tableHeader"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+
+          <el-input
+            style="margin-left: 8px; margin-top: 8px; width: 160px"
+            placeholder="regex pattern"
+            v-model="regexPattern"
           />
-        </el-select>
-        <el-input
-          style="margin-left: 8px; width: 141px"
-          placeholder="regex pattern"
-          v-model="regexPattern"
-        />
-        <el-input
-          v-model="replacement"
-          style="margin-left: 8px; width: 141px"
-          placeholder="replacement"
-        />
-      </div>
-      <el-button @click="replaceData()" :loading="isLoading" :icon="Refresh">
-        Replace
-      </el-button>
-    </div>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2" />
-      <el-link @click="dialog = true" :icon="Link">
-        <el-tooltip :content="path" effect="light">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Replace</span>
-          </span>
+
+          <el-input
+            v-model="replacement"
+            style="margin-left: 8px; margin-top: 8px; width: 160px"
+            placeholder="replacement"
+          />
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Replace</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="replaceData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </el-link>
-    </div>
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Replace - Replace CSV data using a regex"
@@ -134,5 +150,11 @@ async function replaceData() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 160px;
+}
+</style>

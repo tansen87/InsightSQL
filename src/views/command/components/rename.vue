@@ -3,19 +3,25 @@ import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
-import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { FolderOpened, Link, ArrowRight, Files } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { mdRename, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("nil");
+const modeOptions = [
+  { label: "Nil", value: "nil" },
+  { label: "Idx", value: "idx" }
+];
 const tableData = ref([]);
 const [search, path] = [ref(""), ref("")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [dialog, isLoading] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(143);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdRename);
+const { isDark } = useDark();
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -85,70 +91,97 @@ async function headerEdit(row: any) {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="mode" style="margin-left: 8px; width: 70px">
-            <el-option label="idx" value="idx" />
-            <el-option label="nil" value="nil" />
-          </el-select>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="140" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" text circle />
+          </el-tooltip>
+
+          <el-tooltip
+            content="if nil, no progress bar"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle">
+              <span
+                v-for="item in modeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: mode === item.value,
+                  'active-dark': isDark && mode === item.value
+                }"
+                @click="mode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <div style="margin-top: auto; display: flex; flex-direction: column">
+            <el-progress
+              v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+              :percentage="Math.round((currentRows / totalRows) * 100)"
+              style="margin-bottom: 8px; margin-left: 8px"
+            />
+            <el-link @click="dialog = true" :icon="Link">
+              <span>
+                About
+                <span style="color: skyblue; font-weight: bold">Rename</span>
+              </span>
+            </el-link>
+          </div>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="renameData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </div>
-      <el-button @click="renameData()" :loading="isLoading" :icon="Refresh">
-        Rename
-      </el-button>
-    </div>
-    <el-table
-      :data="filterTableData"
-      :height="dynamicHeight"
-      style="width: 100%"
-      empty-text=""
-    >
-      <el-table-column prop="col1" label="headers" style="width: 50%" />
-      <el-table-column prop="col2" label="new headers" width="300">
-        <template #default="{ row }">
-          <el-input
-            v-model="row.col2"
-            placeholder="new header"
-            @blur="headerEdit(row)"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column>
-        <template #header>
-          <el-input
-            v-model="search"
-            size="small"
-            placeholder="Type to search headers"
-            style="flex: 1; margin-right: 8px"
-          />
-          <el-progress
-            :text-inside="true"
-            :stroke-width="15"
-            v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-            :percentage="Math.round((currentRows / totalRows) * 100)"
-            style="width: 100px"
-          />
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-tooltip :content="path" effect="light">
-          <el-text>{{ shortFileName(path) }}</el-text>
-        </el-tooltip>
-      </div>
-      <el-link @click="dialog = true" :icon="Link">
-        <span>
-          About
-          <span style="color: skyblue; font-weight: bold">Rename</span>
-        </span>
-      </el-link>
-    </div>
+
+        <el-table
+          :data="filterTableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column prop="col1" label="headers" />
+          <el-table-column prop="col2" label="new headers">
+            <template #default="{ row }">
+              <el-input
+                v-model="row.col2"
+                placeholder="new header"
+                @blur="headerEdit(row)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column>
+            <template #header>
+              <el-input
+                v-model="search"
+                size="small"
+                placeholder="Type to search headers"
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Rename - Rename the columns of a CSV"
@@ -158,5 +191,11 @@ async function headerEdit(row: any) {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 120px;
+}
+</style>

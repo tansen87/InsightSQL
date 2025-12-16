@@ -4,7 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
 import { CheckboxValueType } from "element-plus";
-import { FolderOpened, Select, Link } from "@element-plus/icons-vue";
+import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { useDynamicHeight } from "@/utils/utils";
@@ -12,7 +13,15 @@ import { mdSelect, useMarkdown } from "@/utils/markdown";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
-const [pgsMode, selMode] = [ref("nil"), ref("include")];
+const [selMode, pgsMode] = [ref("include"), ref("nil")];
+const selModeOptions = [
+  { label: "Include", value: "include" },
+  { label: "Exclude", value: "exclude" }
+];
+const pgsModeOptions = [
+  { label: "Nil", value: "nil" },
+  { label: "Idx", value: "idx" }
+];
 const [originalColumns, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, dialog, checkAll, indeterminate] = [
   ref(false),
@@ -20,8 +29,9 @@ const [isLoading, dialog, checkAll, indeterminate] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(195);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdSelect);
+const { isDark } = useDark();
 const selColumns = ref<CheckboxValueType[]>([]);
 
 watch(selColumns, val => {
@@ -102,90 +112,125 @@ async function selectColumns() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="Select mode" effect="light">
-          <el-select v-model="selMode" style="width: 95px; margin-left: 8px">
-            <el-option label="Include" value="include" />
-            <el-option label="Exclude" value="exclude" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip content="if nil, no progress bar" effect="light">
-          <el-select v-model="pgsMode" style="margin-left: 8px; width: 70px">
-            <el-option label="idx" value="idx" />
-            <el-option label="nil" value="nil" />
-          </el-select>
-        </el-tooltip>
-      </div>
-      <el-button
-        @click="selectColumns()"
-        :loading="isLoading"
-        :icon="Select"
-        style="margin-left: 8px"
-      >
-        Select
-      </el-button>
-    </div>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="220" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
 
-    <el-select
-      v-model="selColumns"
-      multiple
-      filterable
-      style="margin-top: 10px; width: 100%"
-      placeholder="Select columns"
-    >
-      <template #header>
-        <el-checkbox
-          v-model="checkAll"
-          :indeterminate="indeterminate"
-          @change="handleCheckAll"
-        >
-          All
-        </el-checkbox>
-      </template>
-      <el-option
-        v-for="item in originalColumns"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
-      />
-    </el-select>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-progress
-          v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-          :percentage="Math.round((currentRows / totalRows) * 100)"
-          style="width: 75%"
-        />
-      </div>
-      <el-link @click="dialog = true" :icon="Link">
-        <el-tooltip :content="path" effect="light">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Select</span>
-          </span>
+          <el-tooltip content="Select mode" effect="light" placement="right">
+            <div class="mode-toggle">
+              <span
+                v-for="item in selModeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: selMode === item.value,
+                  'active-dark': isDark && selMode === item.value
+                }"
+                @click="selMode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-tooltip
+            content="if nil, no progress bar"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle" style="margin-top: 8px">
+              <span
+                v-for="item in pgsModeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: pgsMode === item.value,
+                  'active-dark': isDark && pgsMode === item.value
+                }"
+                @click="pgsMode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-select
+            v-model="selColumns"
+            multiple
+            filterable
+            placeholder="Select columns"
+            style="margin-top: 8px; margin-left: 8px; width: 200px"
+          >
+            <template #header>
+              <el-checkbox
+                v-model="checkAll"
+                :indeterminate="indeterminate"
+                @change="handleCheckAll"
+              >
+                All
+              </el-checkbox>
+            </template>
+            <el-option
+              v-for="item in originalColumns"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+
+          <div style="margin-top: auto; display: flex; flex-direction: column">
+            <el-progress
+              v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+              :percentage="Math.round((currentRows / totalRows) * 100)"
+              style="margin-bottom: 8px; margin-left: 8px"
+            />
+            <el-link @click="dialog = true" :icon="Link">
+              <span>
+                About
+                <span style="color: skyblue; font-weight: bold">Select</span>
+              </span>
+            </el-link>
+          </div>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="selectColumns()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </el-link>
-    </div>
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Select - Select, drop, re-order columns"
@@ -195,5 +240,11 @@ async function selectColumns() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 200px;
+}
+</style>
