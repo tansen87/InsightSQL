@@ -10,18 +10,26 @@ import {
   FolderOpened,
   CloseBold,
   Select,
-  Link
+  Link,
+  ArrowRight
 } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { shortFileName, useDynamicHeight, updateEvent } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { useMarkdown, mdCount } from "@/utils/markdown";
 
 const mode = ref("count");
+const modeOptions = [
+  { label: "Count", value: "count" },
+  { label: "Index", value: "index" },
+  { label: "Check", value: "check" }
+];
 const path = ref("");
 const [dialog, isLoading] = [ref(false), ref(false)];
 const fileSelect = ref([]);
-const { dynamicHeight } = useDynamicHeight(143);
+const { dynamicHeight } = useDynamicHeight(122);
 const { mdShow } = useMarkdown(mdCount);
+const { isDark } = useDark();
 
 listen("info", (event: Event<string>) => {
   const filename = event.payload;
@@ -91,83 +99,99 @@ async function countData() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="count mode" effect="light">
-          <el-select v-model="mode" style="margin-left: 10px; width: 90px">
-            <el-option label="Index" value="index" />
-            <el-option label="Count" value="count" />
-            <el-option label="Check" value="check" />
-          </el-select>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="200" :resizable="false">
+        <div style="display: flex; flex-direction: column; height: 100%">
+          <el-tooltip content="Add data" effect="light">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <div class="mode-toggle">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Count</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light">
+          <el-button
+            @click="countData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </div>
-      <el-button
-        @click="countData()"
-        :loading="isLoading"
-        :icon="Select"
-        style="margin-left: 8px"
-      >
-        Count
-      </el-button>
-    </div>
-    <el-table
-      :data="fileSelect"
-      :height="dynamicHeight"
-      style="width: 100%"
-      show-overflow-tooltip
-      empty-text=""
-    >
-      <el-table-column type="index" width="50" />
-      <el-table-column
-        prop="filename"
-        label="File"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 30%"
-      />
-      <el-table-column
-        prop="status"
-        label="Status"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 10%"
-      >
-        <template #default="scope">
-          <ElIcon v-if="scope.row.status === ''" class="is-loading">
-            <Loading />
-          </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'success'" color="#00CD66">
-            <Select />
-          </ElIcon>
-          <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
-            <CloseBold />
-          </ElIcon>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="message"
-        label="Message"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 60%"
-      >
-        <template #default="scope">
-          <span v-if="scope.row.status === 'error'">
-            {{ scope.row.message }}
-          </span>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2" />
-      <el-link @click="dialog = true" :icon="Link">
-        <span>
-          About
-          <span style="color: skyblue; font-weight: bold">Count</span>
-        </span>
-      </el-link>
-    </div>
+
+        <el-table
+          :data="fileSelect"
+          :height="dynamicHeight"
+          style="width: 100%"
+          show-overflow-tooltip
+        >
+          <el-table-column type="index" width="35" />
+          <el-table-column
+            prop="filename"
+            label="File"
+            :class="{ 'custom-width': true }"
+            style="flex: 0 0 30%"
+          />
+          <el-table-column
+            prop="status"
+            label="Status"
+            :class="{ 'custom-width': true }"
+            style="flex: 0 0 10%"
+          >
+            <template #default="scope">
+              <ElIcon v-if="scope.row.status === ''" class="is-loading">
+                <Loading />
+              </ElIcon>
+              <ElIcon
+                v-else-if="scope.row.status === 'success'"
+                color="#00CD66"
+              >
+                <Select />
+              </ElIcon>
+              <ElIcon v-else-if="scope.row.status === 'error'" color="#FF0000">
+                <CloseBold />
+              </ElIcon>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="message"
+            label="Message"
+            :class="{ 'custom-width': true }"
+            style="flex: 0 0 60%"
+          >
+            <template #default="scope">
+              <span v-if="scope.row.status === 'error'">
+                {{ scope.row.message }}
+              </span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Count - Count the rows of CSV files"
@@ -177,5 +201,11 @@ async function countData() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 180px;
+}
+</style>

@@ -31,7 +31,6 @@ async fn cat_with_polars(
   path: String,
   output_path: String,
   file_type: String,
-  skip_rows: String,
   use_cols: String,
 ) -> Result<()> {
   /* merge csv and excel files into a xlsx or csv file */
@@ -62,8 +61,7 @@ async fn cat_with_polars(
         vec_sep.push(b'|');
       }
       _ => {
-        let mut opts = CsvOptions::new(file);
-        opts.set_skip_rows(skip_rows.parse::<usize>()?);
+        let opts = CsvOptions::new(file);
         vec_sep.push(opts.detect_separator()?);
       }
     }
@@ -71,7 +69,7 @@ async fn cat_with_polars(
     let lf = match file_extension.as_str() {
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let df: DataFrame = ExcelReader::from_path(file)?
-          .worksheet_range_at(0, skip_rows.parse::<u32>()?)?
+          .worksheet_range_at(0, 0)?
           .to_df()?;
 
         let excel_reader = if use_cols == vec!["all"] {
@@ -90,7 +88,6 @@ async fn cat_with_polars(
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
-          .with_skip_rows(skip_rows.parse::<usize>()?)
           .finish()?;
 
         let csv_reader = if use_cols == vec!["all"] {
@@ -133,7 +130,7 @@ async fn cat_with_polars(
   Ok(())
 }
 
-pub async fn cat_with_csv(path: String, skip_rows: String, output_path: String) -> Result<()> {
+pub async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
   let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
 
   let mut vec_sep = Vec::new();
@@ -141,8 +138,7 @@ pub async fn cat_with_csv(path: String, skip_rows: String, output_path: String) 
   let paths: Vec<&str> = path.split('|').collect();
 
   for p in &paths {
-    let mut opts = CsvOptions::new(p);
-    opts.set_skip_rows(skip_rows.parse::<usize>()?);
+    let opts = CsvOptions::new(p);
     let sep = opts.detect_separator()?;
     vec_sep.push(sep);
 
@@ -166,8 +162,7 @@ pub async fn cat_with_csv(path: String, skip_rows: String, output_path: String) 
   wtr.write_byte_record(&ByteRecord::new())?;
 
   for (idx, p) in paths.iter().enumerate() {
-    let mut opts = CsvOptions::new(p);
-    opts.set_skip_rows(skip_rows.parse::<usize>()?);
+    let opts = CsvOptions::new(p);
     let mut rdr = ReaderBuilder::new()
       .delimiter(vec_sep[idx])
       .from_reader(opts.rdr_skip_rows()?);
@@ -215,13 +210,12 @@ pub async fn concat(
   output_path: String,
   file_type: String,
   mode: String,
-  skip_rows: String,
   use_cols: String,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   match mode.as_str() {
-    "csv" => match cat_with_csv(path, skip_rows, output_path).await {
+    "csv" => match cat_with_csv(path, output_path).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -229,7 +223,7 @@ pub async fn concat(
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match cat_with_polars(path, output_path, file_type, skip_rows, use_cols).await {
+    _ => match cat_with_polars(path, output_path, file_type, use_cols).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

@@ -2,6 +2,7 @@
 import { useRouter } from "vue-router";
 import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
+import { Icon } from "@iconify/vue";
 import { useCommandStore } from "@/store/modules/commands";
 
 const router = useRouter();
@@ -41,8 +42,13 @@ function navigateToCommand(route) {
           shadow="hover"
           @click="navigateToCommand(item.route)"
         >
-          <span class="title-color">{{ item.title }}</span>
-          <p class="description-color">{{ item.description }}</p>
+          <div class="card-content">
+            <div class="header-row">
+              <Icon :icon="item.icon" width="20" height="20" />
+              <span class="title-color">{{ item.title }}</span>
+            </div>
+            <p class="description-color">{{ item.description }}</p>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -67,5 +73,15 @@ function navigateToCommand(route) {
 }
 .description-color {
   font-size: 15px;
+}
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

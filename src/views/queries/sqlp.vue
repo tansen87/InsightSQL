@@ -494,7 +494,7 @@ function allVarchar() {
                   overflow: hidden;
                 "
               >
-                <el-table :data="pagedTableData" height="100%">
+                <el-table :data="pagedTableData" height="100%" empty-text="">
                   <el-table-column
                     v-for="column in tableColumn"
                     :prop="column.prop"

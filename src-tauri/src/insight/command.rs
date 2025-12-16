@@ -28,9 +28,8 @@ pub async fn map_headers(
 }
 
 #[tauri::command]
-pub async fn inter_headers(path: String, skip_rows: String) -> Result<HashSet<String>, String> {
-  let mut opts = CsvOptions::new(path);
-  opts.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+pub async fn inter_headers(path: String) -> Result<HashSet<String>, String> {
+  let opts = CsvOptions::new(path);
 
   match async { opts.inter_headers() }.await {
     Ok(result) => Ok(result),
@@ -41,7 +40,6 @@ pub async fn inter_headers(path: String, skip_rows: String) -> Result<HashSet<St
 #[tauri::command]
 pub async fn dupli_headers(
   path: String,
-  skip_rows: String,
   window: Window,
 ) -> Result<(HashSet<String>, HashSet<String>), String> {
   let paths: Vec<&str> = path.split('|').collect();
@@ -56,8 +54,7 @@ pub async fn dupli_headers(
 
     window.emit("dupler", filename).map_err(|e| e.to_string())?;
 
-    let mut opts = CsvOptions::new(p);
-    opts.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+    let opts = CsvOptions::new(p);
 
     match opts.dupli_headers() {
       Ok((duplicate_headers, unique_headers)) => {

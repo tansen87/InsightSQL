@@ -4,16 +4,22 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import {
   FolderOpened,
-  Connection,
+  ArrowRight,
   Link,
   Loading
 } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdCat, useMarkdown } from "@/utils/markdown";
 import { message, closeAllMessage } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 
-const [mode, skipRows] = [ref("polars"), ref("0")];
+const mode = ref("polars");
+const modeOptions = [
+  { label: "Polars", value: "polars" },
+  { label: "Csv", value: "csv" },
+  { label: "Duplicate", value: "duplicate" }
+];
 const [columns, backendInfo, path] = [ref(""), ref(""), ref("")];
 const [fileSelect, originalColumns] = [ref([]), ref([])];
 const [isLoading, backendCompleted, dialog] = [
@@ -21,8 +27,9 @@ const [isLoading, backendCompleted, dialog] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(164);
+const { dynamicHeight } = useDynamicHeight(122);
 const { mdShow } = useMarkdown(mdCat);
+const { isDark } = useDark();
 
 async function selectFile() {
   columns.value = "";
@@ -42,8 +49,7 @@ async function selectFile() {
       icon: Loading
     });
     const headers: string[] = await invoke("inter_headers", {
-      path: path.value,
-      skipRows: skipRows.value
+      path: path.value
     });
     originalColumns.value = headers.map(header => ({
       label: header,
@@ -71,8 +77,7 @@ async function concatData() {
       icon: Loading
     });
     await invoke("dupli_headers", {
-      path: path.value,
-      skipRows: skipRows.value
+      path: path.value
     });
     backendInfo.value = "find duplicate headers done";
     backendCompleted.value = true;
@@ -103,7 +108,6 @@ async function concatData() {
       outputPath: outputPath,
       fileType: saveFileType,
       mode: mode.value,
-      skipRows: skipRows.value,
       useCols: useCols
     });
     backendInfo.value = `${mode.value} done, elapsed time: ${rtime} s`;
@@ -117,80 +121,98 @@ async function concatData() {
 
 <template>
   <el-form class="page-container" :style="dynamicHeight">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip
-          content="Polars memory Cat, Csv stream Cat, or find duplicate headers"
-          effect="light"
-        >
-          <el-select v-model="mode" style="margin-left: 8px; width: 100px">
-            <el-option label="Polars" value="polars" />
-            <el-option label="Csv" value="csv" />
-            <el-option label="Duplicate" value="duplicate" />
-          </el-select>
+    <el-splitter>
+      <el-splitter-panel size="240" :resizable="false">
+        <div style="display: flex; flex-direction: column; height: 100%">
+          <el-tooltip content="Add data" effect="light">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+          <div class="mode-toggle">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+
+          <template v-if="['polars'].includes(mode)">
+            <el-tooltip
+              content="If column is empty, files have no common headers"
+              effect="light"
+              placement="right"
+            >
+              <el-select
+                v-model="columns"
+                multiple
+                filterable
+                style="margin-top: 8px; margin-left: 8px; width: 220px"
+                placeholder="Cat specific column"
+              >
+                <el-option
+                  v-for="item in originalColumns"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-tooltip>
+          </template>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span v-if="backendCompleted"> {{ backendInfo }} </span>
+            <span v-else>
+              About
+              <span style="color: skyblue; font-weight: bold">Cat</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light">
+          <el-button
+            @click="concatData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-        <el-tooltip content="skip rows" effect="light">
-          <el-input v-model="skipRows" style="margin-left: 8px; width: 50px" />
-        </el-tooltip>
-        <el-button
-          @click="concatData()"
-          :loading="isLoading"
-          :icon="Connection"
-          style="margin-left: 8px"
+
+        <el-table
+          :data="fileSelect"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+          style="width: 100%"
         >
-          Cat
-        </el-button>
-      </div>
-      <el-link @click="dialog = true" :icon="Link">
-        <span v-if="backendCompleted"> {{ backendInfo }} </span>
-        <span v-else>
-          About
-          <span style="color: skyblue; font-weight: bold">Cat</span>
-        </span>
-      </el-link>
-    </div>
-    <el-select
-      v-model="columns"
-      multiple
-      filterable
-      style="margin-top: 10px; width: 100%"
-      placeholder="Cat specific column (If column is empty, files have no common headers)"
-    >
-      <el-option
-        v-for="item in originalColumns"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
-      />
-    </el-select>
-    <el-table
-      :data="fileSelect"
-      :height="dynamicHeight"
-      empty-text=""
-      show-overflow-tooltip
-      style="width: 100%"
-    >
-      <el-table-column type="index" width="50" />
-      <el-table-column
-        prop="filename"
-        label="file"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 60%"
-      />
-      <el-table-column
-        prop="infoMsg"
-        label="duplicate headers"
-        :class="{ 'custom-width': true }"
-        style="flex: 0 0 40%"
-      >
-        <template #default="scope">
-          {{ scope.row.infoMsg }}
-        </template>
-      </el-table-column>
-    </el-table>
+          <el-table-column type="index" width="35" />
+          <el-table-column
+            prop="filename"
+            label="file"
+            :class="{ 'custom-width': true }"
+            style="flex: 0 0 60%"
+          />
+          <el-table-column
+            prop="infoMsg"
+            label="duplicate headers"
+            :class="{ 'custom-width': true }"
+            style="flex: 0 0 40%"
+          >
+            <template #default="scope">
+              {{ scope.row.infoMsg }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Cat - Merge multiple CSV or Excel files into one CSV or xlsx file"
@@ -202,3 +224,9 @@ async function concatData() {
     </el-dialog>
   </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 220px;
+}
+</style>

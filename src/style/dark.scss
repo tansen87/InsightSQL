@@ -338,4 +338,31 @@ html.dark {
   .cmd-item:hover {
     background-color: rgba(157, 152, 152, 0.3);
   }
+
+  /* cat.vue中按钮切换 */
+  .mode-toggle {
+    display: inline-flex;
+    height: 32px;
+    margin-left: 8px;
+    padding: 3px;
+    background-color: var(--el-fill-color-light);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--el-border-color);
+  }
+  .mode-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--el-text-color-regular);
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .mode-item.active-dark {
+    background-color: var(--el-color-primary);
+    color: #ffffff;
+  }
 }
