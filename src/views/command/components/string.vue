@@ -3,12 +3,14 @@ import { computed, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import {
   FolderOpened,
-  Refresh,
+  Files,
   Link,
   TurnOff,
-  Open
+  Open,
+  ArrowRight
 } from "@element-plus/icons-vue";
-import { useDynamicHeight, shortFileName } from "@/utils/utils";
+import { useDark } from "@pureadmin/utils";
+import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { mdStr, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
@@ -17,8 +19,13 @@ const [column, path] = [ref(""), ref("")];
 const [n, length, by, activeTab] = [ref("4"), ref("5"), ref("-"), ref("left")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, dialog, reverse] = [ref(false), ref(false), ref(false)];
+const reverseOptions = [
+  { label: "True", value: true },
+  { label: "False", value: false }
+];
 const toTab = computed(() => activeTab.value);
-const { dynamicHeight } = useDynamicHeight(207);
+const { dynamicHeight } = useDynamicHeight(200);
+const { isDark } = useDark();
 
 async function selectFile() {
   column.value = "";
@@ -94,123 +101,177 @@ const { mdShow } = useMarkdown(mdStr);
 </script>
 
 <template>
-  <div class="page-container">
+  <el-form class="page-container">
     <el-tabs v-model="activeTab">
       <el-tab-pane name="left" label="Left" />
       <el-tab-pane name="right" label="Right" />
+      <el-tab-pane name="slice" label="Slice" />
       <el-tab-pane name="split_n" label="SplitN" />
       <el-tab-pane name="split_max" label="SplitMax" />
       <el-tab-pane name="pad_left" label="PadLeft" />
       <el-tab-pane name="pad_right" label="PadRight" />
       <el-tab-pane name="pad_both" label="PadBoth" />
     </el-tabs>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-select
-          v-model="column"
-          filterable
-          style="width: 150px; margin-left: 8px"
-          placeholder="Select column"
-        >
-          <el-option
-            v-for="item in tableHeader"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+
+    <el-splitter>
+      <el-splitter-panel size="180" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <el-select
+            v-model="column"
+            filterable
+            style="width: 160px; margin-left: 8px"
+            placeholder="Select column"
+          >
+            <el-option
+              v-for="item in tableHeader"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+
+          <el-tooltip content="Reverse or not" effect="light" placement="right">
+            <div class="mode-toggle" style="margin-top: 8px">
+              <span
+                v-for="item in reverseOptions"
+                :key="String(item.value)"
+                class="mode-item"
+                :class="{
+                  active: reverse === item.value,
+                  'active-dark': isDark && reverse === item.value
+                }"
+                @click="reverse = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-tooltip
+            v-if="['left', 'right'].includes(toTab)"
+            content="Length of the slice"
+            effect="light"
+            placement="right"
+          >
+            <el-input
+              v-model="n"
+              style="margin-left: 8px; margin-top: 8px; width: 160px"
+            />
+          </el-tooltip>
+
+          <template v-if="toTab === 'slice'">
+            <el-tooltip content="Start index" effect="light" placement="right">
+              <el-input
+                v-model="n"
+                style="margin-left: 8px; margin-top: 8px; width: 160px"
+              />
+            </el-tooltip>
+            <el-tooltip
+              content="Length of the slice"
+              effect="light"
+              placement="right"
+            >
+              <el-input
+                v-model="length"
+                style="margin-left: 8px; margin-top: 8px; width: 160px"
+              />
+            </el-tooltip>
+          </template>
+
+          <template v-if="['split_n', 'split_max'].includes(toTab)">
+            <el-tooltip
+              content="nth/max number of items to return"
+              effect="light"
+              placement="right"
+            >
+              <el-input
+                v-model="n"
+                style="margin-left: 8px; margin-top: 8px; width: 160px"
+              />
+            </el-tooltip>
+            <el-tooltip
+              content="Substring to split by"
+              effect="light"
+              placement="right"
+            >
+              <el-input
+                v-model="by"
+                style="margin-left: 8px; margin-top: 8px; width: 160px"
+              />
+            </el-tooltip>
+          </template>
+
+          <template
+            v-if="['pad_left', 'pad_right', 'pad_both'].includes(toTab)"
+          >
+            <el-tooltip
+              content="Pad the string until it reaches this length"
+              effect="light"
+              placement="right"
+            >
+              <el-input
+                v-model="length"
+                style="margin-left: 8px; margin-top: 8px; width: 160px"
+              />
+            </el-tooltip>
+            <el-tooltip
+              content="The character to pad the string with"
+              effect="light"
+              placement="right"
+            >
+              <el-input
+                v-model="by"
+                style="margin-left: 8px; margin-top: 8px; width: 160px"
+              />
+            </el-tooltip>
+          </template>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">String</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="StrData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
           />
-        </el-select>
-        <el-tooltip
-          v-if="['left', 'right'].includes(toTab)"
-          content="Length of the slice"
-          effect="light"
+        </el-tooltip>
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
         >
-          <el-input v-model="n" style="margin-left: 8px; width: 50px" />
-        </el-tooltip>
-        <template v-if="toTab === 'slice'">
-          <el-tooltip content="Start index" effect="light">
-            <el-input v-model="n" style="margin-left: 8px; width: 50px" />
-          </el-tooltip>
-          <el-tooltip content="Length of the slice" effect="light">
-            <el-input v-model="length" style="margin-left: 8px; width: 50px" />
-          </el-tooltip>
-        </template>
-        <template v-if="['split_n', 'split_max'].includes(toTab)">
-          <el-tooltip
-            content="nth/max number of items to return"
-            effect="light"
-          >
-            <el-input v-model="n" style="margin-left: 8px; width: 50px" />
-          </el-tooltip>
-          <el-tooltip content="Substring to split by" effect="light">
-            <el-input v-model="by" style="margin-left: 8px; width: 50px" />
-          </el-tooltip>
-        </template>
-        <template v-if="['pad_left', 'pad_right', 'pad_both'].includes(toTab)">
-          <el-tooltip
-            content="Pad the string until it reaches this length"
-            effect="light"
-          >
-            <el-input v-model="length" style="margin-left: 8px; width: 50px" />
-          </el-tooltip>
-          <el-tooltip
-            content="The character to pad the string with"
-            effect="light"
-          >
-            <el-input v-model="by" style="margin-left: 8px; width: 50px" />
-          </el-tooltip>
-        </template>
-        <el-tooltip content="Reverse or not" effect="light">
-          <el-switch
-            v-model="reverse"
-            v-if="['left', 'right', 'slice'].includes(toTab)"
-            inline-prompt
-            style="
-              --el-switch-on-color: #43cd80;
-              --el-switch-off-color: #b0c4de;
-              margin-left: 8px;
-            "
-            active-text="Y"
-            inactive-text="N"
-            :active-action-icon="Open"
-            :inactive-action-icon="TurnOff"
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
           />
-        </el-tooltip>
-      </div>
-      <el-button @click="StrData()" :loading="isLoading" :icon="Refresh">
-        Str
-      </el-button>
-    </div>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-tooltip :content="path" effect="light">
-          <el-text>{{ shortFileName(path) }}</el-text>
-        </el-tooltip>
-      </div>
-      <el-link @click="dialog = true" :icon="Link">
-        <span>
-          About
-          <span style="color: skyblue; font-weight: bold">String</span>
-        </span>
-      </el-link>
-    </div>
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="String - String expr: slice, split, pad..."
@@ -220,5 +281,11 @@ const { mdShow } = useMarkdown(mdStr);
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 160px;
+}
+</style>
