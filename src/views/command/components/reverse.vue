@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, SwitchFilled, Link } from "@element-plus/icons-vue";
+import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
@@ -9,10 +10,15 @@ import { mdReverse, useMarkdown } from "@/utils/markdown";
 
 const path = ref("");
 const mode = ref("reverse");
+const modeOptions = [
+  { label: "Reverse", value: "reverse" },
+  { label: "Index", value: "index" }
+];
 const [tableColumn, tableData] = [ref([]), ref([])];
 const [isLoading, dialog] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(153);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdReverse);
+const { isDark } = useDark();
 
 async function selectFile() {
   tableColumn.value = [];
@@ -52,53 +58,77 @@ async function reverseData() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="add index or reverse" effect="light">
-          <el-select v-model="mode" style="margin-left: 8px; width: 100px">
-            <el-option label="Index" value="index" />
-            <el-option label="Reverse" value="reverse" />
-          </el-select>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="180" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <el-tooltip
+            content="Add index or reverse"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle">
+              <span
+                v-for="item in modeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: mode === item.value,
+                  'active-dark': isDark && mode === item.value
+                }"
+                @click="mode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Reverse</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="reverseData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </div>
-      <el-button
-        @click="reverseData()"
-        :loading="isLoading"
-        :icon="SwitchFilled"
-      >
-        Reverse
-      </el-button>
-    </div>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2" />
-      <el-link @click="dialog = true" :icon="Link">
-        <el-tooltip :content="path" effect="light">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Reverse</span>
-          </span>
-        </el-tooltip>
-      </el-link>
-    </div>
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Reverse - Reverse order of rows in a CSV"
@@ -108,5 +138,11 @@ async function reverseData() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 160px;
+}
+</style>

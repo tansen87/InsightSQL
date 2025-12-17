@@ -1,13 +1,27 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Refresh, Link } from "@element-plus/icons-vue";
+import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSort, useMarkdown } from "@/utils/markdown";
 
 const mode = ref("Sort");
+const modeOptions = [
+  { label: "Sort", value: "Sort" },
+  { label: "ExtSort", value: "ExtSort" },
+  { label: "Index", value: "Index" }
+];
+const numOptions = [
+  { label: "True", value: true },
+  { label: "False", value: false }
+];
+const reverseOptions = [
+  { label: "True", value: true },
+  { label: "False", value: false }
+];
 const [column, path] = [ref(""), ref("")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, dialog, numeric, reverse] = [
@@ -16,8 +30,9 @@ const [isLoading, dialog, numeric, reverse] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(153);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdSort);
+const { isDark } = useDark();
 
 async function selectFile() {
   column.value = "";
@@ -81,78 +96,127 @@ async function sortData() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div class="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-select
-          v-model="column"
-          filterable
-          style="width: 140px; margin-left: 8px"
-          placeholder="Select column"
-        >
-          <el-option
-            v-for="item in tableHeader"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="200" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <el-tooltip content="Sort mode" effect="light" placement="right">
+            <div class="mode-toggle">
+              <span
+                v-for="item in modeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: mode === item.value,
+                  'active-dark': isDark && mode === item.value
+                }"
+                @click="mode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-tooltip content="Numeric" effect="light" placement="right">
+            <div class="mode-toggle" style="margin-top: 8px">
+              <span
+                v-for="item in numOptions"
+                :key="String(item.value)"
+                class="mode-item"
+                :class="{
+                  active: numeric === item.value,
+                  'active-dark': isDark && numeric === item.value
+                }"
+                @click="numeric = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-tooltip
+            content="Reverse (when set to False, sort from small to large)"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle" style="margin-top: 8px">
+              <span
+                v-for="item in reverseOptions"
+                :key="String(item.value)"
+                class="mode-item"
+                :class="{
+                  active: reverse === item.value,
+                  'active-dark': isDark && reverse === item.value
+                }"
+                @click="reverse = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-select
+            v-model="column"
+            filterable
+            style="width: 180px; margin-left: 8px; margin-top: 8px"
+            placeholder="Select column"
+          >
+            <el-option
+              v-for="item in tableHeader"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <el-tooltip :content="path" effect="light">
+              <span>
+                About
+                <span style="color: skyblue; font-weight: bold">Sort</span>
+              </span>
+            </el-tooltip>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="sortData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
           />
-        </el-select>
-        <el-tooltip content="Sort, ExtSort or create index" effect="light">
-          <el-select v-model="mode" style="margin-left: 8px; width: 90px">
-            <el-option label="Sort" value="Sort" />
-            <el-option label="ExtSort" value="ExtSort" />
-            <el-option label="Index" value="Index" />
-          </el-select>
         </el-tooltip>
-        <el-tooltip content="Numeric" effect="light">
-          <el-select v-model="numeric" style="margin-left: 8px; width: 80px">
-            <el-option label="true" :value="true" />
-            <el-option label="false" :value="false" />
-          </el-select>
-        </el-tooltip>
-        <el-tooltip
-          content="Reverse (when set to false, sort from small to large)"
-          effect="light"
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
         >
-          <el-select v-model="reverse" style="margin-left: 8px; width: 80px">
-            <el-option label="true" :value="true" />
-            <el-option label="false" :value="false" />
-          </el-select>
-        </el-tooltip>
-      </div>
-      <el-button @click="sortData()" :loading="isLoading" :icon="Refresh">
-        {{ mode }}
-      </el-button>
-    </div>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2" />
-      <el-link @click="dialog = true" :icon="Link">
-        <el-tooltip :content="path" effect="light">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Sort</span>
-          </span>
-        </el-tooltip>
-      </el-link>
-    </div>
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Sort - Sorts CSV data lexicographically"
@@ -162,5 +226,11 @@ async function sortData() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 180px;
+}
+</style>

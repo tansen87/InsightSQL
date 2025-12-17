@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Refresh, FolderOpened, Link } from "@element-plus/icons-vue";
+import { Files, FolderOpened, Link, ArrowRight } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdTranspose, useMarkdown } from "@/utils/markdown";
 
 const [path, mode] = [ref(""), ref("memory")];
+const modeOptions = [
+  { label: "Memory", value: "memory" },
+  { label: "Multipass", value: "multipass" }
+];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(153);
+const { dynamicHeight } = useDynamicHeight(146);
 const { mdShow } = useMarkdown(mdTranspose);
+const { isDark } = useDark();
 
 async function selectFile() {
   tableHeader.value = [];
@@ -53,49 +59,77 @@ async function transposeData() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="custom-container1">
-      <div clas="custom-container2">
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          Open File
-        </el-button>
-        <el-tooltip content="Transpose mode" effect="light">
-          <el-select v-model="mode" style="width: 110px; margin-left: 8px">
-            <el-option label="Memory" value="memory" />
-            <el-option label="Multipass" value="multipass" />
-          </el-select>
+  <el-form class="page-container">
+    <el-splitter>
+      <el-splitter-panel size="200" :resizable="false">
+        <div class="splitter-container">
+          <el-tooltip content="Add data" effect="light" placement="right">
+            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
+          </el-tooltip>
+
+          <el-tooltip
+            content="if nil, no progress bar"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle">
+              <span
+                v-for="item in modeOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: mode === item.value,
+                  'active-dark': isDark && mode === item.value
+                }"
+                @click="mode = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </el-tooltip>
+
+          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+            <span>
+              About
+              <span style="color: skyblue; font-weight: bold">Transpose</span>
+            </span>
+          </el-link>
+        </div>
+      </el-splitter-panel>
+
+      <el-splitter-panel>
+        <el-tooltip content="Run" effect="light" placement="right">
+          <el-button
+            @click="transposeData()"
+            :loading="isLoading"
+            :icon="ArrowRight"
+            circle
+            text
+          />
         </el-tooltip>
-      </div>
-      <el-button @click="transposeData()" :loading="isLoading" :icon="Refresh">
-        Transpose
-      </el-button>
-    </div>
-    <el-table
-      :data="tableData"
-      :height="dynamicHeight"
-      border
-      empty-text=""
-      style="margin-top: 10px; width: 100%"
-      show-overflow-tooltip
-    >
-      <el-table-column
-        v-for="column in tableColumn"
-        :prop="column.prop"
-        :label="column.label"
-        :key="column.prop"
-      />
-    </el-table>
-    <div class="custom-container1">
-      <div class="custom-container2" />
-      <el-link @click="dialog = true" :icon="Link">
-        <el-tooltip :content="path" effect="light">
-          <span>
-            About
-            <span style="color: skyblue; font-weight: bold">Transpose</span>
-          </span>
-        </el-tooltip>
-      </el-link>
-    </div>
+
+        <el-table
+          :data="tableData"
+          :height="dynamicHeight"
+          show-overflow-tooltip
+        >
+          <el-table-column
+            v-for="column in tableColumn"
+            :prop="column.prop"
+            :label="column.label"
+            :key="column.prop"
+          />
+        </el-table>
+
+        <el-text>
+          <el-icon style="margin-left: 8px">
+            <Files />
+          </el-icon>
+          {{ path }}
+        </el-text>
+      </el-splitter-panel>
+    </el-splitter>
+
     <el-dialog
       v-model="dialog"
       title="Transpose - Transpose rows/columns of a CSV"
@@ -105,5 +139,11 @@ async function transposeData() {
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
-  </div>
+  </el-form>
 </template>
+
+<style scoped>
+.mode-toggle {
+  width: 180px;
+}
+</style>

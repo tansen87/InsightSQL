@@ -234,11 +234,7 @@ function addNewColumn() {
             </template>
 
             <template v-if="['cat', 'calcconv'].includes(mode)">
-              <el-tooltip
-                content="formatstr with CalcConv or Cat"
-                effect="light"
-                placement="right"
-              >
+              <el-tooltip content="Expression" effect="light" placement="right">
                 <el-input v-model="formatstr" placeholder="{col1} + {col2}" />
               </el-tooltip>
             </template>

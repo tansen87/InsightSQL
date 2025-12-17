@@ -155,7 +155,7 @@ async function joinData() {
             <div class="mode-toggle" style="margin-top: 8px">
               <span
                 v-for="item in nullOptions"
-                :key="item.value"
+                :key="String(item.value)"
                 class="mode-item"
                 :class="{
                   active: nulls === item.value,
@@ -227,7 +227,7 @@ async function joinData() {
               <el-icon style="margin-left: 8px">
                 <Files />
               </el-icon>
-              {{ data.path1 }}
+              data 1 => {{ data.path1 }}
             </el-text>
           </el-splitter-panel>
 
@@ -250,7 +250,7 @@ async function joinData() {
               <el-icon style="margin-left: 8px">
                 <Files />
               </el-icon>
-              {{ data.path2 }}
+              data 2 => {{ data.path2 }}
             </el-text>
           </el-splitter-panel>
         </el-splitter>
