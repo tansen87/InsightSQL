@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -173,12 +173,9 @@ async function sortData() {
             />
           </el-select>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+          <el-link @click="dialog = true" style="margin-top: auto">
             <el-tooltip :content="path" effect="light">
-              <span>
-                About
-                <span style="color: skyblue; font-weight: bold">Sort</span>
-              </span>
+              <span class="link-text">Sort</span>
             </el-tooltip>
           </el-link>
         </div>

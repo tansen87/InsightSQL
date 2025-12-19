@@ -350,6 +350,16 @@ html.dark {
     overflow: hidden;
     border: 1px solid var(--el-border-color);
   }
+  .mode-toggle-v {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    margin-left: 8px;
+    padding: 3px;
+    background-color: var(--el-fill-color-light);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--el-border-color);
+  }
   .mode-item {
     flex: 1;
     display: flex;

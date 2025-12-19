@@ -10,7 +10,6 @@ import {
   FolderOpened,
   CloseBold,
   Select,
-  Link,
   ArrowRight
 } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
@@ -122,11 +121,8 @@ async function countData() {
             </span>
           </div>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">Count</span>
-            </span>
+          <el-link @click="dialog = true" style="margin-top: auto">
+            <span class="link-text">Count</span>
           </el-link>
         </div>
       </el-splitter-panel>

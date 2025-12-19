@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
@@ -87,11 +87,8 @@ async function reverseData() {
             </div>
           </el-tooltip>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">Reverse</span>
-            </span>
+          <el-link @click="dialog = true" style="margin-top: auto">
+            <span class="link-text">Reverse</span>
           </el-link>
         </div>
       </el-splitter-panel>

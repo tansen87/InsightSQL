@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
-import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -150,11 +150,8 @@ async function chineseToPinyin() {
               :percentage="Math.round((currentRows / totalRows) * 100)"
               style="margin-bottom: 8px; margin-left: 8px"
             />
-            <el-link @click="dialog = true" :icon="Link">
-              <span>
-                About
-                <span style="color: skyblue; font-weight: bold">Pinyin</span>
-              </span>
+            <el-link @click="dialog = true">
+              <span class="link-text">Pinyin</span>
             </el-link>
           </div>
         </div>

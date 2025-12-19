@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
@@ -51,6 +51,16 @@ const [allSheets, isLoading, backendCompleted, writeSheetname, ignoreErr] = [
   ref(false),
   ref(false)
 ];
+const modeOptions = [
+  { label: "FormtCsv", value: "fmt" },
+  { label: "EncodingCsv", value: "encoding" },
+  { label: "Excel2Csv", value: "excel" },
+  { label: "Csv2Xlsx", value: "csv" },
+  { label: "Access2Csv", value: "access" },
+  { label: "Dbf2Csv", value: "dbf" },
+  { label: "Json2Csv", value: "json" },
+  { label: "NdJson2Csv", value: "jsonl" }
+];
 const sheetsOptions = [
   { label: "All", value: true },
   { label: "One", value: false }
@@ -83,8 +93,7 @@ const iErrOptions = [
 ];
 const sheetsData = ref({});
 const fileSelect = ref<ListenEvent[]>([]);
-const toTab = computed(() => activeTab.value);
-const { dynamicHeight } = useDynamicHeight(176);
+const { dynamicHeight } = useDynamicHeight(122);
 const { isDark } = useDark();
 
 listen("update-msg", (event: Event<string>) => {
@@ -174,7 +183,7 @@ async function selectFile() {
     path.value = trimFile.filePath;
     fileSelect.value = trimFile.fileInfo;
 
-    if (toTab.value === "excel") {
+    if (activeTab.value === "excel") {
       message("get excel sheets...", {
         type: "info",
         duration: 0,
@@ -217,7 +226,7 @@ async function convert() {
   try {
     isLoading.value = true;
     let rtime: string;
-    if (toTab.value === "excel") {
+    if (activeTab.value === "excel") {
       const mapFileSheet = fileSheet.value.map(item => ({
         filename: item.filename,
         sheetname: item.sheetname
@@ -229,7 +238,7 @@ async function convert() {
         allSheets: allSheets.value,
         writeSheetname: writeSheetname.value
       });
-    } else if (toTab.value === "fmt") {
+    } else if (activeTab.value === "fmt") {
       rtime = await invoke("csv2csv", {
         path: path.value,
         wtrSep: wtrSep.value,
@@ -238,41 +247,41 @@ async function convert() {
         progress: progress.value
       });
       console.log(progress.value);
-    } else if (toTab.value === "encoding") {
+    } else if (activeTab.value === "encoding") {
       rtime = await invoke("encoding2utf8", {
         path: path.value,
         encoding: encoding.value
       });
       console.log(progress.value);
-    } else if (toTab.value === "access") {
+    } else if (activeTab.value === "access") {
       rtime = await invoke("access2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-    } else if (toTab.value === "dbf") {
+    } else if (activeTab.value === "dbf") {
       rtime = await invoke("dbf2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-    } else if (toTab.value === "csv") {
+    } else if (activeTab.value === "csv") {
       rtime = await invoke("csv2xlsx", {
         path: path.value,
         csvMode: csvMode.value,
         chunksize: chunksize.value
       });
-    } else if (toTab.value === "json") {
+    } else if (activeTab.value === "json") {
       rtime = await invoke("json2csv", {
         path: path.value,
         wtrSep: wtrSep.value
       });
-    } else if (toTab.value === "jsonl") {
+    } else if (activeTab.value === "jsonl") {
       rtime = await invoke("jsonl2csv", {
         path: path.value,
         wtrSep: wtrSep.value,
         ignoreErr: ignoreErr.value
       });
     }
-    message(`${toTab.value} done, elapsed time: ${rtime} s`, {
+    message(`${activeTab.value} done, elapsed time: ${rtime} s`, {
       type: "success"
     });
   } catch (err) {
@@ -284,23 +293,28 @@ async function convert() {
 
 <template>
   <el-form class="page-container">
-    <el-tabs v-model="activeTab">
-      <el-tab-pane name="excel" label="Excel2Csv" />
-      <el-tab-pane name="fmt" label="FmtCsv" />
-      <el-tab-pane name="encoding" label="CsvEncoding" />
-      <el-tab-pane name="access" label="Access2Csv" />
-      <el-tab-pane name="dbf" label="Dbf2Csv" />
-      <el-tab-pane name="csv" label="Csv2Xlsx" />
-      <el-tab-pane name="json" label="Json2Csv" />
-      <el-tab-pane name="jsonl" label="Jsonl2Csv" />
-    </el-tabs>
-
     <el-splitter>
       <el-splitter-panel size="240" :resizable="false">
         <div class="splitter-container">
           <el-tooltip content="Add data" effect="light" placement="right">
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
+
+          <!-- mode choice -->
+          <div class="mode-toggle-v" style="margin-bottom: 8px">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: activeTab === item.value,
+                'active-dark': isDark && activeTab === item.value
+              }"
+              @click="activeTab = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
           <!-- excel to csv -->
           <el-tooltip
@@ -619,5 +633,9 @@ async function convert() {
 <style scoped>
 .mode-toggle {
   width: 220px;
+}
+.mode-toggle-v {
+  width: 220px;
+  height: 128px;
 }
 </style>

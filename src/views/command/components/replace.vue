@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
@@ -99,11 +99,8 @@ async function replaceData() {
             placeholder="replacement"
           />
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">Replace</span>
-            </span>
+          <el-link @click="dialog = true" style="margin-top: auto">
+            <span class="link-text">Replace</span>
           </el-link>
         </div>
       </el-splitter-panel>

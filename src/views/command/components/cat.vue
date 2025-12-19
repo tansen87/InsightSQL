@@ -2,12 +2,7 @@
 import { ref } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  FolderOpened,
-  ArrowRight,
-  Link,
-  Loading
-} from "@element-plus/icons-vue";
+import { FolderOpened, ArrowRight, Loading } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdCat, useMarkdown } from "@/utils/markdown";
@@ -165,12 +160,9 @@ async function concatData() {
             </el-tooltip>
           </template>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+          <el-link @click="dialog = true" style="margin-top: auto">
             <span v-if="backendCompleted"> {{ backendInfo }} </span>
-            <span v-else>
-              About
-              <span style="color: skyblue; font-weight: bold">Cat</span>
-            </span>
+            <span class="link-text">Cat</span>
           </el-link>
         </div>
       </el-splitter-panel>

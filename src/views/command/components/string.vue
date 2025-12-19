@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  FolderOpened,
-  Files,
-  Link,
-  TurnOff,
-  Open,
-  ArrowRight
-} from "@element-plus/icons-vue";
+import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -23,8 +16,17 @@ const reverseOptions = [
   { label: "True", value: true },
   { label: "False", value: false }
 ];
-const toTab = computed(() => activeTab.value);
-const { dynamicHeight } = useDynamicHeight(200);
+const modeOptions = [
+  { label: "Left", value: "left" },
+  { label: "Right", value: "right" },
+  { label: "Slice", value: "slice" },
+  { label: "SplitN", value: "split_n" },
+  { label: "SplitMax", value: "split_max" },
+  { label: "PadLeft", value: "pad_left" },
+  { label: "PadRight", value: "pad_right" },
+  { label: "PadBoth", value: "pad_both" }
+];
+const { dynamicHeight } = useDynamicHeight(146);
 const { isDark } = useDark();
 
 async function selectFile() {
@@ -60,35 +62,35 @@ async function StrData() {
   try {
     isLoading.value = true;
     let rtime: string;
-    if (["left", "right", "slice"].includes(toTab.value)) {
+    if (["left", "right", "slice"].includes(activeTab.value)) {
       rtime = await invoke("str_slice", {
         path: path.value,
         column: column.value,
         n: n.value,
         length: length.value,
         reverse: reverse.value,
-        mode: toTab.value
+        mode: activeTab.value
       });
     }
-    if (["split_n", "split_max"].includes(toTab.value)) {
+    if (["split_n", "split_max"].includes(activeTab.value)) {
       rtime = await invoke("str_split", {
         path: path.value,
         column: column.value,
         n: n.value,
         by: by.value,
-        mode: toTab.value
+        mode: activeTab.value
       });
     }
-    if (["pad_left", "pad_right", "pad_both"].includes(toTab.value)) {
+    if (["pad_left", "pad_right", "pad_both"].includes(activeTab.value)) {
       rtime = await invoke("str_pad", {
         path: path.value,
         column: column.value,
         length: length.value,
         fillChar: by.value,
-        mode: toTab.value
+        mode: activeTab.value
       });
     }
-    message(`${toTab.value} done, elapsed time: ${rtime} s`, {
+    message(`${activeTab.value} done, elapsed time: ${rtime} s`, {
       type: "success"
     });
   } catch (err) {
@@ -102,23 +104,28 @@ const { mdShow } = useMarkdown(mdStr);
 
 <template>
   <el-form class="page-container">
-    <el-tabs v-model="activeTab">
-      <el-tab-pane name="left" label="Left" />
-      <el-tab-pane name="right" label="Right" />
-      <el-tab-pane name="slice" label="Slice" />
-      <el-tab-pane name="split_n" label="SplitN" />
-      <el-tab-pane name="split_max" label="SplitMax" />
-      <el-tab-pane name="pad_left" label="PadLeft" />
-      <el-tab-pane name="pad_right" label="PadRight" />
-      <el-tab-pane name="pad_both" label="PadBoth" />
-    </el-tabs>
-
     <el-splitter>
       <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
           <el-tooltip content="Add data" effect="light" placement="right">
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
+
+          <!-- mode choice -->
+          <div class="mode-toggle-v" style="margin-bottom: 8px">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: activeTab === item.value,
+                'active-dark': isDark && activeTab === item.value
+              }"
+              @click="activeTab = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
           <el-select
             v-model="column"
@@ -152,7 +159,7 @@ const { mdShow } = useMarkdown(mdStr);
           </el-tooltip>
 
           <el-tooltip
-            v-if="['left', 'right'].includes(toTab)"
+            v-if="['left', 'right'].includes(activeTab)"
             content="Length of the slice"
             effect="light"
             placement="right"
@@ -163,7 +170,7 @@ const { mdShow } = useMarkdown(mdStr);
             />
           </el-tooltip>
 
-          <template v-if="toTab === 'slice'">
+          <template v-if="activeTab === 'slice'">
             <el-tooltip content="Start index" effect="light" placement="right">
               <el-input
                 v-model="n"
@@ -182,7 +189,7 @@ const { mdShow } = useMarkdown(mdStr);
             </el-tooltip>
           </template>
 
-          <template v-if="['split_n', 'split_max'].includes(toTab)">
+          <template v-if="['split_n', 'split_max'].includes(activeTab)">
             <el-tooltip
               content="nth/max number of items to return"
               effect="light"
@@ -206,7 +213,7 @@ const { mdShow } = useMarkdown(mdStr);
           </template>
 
           <template
-            v-if="['pad_left', 'pad_right', 'pad_both'].includes(toTab)"
+            v-if="['pad_left', 'pad_right', 'pad_both'].includes(activeTab)"
           >
             <el-tooltip
               content="Pad the string until it reaches this length"
@@ -231,10 +238,7 @@ const { mdShow } = useMarkdown(mdStr);
           </template>
 
           <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">String</span>
-            </span>
+            <span class="link-text">String</span>
           </el-link>
         </div>
       </el-splitter-panel>
@@ -287,5 +291,9 @@ const { mdShow } = useMarkdown(mdStr);
 <style scoped>
 .mode-toggle {
   width: 160px;
+}
+.mode-toggle-v {
+  width: 160px;
+  height: 128px;
 }
 </style>

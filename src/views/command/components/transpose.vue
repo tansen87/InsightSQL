@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Files, FolderOpened, Link, ArrowRight } from "@element-plus/icons-vue";
+import { Files, FolderOpened, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -88,11 +88,8 @@ async function transposeData() {
             </div>
           </el-tooltip>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">Transpose</span>
-            </span>
+          <el-link @click="dialog = true" style="margin-top: auto">
+            <span class="link-text">Transpose</span>
           </el-link>
         </div>
       </el-splitter-panel>

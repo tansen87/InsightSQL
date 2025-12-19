@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
-import { Files, FolderOpened, Link, ArrowRight } from "@element-plus/icons-vue";
+import { Files, FolderOpened, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { useDynamicHeight } from "@/utils/utils";
@@ -172,11 +172,8 @@ async function searchData() {
               style="margin-bottom: 8px; margin-left: 8px"
             />
 
-            <el-link @click="dialog = true" :icon="Link">
-              <span>
-                About
-                <span style="color: skyblue; font-weight: bold">Search</span>
-              </span>
+            <el-link @click="dialog = true">
+              <span class="link-text">Search</span>
             </el-link>
           </div>
         </div>

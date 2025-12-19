@@ -8,7 +8,6 @@ import {
   Loading,
   Select,
   CloseBold,
-  Link,
   ArrowRight
 } from "@element-plus/icons-vue";
 import { useDynamicHeight, updateEvent } from "@/utils/utils";
@@ -130,11 +129,8 @@ async function skipLines() {
             />
           </el-tooltip>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">Skip</span>
-            </span>
+          <el-link @click="dialog = true" style="margin-top: auto">
+            <span class="link-text">Skip</span>
           </el-link>
         </div>
       </el-splitter-panel>

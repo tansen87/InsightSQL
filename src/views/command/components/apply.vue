@@ -4,7 +4,6 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   ArrowRight,
   FolderOpened,
-  Link,
   CirclePlus,
   Remove,
   Files
@@ -240,12 +239,9 @@ function addNewColumn() {
             </template>
           </div>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+          <el-link @click="dialog = true" style="margin-top: auto">
             <span v-if="backendCompleted"> {{ backendInfo }} </span>
-            <span>
-              About
-              <span style="color: skyblue; font-weight: bold">Apply</span>
-            </span>
+            <span class="link-text">Apply</span>
           </el-link>
         </div>
       </el-splitter-panel>
