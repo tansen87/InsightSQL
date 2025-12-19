@@ -91,6 +91,18 @@ const iErrOptions = [
   { label: "True", value: true },
   { label: "False", value: false }
 ];
+const fmtOptions = [
+  { label: "Necessary", value: "necessary" },
+  { label: "Always", value: "always" },
+  { label: "NonNumeric", value: "non_numeric" },
+  { label: "Never", value: "never" }
+];
+const encodingOptions = [
+  { label: "GBK", value: "gbk" },
+  { label: "UTF-8", value: "utf_8" },
+  { label: "UTF-16LE", value: "utf_16le" },
+  { label: "UTF-16BE", value: "utf_16be" }
+];
 const sheetsData = ref({});
 const fileSelect = ref<ListenEvent[]>([]);
 const { dynamicHeight } = useDynamicHeight(122);
@@ -301,7 +313,7 @@ async function convert() {
           </el-tooltip>
 
           <!-- mode choice -->
-          <div class="mode-toggle-v" style="margin-bottom: 8px">
+          <div class="mode-toggle-v mb-2 w-[220px] h-[128px]">
             <span
               v-for="item in modeOptions"
               :key="item.value"
@@ -323,7 +335,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-[220px]">
               <span
                 v-for="item in sheetsOptions"
                 :key="String(item.value)"
@@ -345,7 +357,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-[220px]">
               <span
                 v-for="item in writeOptions"
                 :key="String(item.value)"
@@ -361,11 +373,16 @@ async function convert() {
             </div>
           </el-tooltip>
 
-          <el-tooltip content="Skip rows" effect="light" placement="right">
+          <el-tooltip
+            v-if="activeTab === 'excel'"
+            content="Skip rows"
+            effect="light"
+            placement="right"
+          >
             <el-input
               v-model="skipRows"
-              v-if="activeTab === 'excel'"
-              style="width: 220px; margin-top: 8px; margin-left: 8px"
+              class="mt-2 ml-2"
+              style="width: 220px"
             />
           </el-tooltip>
 
@@ -376,7 +393,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-[220px]">
               <span
                 v-for="item in sepOptions"
                 :key="item.value"
@@ -398,7 +415,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-[220px]">
               <span
                 v-for="item in quoteOptions"
                 :key="item.value"
@@ -420,7 +437,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-[220px]">
               <span
                 v-for="item in pgsOptions"
                 :key="item.value"
@@ -436,21 +453,30 @@ async function convert() {
             </div>
           </el-tooltip>
 
-          <el-tooltip content="Quote style" effect="light" placement="right">
-            <el-select
-              v-model="quoteStyle"
-              style="width: 220px; margin-left: 8px; margin-top: 8px"
-              v-if="activeTab === 'fmt'"
-            >
-              <el-option label="Necessary" value="necessary" />
-              <el-option label="Always" value="always" />
-              <el-option label="NonNumeric" value="non_numeric" />
-              <el-option label="Never" value="never" />
-            </el-select>
+          <el-tooltip
+            v-if="activeTab === 'fmt'"
+            content="Quote style"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle-v mt-2 w-[220px] h-[64px]">
+              <span
+                v-for="item in fmtOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: quoteStyle === item.value,
+                  'active-dark': isDark && quoteStyle === item.value
+                }"
+                @click="quoteStyle = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
           </el-tooltip>
 
           <!-- csv to xlsx -->
-          <div class="mode-toggle" v-if="activeTab === 'csv'">
+          <div class="mode-toggle w-[220px]" v-if="activeTab === 'csv'">
             <span
               v-for="item in csvModeOptions"
               :key="item.value"
@@ -466,14 +492,15 @@ async function convert() {
           </div>
 
           <el-tooltip
+            v-if="activeTab === 'csv' && csvMode === 'csv'"
             content="Split every N rows into a sheet"
             effect="light"
             placement="right"
           >
             <el-input
               v-model="chunksize"
-              v-if="activeTab === 'csv' && csvMode === 'csv'"
-              style="margin-left: 8px; margin-top: 8px; width: 220px"
+              class="ml-2 mt-2"
+              style="width: 220px"
             />
           </el-tooltip>
 
@@ -484,7 +511,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-[220px]">
               <span
                 v-for="item in iErrOptions"
                 :key="String(item.value)"
@@ -501,22 +528,31 @@ async function convert() {
           </el-tooltip>
 
           <!-- encoding -->
-          <el-tooltip content="Read Encoding" effect="light" placement="right">
-            <el-select
-              v-model="encoding"
-              style="margin-left: 8px; width: 220px"
-              v-if="activeTab === 'encoding'"
-            >
-              <el-option label="GBK" value="gbk" />
-              <el-option label="UTF-8" value="utf_8" />
-              <el-option label="UTF-16LE" value="utf_16le" />
-              <el-option label="UTF-16BE" value="utf_16be" />
-            </el-select>
+          <el-tooltip
+            v-if="activeTab === 'encoding'"
+            content="Read Encoding"
+            effect="light"
+            placement="right"
+          >
+            <div class="mode-toggle-v mt-2 w-[220px] h-[64px]">
+              <span
+                v-for="item in encodingOptions"
+                :key="item.value"
+                class="mode-item"
+                :class="{
+                  active: encoding === item.value,
+                  'active-dark': isDark && encoding === item.value
+                }"
+                @click="encoding = item.value"
+              >
+                {{ item.label }}
+              </span>
+            </div>
           </el-tooltip>
 
           <text
             v-if="backendCompleted && activeTab === 'excel'"
-            style="margin-left: 8px; margin-top: auto"
+            class="ml-2 mt-auto"
           >
             {{ backendInfo }}
           </text>
@@ -537,17 +573,11 @@ async function convert() {
         <el-table
           :data="fileSelect"
           :height="dynamicHeight"
-          style="width: 100%"
           show-overflow-tooltip
-          empty-text=""
+          tooltip-effect="light"
         >
           <el-table-column type="index" width="35" />
-          <el-table-column
-            prop="filename"
-            label="File"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 30%"
-          />
+          <el-table-column prop="filename" label="File" />
           <el-table-column
             prop="status"
             label="Status"
@@ -556,8 +586,6 @@ async function convert() {
               { text: '√', value: 'success' }
             ]"
             :filter-method="filterFileStatus"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 10%"
           >
             <template #default="scope">
               <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
@@ -583,19 +611,13 @@ async function convert() {
               </span>
             </template>
           </el-table-column>
-          <el-table-column
-            prop="message"
-            label="Message"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 60%"
-          >
+          <el-table-column prop="message" label="Message">
             <template #default="scope">
               <template v-if="activeTab === 'excel'">
                 <el-select
                   v-model="scope.row.selectSheet"
                   placeholder="Select a sheet"
                   @change="updateFileSheet(scope.row)"
-                  style="width: 100%"
                 >
                   <el-option
                     v-for="sheet in scope.row.sheets"
@@ -629,13 +651,3 @@ async function convert() {
     </el-splitter>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 220px;
-}
-.mode-toggle-v {
-  width: 220px;
-  height: 128px;
-}
-</style>

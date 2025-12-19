@@ -93,18 +93,18 @@ async function headerEdit(row: any) {
 <template>
   <el-form class="page-container">
     <el-splitter>
-      <el-splitter-panel size="140" :resizable="false">
+      <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
           <el-tooltip content="Add data" effect="light" placement="right">
             <el-button @click="selectFile()" :icon="FolderOpened" text circle />
           </el-tooltip>
 
           <el-tooltip
-            content="if nil, no progress bar"
+            content="if Nil, no progress bar"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-40">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -120,11 +120,11 @@ async function headerEdit(row: any) {
             </div>
           </el-tooltip>
 
-          <div style="margin-top: auto; display: flex; flex-direction: column">
+          <div class="flex flex-col mt-auto">
             <el-progress
               v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
               :percentage="Math.round((currentRows / totalRows) * 100)"
-              style="margin-bottom: 8px; margin-left: 8px"
+              class="mb-2 ml-2"
             />
             <el-link @click="dialog = true">
               <span class="link-text">Rename</span>
@@ -148,6 +148,7 @@ async function headerEdit(row: any) {
           :data="filterTableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column prop="col1" label="headers" />
           <el-table-column prop="col2" label="new headers">
@@ -171,7 +172,7 @@ async function headerEdit(row: any) {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -190,9 +191,3 @@ async function headerEdit(row: any) {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 120px;
-}
-</style>

@@ -106,7 +106,7 @@ async function countData() {
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
-          <div class="mode-toggle">
+          <div class="mode-toggle w-[180px]">
             <span
               v-for="item in modeOptions"
               :key="item.value"
@@ -121,7 +121,7 @@ async function countData() {
             </span>
           </div>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Count</span>
           </el-link>
         </div>
@@ -141,22 +141,12 @@ async function countData() {
         <el-table
           :data="fileSelect"
           :height="dynamicHeight"
-          style="width: 100%"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column type="index" width="35" />
-          <el-table-column
-            prop="filename"
-            label="File"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 30%"
-          />
-          <el-table-column
-            prop="status"
-            label="Status"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 10%"
-          >
+          <el-table-column prop="filename" label="File" />
+          <el-table-column prop="status" label="Status">
             <template #default="scope">
               <ElIcon v-if="scope.row.status === ''" class="is-loading">
                 <Loading />
@@ -172,12 +162,7 @@ async function countData() {
               </ElIcon>
             </template>
           </el-table-column>
-          <el-table-column
-            prop="message"
-            label="Message"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 60%"
-          >
+          <el-table-column prop="message" label="Message">
             <template #default="scope">
               <span v-if="scope.row.status === 'error'">
                 {{ scope.row.message }}
@@ -199,9 +184,3 @@ async function countData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 180px;
-}
-</style>

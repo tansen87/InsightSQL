@@ -69,7 +69,7 @@ async function splitData() {
           </el-tooltip>
 
           <el-tooltip content="Split mode" effect="light" placement="right">
-            <div class="mode-toggle">
+            <div class="mode-toggle w-[180px]">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -89,11 +89,12 @@ async function splitData() {
             <el-input-number
               v-model="size"
               controls-position="right"
-              style="width: 180px; margin-left: 8px; margin-top: 8px"
+              class="mt-2 ml-2"
+              style="width: 180px"
             />
           </el-tooltip>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Split</span>
           </el-link>
         </div>
@@ -114,6 +115,7 @@ async function splitData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -124,7 +126,7 @@ async function splitData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -143,9 +145,3 @@ async function splitData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 180px;
-}
-</style>

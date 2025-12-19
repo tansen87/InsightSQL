@@ -132,7 +132,7 @@ function addNewColumn() {
     <el-splitter>
       <el-splitter-panel size="260" :resizable="false">
         <div class="splitter-container">
-          <div class="button-row">
+          <div class="flex items-center">
             <el-tooltip content="Add data" effect="light">
               <el-button
                 @click="selectFile()"
@@ -151,7 +151,7 @@ function addNewColumn() {
             </el-tooltip>
           </div>
 
-          <div class="mode-toggle">
+          <div class="mode-toggle w-60">
             <span
               v-for="item in modeOptions"
               :key="item.value"
@@ -166,55 +166,53 @@ function addNewColumn() {
             </span>
           </div>
 
-          <el-select
-            v-model="columns"
-            filterable
-            multiple
-            placeholder="Select column(s)"
-            style="margin-top: 8px; margin-left: 8px; width: 240px"
-          >
-            <template #header>
-              <el-checkbox
-                v-model="checkAll"
-                :indeterminate="indeterminate"
-                @change="handleCheckAll"
-              >
-                All
-              </el-checkbox>
-            </template>
-            <el-option
-              v-for="item in tableHeader"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+          <div class="mt-2 ml-2 w-60 space-y-2">
+            <el-select
+              v-model="columns"
+              filterable
+              multiple
+              placeholder="Select column(s)"
+            >
+              <template #header>
+                <el-checkbox
+                  v-model="checkAll"
+                  :indeterminate="indeterminate"
+                  @change="handleCheckAll"
+                >
+                  All
+                </el-checkbox>
+              </template>
+              <el-option
+                v-for="item in tableHeader"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
 
-          <el-select
-            v-if="mode === 'operations'"
-            v-model="operations"
-            filterable
-            multiple
-            placeholder="Operations"
-            style="margin-top: 8px; margin-left: 8px; width: 240px"
-          >
-            <el-option label="Copy" value="copy" />
-            <el-option label="Len" value="len" />
-            <el-option label="Lower" value="lower" />
-            <el-option label="Upper" value="upper" />
-            <el-option label="Trim" value="trim" />
-            <el-option label="Ltrim" value="ltrim" />
-            <el-option label="Rtrim" value="rtrim" />
-            <el-option label="Replace" value="replace" />
-            <el-option label="Round" value="round" />
-            <el-option label="Squeeze" value="squeeze" />
-            <el-option label="Strip" value="strip" />
-            <el-option label="Reverse" value="reverse" />
-            <el-option label="Abs" value="abs" />
-            <el-option label="Neg" value="neg" />
-          </el-select>
+            <el-select
+              v-if="mode === 'operations'"
+              v-model="operations"
+              filterable
+              multiple
+              placeholder="Operations"
+            >
+              <el-option label="Copy" value="copy" />
+              <el-option label="Len" value="len" />
+              <el-option label="Lower" value="lower" />
+              <el-option label="Upper" value="upper" />
+              <el-option label="Trim" value="trim" />
+              <el-option label="Ltrim" value="ltrim" />
+              <el-option label="Rtrim" value="rtrim" />
+              <el-option label="Replace" value="replace" />
+              <el-option label="Round" value="round" />
+              <el-option label="Squeeze" value="squeeze" />
+              <el-option label="Strip" value="strip" />
+              <el-option label="Reverse" value="reverse" />
+              <el-option label="Abs" value="abs" />
+              <el-option label="Neg" value="neg" />
+            </el-select>
 
-          <div style="margin-top: 8px; margin-left: 8px; width: 240px">
             <template
               v-if="
                 ['operations'].includes(mode) && operations.includes('replace')
@@ -224,11 +222,7 @@ function addNewColumn() {
                 <el-input v-model="comparand" placeholder="replace - from" />
               </el-tooltip>
               <el-tooltip content="new" effect="light" placement="right">
-                <el-input
-                  v-model="replacement"
-                  placeholder="replace - to"
-                  style="margin-top: 5px"
-                />
+                <el-input v-model="replacement" placeholder="replace - to" />
               </el-tooltip>
             </template>
 
@@ -239,7 +233,7 @@ function addNewColumn() {
             </template>
           </div>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span v-if="backendCompleted"> {{ backendInfo }} </span>
             <span class="link-text">Apply</span>
           </el-link>
@@ -271,7 +265,7 @@ function addNewColumn() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -290,13 +284,3 @@ function addNewColumn() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 240px;
-}
-.button-row {
-  display: flex;
-  align-items: center;
-}
-</style>

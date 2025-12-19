@@ -88,7 +88,7 @@ async function joinData() {
     <el-splitter>
       <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
-          <div class="button-row">
+          <div class="flex items-center">
             <el-tooltip content="Add data 1" effect="light">
               <el-button
                 @click="selectFile(1)"
@@ -115,8 +115,9 @@ async function joinData() {
             <el-select
               v-model="sel1"
               filterable
-              style="width: 160px; margin-left: 8px"
               placeholder="column of file1"
+              class="ml-2"
+              style="width: 160px"
             >
               <el-option
                 v-for="item in tableHeader1"
@@ -135,8 +136,9 @@ async function joinData() {
             <el-select
               v-model="sel2"
               filterable
-              style="width: 160px; margin-left: 8px; margin-top: 8px"
               placeholder="column of file2"
+              class="mt-2 ml-2"
+              style="width: 160px"
             >
               <el-option
                 v-for="item in tableHeader2"
@@ -152,7 +154,7 @@ async function joinData() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-40">
               <span
                 v-for="item in nullOptions"
                 :key="String(item.value)"
@@ -171,7 +173,8 @@ async function joinData() {
           <el-tooltip content="Join type" effect="light" placement="right">
             <el-select
               v-model="joinType"
-              style="width: 160px; margin-left: 8px; margin-top: 8px"
+              class="mt-2 ml-2"
+              style="width: 160px"
             >
               <el-option label="left" value="left" />
               <el-option label="right" value="right" />
@@ -185,7 +188,7 @@ async function joinData() {
             </el-select>
           </el-tooltip>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Join</span>
           </el-link>
         </div>
@@ -211,6 +214,7 @@ async function joinData() {
               :height="dynamicHeight / 2 - 49"
               empty-text="data 1"
               show-overflow-tooltip
+              tooltip-effect="light"
             >
               <el-table-column
                 v-for="column in tableColumn1"
@@ -221,7 +225,7 @@ async function joinData() {
             </el-table>
 
             <el-text>
-              <el-icon style="margin-left: 8px">
+              <el-icon class="ml-2">
                 <Files />
               </el-icon>
               data 1 => {{ data.path1 }}
@@ -234,6 +238,7 @@ async function joinData() {
               :height="dynamicHeight / 2 - 49"
               empty-text="data 2"
               show-overflow-tooltip
+              tooltip-effect="light"
             >
               <el-table-column
                 v-for="column in tableColumn2"
@@ -244,7 +249,7 @@ async function joinData() {
             </el-table>
 
             <el-text>
-              <el-icon style="margin-left: 8px">
+              <el-icon class="ml-2">
                 <Files />
               </el-icon>
               data 2 => {{ data.path2 }}
@@ -265,13 +270,3 @@ async function joinData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 160px;
-}
-.button-row {
-  display: flex;
-  align-items: center;
-}
-</style>

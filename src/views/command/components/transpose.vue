@@ -68,11 +68,11 @@ async function transposeData() {
           </el-tooltip>
 
           <el-tooltip
-            content="if nil, no progress bar"
+            content="if Nil, no progress bar"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-[180px]">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -88,7 +88,7 @@ async function transposeData() {
             </div>
           </el-tooltip>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Transpose</span>
           </el-link>
         </div>
@@ -109,6 +109,7 @@ async function transposeData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -119,7 +120,7 @@ async function transposeData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -138,9 +139,3 @@ async function transposeData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 180px;
-}
-</style>

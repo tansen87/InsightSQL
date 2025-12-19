@@ -94,11 +94,11 @@ async function searchData() {
           </el-tooltip>
 
           <el-tooltip
-            content="if nil, no progress bar"
+            content="if Nil, no progress bar"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-60">
               <span
                 v-for="item in pgsOptions"
                 :key="item.value"
@@ -117,8 +117,9 @@ async function searchData() {
           <el-select
             v-model="column"
             filterable
-            style="margin-top: 8px; margin-left: 8px; width: 240px"
             placeholder="Select column"
+            class="mt-2 ml-2"
+            style="width: 240px"
           >
             <el-option
               v-for="item in tableHeader"
@@ -132,7 +133,8 @@ async function searchData() {
             <el-select
               v-model="mode"
               filterable
-              style="margin-top: 8px; margin-left: 8px; width: 240px"
+              class="mt-2 ml-2"
+              style="width: 240px"
             >
               <el-option label="Equal" value="equal" />
               <el-option label="EqualMulti" value="equal_multi" />
@@ -162,14 +164,15 @@ async function searchData() {
             :autosize="{ minRows: 8, maxRows: 8 }"
             type="textarea"
             placeholder="Search conditions......Separate by |. (Example: tom|jack|jerry)"
-            style="margin-top: 8px; margin-left: 8px; width: 240px"
+            class="mt-2 ml-2"
+            style="width: 240px"
           />
 
-          <div style="margin-top: auto; display: flex; flex-direction: column">
+          <div class="flex flex-col mt-auto">
             <el-progress
               v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
               :percentage="Math.round((currentRows / totalRows) * 100)"
-              style="margin-bottom: 8px; margin-left: 8px"
+              class="mb-2 ml-2"
             />
 
             <el-link @click="dialog = true">
@@ -180,7 +183,7 @@ async function searchData() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <div class="header-row">
+        <div class="flex justify-between items-center">
           <el-tooltip content="Run" effect="light" placement="right">
             <el-button
               @click="searchData()"
@@ -200,6 +203,7 @@ async function searchData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -210,7 +214,7 @@ async function searchData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -229,14 +233,3 @@ async function searchData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 240px;
-}
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-</style>

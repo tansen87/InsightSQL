@@ -95,18 +95,18 @@ async function skipLines() {
 <template>
   <el-form class="page-container">
     <el-splitter>
-      <el-splitter-panel size="160" :resizable="false">
+      <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
           <el-tooltip content="Add data" effect="light" placement="right">
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
           <el-tooltip
-            content="if nil, no progress bar"
+            content="if Nil, no progress bar"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-40">
               <span
                 v-for="item in pgsOptions"
                 :key="item.value"
@@ -125,11 +125,12 @@ async function skipLines() {
           <el-tooltip content="skip rows" effect="light" placement="right">
             <el-input
               v-model="skipRows"
-              style="margin-left: 8px; margin-top: 8px; width: 140px"
+              class="mt-2 ml-2"
+              style="width: 160px"
             />
           </el-tooltip>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Skip</span>
           </el-link>
         </div>
@@ -150,9 +151,10 @@ async function skipLines() {
           :data="fileSelect"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column type="index" width="35" />
-          <el-table-column prop="filename" label="File" style="width: 80%" />
+          <el-table-column prop="filename" label="File" />
           <el-table-column prop="status" label="Status" width="70">
             <template #default="scope">
               <ElIcon v-if="scope.row.status === 'loading'" class="is-loading">
@@ -169,12 +171,7 @@ async function skipLines() {
               </ElIcon>
             </template>
           </el-table-column>
-          <el-table-column
-            prop="message"
-            label="Message"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 60%"
-          >
+          <el-table-column prop="message" label="Message">
             <template #default="scope">
               <span v-if="scope.row.status === 'error'">
                 {{ scope.row.message }}
@@ -203,9 +200,3 @@ async function skipLines() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 140px;
-}
-</style>

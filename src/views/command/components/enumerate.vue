@@ -71,18 +71,18 @@ async function enumerate() {
 <template>
   <el-form class="page-container">
     <el-splitter>
-      <el-splitter-panel size="200" :resizable="false">
+      <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
           <el-tooltip content="Add data" effect="light" placement="right">
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
           <el-tooltip
-            content="if nil, no progress bar"
+            content="if Nil, no progress bar"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-40">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -98,11 +98,11 @@ async function enumerate() {
             </div>
           </el-tooltip>
 
-          <div style="margin-top: auto; display: flex; flex-direction: column">
+          <div class="flex flex-col mt-auto">
             <el-progress
               v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
               :percentage="Math.round((currentRows / totalRows) * 100)"
-              style="margin-bottom: 8px; margin-left: 8px"
+              class="mb-2 ml-2"
             />
             <el-link @click="dialog = true">
               <span class="link-text">Enumerate</span>
@@ -126,6 +126,7 @@ async function enumerate() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -136,7 +137,7 @@ async function enumerate() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -155,9 +156,3 @@ async function enumerate() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 180px;
-}
-</style>

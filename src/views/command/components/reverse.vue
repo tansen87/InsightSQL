@@ -71,7 +71,7 @@ async function reverseData() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle">
+            <div class="mode-toggle w-40">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -87,7 +87,7 @@ async function reverseData() {
             </div>
           </el-tooltip>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Reverse</span>
           </el-link>
         </div>
@@ -108,6 +108,7 @@ async function reverseData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -118,7 +119,7 @@ async function reverseData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -137,9 +138,3 @@ async function reverseData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 160px;
-}
-</style>

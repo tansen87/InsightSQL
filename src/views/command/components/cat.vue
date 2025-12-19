@@ -119,10 +119,11 @@ async function concatData() {
     <el-splitter>
       <el-splitter-panel size="240" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light">
+          <el-tooltip content="Add data" effect="light" placement="right">
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
-          <div class="mode-toggle">
+
+          <div class="mode-toggle w-[220px]">
             <span
               v-for="item in modeOptions"
               :key="item.value"
@@ -147,7 +148,8 @@ async function concatData() {
                 v-model="columns"
                 multiple
                 filterable
-                style="margin-top: 8px; margin-left: 8px; width: 220px"
+                class="ml-2 mt-2"
+                style="width: 220px"
                 placeholder="Cat specific column"
               >
                 <el-option
@@ -160,15 +162,15 @@ async function concatData() {
             </el-tooltip>
           </template>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span v-if="backendCompleted"> {{ backendInfo }} </span>
-            <span class="link-text">Cat</span>
+            <span v-else class="link-text">Cat</span>
           </el-link>
         </div>
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light">
+        <el-tooltip content="Run" effect="light" placement="right">
           <el-button
             @click="concatData()"
             :loading="isLoading"
@@ -182,21 +184,11 @@ async function concatData() {
           :data="fileSelect"
           :height="dynamicHeight"
           show-overflow-tooltip
-          style="width: 100%"
+          tooltip-effect="light"
         >
           <el-table-column type="index" width="35" />
-          <el-table-column
-            prop="filename"
-            label="file"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 60%"
-          />
-          <el-table-column
-            prop="infoMsg"
-            label="duplicate headers"
-            :class="{ 'custom-width': true }"
-            style="flex: 0 0 40%"
-          >
+          <el-table-column prop="filename" label="file" />
+          <el-table-column prop="infoMsg" label="duplicate headers">
             <template #default="scope">
               {{ scope.row.infoMsg }}
             </template>
@@ -216,9 +208,3 @@ async function concatData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 220px;
-}
-</style>

@@ -73,33 +73,22 @@ async function replaceData() {
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
-          <el-select
-            v-model="column"
-            filterable
-            style="width: 160px; margin-left: 8px"
-            placeholder="Select column"
-          >
-            <el-option
-              v-for="item in tableHeader"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+          <div class="ml-2 w-40 space-y-2">
+            <el-select v-model="column" filterable placeholder="Select column">
+              <el-option
+                v-for="item in tableHeader"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
 
-          <el-input
-            style="margin-left: 8px; margin-top: 8px; width: 160px"
-            placeholder="regex pattern"
-            v-model="regexPattern"
-          />
+            <el-input v-model="regexPattern" placeholder="regex pattern" />
 
-          <el-input
-            v-model="replacement"
-            style="margin-left: 8px; margin-top: 8px; width: 160px"
-            placeholder="replacement"
-          />
+            <el-input v-model="replacement" placeholder="replacement" />
+          </div>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Replace</span>
           </el-link>
         </div>
@@ -120,6 +109,7 @@ async function replaceData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -130,7 +120,7 @@ async function replaceData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -149,9 +139,3 @@ async function replaceData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 160px;
-}
-</style>

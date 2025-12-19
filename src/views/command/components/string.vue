@@ -112,7 +112,7 @@ const { mdShow } = useMarkdown(mdStr);
           </el-tooltip>
 
           <!-- mode choice -->
-          <div class="mode-toggle-v" style="margin-bottom: 8px">
+          <div class="mode-toggle-v mb-2 w-40 h-[128px]">
             <span
               v-for="item in modeOptions"
               :key="item.value"
@@ -130,8 +130,9 @@ const { mdShow } = useMarkdown(mdStr);
           <el-select
             v-model="column"
             filterable
-            style="width: 160px; margin-left: 8px"
             placeholder="Select column"
+            class="ml-2"
+            style="width: 160px"
           >
             <el-option
               v-for="item in tableHeader"
@@ -142,7 +143,7 @@ const { mdShow } = useMarkdown(mdStr);
           </el-select>
 
           <el-tooltip content="Reverse or not" effect="light" placement="right">
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-40">
               <span
                 v-for="item in reverseOptions"
                 :key="String(item.value)"
@@ -164,18 +165,12 @@ const { mdShow } = useMarkdown(mdStr);
             effect="light"
             placement="right"
           >
-            <el-input
-              v-model="n"
-              style="margin-left: 8px; margin-top: 8px; width: 160px"
-            />
+            <el-input v-model="n" class="mt-2 ml-2" style="width: 160px" />
           </el-tooltip>
 
           <template v-if="activeTab === 'slice'">
             <el-tooltip content="Start index" effect="light" placement="right">
-              <el-input
-                v-model="n"
-                style="margin-left: 8px; margin-top: 8px; width: 160px"
-              />
+              <el-input v-model="n" class="mt-2 ml-2" style="width: 160px" />
             </el-tooltip>
             <el-tooltip
               content="Length of the slice"
@@ -184,7 +179,8 @@ const { mdShow } = useMarkdown(mdStr);
             >
               <el-input
                 v-model="length"
-                style="margin-left: 8px; margin-top: 8px; width: 160px"
+                class="mt-2 ml-2"
+                style="width: 160px"
               />
             </el-tooltip>
           </template>
@@ -195,20 +191,14 @@ const { mdShow } = useMarkdown(mdStr);
               effect="light"
               placement="right"
             >
-              <el-input
-                v-model="n"
-                style="margin-left: 8px; margin-top: 8px; width: 160px"
-              />
+              <el-input v-model="n" class="mt-2 ml-2" style="width: 160px" />
             </el-tooltip>
             <el-tooltip
               content="Substring to split by"
               effect="light"
               placement="right"
             >
-              <el-input
-                v-model="by"
-                style="margin-left: 8px; margin-top: 8px; width: 160px"
-              />
+              <el-input v-model="by" class="mt-2 ml-2" style="width: 160px" />
             </el-tooltip>
           </template>
 
@@ -222,7 +212,8 @@ const { mdShow } = useMarkdown(mdStr);
             >
               <el-input
                 v-model="length"
-                style="margin-left: 8px; margin-top: 8px; width: 160px"
+                class="mt-2 ml-2"
+                style="width: 160px"
               />
             </el-tooltip>
             <el-tooltip
@@ -230,14 +221,11 @@ const { mdShow } = useMarkdown(mdStr);
               effect="light"
               placement="right"
             >
-              <el-input
-                v-model="by"
-                style="margin-left: 8px; margin-top: 8px; width: 160px"
-              />
+              <el-input v-model="by" class="mt-2 ml-2" style="width: 160px" />
             </el-tooltip>
           </template>
 
-          <el-link @click="dialog = true" :icon="Link" style="margin-top: auto">
+          <el-link @click="dialog = true" :icon="Link" class="mt-auto">
             <span class="link-text">String</span>
           </el-link>
         </div>
@@ -258,6 +246,7 @@ const { mdShow } = useMarkdown(mdStr);
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -268,7 +257,7 @@ const { mdShow } = useMarkdown(mdStr);
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -287,13 +276,3 @@ const { mdShow } = useMarkdown(mdStr);
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 160px;
-}
-.mode-toggle-v {
-  width: 160px;
-  height: 128px;
-}
-</style>

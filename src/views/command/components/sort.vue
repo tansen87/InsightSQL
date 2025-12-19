@@ -105,7 +105,7 @@ async function sortData() {
           </el-tooltip>
 
           <el-tooltip content="Sort mode" effect="light" placement="right">
-            <div class="mode-toggle">
+            <div class="mode-toggle w-[180px]">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -122,7 +122,7 @@ async function sortData() {
           </el-tooltip>
 
           <el-tooltip content="Numeric" effect="light" placement="right">
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-[180px]">
               <span
                 v-for="item in numOptions"
                 :key="String(item.value)"
@@ -143,7 +143,7 @@ async function sortData() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle" style="margin-top: 8px">
+            <div class="mode-toggle mt-2 w-[180px]">
               <span
                 v-for="item in reverseOptions"
                 :key="String(item.value)"
@@ -162,8 +162,9 @@ async function sortData() {
           <el-select
             v-model="column"
             filterable
-            style="width: 180px; margin-left: 8px; margin-top: 8px"
             placeholder="Select column"
+            class="mt-2 ml-2"
+            style="width: 180px"
           >
             <el-option
               v-for="item in tableHeader"
@@ -173,7 +174,7 @@ async function sortData() {
             />
           </el-select>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <el-tooltip :content="path" effect="light">
               <span class="link-text">Sort</span>
             </el-tooltip>
@@ -196,6 +197,7 @@ async function sortData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -206,7 +208,7 @@ async function sortData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -225,9 +227,3 @@ async function sortData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 180px;
-}
-</style>

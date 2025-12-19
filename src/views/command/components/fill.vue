@@ -78,7 +78,7 @@ async function fillData() {
           </el-tooltip>
 
           <el-tooltip content="fill mode" effect="light" placement="right">
-            <div class="mode-toggle">
+            <div class="mode-toggle w-[200px]">
               <span
                 v-for="item in modeOptions"
                 :key="item.value"
@@ -98,8 +98,9 @@ async function fillData() {
             v-model="columns"
             multiple
             filterable
-            style="margin-top: 8px; margin-left: 8px; width: 200px"
             placeholder="Select columns"
+            class="mt-2 ml-2"
+            style="width: 200px"
           >
             <el-option
               v-for="item in tableHeader"
@@ -116,11 +117,12 @@ async function fillData() {
           >
             <el-input
               v-model="fillChar"
-              style="width: 200px; margin-left: 8px; margin-top: 8px"
+              class="mt-2 ml-2"
+              style="width: 200px"
             />
           </el-tooltip>
 
-          <el-link @click="dialog = true" style="margin-top: auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Fill</span>
           </el-link>
         </div>
@@ -141,6 +143,7 @@ async function fillData() {
           :data="tableData"
           :height="dynamicHeight"
           show-overflow-tooltip
+          tooltip-effect="light"
         >
           <el-table-column
             v-for="column in tableColumn"
@@ -151,7 +154,7 @@ async function fillData() {
         </el-table>
 
         <el-text>
-          <el-icon style="margin-left: 8px">
+          <el-icon class="ml-2">
             <Files />
           </el-icon>
           {{ path }}
@@ -170,9 +173,3 @@ async function fillData() {
     </el-dialog>
   </el-form>
 </template>
-
-<style scoped>
-.mode-toggle {
-  width: 200px;
-}
-</style>
