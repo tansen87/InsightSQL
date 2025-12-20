@@ -58,16 +58,16 @@ function deleteBtn() {
         id="input"
         class="handle-style"
       />
-      <div style="text-align: center; padding: 5px">
+      <div class="text-center p-[5px]">
         <el-button
           circle
           link
           @click="deleteBtn"
           :icon="CloseBold"
           size="small"
-          style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
+          class="absolute top-[-2.5px] right-[-2.5px] z-10"
         />
-        <span style="display: block; font-weight: bold"> Filter </span>
+        <span class="block font-bold"> Filter </span>
         <el-select
           v-model="columns"
           filterable

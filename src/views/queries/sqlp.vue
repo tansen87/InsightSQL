@@ -406,7 +406,7 @@ function allVarchar() {
                 text
               />
             </el-tooltip>
-            <el-scrollbar style="flex: 1">
+            <el-scrollbar class="flex-1">
               <el-tree
                 :data="fileTreeData"
                 :props="defaultProps"
@@ -432,8 +432,8 @@ function allVarchar() {
         <el-splitter-panel>
           <el-splitter layout="vertical">
             <el-splitter-panel :collapsible="true">
-              <div style="display: flex; flex-direction: column; height: 100%">
-                <div style="display: flex; align-items: center">
+              <div class="flex flex-col h-full">
+                <div class="flex items-center">
                   <el-tooltip content="Run" effect="light">
                     <el-button
                       @click="queryViewData"
@@ -482,18 +482,8 @@ function allVarchar() {
               </div>
             </el-splitter-panel>
 
-            <el-splitter-panel
-              min="35"
-              style="display: flex; flex-direction: column"
-            >
-              <div
-                style="
-                  flex: 1;
-                  display: flex;
-                  flex-direction: column;
-                  overflow: hidden;
-                "
-              >
+            <el-splitter-panel min="35" class="flex flex-col">
+              <div class="flex-1 flex flex-col overflow-hidden">
                 <el-table :data="pagedTableData" height="100%" empty-text="">
                   <el-table-column
                     v-for="column in tableColumn"
@@ -503,14 +493,7 @@ function allVarchar() {
                     width="150px"
                   />
                 </el-table>
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    flex-shrink: 0;
-                  "
-                >
+                <div class="flex justify-between items-center shrink-0">
                   <el-pagination
                     v-model:current-page="currentPage"
                     v-model:page-size="pageSize"
@@ -523,7 +506,7 @@ function allVarchar() {
                     background
                     :pager-count="5"
                   />
-                  <div style="display: flex; align-items: center">
+                  <div class="flex items-center">
                     <el-tooltip content="Export type" effect="light">
                       <el-select
                         v-model="data.writeFormat"

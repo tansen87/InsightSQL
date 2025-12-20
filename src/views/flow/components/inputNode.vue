@@ -38,18 +38,16 @@ async function selectFile() {
 <template>
   <div class="page-container">
     <div class="node-container">
-      <div style="text-align: center; padding: 5px">
+      <div class="text-center p-[5px]">
         <el-button
           circle
           link
           @click="deleteBtn"
           :icon="CloseBold"
           size="small"
-          style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
+          class="absolute top-[-2.5px] right-[-2.5px] z-10"
         />
-        <span style="display: block; font-weight: bold; margin-bottom: 6px">
-          Start
-        </span>
+        <span class="block font-bold"> Start </span>
         <el-button @click="selectFile()" :icon="FolderOpened">
           <span v-if="isPath">
             <el-tooltip :content="path" effect="light">

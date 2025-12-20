@@ -87,8 +87,8 @@ const onDragOver = (event: DragEvent) => {
 </script>
 
 <template>
-  <div class="page-container" style="display: flex; height: 90vh">
-    <div style="width: 80px; padding: 5px; border-right: 1px solid #ddd">
+  <div class="page-container flex h-[90vh]">
+    <div class="w-[80px] p-[5px] border-r border-[#ddd]">
       <div
         v-for="type in nodeTypes"
         :key="type"
@@ -99,7 +99,7 @@ const onDragOver = (event: DragEvent) => {
         {{ type }}
       </div>
     </div>
-    <div style="flex: 1; position: relative">
+    <div class="flex-1 relative">
       <VueFlow
         ref="vueFlowRef"
         :nodes="nodes"

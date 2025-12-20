@@ -54,18 +54,16 @@ function deleteBtn() {
         id="input"
         class="handle-style"
       />
-      <div style="text-align: center; width: 100%; padding: 5px">
+      <div class="text-center p-[5px]">
         <el-button
           circle
           link
           @click="deleteBtn"
           :icon="CloseBold"
           size="small"
-          style="position: absolute; top: -2.5px; right: -2.5px; z-index: 10"
+          class="absolute top-[-2.5px] right-[-2.5px] z-10"
         />
-        <span style="display: block; font-weight: bold; margin-bottom: 6px">
-          Str
-        </span>
+        <span class="block font-bold"> Str </span>
         <el-select
           v-if="!new Set(['cat', 'calcconv']).has(mode)"
           v-model="columns"

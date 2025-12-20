@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/tansen87/InsightSQL"
 default-run = "InsightSQL"
 edition = "2024"
-rust-version = "1.89.0"
+rust-version = "1.91.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
