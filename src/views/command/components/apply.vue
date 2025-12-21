@@ -44,7 +44,7 @@ const modeOptions = [
 ];
 const columnContent = ref("no column");
 const columns = ref<CheckboxValueType[]>([]);
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { isDark } = useDark();
 watch(columns, val => {
   if (val.length === 0) {

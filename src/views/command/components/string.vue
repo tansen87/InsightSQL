@@ -26,7 +26,7 @@ const modeOptions = [
   { label: "PadRight", value: "pad_right" },
   { label: "PadBoth", value: "pad_both" }
 ];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { isDark } = useDark();
 
 async function selectFile() {

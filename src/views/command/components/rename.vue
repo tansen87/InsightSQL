@@ -19,7 +19,7 @@ const tableData = ref([]);
 const [search, path] = [ref(""), ref("")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [dialog, isLoading] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdRename);
 const { isDark } = useDark();
 const filterTableData = computed(() =>

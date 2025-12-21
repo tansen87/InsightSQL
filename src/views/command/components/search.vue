@@ -19,7 +19,7 @@ const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
 const [column, path, condition] = [ref(""), ref(""), ref("")];
 const [dialog, isLoading, isBtnShow] = [ref(false), ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSearch);
 const { isDark } = useDark();
 

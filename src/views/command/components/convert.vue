@@ -105,7 +105,7 @@ const encodingOptions = [
 ];
 const sheetsData = ref({});
 const fileSelect = ref<ListenEvent[]>([]);
-const { dynamicHeight } = useDynamicHeight(122);
+const { dynamicHeight } = useDynamicHeight(74);
 const { isDark } = useDark();
 
 listen("update-msg", (event: Event<string>) => {

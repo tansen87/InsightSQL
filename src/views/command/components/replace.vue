@@ -15,7 +15,7 @@ const [column, path, regexPattern, replacement] = [
   ref(""),
   ref("")
 ];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdReplace);
 
 async function selectFile() {

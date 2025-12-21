@@ -29,7 +29,7 @@ const [isLoading, dialog, checkAll, indeterminate] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSelect);
 const { isDark } = useDark();
 const selColumns = ref<CheckboxValueType[]>([]);

@@ -16,7 +16,7 @@ const modeOptions = [
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [columns, path] = [ref(""), ref("")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdFill);
 const { isDark } = useDark();
 

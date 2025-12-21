@@ -24,7 +24,7 @@ const [
   tableData2
 ] = [ref([]), ref([]), ref([]), ref([]), ref([]), ref([])];
 const data = reactive({ path1: "", path2: "" });
-const { dynamicHeight } = useDynamicHeight(84);
+const { dynamicHeight } = useDynamicHeight(36);
 const { mdShow } = useMarkdown(mdJoin);
 const { isDark } = useDark();
 

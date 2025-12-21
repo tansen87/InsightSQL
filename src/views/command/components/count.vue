@@ -26,7 +26,7 @@ const modeOptions = [
 const path = ref("");
 const [dialog, isLoading] = [ref(false), ref(false)];
 const fileSelect = ref([]);
-const { dynamicHeight } = useDynamicHeight(122);
+const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdCount);
 const { isDark } = useDark();
 

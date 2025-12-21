@@ -24,7 +24,7 @@ const pgsOptions = [
   { label: "Idx", value: "idx" }
 ];
 const [dialog, isLoading] = [ref(false), ref(false)];
-const { dynamicHeight } = useDynamicHeight(122);
+const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdSkip);
 const { isDark } = useDark();
 

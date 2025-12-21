@@ -19,7 +19,7 @@ const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [dialog, isLoading] = [ref(false), ref(false)];
 const [tableColumn, tableData] = [ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdEnumer);
 const { isDark } = useDark();
 

@@ -23,7 +23,7 @@ const [currentRows, totalRows] = [ref(0), ref(0)];
 const [columns, path] = [ref(""), ref("")];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdPinyin);
 const { isDark } = useDark();
 

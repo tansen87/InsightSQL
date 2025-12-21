@@ -52,7 +52,7 @@ const data = reactive({
   limit: true,
   varchar: true
 });
-const { dynamicHeight } = useDynamicHeight(84);
+const { dynamicHeight } = useDynamicHeight(36);
 const { isDark } = useDark();
 const theme = computed(() => (isDark.value ? "monokai" : "chrome"));
 
@@ -394,10 +394,10 @@ function allVarchar() {
 
 <template>
   <el-form class="page-container" :style="{ height: dynamicHeight + 'px' }">
-    <div style="height: calc(100% - 0px)">
-      <el-splitter>
-        <el-splitter-panel size="150">
-          <div class="splitter-container">
+    <el-splitter>
+      <el-splitter-panel size="150">
+        <el-splitter layout="vertical">
+          <el-splitter-panel size="32" :resizable="false">
             <el-tooltip content="Add data" effect="light">
               <el-button
                 @click="selectViewFile()"
@@ -406,6 +406,9 @@ function allVarchar() {
                 text
               />
             </el-tooltip>
+          </el-splitter-panel>
+
+          <el-splitter-panel>
             <el-scrollbar class="flex-1">
               <el-tree
                 :data="fileTreeData"
@@ -426,117 +429,117 @@ function allVarchar() {
                 </template>
               </el-tree>
             </el-scrollbar>
-          </div>
-        </el-splitter-panel>
+          </el-splitter-panel>
+        </el-splitter>
+      </el-splitter-panel>
 
-        <el-splitter-panel>
-          <el-splitter layout="vertical">
-            <el-splitter-panel :collapsible="true">
-              <div class="flex flex-col h-full">
+      <el-splitter-panel>
+        <el-splitter layout="vertical">
+          <el-splitter-panel size="32" :resizable="false">
+            <div class="flex items-center">
+              <el-tooltip content="Run" effect="light">
+                <el-button
+                  @click="queryViewData"
+                  :loading="isLoading"
+                  :icon="ArrowRight"
+                  circle
+                  text
+                />
+              </el-tooltip>
+              <el-tooltip :content="limitContent" effect="light">
+                <el-button @click="limitRows" circle text>
+                  <el-icon>
+                    <Hide v-if="data.limit" />
+                    <View v-else />
+                  </el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip :content="varcharContent" effect="light">
+                <el-button @click="allVarchar" circle text>
+                  <el-icon>
+                    <NoSmoking v-if="data.varchar" />
+                    <Smoking v-else />
+                  </el-icon>
+                </el-button>
+              </el-tooltip>
+            </div>
+          </el-splitter-panel>
+
+          <el-splitter-panel :collapsible="true">
+            <VAceEditor
+              v-model:value="sqlQuery"
+              ref="editor"
+              lang="sql"
+              :options="{
+                useWorker: true,
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true,
+                customScrollbar: true,
+                showPrintMargin: false,
+                fontSize: '1.0rem'
+              }"
+              :key="counter"
+              @init="initializeEditor"
+              :theme="theme"
+              style="height: 100%"
+            />
+          </el-splitter-panel>
+
+          <el-splitter-panel min="35" class="flex flex-col">
+            <div class="flex-1 flex flex-col overflow-hidden">
+              <el-table :data="pagedTableData" height="100%" empty-text="">
+                <el-table-column
+                  v-for="column in tableColumn"
+                  :prop="column.prop"
+                  :label="column.label"
+                  :key="column.prop"
+                  width="150px"
+                />
+              </el-table>
+              <div class="flex justify-between items-center shrink-0">
+                <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :total="total"
+                  layout="total, prev, pager, next"
+                  size="small"
+                  :simplified="true"
+                  @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange"
+                  background
+                  :pager-count="5"
+                />
                 <div class="flex items-center">
-                  <el-tooltip content="Run" effect="light">
+                  <el-tooltip content="Export type" effect="light">
+                    <el-select
+                      v-model="data.writeFormat"
+                      size="small"
+                      style="width: 90px"
+                    >
+                      <el-option label="csv" value="csv" />
+                      <el-option label="xlsx" value="xlsx" />
+                      <el-option label="parquet" value="parquet" />
+                      <el-option label="json" value="json" />
+                      <el-option label="jsonl" value="jsonl" />
+                    </el-select>
+                  </el-tooltip>
+                  <el-tooltip content="Export" effect="light">
                     <el-button
-                      @click="queryViewData"
+                      @click="exportData"
                       :loading="isLoading"
-                      :icon="ArrowRight"
+                      :icon="Download"
                       circle
                       text
                     />
                   </el-tooltip>
-                  <el-tooltip :content="limitContent" effect="light">
-                    <el-button @click="limitRows" circle text>
-                      <el-icon>
-                        <Hide v-if="data.limit" />
-                        <View v-else />
-                      </el-icon>
-                    </el-button>
-                  </el-tooltip>
-                  <el-tooltip :content="varcharContent" effect="light">
-                    <el-button @click="allVarchar" circle text>
-                      <el-icon>
-                        <NoSmoking v-if="data.varchar" />
-                        <Smoking v-else />
-                      </el-icon>
-                    </el-button>
-                  </el-tooltip>
-                </div>
-
-                <VAceEditor
-                  v-model:value="sqlQuery"
-                  ref="editor"
-                  lang="sql"
-                  :options="{
-                    useWorker: true,
-                    enableBasicAutocompletion: true,
-                    enableSnippets: true,
-                    enableLiveAutocompletion: true,
-                    customScrollbar: true,
-                    showPrintMargin: false,
-                    fontSize: '1.0rem'
-                  }"
-                  :key="counter"
-                  @init="initializeEditor"
-                  :theme="theme"
-                  style="height: 100%"
-                />
-              </div>
-            </el-splitter-panel>
-
-            <el-splitter-panel min="35" class="flex flex-col">
-              <div class="flex-1 flex flex-col overflow-hidden">
-                <el-table :data="pagedTableData" height="100%" empty-text="">
-                  <el-table-column
-                    v-for="column in tableColumn"
-                    :prop="column.prop"
-                    :label="column.label"
-                    :key="column.prop"
-                    width="150px"
-                  />
-                </el-table>
-                <div class="flex justify-between items-center shrink-0">
-                  <el-pagination
-                    v-model:current-page="currentPage"
-                    v-model:page-size="pageSize"
-                    :total="total"
-                    layout="total, prev, pager, next"
-                    size="small"
-                    :simplified="true"
-                    @size-change="handleSizeChange"
-                    @current-change="handleCurrentChange"
-                    background
-                    :pager-count="5"
-                  />
-                  <div class="flex items-center">
-                    <el-tooltip content="Export type" effect="light">
-                      <el-select
-                        v-model="data.writeFormat"
-                        size="small"
-                        style="width: 90px"
-                      >
-                        <el-option label="csv" value="csv" />
-                        <el-option label="xlsx" value="xlsx" />
-                        <el-option label="parquet" value="parquet" />
-                        <el-option label="json" value="json" />
-                        <el-option label="jsonl" value="jsonl" />
-                      </el-select>
-                    </el-tooltip>
-                    <el-tooltip content="Export" effect="light">
-                      <el-button
-                        @click="exportData"
-                        :loading="isLoading"
-                        :icon="Download"
-                        circle
-                        text
-                      />
-                    </el-tooltip>
-                  </div>
                 </div>
               </div>
-            </el-splitter-panel>
-          </el-splitter>
-        </el-splitter-panel>
-      </el-splitter>
-    </div>
+            </div>
+          </el-splitter-panel>
+        </el-splitter>
+      </el-splitter-panel>
+    </el-splitter>
   </el-form>
 </template>
 

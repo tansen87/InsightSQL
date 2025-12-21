@@ -30,7 +30,7 @@ const [isLoading, dialog, numeric, reverse] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(146);
+const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSort);
 const { isDark } = useDark();
 

@@ -22,7 +22,7 @@ const [isLoading, backendCompleted, dialog] = [
   ref(false),
   ref(false)
 ];
-const { dynamicHeight } = useDynamicHeight(122);
+const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdCat);
 const { isDark } = useDark();
 
