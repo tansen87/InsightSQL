@@ -452,11 +452,8 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      min-width: 340px;
       color: var(--pure-theme-sub-menu-active-text);
 
-      /* 搜索 */
-      .search-container
       /* 设置 */
       .set-icon {
         &:hover {
@@ -611,8 +608,6 @@ body[layout="vertical"] {
     }
   }
 
-  /* 搜索 */
-  .search-container,
   /* 设置 */
   .set-icon {
     &:hover {

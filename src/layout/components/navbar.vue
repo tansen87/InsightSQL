@@ -56,14 +56,14 @@ onClickOutside(containerRef, () => {
           @focus="showCmdList = true"
         />
         <el-scrollbar v-if="showCmdList && filterCmd.length" class="cmd-list">
-          <el-form
+          <div
             v-for="cmd in filterCmd"
             :key="cmd.route"
             @click="navigateToCommand(cmd.route)"
             class="cmd-item"
           >
             <span>{{ cmd.title }}</span>
-          </el-form>
+          </div>
         </el-scrollbar>
       </div>
       <span @click="themeChange" class="set-icon navbar-bg-hover">
@@ -102,6 +102,7 @@ onClickOutside(containerRef, () => {
 
 .search-container {
   position: relative;
+  width: 160px;
 }
 .cmd-list {
   border: 1px solid #ddd;
