@@ -11,7 +11,6 @@ type Events = {
   openPanel: string;
   tagViewsChange: string;
   tagViewsShowModel: string;
-  logoChange: boolean;
   changLayoutRoute: {
     indexPath: string;
     parentPath: string;

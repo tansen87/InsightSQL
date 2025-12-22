@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeMount } from "vue";
-import Logo from "./logo.vue";
+import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
-import { emitter } from "@/utils/mitt";
 import SidebarItem from "./sidebarItem.vue";
 import leftCollapse from "./leftCollapse.vue";
 import { useNav } from "@/layout/hooks/useNav";
-import { storageLocal } from "@pureadmin/utils";
-import { responsiveStorageNameSpace } from "@/config";
 import { findRouteByPath, getParentPaths } from "@/router/utils";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 
 const route = useRoute();
-const showLogo = ref(
-  storageLocal().getItem<StorageConfigs>(
-    `${responsiveStorageNameSpace()}configure`
-  )?.showLogo ?? true
-);
-const { routers, device, pureApp, isCollapse, menuSelect, toggleSideBar } =
-  useNav();
+const {
+  routers,
+  device,
+  pureApp,
+  isCollapse,
+  tooltipEffect,
+  menuSelect,
+  toggleSideBar
+} = useNav();
 const subMenuData = ref([]);
 const menuData = computed(() => {
   return pureApp.layout === "mix" && device.value !== "mobile"
@@ -47,12 +45,6 @@ function getSubMenuData(path: string) {
 
 getSubMenuData(route.path);
 
-onBeforeMount(() => {
-  emitter.on("logoChange", key => {
-    showLogo.value = key;
-  });
-});
-
 watch(
   () => [route.path, usePermissionStoreHook().wholeMenus],
   () => {
@@ -64,11 +56,7 @@ watch(
 </script>
 
 <template>
-  <div
-    v-loading="loading"
-    :class="['sidebar-container', showLogo ? 'has-logo' : '']"
-  >
-    <Logo v-if="showLogo" :collapse="isCollapse" />
+  <div v-loading="loading" class="sidebar-container">
     <el-scrollbar
       wrap-class="scrollbar-wrapper"
       :class="[device === 'mobile' ? 'mobile' : 'pc']"
@@ -81,6 +69,7 @@ watch(
         :collapse="isCollapse"
         :default-active="route.path"
         :collapse-transition="false"
+        :popper-effect="tooltipEffect"
         @select="indexPath => menuSelect(indexPath, routers)"
       >
         <sidebar-item

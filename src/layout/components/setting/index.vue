@@ -9,7 +9,6 @@ import {
 import { getConfig } from "@/config";
 import { useRouter } from "vue-router";
 import panel from "../panel/index.vue";
-import { emitter } from "@/utils/mitt";
 import { resetRouter } from "@/router";
 import { removeToken } from "@/utils/auth";
 import { routerArrays } from "@/layout/types";
@@ -40,8 +39,6 @@ if (unref(layoutTheme)) {
   });
   setLayoutModel(layout);
 }
-
-const logoVal = ref($storage.configure?.showLogo ?? true);
 
 const settings = reactive({
   greyVal: $storage.configure.grey,
@@ -93,14 +90,6 @@ function onReset() {
   router.push("/login");
   useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
   resetRouter();
-}
-
-/** 侧边栏Logo */
-function logoChange() {
-  unref(logoVal)
-    ? storageConfigureChange("showLogo", true)
-    : storageConfigureChange("showLogo", false);
-  emitter.emit("logoChange", unref(logoVal));
 }
 
 function setFalse(Doms): any {
@@ -217,19 +206,6 @@ onBeforeMount(() => {
           active-text="开"
           inactive-text="关"
           @change="weekChange"
-        />
-      </li>
-      <li>
-        <span class="dark:text-white">侧边栏Logo</span>
-        <el-switch
-          v-model="logoVal"
-          inline-prompt
-          :active-value="true"
-          :inactive-value="false"
-          inactive-color="#a6a6a6"
-          active-text="开"
-          inactive-text="关"
-          @change="logoChange"
         />
       </li>
     </ul>

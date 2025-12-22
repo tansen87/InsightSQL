@@ -92,7 +92,8 @@
     height: 100%;
     overflow: visible;
     font-size: 0;
-    background: var(--pure-theme-menu-bg) !important;
+    // background: var(--pure-theme-menu-bg) !important;
+    background: #f0eeee;
     border-right: 1px solid var(--pure-border-color);
 
     /* 展开动画 */
@@ -104,18 +105,6 @@
 
     .el-scrollbar__bar.is-vertical {
       right: 0;
-    }
-
-    &.has-logo {
-      .el-scrollbar.pc {
-        /* logo: 36px、leftCollapse: 40px、leftCollapse-shadow: 4px */
-        height: calc(100% - 92px);
-      }
-
-      /* logo: 36px */
-      .el-scrollbar.mobile {
-        height: calc(100% - 36px);
-      }
     }
 
     &.no-logo {
@@ -229,12 +218,6 @@
       height: 0;
       content: "";
       transform: translateY(-50%);
-    }
-
-    /* 无子集的激活菜单背景 */
-    .is-active.submenu-title-noDropdown.outer-most > * {
-      z-index: 1;
-      color: #fff;
     }
 
     .is-active.submenu-title-noDropdown.outer-most::before {

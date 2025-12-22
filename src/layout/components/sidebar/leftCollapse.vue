@@ -45,7 +45,7 @@ const toggleClick = () => {
       placement="right"
       :visible="visible"
       :effect="tooltipEffect"
-      :content="props.isActive ? '点击折叠' : '点击展开'"
+      :content="props.isActive ? 'Fold' : 'Expand'"
     >
       <IconifyIconOffline
         :icon="MenuFold"
@@ -66,6 +66,5 @@ const toggleClick = () => {
   width: 100%;
   height: 40px;
   line-height: 40px;
-  box-shadow: 0 0 6px -2px var(--el-color-primary);
 }
 </style>
