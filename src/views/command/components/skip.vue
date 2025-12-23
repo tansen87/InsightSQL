@@ -193,8 +193,8 @@ async function skipLines() {
       </el-splitter-panel>
     </el-splitter>
 
-    <el-dialog v-model="dialog" title="Skip - Skip rows from CSV" width="800">
-      <el-scrollbar :height="dynamicHeight * 0.8">
+    <el-dialog v-model="dialog" title="Skip - Skip rows from CSV" width="70%">
+      <el-scrollbar :height="dynamicHeight * 0.7">
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>

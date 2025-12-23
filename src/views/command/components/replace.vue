@@ -131,9 +131,9 @@ async function replaceData() {
     <el-dialog
       v-model="dialog"
       title="Replace - Replace CSV data using a regex"
-      width="800"
+      width="70%"
     >
-      <el-scrollbar :height="dynamicHeight * 0.8">
+      <el-scrollbar :height="dynamicHeight * 0.7">
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>

@@ -225,9 +225,9 @@ async function searchData() {
     <el-dialog
       v-model="dialog"
       title="Search - Filter rows matching conditions"
-      width="800"
+      width="70%"
     >
-      <el-scrollbar :height="dynamicHeight * 0.8">
+      <el-scrollbar :height="dynamicHeight * 0.7">
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>

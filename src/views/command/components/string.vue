@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, Link, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -225,7 +225,7 @@ const { mdShow } = useMarkdown(mdStr);
             </el-tooltip>
           </template>
 
-          <el-link @click="dialog = true" :icon="Link" class="mt-auto">
+          <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">String</span>
           </el-link>
         </div>
@@ -268,9 +268,9 @@ const { mdShow } = useMarkdown(mdStr);
     <el-dialog
       v-model="dialog"
       title="String - String expr: slice, split, pad..."
-      width="800"
+      width="70%"
     >
-      <el-scrollbar :height="dynamicHeight * 0.8">
+      <el-scrollbar :height="dynamicHeight * 0.7">
         <div v-html="mdShow" />
       </el-scrollbar>
     </el-dialog>
