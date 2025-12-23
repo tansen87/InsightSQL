@@ -68,7 +68,7 @@ async function transposeData() {
           </el-tooltip>
 
           <el-tooltip
-            content="if Nil, no progress bar"
+            content="If Memory, the entire file will be read into memory"
             effect="light"
             placement="right"
           >

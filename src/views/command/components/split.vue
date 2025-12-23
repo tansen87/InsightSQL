@@ -68,22 +68,20 @@ async function splitData() {
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
-          <el-tooltip content="Split mode" effect="light" placement="right">
-            <div class="mode-toggle w-[180px]">
-              <span
-                v-for="item in modeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: mode === item.value,
-                  'active-dark': isDark && mode === item.value
-                }"
-                @click="mode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
+          <div class="mode-toggle w-[180px]">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
           <el-tooltip content="Split rows" effect="light" placement="right">
             <el-input-number

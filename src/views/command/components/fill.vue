@@ -77,22 +77,20 @@ async function fillData() {
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
-          <el-tooltip content="fill mode" effect="light" placement="right">
-            <div class="mode-toggle w-[200px]">
-              <span
-                v-for="item in modeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: mode === item.value,
-                  'active-dark': isDark && mode === item.value
-                }"
-                @click="mode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
+          <div class="mode-toggle w-[200px]">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
           <el-select
             v-model="columns"
@@ -111,6 +109,7 @@ async function fillData() {
           </el-select>
 
           <el-tooltip
+            v-if="mode === 'fill'"
             content="The value of fill"
             effect="light"
             placement="right"

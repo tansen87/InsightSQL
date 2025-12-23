@@ -485,7 +485,13 @@ function allVarchar() {
 
           <el-splitter-panel min="35" class="flex flex-col">
             <div class="flex-1 flex flex-col overflow-hidden">
-              <el-table :data="pagedTableData" height="100%" empty-text="">
+              <el-table
+                :data="pagedTableData"
+                height="100%"
+                empty-text=""
+                show-overflow-tooltip
+                tooltip-effect="light"
+              >
                 <el-table-column
                   v-for="column in tableColumn"
                   :prop="column.prop"
