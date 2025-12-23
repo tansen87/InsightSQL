@@ -141,11 +141,9 @@ async function executeQuery(write: boolean): Promise<boolean> {
     if (!write) {
       const result =
         typeof rawResult === "string" ? JSON.parse(rawResult) : rawResult;
-
       const jsonData = JSON.parse(result.data);
-      const schema = result.schema;
       const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-      tableColumn.value = Object.entries(schema).map(([key]) => ({
+      tableColumn.value = result.columns.map(key => ({
         name: key,
         label: key,
         prop: key
@@ -236,15 +234,14 @@ async function selectFile() {
         const result =
           typeof rawResult === "string" ? JSON.parse(rawResult) : rawResult;
         const jsonData = JSON.parse(result.data);
-        const schema = result.schema;
         const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
-        tableColumn.value = Object.entries(schema).map(([key]) => ({
+        tableColumn.value = result.columns.map(key => ({
           name: key,
           label: key,
           prop: key
         }));
         tableData.value = markRaw(arrayData);
-        dtypesByFile.value[basename] = schema;
+        dtypesByFile.value[basename] = result.schema;
       } catch (err) {
         message(err.toString(), { type: "error", duration: 5000 });
       }

@@ -32,6 +32,7 @@ use crate::{
 struct QueryResult {
   data: String,
   schema: HashMap<String, String>,
+  columns: Vec<String>,
 }
 
 trait FileWriter {
@@ -275,6 +276,11 @@ async fn prepare_query(
     Ok("[]".to_string())
   } else {
     let schema = extract_schema(&df);
+    let columns: Vec<String> = df
+      .get_column_names()
+      .iter()
+      .map(|s| s.to_string())
+      .collect();
     let data_json = match limit {
       true => query_df_to_json(df.head(Some(500)))?,
       false => query_df_to_json(df)?,
@@ -283,6 +289,7 @@ async fn prepare_query(
     let res = QueryResult {
       data: data_json,
       schema,
+      columns,
     };
     Ok(serde_json::to_string(&res)?)
   }
