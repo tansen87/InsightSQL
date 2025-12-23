@@ -87,7 +87,7 @@ const onDragOver = (event: DragEvent) => {
 </script>
 
 <template>
-  <div class="page-container flex h-[96.5vh]">
+  <div class="page-container flex h-[calc(100vh-36px)]">
     <div class="w-[80px] p-[5px] border-r border-[#ddd]">
       <div
         v-for="type in nodeTypes"
