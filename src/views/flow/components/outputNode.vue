@@ -33,14 +33,30 @@ async function endFlow() {
     isLoading.value = true;
     const nodes = nodeStore.nodes;
     const edges = nodeStore.edges;
-    const { isValid, path } = isValidExecutionPath(nodes, edges);
+    const { isValid, path, reason } = isValidExecutionPath(nodes, edges);
     if (!isValid) {
-      message(
-        "Flow must start with the <Start> node and end with the <End> node",
-        {
-          type: "warning"
-        }
-      );
+      let msg = "Invalid flow configuration.";
+      switch (reason) {
+        case "no_start":
+          msg = "Flow must start with exactly one <Start> node.";
+          break;
+        case "multi_start":
+          msg = "Flow must have only one <Start> node. Multiple found.";
+          break;
+        case "no_end":
+          msg = "Flow must end with exactly one <End> node.";
+          break;
+        case "multi_end":
+          msg = "Flow must have only one <End> node. Multiple found.";
+          break;
+        case "no_path":
+          msg = "No valid execution path from <Start> to <End>.";
+          break;
+        default:
+          msg = "Flow validation failed.";
+      }
+
+      message(msg, { type: "warning" });
       isLoading.value = false;
       return;
     }

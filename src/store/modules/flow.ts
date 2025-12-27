@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import type { Node, Edge } from "@vue-flow/core";
-import { message } from "@/utils/message";
 
 export function getNodesInEdgeOrder(nodes: Node[], edges: Edge[]): Node[] {
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
@@ -41,7 +40,7 @@ export function getNodesInEdgeOrder(nodes: Node[], edges: Edge[]): Node[] {
 export function isValidExecutionPath(
   nodes: Node[],
   edges: Edge[]
-): { isValid: boolean; path: Node[] } {
+): { isValid: boolean; path: Node[]; reason?: string } {
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
   const graph = new Map<string, string[]>();
 
@@ -55,15 +54,14 @@ export function isValidExecutionPath(
   const startNodes = nodes.filter(n => n.type === "start");
   const endNodes = nodes.filter(n => n.type === "end");
 
-  if (startNodes.length === 0) return { isValid: false, path: [] };
-  if (endNodes.length === 0) return { isValid: false, path: [] };
-
-  if (startNodes.length > 1) {
-    message(`Found ${startNodes.length} Start nodes, will use the first one`);
-  }
-  if (endNodes.length > 1) {
-    message(`Found ${startNodes.length} End nodes, will use the first one`);
-  }
+  if (startNodes.length === 0)
+    return { isValid: false, path: [], reason: "no_start" };
+  if (endNodes.length === 0)
+    return { isValid: false, path: [], reason: "no_end" };
+  if (startNodes.length > 1)
+    return { isValid: false, path: [], reason: "multi_start" };
+  if (endNodes.length > 1)
+    return { isValid: false, path: [], reason: "multi_end" };
 
   const startNode = startNodes[0];
   const endNode = endNodes[0];
@@ -93,7 +91,7 @@ export function isValidExecutionPath(
     }
   }
 
-  return { isValid: false, path: [] };
+  return { isValid: false, path: [], reason: "no_path" };
 }
 
 export function getExecutionConfig(order, stores) {
@@ -120,7 +118,24 @@ export function getExecutionConfig(order, stores) {
 export const useHeaders = defineStore("headers", {
   state: () => ({
     headers: [] as Array<{ label: string; value: string }>
-  })
+  }),
+
+  actions: {
+    setHeaderForNode(nodeId: string, label: string) {
+      if (label.trim() === "") {
+        // 如果label无效,从headers中移除
+        this.headers = this.headers.filter(h => h.value !== nodeId);
+        return;
+      }
+
+      const existingIndex = this.headers.findIndex(h => h.value === nodeId);
+      if (existingIndex >= 0) {
+        this.headers[existingIndex].label = label;
+      } else {
+        this.headers.push({ label, value: nodeId });
+      }
+    }
+  }
 });
 
 // path

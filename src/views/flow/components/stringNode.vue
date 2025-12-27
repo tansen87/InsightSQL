@@ -35,12 +35,53 @@ watch(
         id: nodeId,
         ...newData
       });
+      const label = generateHeaderLabel(newData, nodeId);
+      headerStore.setHeaderForNode(nodeId, label);
     }
   },
   { deep: true, immediate: true }
 );
 
+function generateHeaderLabel(
+  data: { mode: string; column: string | string[] },
+  id: string
+): string {
+  const { mode, column } = data;
+
+  if (mode === "cat") {
+    return `cat${id}`;
+  }
+  if (mode === "calcconv") {
+    return `calcconv${id}`;
+  }
+
+  // others: {colmn}_{mode}{id}
+  const needCol = [
+    "copy",
+    "left",
+    "right",
+    "slice",
+    "split",
+    "pad_left",
+    "pad_right",
+    "pad_both",
+    "pinyin",
+    "len"
+  ].includes(mode);
+
+  if (needCol) {
+    const colStr = Array.isArray(column) ? column[0] : column;
+    if (colStr && colStr.trim()) {
+      return `${colStr}_${mode}${id}`;
+    }
+  }
+
+  return `${column}`;
+}
+
 function deleteBtn() {
+  // 当删除节点时,同时删除该节点生成的header
+  headerStore.headers = headerStore.headers.filter(h => h.value !== node.id);
   removeNodes(node.id);
 }
 </script>
@@ -79,7 +120,7 @@ function deleteBtn() {
           />
         </el-select>
         <el-select v-model="mode" filterable style="margin-bottom: 6px">
-          <el-option label="Cat" value="cat" />
+          <el-option label="DynFmt" value="cat" />
           <el-option label="CalcConv" value="calcconv" />
           <el-option label="copy" value="copy" />
           <el-option label="abs" value="abs" />

@@ -102,6 +102,10 @@ pub fn str_process(
       }
     } else if let Some(idx) = headers.iter().position(|h| h == &str_op.column) {
       let cell = row_fields[idx].clone();
+      let cell_opt = headers
+        .iter()
+        .position(|h| h == &str_op.column)
+        .map(|idx| row_fields[idx].clone());
       let length = match str_op.mode.as_str() {
         "left" | "right" | "slice" | "split" | "pad_left" | "pad_right" | "pad_both" => str_op
           .replacement
@@ -172,102 +176,144 @@ pub fn str_process(
             row_fields[idx] = cell;
           }
         }
+        // add new column
         "pinyin" => {
-          let py_mode_string = str_op.replacement.clone().unwrap_or("".to_owned());
-          row_fields[idx] = cell
-            .chars()
-            .map(|c| {
-              c.to_pinyin().map_or_else(
-                || c.to_string(),
-                |py| match py_mode_string.as_str() {
-                  "upper" => py.plain().to_uppercase(),
-                  "lower" => py.plain().to_lowercase(),
-                  _ => py.plain().to_string(),
-                },
-              )
-            })
-            .collect();
+          let result = if let Some(cell) = cell_opt {
+            let py_mode_string = str_op.replacement.clone().unwrap_or_default();
+            cell
+              .chars()
+              .map(|c| {
+                c.to_pinyin().map_or_else(
+                  || c.to_string(),
+                  |py| match py_mode_string.as_str() {
+                    "upper" => py.plain().to_uppercase(),
+                    "lower" => py.plain().to_lowercase(),
+                    _ => py.plain().to_string(),
+                  },
+                )
+              })
+              .collect::<String>()
+          } else {
+            String::new()
+          };
+          str_results.push(result);
         }
-        "left" => row_fields[idx] = cell.chars().take(length).collect(),
+        "left" => {
+          let result = if let Some(cell) = cell_opt {
+            cell.chars().take(length).collect()
+          } else {
+            String::new()
+          };
+          str_results.push(result);
+        }
         "right" => {
-          row_fields[idx] = cell
-            .chars()
-            .rev()
-            .take(length)
-            .collect::<String>()
-            .chars()
-            .rev()
-            .collect()
+          let result = if let Some(cell) = cell_opt {
+            cell
+              .chars()
+              .rev()
+              .take(length)
+              .collect::<String>()
+              .chars()
+              .rev()
+              .collect()
+          } else {
+            String::new()
+          };
+          str_results.push(result);
         }
         "slice" => {
-          let offset = str_op
-            .comparand
-            .clone()
-            .ok_or(anyhow!("start index is invalid number"))?
-            .parse::<isize>()?;
-          let start = offset - 1;
-          let end = start + length as isize;
-          row_fields[idx] = cell
-            .chars()
-            .skip(start.max(0) as usize)
-            .take((end - start) as usize)
-            .collect::<String>();
+          let result = if let Some(cell) = cell_opt {
+            let offset = str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("start index is invalid number"))?
+              .parse::<isize>()?;
+            let start = offset - 1;
+            let end = start + length as isize;
+            cell
+              .chars()
+              .skip(start.max(0) as usize)
+              .take((end - start) as usize)
+              .collect::<String>()
+          } else {
+            String::new()
+          };
+          str_results.push(result);
         }
         "split" => {
-          let sep = &str_op
-            .comparand
-            .clone()
-            .ok_or(anyhow!("delimiter is invalid"))?;
-          let split_parts: Vec<&str> = cell.split(sep).collect();
-          if split_parts.len() >= length {
-            row_fields[idx] = split_parts[length - 1].to_string();
+          let result = if let Some(cell) = cell_opt {
+            let sep = &str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("delimiter is invalid"))?;
+            let split_parts: Vec<&str> = cell.split(sep).collect();
+            if split_parts.len() >= length {
+              split_parts[length - 1].to_string()
+            } else {
+              String::new()
+            }
           } else {
-            row_fields[idx] = "".to_string();
-          }
+            String::new()
+          };
+          str_results.push(result);
         }
         "pad_left" => {
-          let fill_char = str_op
-            .comparand
-            .clone()
-            .ok_or(anyhow!("fill char is empty"))?;
-          if cell.len() >= length {
-            row_fields[idx] = cell.to_string();
+          let result = if let Some(cell) = cell_opt {
+            let fill_char = str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("fill char is empty"))?;
+            if cell.len() >= length {
+              cell
+            } else {
+              let pad_len = length - cell.len();
+              let pad = fill_char.repeat(pad_len);
+              format!("{}{}", pad, cell)
+            }
           } else {
-            let pad_len = length - cell.len();
-            let pad = fill_char.repeat(pad_len);
-            row_fields[idx] = format!("{}{}", pad, cell);
-          }
+            String::new()
+          };
+          str_results.push(result);
         }
         "pad_right" => {
-          let fill_char = str_op
-            .comparand
-            .clone()
-            .ok_or(anyhow!("fill char is empty"))?;
-          if cell.len() >= length {
-            row_fields[idx] = cell.to_string();
+          let result = if let Some(cell) = cell_opt {
+            let fill_char = str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("fill char is empty"))?;
+            if cell.len() >= length {
+              cell
+            } else {
+              let pad_len = length - cell.len();
+              let pad = fill_char.repeat(pad_len);
+              format!("{}{}", cell, pad)
+            }
           } else {
-            let pad_len = length - cell.len();
-            let pad = fill_char.repeat(pad_len);
-            row_fields[idx] = format!("{}{}", cell, pad);
-          }
+            String::new()
+          };
+          str_results.push(result);
         }
         "pad_both" => {
-          let fill_char = str_op
-            .comparand
-            .clone()
-            .ok_or(anyhow!("fill char is empty"))?;
-          if cell.len() >= length {
-            row_fields[idx] = cell.to_string();
+          let result = if let Some(cell) = cell_opt {
+            let fill_char = str_op
+              .comparand
+              .clone()
+              .ok_or(anyhow!("fill char is empty"))?;
+            if cell.len() >= length {
+              cell
+            } else {
+              let total_pad = length - cell.len();
+              let left_pad = total_pad / 2;
+              let right_pad = total_pad - left_pad;
+              let left_pad_str = fill_char.to_string().repeat(left_pad);
+              let right_pad_str = fill_char.to_string().repeat(right_pad);
+              format!("{}{}{}", left_pad_str, cell, right_pad_str)
+            }
           } else {
-            let total_pad = length - cell.len();
-            let left_pad = total_pad / 2;
-            let right_pad = total_pad - left_pad;
-            let left_pad_str = fill_char.to_string().repeat(left_pad);
-            let right_pad_str = fill_char.to_string().repeat(right_pad);
-            row_fields[idx] = format!("{}{}{}", left_pad_str, cell, right_pad_str);
-          }
+            String::new()
+          };
+          str_results.push(result);
         }
-        // add new column
         "len" => str_results.push(cell.chars().count().to_string()),
         "copy" => str_results.push(cell.clone()),
         _ => str_results.push(cell),
@@ -276,9 +322,7 @@ pub fn str_process(
       // 字段找不到时,只有新增列的操作才追加空字符串
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "pinyin" | "left" | "right" | "slice" | "split" | "pad_left" | "pad_right"
-        | "pad_both" => {}
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {}
         _ => {
           str_results.push(String::new());
         }

@@ -133,8 +133,7 @@ pub async fn process_operations(
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "pinyin" | "left" | "right" | "slice" | "split" => {
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {
           continue;
         }
         _ => {}
@@ -155,8 +154,7 @@ pub async fn process_operations(
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "pinyin" | "left" | "right" | "slice" | "split" => {
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {
           continue;
         }
         _ => {}
@@ -179,8 +177,7 @@ pub async fn process_operations(
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "pinyin" | "left" | "right" | "slice" | "split" => {
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {
           continue;
         }
         _ => {}
