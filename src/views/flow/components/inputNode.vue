@@ -40,46 +40,44 @@ async function selectFile() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="node-container w-[300px]">
-      <div class="text-center p-[5px]">
-        <el-button
-          circle
-          link
-          @click="deleteBtn"
-          :icon="CloseBold"
-          size="small"
-          class="absolute top-[-2.5px] right-[-2.5px] z-10"
-        />
-        <span class="block font-bold"> Start </span>
-        <el-button @click="selectFile()" :icon="FolderOpened">
-          <span v-if="isPath">
-            <el-tooltip :content="path" effect="light">
-              <span>{{ shortFileName(path) }}</span>
-            </el-tooltip>
-          </span>
-          <span v-else>Open File</span>
-        </el-button>
-      </div>
-      <el-table
-        :data="tableData"
-        show-overflow-tooltip
-        tooltip-effect="light"
-        height="200px"
-      >
-        <el-table-column
-          v-for="column in tableColumn"
-          :prop="column.prop"
-          :label="column.label"
-          :key="column.prop"
-        />
-      </el-table>
-      <Handle
-        type="source"
-        :position="Position.Right"
-        id="output"
-        class="handle-style"
+  <div class="page-container node-container">
+    <div class="text-center p-[5px]">
+      <el-button
+        circle
+        link
+        @click="deleteBtn"
+        :icon="CloseBold"
+        size="small"
+        class="absolute top-[-2.5px] right-[-2.5px] z-10"
       />
+      <span class="block font-bold"> Start </span>
+      <el-button @click="selectFile()" :icon="FolderOpened">
+        <span v-if="isPath">
+          <el-tooltip :content="path" effect="light">
+            <span>{{ shortFileName(path) }}</span>
+          </el-tooltip>
+        </span>
+        <span v-else>Open File</span>
+      </el-button>
     </div>
+    <el-table
+      :data="tableData"
+      show-overflow-tooltip
+      tooltip-effect="light"
+      height="200px"
+    >
+      <el-table-column
+        v-for="column in tableColumn"
+        :prop="column.prop"
+        :label="column.label"
+        :key="column.prop"
+      />
+    </el-table>
+    <Handle
+      type="source"
+      :position="Position.Right"
+      id="output"
+      class="handle-style"
+    />
   </div>
 </template>

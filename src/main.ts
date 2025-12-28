@@ -49,3 +49,6 @@ getServerConfig(app).then(async config => {
 
   app.mount("#app");
 });
+
+// 禁用鼠标右键
+window.addEventListener("contextmenu", e => e.preventDefault());
