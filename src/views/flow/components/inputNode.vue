@@ -2,13 +2,14 @@
 import { ref } from "vue";
 import { Handle, Position, useNode, useVueFlow } from "@vue-flow/core";
 import { FolderOpened, CloseBold } from "@element-plus/icons-vue";
-import { mapHeaders, viewOpenFile } from "@/utils/view";
+import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { shortFileName } from "@/utils/utils";
 import { usePath, useHeaders } from "@/store/modules/flow";
 
 const path = ref("");
 const isPath = ref(false);
+const [tableColumn, tableData] = [ref([]), ref([])];
 const headerStore = useHeaders();
 const pathStore = usePath();
 const node = useNode();
@@ -27,8 +28,11 @@ async function selectFile() {
   pathStore.path = path.value;
   isPath.value = true;
   try {
-    const headers = await mapHeaders(path.value, "0");
+    const headers: any = await mapHeaders(path.value, "0");
     headerStore.headers = headers;
+    const { columnView, dataView } = await toJson(path.value);
+    tableColumn.value = columnView;
+    tableData.value = dataView;
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -37,7 +41,7 @@ async function selectFile() {
 
 <template>
   <div class="page-container">
-    <div class="node-container">
+    <div class="node-container w-[300px]">
       <div class="text-center p-[5px]">
         <el-button
           circle
@@ -57,6 +61,19 @@ async function selectFile() {
           <span v-else>Open File</span>
         </el-button>
       </div>
+      <el-table
+        :data="tableData"
+        show-overflow-tooltip
+        tooltip-effect="light"
+        height="200px"
+      >
+        <el-table-column
+          v-for="column in tableColumn"
+          :prop="column.prop"
+          :label="column.label"
+          :key="column.prop"
+        />
+      </el-table>
       <Handle
         type="source"
         :position="Position.Right"
