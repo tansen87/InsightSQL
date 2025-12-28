@@ -3,15 +3,11 @@ import { ref } from "vue";
 import {
   VueFlow,
   useVueFlow,
-  applyChanges,
-  NodeChange,
-  EdgeChange,
-  Connection,
+  type Connection,
   MarkerType
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
-import "@vue-flow/controls/dist/style.css";
 import SelectNode from "./components/selectNode.vue";
 import FilterNode from "./components/filterNode.vue";
 import StringNode from "./components/stringNode.vue";
@@ -19,9 +15,6 @@ import InputNode from "./components/inputNode.vue";
 import OutputNode from "./components/outputNode.vue";
 import { useNodeStore } from "@/store/modules/flow";
 
-const vueFlowRef = ref();
-const nodes = ref([]);
-const edges = ref([]);
 const nodeTypes = ["start", "select", "filter", "str", "end"];
 const customNodeTypes = {
   select: SelectNode,
@@ -30,24 +23,24 @@ const customNodeTypes = {
   start: InputNode,
   end: OutputNode
 };
-const { addEdges } = useVueFlow();
+const vueFlowRef = ref();
 const nodeStore = useNodeStore();
-let nodeIdCounter = 1;
+const { addNodes, addEdges, onNodesChange, onEdgesChange, getNodes, getEdges } =
+  useVueFlow();
 
+onNodesChange(() => {
+  nodeStore.nodes = getNodes.value;
+});
+
+onEdgesChange(() => {
+  nodeStore.edges = getEdges.value;
+});
+
+let nodeIdCounter = 1;
 function generateId() {
   return `${nodeIdCounter++}`;
 }
 
-const onNodesChange = (changes: NodeChange[]) => {
-  const newNodes = applyChanges(changes, nodes.value);
-  nodes.value = newNodes;
-  nodeStore.addNode(newNodes);
-};
-const onEdgesChange = (changes: EdgeChange[]) => {
-  const newEdge = applyChanges(changes, edges.value);
-  edges.value = newEdge;
-  nodeStore.addEdge(newEdge);
-};
 const handleConnect = (connection: Connection) => {
   if (!connection.target) return;
   addEdges([
@@ -62,24 +55,32 @@ const handleConnect = (connection: Connection) => {
     }
   ]);
 };
+
 const onDragStart = (event: DragEvent, type: string) => {
   event.dataTransfer?.setData("application/vueflow", type);
   event.dataTransfer.effectAllowed = "move";
 };
+
 const onDrop = (event: DragEvent) => {
+  event.preventDefault();
   const vueFlow = vueFlowRef.value;
+  if (!vueFlow) return;
+
   const type = event.dataTransfer?.getData("application/vueflow");
+  if (!type || !nodeTypes.includes(type)) return;
+
   const position = vueFlow.project({ x: event.offsetX, y: event.offsetY });
+
   const newNode = {
     id: generateId(),
     type,
     position,
-    data: {
-      label: `${type} Node`
-    }
+    data: { label: `${type} Node` }
   };
-  nodes.value = [...nodes.value, newNode];
+
+  addNodes([newNode]);
 };
+
 const onDragOver = (event: DragEvent) => {
   event.preventDefault();
   event.dataTransfer.dropEffect = "move";
@@ -102,11 +103,7 @@ const onDragOver = (event: DragEvent) => {
     <div class="flex-1 relative">
       <VueFlow
         ref="vueFlowRef"
-        :nodes="nodes"
-        :edges="edges"
         :node-types="customNodeTypes"
-        @nodes-change="onNodesChange"
-        @edges-change="onEdgesChange"
         @connect="handleConnect"
         @drop="onDrop"
         @dragover="onDragOver"
@@ -124,12 +121,11 @@ const onDragOver = (event: DragEvent) => {
   border: 1px solid #ccc;
   cursor: grab;
   border-radius: 5px;
+  text-align: center;
+  user-select: none;
 }
 .draggable-node:hover {
-  background-color: #cebdbd;
+  background-color: #f0e6e6;
   transform: scale(1.02);
-}
-.canvas {
-  flex: 1;
 }
 </style>
