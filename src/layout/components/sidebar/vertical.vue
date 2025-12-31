@@ -2,21 +2,13 @@
 import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import SidebarItem from "./sidebarItem.vue";
-import leftCollapse from "./leftCollapse.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import { findRouteByPath, getParentPaths } from "@/router/utils";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 
 const route = useRoute();
-const {
-  routers,
-  device,
-  pureApp,
-  isCollapse,
-  tooltipEffect,
-  menuSelect,
-  toggleSideBar
-} = useNav();
+const { routers, device, pureApp, isCollapse, tooltipEffect, menuSelect } =
+  useNav();
 const subMenuData = ref([]);
 const menuData = computed(() => {
   return pureApp.layout === "mix" && device.value !== "mobile"
@@ -81,11 +73,6 @@ watch(
         />
       </el-menu>
     </el-scrollbar>
-    <leftCollapse
-      v-if="device !== 'mobile'"
-      :is-active="pureApp.sidebar.opened"
-      @toggleClick="toggleSideBar"
-    />
   </div>
 </template>
 
