@@ -167,7 +167,7 @@ async fn prepare_query(
     // as we are using the table name as alias, we need to make sure that the table name is a
     // valid identifier. if its not utf8, we use the lossy version
     table_name = Path::new(table)
-      .file_stem()
+      .file_name()
       .and_then(std::ffi::OsStr::to_str)
       .unwrap_or_else(|| {
         lossy_table_name = Path::new(table).to_string_lossy();

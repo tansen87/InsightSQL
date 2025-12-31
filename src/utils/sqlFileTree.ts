@@ -16,15 +16,6 @@ import dateIcon from "@iconify-icons/ri/calendar-event-line";
 import listIcon from "@iconify-icons/ri/list-unordered";
 import unknowIcon from "@iconify-icons/ri/question-mark";
 
-function extractDisplayName(fullPath: string): string {
-  const parts = fullPath.split(/[/\\]/);
-  const fileName = parts[parts.length - 1];
-  const dotIndex = fileName.lastIndexOf(".");
-  return dotIndex > 0 && dotIndex < fileName.length - 1
-    ? fileName.substring(0, dotIndex)
-    : fileName;
-}
-
 export function useSqlFileTree() {
   const sqlHistory = useSqlHistory();
   const contextMenuVisible = ref(false);
@@ -35,32 +26,31 @@ export function useSqlFileTree() {
     if (!sqlHistory.path) return [];
     return sqlHistory.path.split("|").map(path => {
       const fullFileName = path.split(/[/\\]/).pop() || path;
-      const displayName = extractDisplayName(path);
       const ext = fullFileName.includes(".")
         ? fullFileName.slice(fullFileName.lastIndexOf(".") + 1).toLowerCase()
         : "";
-      return { fullPath: path, fullFileName, displayName, ext };
+      return { fullPath: path, fullFileName, ext };
     });
   });
 
   const fileTreeData = computed(() => {
     return viewFileMeta.value
       .map(fileMeta => {
-        const schema = sqlHistory.dtypesByFile[fileMeta.displayName];
+        const schema = sqlHistory.dtypesByFile[fileMeta.fullFileName];
         if (!schema || Object.keys(schema).length === 0) return null;
 
         const children = Object.entries(schema).map(([field, dtype]) => ({
           label: field,
           dtype,
-          key: `${fileMeta.displayName}-${field}`,
+          key: `${fileMeta.fullFileName}-${field}`,
           type: "field"
         }));
 
         return {
-          label: fileMeta.displayName,
+          label: fileMeta.fullFileName,
           ext: fileMeta.ext,
           children,
-          key: fileMeta.displayName,
+          key: fileMeta.fullFileName,
           type: "file",
           fullPath: fileMeta.fullPath
         };
@@ -131,13 +121,13 @@ export function useSqlFileTree() {
 
     await Promise.all(
       newPaths.map(async path => {
-        const basename = extractDisplayName(path);
-        if (sqlHistory.dtypesByFile[basename]) return;
+        const fullFileName = path.split(/[/\\]/).pop() || path;
+        if (sqlHistory.dtypesByFile[fullFileName]) return;
 
         try {
           const rawResult = await invoke("query", {
             path,
-            sqlQuery: `select * from "${basename}" limit 10`,
+            sqlQuery: `SELECT * FROM "${fullFileName}" LIMIT 10`,
             varchar: false,
             limit: true,
             write: false,
@@ -146,9 +136,9 @@ export function useSqlFileTree() {
           });
           const result =
             typeof rawResult === "string" ? JSON.parse(rawResult) : rawResult;
-          sqlHistory.dtypesByFile[basename] = result.schema;
+          sqlHistory.dtypesByFile[fullFileName] = result.schema;
         } catch (err) {
-          message(`Failed to load schema for ${basename}: ${err}`, {
+          message(`Failed to load schema for ${fullFileName}: ${err}`, {
             type: "error"
           });
         }
@@ -181,9 +171,12 @@ export function useSqlFileTree() {
   }
 
   async function copyFileName() {
-    if (!contextMenuItem.value?.label) return;
+    const item = contextMenuItem.value;
+    if (!item) return;
+    const textToCopy =
+      item.type === "file" ? item.fullFileName || item.label : item.label;
     try {
-      await navigator.clipboard.writeText(contextMenuItem.value.label);
+      await navigator.clipboard.writeText(textToCopy);
       message("Copied file name", { type: "success" });
       closeContextMenu();
     } catch (err) {
@@ -206,14 +199,16 @@ export function useSqlFileTree() {
     const item = contextMenuItem.value;
     if (!item || item.type !== "file") return;
 
-    const displayName = item.label;
+    const fullFileName = item.fullFileName || item.label;
     const fullPath = item.fullPath;
 
     const paths = sqlHistory.path.split("|").filter(p => p !== fullPath);
     sqlHistory.path = paths.join("|");
-    delete sqlHistory.dtypesByFile[displayName];
 
-    message(`Deleted "${displayName}"`, { type: "success" });
+    // 删除schema缓存
+    delete sqlHistory.dtypesByFile[fullFileName];
+
+    message(`Deleted "${fullFileName}"`, { type: "success" });
     closeContextMenu();
   }
 
@@ -221,9 +216,12 @@ export function useSqlFileTree() {
     const dataForMenu = { ...nodeData };
     if (nodeData.type === "file" && !dataForMenu.fullPath) {
       const meta = viewFileMeta.value.find(
-        m => m.displayName === nodeData.label
+        m => m.fullFileName === nodeData.label
       );
-      if (meta) dataForMenu.fullPath = meta.fullPath;
+      if (meta) {
+        dataForMenu.fullPath = meta.fullPath;
+        dataForMenu.fullFileName = meta.fullFileName;
+      }
     }
     openContextMenu(event, dataForMenu);
   }
