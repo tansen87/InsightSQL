@@ -138,10 +138,11 @@ export function useSqlFileTree() {
           const rawResult = await invoke("query", {
             path,
             sqlQuery: `select * from "${basename}" limit 10`,
+            varchar: false,
+            limit: true,
             write: false,
             writeFormat: "csv",
-            varchar: false,
-            limit: true
+            outputPath: ""
           });
           const result =
             typeof rawResult === "string" ? JSON.parse(rawResult) : rawResult;

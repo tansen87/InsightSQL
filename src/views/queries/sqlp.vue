@@ -9,7 +9,8 @@ import {
   NoSmoking,
   Delete,
   CopyDocument,
-  ArrowRight
+  ArrowRight,
+  DArrowRight
 } from "@element-plus/icons-vue";
 import { Icon } from "@iconify/vue";
 import { VAceEditor } from "vue3-ace-editor";
@@ -22,7 +23,6 @@ import { useSqlFileTree } from "@/utils/sqlFileTree";
 
 const data = reactive({
   write: false,
-  writeFormat: "xlsx",
   limit: true,
   varchar: true
 });
@@ -54,7 +54,6 @@ const {
 } = useSqlTabManager({
   sqlQuery,
   path: computed(() => sqlHistory.path),
-  writeFormat: toRef(data, "writeFormat"),
   varchar: toRef(data, "varchar"),
   limit: toRef(data, "limit")
 });
@@ -186,11 +185,13 @@ onUnmounted(() => {
               </el-button>
             </el-tooltip>
             <el-tooltip content="Run in new tab" effect="light">
-              <el-button @click="runNewTab" :loading="isRunningNew" circle text>
-                <template #icon>
-                  <Icon icon="mdi:tab-plus" />
-                </template>
-              </el-button>
+              <el-button
+                @click="runNewTab"
+                :loading="isRunningNew"
+                :icon="DArrowRight"
+                circle
+                text
+              />
             </el-tooltip>
             <el-tooltip :content="limitContent" effect="light">
               <el-button @click="limitRows" circle text>
@@ -268,17 +269,6 @@ onUnmounted(() => {
                     :pager-count="5"
                   />
                   <div class="flex items-center gap-2">
-                    <el-select
-                      v-model="data.writeFormat"
-                      size="small"
-                      style="width: 90px"
-                    >
-                      <el-option label="csv" value="csv" />
-                      <el-option label="xlsx" value="xlsx" />
-                      <el-option label="parquet" value="parquet" />
-                      <el-option label="json" value="json" />
-                      <el-option label="jsonl" value="jsonl" />
-                    </el-select>
                     <el-button
                       @click="exportActiveTab"
                       :loading="isExporting"

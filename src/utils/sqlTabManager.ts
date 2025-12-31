@@ -3,6 +3,7 @@ import { ref, computed, triggerRef, markRaw } from "vue";
 import { v4 as uuidv4 } from "uuid";
 import { invoke } from "@tauri-apps/api/core";
 import { message } from "@/utils/message";
+import { save } from "@tauri-apps/plugin-dialog";
 
 export interface ResultTab {
   id: string;
@@ -17,7 +18,6 @@ export interface ResultTab {
 interface ResultTabOptions {
   sqlQuery: Ref<string>;
   path: Ref<string>;
-  writeFormat: Ref<string>;
   varchar: Ref<boolean>;
   limit: Ref<boolean>;
 }
@@ -55,9 +55,13 @@ export function useSqlTabManager(options: ResultTabOptions) {
 
   async function executeQuery(
     tab: ResultTab,
-    write: boolean
+    write: boolean,
+    writeOptions?: {
+      outputPath?: string;
+      writeFormat?: string;
+    }
   ): Promise<boolean> {
-    const { sqlQuery, path, writeFormat, varchar, limit } = options;
+    const { sqlQuery, path, varchar, limit } = options;
 
     if (path.value === "") {
       message("No file selected. Add data first.", { type: "warning" });
@@ -73,10 +77,11 @@ export function useSqlTabManager(options: ResultTabOptions) {
       const rawResult = await invoke("query", {
         path: path.value,
         sqlQuery: sqlQuery.value,
-        write,
-        writeFormat: writeFormat.value,
         varchar: varchar.value,
-        limit: limit.value
+        limit: limit.value,
+        write,
+        writeFormat: writeOptions?.writeFormat || "csv",
+        outputPath: writeOptions?.outputPath || ""
       });
 
       if (!write) {
@@ -136,7 +141,36 @@ export function useSqlTabManager(options: ResultTabOptions) {
 
   async function exportActiveTab() {
     if (!activeTab.value) return;
-    await executeQuery(activeTab.value, true);
+
+    const outputPath = await save({
+      title: "Export Data",
+      defaultPath: `export_${new Date().getTime()}`,
+      filters: [
+        { name: "CSV", extensions: ["csv"] },
+        { name: "Excel", extensions: ["xlsx"] },
+        { name: "Parquet", extensions: ["parquet"] },
+        { name: "Json", extensions: ["json"] },
+        { name: "NdJson", extensions: ["jsonl"] }
+      ]
+    });
+
+    if (!outputPath) return;
+
+    let writeFormat = "csv";
+    if (outputPath.endsWith(".xlsx")) {
+      writeFormat = "xlsx";
+    } else if (outputPath.endsWith(".parquet")) {
+      writeFormat = "parquet";
+    } else if (outputPath.endsWith(".json")) {
+      writeFormat = "json";
+    } else if (outputPath.endsWith(".jsonl")) {
+      writeFormat = "jsonl";
+    }
+
+    await executeQuery(activeTab.value, true, {
+      outputPath,
+      writeFormat
+    });
   }
 
   function removeTab(targetId: string) {

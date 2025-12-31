@@ -142,10 +142,11 @@ impl FileWriter for DataFrameWriter {
 async fn prepare_query(
   file_path: Vec<&str>,
   sql_query: &str,
-  write: bool,
-  write_format: &str,
   varchar: bool,
   limit: bool,
+  write: bool,
+  write_format: &str,
+  output_path: String,
 ) -> Result<String> {
   let infer_schema_length = match varchar {
     true => 0,
@@ -153,16 +154,6 @@ async fn prepare_query(
   };
 
   let mut ctx = SQLContext::new();
-  let opts = CsvOptions::new(file_path.get(0).ok_or(anyhow!("No file choice"))?);
-  let mut output_path = PathBuf::from(opts.parent_path()?);
-  let file_stem = opts.file_stem()?;
-  match write_format {
-    "xlsx" => output_path.push(format!("{file_stem}.sql.xlsx")),
-    "parquet" => output_path.push(format!("{file_stem}.sql.parquet")),
-    "json" => output_path.push(format!("{file_stem}.sql.json")),
-    "jsonl" => output_path.push(format!("{file_stem}.sql.jsonl")),
-    _ => output_path.push(format!("{file_stem}.sql.csv")),
-  };
 
   let mut opt_state = OptFlags::from_bits_truncate(0);
   opt_state |= OptFlags::default();
@@ -320,14 +311,25 @@ fn query_df_to_json(mut df: DataFrame) -> Result<String> {
 pub async fn query(
   path: String,
   sql_query: String,
-  write: bool,
-  write_format: String,
   varchar: bool,
   limit: bool,
+  write: bool,
+  write_format: String,
+  output_path: String,
 ) -> Result<String, String> {
   let file_path: Vec<&str> = path.split('|').collect();
 
-  match prepare_query(file_path, &sql_query, write, &write_format, varchar, limit).await {
+  match prepare_query(
+    file_path,
+    &sql_query,
+    varchar,
+    limit,
+    write,
+    &write_format,
+    output_path,
+  )
+  .await
+  {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("{err}")),
   }
