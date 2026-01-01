@@ -26,7 +26,6 @@ const data = reactive({
   limit: true,
   varchar: true
 });
-const tables = ref([]);
 const [isRunningCurrent, isRunningNew, isExporting] = [
   ref(false),
   ref(false),
@@ -82,36 +81,6 @@ function allVarchar() {
   data.varchar = !data.varchar;
   varcharContent.value = data.varchar ? "dtype: string" : "dtype: auto";
 }
-
-// Ace Editor初始化
-const initializeEditor = editor => {
-  editor.completers.push({
-    getCompletions: (editor, session, pos, prefix, callback) => {
-      callback(
-        null,
-        tables.value.map(table => ({
-          caption: table.name,
-          value: table.name,
-          meta: "table"
-        }))
-      );
-    }
-  });
-  tables.value.forEach(item => {
-    editor.completers.push({
-      getCompletions: (editor, session, pos, prefix, callback) => {
-        callback(
-          null,
-          item.children.map(col => ({
-            caption: col.label,
-            value: col.label,
-            meta: "column"
-          }))
-        );
-      }
-    });
-  });
-};
 
 // tree右键菜单
 const contextMenuRef = ref<HTMLElement | null>(null);
@@ -225,7 +194,6 @@ onUnmounted(() => {
                 showPrintMargin: false,
                 fontSize: '1.0rem'
               }"
-              @init="initializeEditor"
               :theme="theme"
               style="height: 100%"
             />

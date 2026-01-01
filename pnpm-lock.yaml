@@ -66,8 +66,8 @@ importers:
         specifier: ^2.2.6
         version: 2.2.6(vue@3.3.1)
       ace-builds:
-        specifier: ^1.36.2
-        version: 1.36.2
+        specifier: ^1.43.5
+        version: 1.43.5
       animate.css:
         specifier: ^4.1.1
         version: 4.1.1
@@ -105,11 +105,11 @@ importers:
         specifier: ^0.12.7
         version: 0.12.7
       pinia:
-        specifier: ^2.0.36
-        version: 2.0.36(typescript@5.0.4)(vue@3.3.1)
+        specifier: ^2.3.1
+        version: 2.3.1(typescript@5.0.4)(vue@3.3.1)
       pinia-plugin-persistedstate:
         specifier: ^3.2.3
-        version: 3.2.3(pinia@2.0.36(typescript@5.0.4)(vue@3.3.1))
+        version: 3.2.3(pinia@2.3.1(typescript@5.0.4)(vue@3.3.1))
       prismjs:
         specifier: ^1.29.0
         version: 1.29.0
@@ -136,7 +136,7 @@ importers:
         version: 5.0.2(vue@3.3.1)
       vue3-ace-editor:
         specifier: ^2.2.4
-        version: 2.2.4(ace-builds@1.36.2)(vue@3.3.1)
+        version: 2.2.4(ace-builds@1.43.5)(vue@3.3.1)
     devDependencies:
       '@commitlint/cli':
         specifier: ^17.6.3
@@ -1424,6 +1424,9 @@ packages:
   '@vue/devtools-api@6.5.0':
     resolution: {integrity: sha512-o9KfBeaBmCKl10usN4crU53fYtC1r7jJwdGKjPT24t348rHxgfpZ0xL3Xm/gLUYnc0oTp8LAmrxOeLyu6tbk2Q==}
 
+  '@vue/devtools-api@6.6.4':
+    resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
+
   '@vue/eslint-config-prettier@7.1.0':
     resolution: {integrity: sha512-Pv/lVr0bAzSIHLd9iz0KnvAr4GKyCEl+h52bc4e5yWuDVtLgFwycF7nrbWTAQAS+FU6q1geVd07lc6EWfJiWKQ==}
     peerDependencies:
@@ -1561,8 +1564,8 @@ packages:
     resolution: {integrity: sha512-E+iruNOY8VV9s4JEbe1aNEm6MiszPRr/UfcHMz0TQh1BXSxHK+ASV1R6W4HpjBhSeS+54PIsAMCBmwD06LLsqQ==}
     hasBin: true
 
-  ace-builds@1.36.2:
-    resolution: {integrity: sha512-eqqfbGwx/GKjM/EnFu4QtQ+d2NNBu84MGgxoG8R5iyFpcVeQ4p9YlTL+ZzdEJqhdkASqoqOxCSNNGyB6lvMm+A==}
+  ace-builds@1.43.5:
+    resolution: {integrity: sha512-iH5FLBKdB7SVn9GR37UgA/tpQS8OTWIxWAuq3Ofaw+Qbc69FfPXsXd9jeW7KRG2xKpKMqBDnu0tHBrCWY5QI7A==}
 
   acorn-import-attributes@1.9.5:
     resolution: {integrity: sha512-n02Vykv5uA3eHGM/Z2dQrcD56kL8TyDb2p1+0P83PClMnC/nc+anbQRhIOWnSq4Ke/KvDPrY3C9hDtC/A3eHnQ==}
@@ -3343,15 +3346,12 @@ packages:
     peerDependencies:
       pinia: ^2.0.0
 
-  pinia@2.0.36:
-    resolution: {integrity: sha512-4UKApwjlmJH+VuHKgA+zQMddcCb3ezYnyewQ9NVrsDqZ/j9dMv5+rh+1r48whKNdpFkZAWVxhBp5ewYaYX9JcQ==}
+  pinia@2.3.1:
+    resolution: {integrity: sha512-khUlZSwt9xXCaTbbxFYBKDc/bWAGWJjOgvxETwkTN7KRm66EeT1ZdZj6i2ceh9sP2Pzqsbc704r2yngBrxBVug==}
     peerDependencies:
-      '@vue/composition-api': ^1.4.0
       typescript: '>=4.4.4'
-      vue: ^2.6.14 || ^3.2.0
+      vue: ^2.7.0 || ^3.5.11
     peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
       typescript:
         optional: true
 
@@ -5838,6 +5838,8 @@ snapshots:
 
   '@vue/devtools-api@6.5.0': {}
 
+  '@vue/devtools-api@6.6.4': {}
+
   '@vue/eslint-config-prettier@7.1.0(eslint@8.40.0)(prettier@2.8.8)':
     dependencies:
       eslint: 8.40.0
@@ -6061,7 +6063,7 @@ snapshots:
       jsonparse: 1.3.1
       through: 2.3.8
 
-  ace-builds@1.36.2: {}
+  ace-builds@1.43.5: {}
 
   acorn-import-attributes@1.9.5(acorn@8.15.0):
     dependencies:
@@ -7854,17 +7856,19 @@ snapshots:
 
   pify@2.3.0: {}
 
-  pinia-plugin-persistedstate@3.2.3(pinia@2.0.36(typescript@5.0.4)(vue@3.3.1)):
+  pinia-plugin-persistedstate@3.2.3(pinia@2.3.1(typescript@5.0.4)(vue@3.3.1)):
     dependencies:
-      pinia: 2.0.36(typescript@5.0.4)(vue@3.3.1)
+      pinia: 2.3.1(typescript@5.0.4)(vue@3.3.1)
 
-  pinia@2.0.36(typescript@5.0.4)(vue@3.3.1):
+  pinia@2.3.1(typescript@5.0.4)(vue@3.3.1):
     dependencies:
-      '@vue/devtools-api': 6.5.0
+      '@vue/devtools-api': 6.6.4
       vue: 3.3.1
-      vue-demi: 0.14.1(vue@3.3.1)
+      vue-demi: 0.14.10(vue@3.3.1)
     optionalDependencies:
       typescript: 5.0.4
+    transitivePeerDependencies:
+      - '@vue/composition-api'
 
   pirates@4.0.5: {}
 
@@ -9126,9 +9130,9 @@ snapshots:
     optionalDependencies:
       vue: 3.3.1
 
-  vue3-ace-editor@2.2.4(ace-builds@1.36.2)(vue@3.3.1):
+  vue3-ace-editor@2.2.4(ace-builds@1.43.5)(vue@3.3.1):
     dependencies:
-      ace-builds: 1.36.2
+      ace-builds: 1.43.5
       resize-observer-polyfill: 1.5.1
       vue: 3.3.1
 
