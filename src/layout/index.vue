@@ -27,7 +27,6 @@ const appWindow = getCurrentWindow();
 const handleMouseDown = e => {
   if (
     e.target.closest(".sub-menu-icon") ||
-    e.target.closest(".search-container") ||
     e.target.closest(".set-icon") ||
     e.target.closest(".project-configuration") ||
     e.target.closest(".container") ||

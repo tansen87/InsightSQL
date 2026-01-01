@@ -323,21 +323,6 @@ html.dark {
     border-radius: 50%;
     z-index: 10;
   }
-  .cmd-list {
-    border: 2px solid var(--cmd-list-border);
-    height: 200px;
-    position: absolute;
-    z-index: 1000;
-    background: var(--cmd-list-bg);
-  }
-  .cmd-item {
-    padding: 8px 16px;
-    cursor: pointer;
-    color: var(--cmd-item-color);
-  }
-  .cmd-item:hover {
-    background-color: rgba(157, 152, 152, 0.3);
-  }
 
   /* cat.vue中按钮切换 */
   .mode-toggle {
