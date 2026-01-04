@@ -109,12 +109,12 @@ pub async fn csv2csv(
 }
 
 #[tauri::command]
-pub async fn encoding2utf8(path: String, encoding: String) -> Result<String, String> {
+pub async fn encoding2utf8(path: String, bom: bool) -> Result<String, String> {
   let start_time = Instant::now();
   let paths: Vec<&str> = path.split('|').collect();
   let p = paths.first().unwrap();
 
-  match csv_to_csv::encoding_to_utf8(p, &encoding).await {
+  match csv_to_csv::encoding_to_utf8(p, bom).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

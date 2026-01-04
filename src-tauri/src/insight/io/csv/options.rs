@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::ReaderBuilder;
-use encoding_rs_io::{DecodeReaderBytes, DecodeReaderBytesBuilder};
+use encoding_rs::{Encoding, GBK, UTF_8, UTF_16BE, UTF_16LE};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
@@ -157,17 +157,52 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(reader)
   }
 
-  pub fn rdr_encoding(
-    &self,
-    encoding: Option<&'static encoding_rs::Encoding>,
-  ) -> Result<BufReader<DecodeReaderBytes<File, Vec<u8>>>> {
-    let file = File::open(&self.path)?;
-    let decoder = DecodeReaderBytesBuilder::new()
-      .encoding(encoding)
-      .build(file);
-    let buf_reader = BufReader::new(decoder);
+  /// Detect the text encoding of csv
+  pub fn detect_encoding(&self, bom: bool) -> Result<&'static Encoding> {
+    let mut sample = Vec::new();
+    File::open(&self.path)?
+      .take(256 * 1024)
+      .read_to_end(&mut sample)?;
 
-    Ok(buf_reader)
+    if sample.is_empty() {
+      return Ok(UTF_8);
+    }
+
+    if bom && sample.len() >= 2 {
+      match (&sample[0..2], sample.len().checked_sub(2)) {
+        ([0xFF, 0xFE], _) => return Ok(UTF_16LE),  // UTF-16LE BOM
+        ([0xFE, 0xFF], _) => return Ok(UTF_16BE),  // UTF-16BE BOM
+        ([0xEF, 0xBB], Some(rest)) if rest > 0 && sample[2] == 0xBF => {
+          return Ok(UTF_8);  // UTF-8 BOM
+        }
+        _ => {}
+      }
+    }
+
+    if std::str::from_utf8(&sample).is_ok() {
+      return Ok(UTF_8);
+    }
+
+    let is_odd_len = sample.len() % 2 == 1;
+    if !is_odd_len && sample.len() >= 2 {
+      let total_pairs = sample.len() / 2;
+      let nulls_le = sample
+        .iter()
+        .skip(1)
+        .step_by(2)
+        .filter(|&&b| b == 0)
+        .count();
+      let nulls_be = sample.iter().step_by(2).filter(|&&b| b == 0).count();
+
+      if nulls_le > total_pairs / 3 {
+        return Ok(UTF_16LE);
+      }
+      if nulls_be > total_pairs / 3 {
+        return Ok(UTF_16BE);
+      }
+    }
+
+    Ok(GBK)
   }
 
   /// The intersection of all headers between many csv or excel files

@@ -29,8 +29,7 @@ const [
   wtrSep,
   skipRows,
   quote,
-  quoteStyle,
-  encoding
+  quoteStyle
 ] = [
   ref("excel"),
   ref("700000"),
@@ -39,18 +38,12 @@ const [
   ref("|"),
   ref("0"),
   ref('"'),
-  ref("necessary"),
-  ref("gbk")
+  ref("necessary")
 ];
 const [backendInfo, path] = [ref(""), ref("")];
 const [sheetOptions, fileSheet] = [ref([]), ref([])];
-const [allSheets, isLoading, backendCompleted, writeSheetname, ignoreErr] = [
-  ref(true),
-  ref(false),
-  ref(false),
-  ref(false),
-  ref(false)
-];
+const [allSheets, isLoading, backendCompleted, writeSheetname, ignoreErr, bom] =
+  [ref(true), ref(false), ref(false), ref(false), ref(false), ref(false)];
 const modeOptions = [
   { label: "FormtCsv", value: "fmt" },
   { label: "EncodingCsv", value: "encoding" },
@@ -97,11 +90,9 @@ const fmtOptions = [
   { label: "NonNumeric", value: "non_numeric" },
   { label: "Never", value: "never" }
 ];
-const encodingOptions = [
-  { label: "GBK", value: "gbk" },
-  { label: "UTF-8", value: "utf_8" },
-  { label: "UTF-16LE", value: "utf_16le" },
-  { label: "UTF-16BE", value: "utf_16be" }
+const bomOptions = [
+  { label: "True", value: true },
+  { label: "False", value: false }
 ];
 const sheetsData = ref({});
 const fileSelect = ref<ListenEvent[]>([]);
@@ -258,13 +249,11 @@ async function convert() {
         quoteStyle: quoteStyle.value,
         progress: progress.value
       });
-      console.log(progress.value);
     } else if (activeTab.value === "encoding") {
       rtime = await invoke("encoding2utf8", {
         path: path.value,
-        encoding: encoding.value
+        bom: bom.value
       });
-      console.log(progress.value);
     } else if (activeTab.value === "access") {
       rtime = await invoke("access2csv", {
         path: path.value,
@@ -530,20 +519,20 @@ async function convert() {
           <!-- encoding -->
           <el-tooltip
             v-if="activeTab === 'encoding'"
-            content="Read Encoding"
+            content="BOM"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle-v mt-2 w-[220px] h-[64px]">
+            <div class="mode-toggle-v mt-2 w-[220px] h-[32px]">
               <span
-                v-for="item in encodingOptions"
-                :key="item.value"
+                v-for="item in bomOptions"
+                :key="String(item.value)"
                 class="mode-item"
                 :class="{
-                  active: encoding === item.value,
-                  'active-dark': isDark && encoding === item.value
+                  active: bom === item.value,
+                  'active-dark': isDark && bom === item.value
                 }"
-                @click="encoding = item.value"
+                @click="bom = item.value"
               >
                 {{ item.label }}
               </span>

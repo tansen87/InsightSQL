@@ -1,6 +1,6 @@
 use std::{
   fs::File,
-  io::BufWriter,
+  io::{BufReader, BufWriter},
   path::Path,
   sync::{Arc, Mutex},
   time::Duration,
@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
-use encoding_rs::{GBK, UTF_16BE, UTF_16LE, UTF_8};
+use encoding_rs_io::DecodeReaderBytesBuilder;
 use tokio::sync::oneshot;
 
 use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
@@ -77,7 +77,7 @@ where
           let current_rows = match rows_clone.lock() {
             Ok(lock) => *lock,
             Err(err) => {
-              eprintln!("Failed to lock current rows: {err}");
+              log::error!("Failed to lock current rows: {err}");
               0
             }
           };
@@ -121,21 +121,30 @@ where
   Ok(())
 }
 
-pub async fn encoding_to_utf8<P>(path: P, encoding: &str) -> Result<()>
+pub async fn encoding_to_utf8<P>(path: P, bom: bool) -> Result<()>
 where
   P: AsRef<Path> + Send + Sync,
 {
-  let encoding = match encoding {
-    "gbk" => GBK,
-    "utf_16le" => UTF_16LE,
-    "utf_16be" => UTF_16BE,
-    _ => UTF_8
-  };
   let opts = CsvOptions::new(&path);
-  let buf_rdr = opts.rdr_encoding(Some(encoding))?;
-  let mut rdr = csv::Reader::from_reader(buf_rdr);
+  let encoding = opts.detect_encoding(bom)?;
+  log::info!("{encoding:?}");
+
+  let file = File::open(&path)?;
+  let decoder = DecodeReaderBytesBuilder::new()
+    .encoding(Some(encoding))
+    .build(file);
+  let buf_reader = BufReader::new(decoder);
+
+  let mut rdr = csv::Reader::from_reader(buf_reader);
+
   let output_path = opts.output_path(Some("encoding"), None)?;
-  let mut wtr = csv::Writer::from_writer(File::create(output_path)?);
+  let wtr = BufWriter::new(File::create(&output_path)?);
+  let mut wtr = csv::Writer::from_writer(wtr);
+
+  if let Ok(headers) = rdr.headers() {
+    wtr.write_record(headers)?;
+  }
+
   for result in rdr.records() {
     let record = result?;
     wtr.write_record(&record)?;
