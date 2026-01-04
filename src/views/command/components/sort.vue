@@ -104,24 +104,26 @@ async function sortData() {
             <el-button @click="selectFile()" :icon="FolderOpened" circle text />
           </el-tooltip>
 
-          <el-tooltip content="Sort mode" effect="light" placement="right">
-            <div class="mode-toggle w-[180px]">
-              <span
-                v-for="item in modeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: mode === item.value,
-                  'active-dark': isDark && mode === item.value
-                }"
-                @click="mode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
+          <div class="mode-toggle w-[180px]">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
-          <el-tooltip content="Numeric" effect="light" placement="right">
+          <el-tooltip
+            content="Numeric (when set to True, sort by numerical size)"
+            effect="light"
+            placement="right"
+          >
             <div class="mode-toggle mt-2 w-[180px]">
               <span
                 v-for="item in numOptions"

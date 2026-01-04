@@ -103,12 +103,11 @@ export function mdApply() {
   | Squeeze    | compress consecutive whitespaces                  |
   | Strip      | replace \\ r and \\ n with whitespaces            |
   
-  ### DYNFMT
-  Dynamically constructs a new column from other columns using the <--formatstr> template.
+  ### DynFmt
+  Dynamically constructs a new column from other columns.
 
-  ### CALCCONV
+  ### CalcConv
   Parse and evaluate math expressions into a new column, with support for units and conversions.
-  The math expression is built dynamically using the <--formatstr> template, similar to the DYNFMT.
 `;
 }
 
@@ -252,7 +251,7 @@ sample file
 \`\`\`
 
 ### 1. Left
-(Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Left</u>)
+(Select column: <u>name</u>, Number of the string: <u>3</u>)
 \`\`\`
 ┌─────┬──────────┬────────────┐
 │ idx │ name     │ name_nchar │
@@ -264,7 +263,7 @@ sample file
 \`\`\`
 
 ### 2. Right
-(Select column: <u>name</u>, Number of the string: <u>3</u>, String mode: <u>Right</u>)
+(Select column: <u>name</u>, Number of the string: <u>3</u>)
 \`\`\`
 ┌─────┬──────────┬────────────┐
 │ idx │ name     │ name_nchar │
@@ -275,30 +274,30 @@ sample file
 └─────┴──────────┴────────────┘
 \`\`\`
 
-### 3. StartLength
-(Select column: <u>name</u>, Start index: <u>1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
+### 3. Slice
+(Select column: <u>name</u>, Start index: <u>1</u>, Length of the slice: <u>3</u>)
 \`\`\`
-┌─────┬──────────┬─────────┐
-│ idx │ name     │ name_sl │
-├─────┼──────────┼─────────┤
-│  1  │ tom-1    │   tom   │
-│  2  │ jerry-2  │   jer   │
-│  3  | hansen-3 |   han   │
-└─────┴──────────┴─────────┘
+┌─────┬──────────┬────────────┐
+│ idx │ name     │ name_slice │
+├─────┼──────────┼────────────┤
+│  1  │ tom-1    │   tom      │
+│  2  │ jerry-2  │   jer      │
+│  3  | hansen-3 |   han      │
+└─────┴──────────┴────────────┘
 \`\`\`
-(Select column: <u>name</u>, Start index: <u>-1</u>, Length of the string: <u>3</u>, String mode: <u>StartLength</u>)
+(Select column: <u>name</u>, Start index: <u>-1</u>, Length of the slice: <u>3</u>)
 \`\`\`
-┌─────┬──────────┬─────────┐
-│ idx │ name     │ name_sl │
-├─────┼──────────┼─────────┤
-│  1  │ tom-1    │   m-1   │
-│  2  │ jerry-2  │   y-2   │
-│  3  | hansen-3 |   n-3   │
-└─────┴──────────┴─────────┘
+┌─────┬──────────┬────────────┐
+│ idx │ name     │ name_slice │
+├─────┼──────────┼────────────┤
+│  1  │ tom-1    │   m-1      │
+│  2  │ jerry-2  │   y-2      │
+│  3  | hansen-3 |   n-3      │
+└─────┴──────────┴────────────┘
 \`\`\`
 
-### 4. Nth
-(Select column: <u>name</u>, Number of the string: <u>1</u>, String separator: <u>-</u>, String mode: <u>Nth</u>)
+### 4. SplitN
+(Select column: <u>name</u>, nth/max number of items to return: <u>1</u>, Substring to split by: <u>-</u>)
 \`\`\`
 ┌─────┬──────────┬──────────┐
 │ idx │ name     │ name_nth │
@@ -309,8 +308,8 @@ sample file
 └─────┴──────────┴──────────┘
 \`\`\`
 
-### 5. Nmax
-(Select column: <u>name</u>, Number of the string: <u>2</u>, String separator: <u>-</u>, String mode: <u>Nmax</u>)
+### 5. SplitMax
+(Select column: <u>name</u>, nth/max number of items to return: <u>2</u>, Substring to split by: <u>-</u>)
 \`\`\`
 ┌─────┬──────────┬────────────┬────────────┐
 │ idx │ name     │ name_nmax1 │ name_nmax2 │
@@ -319,6 +318,42 @@ sample file
 │  2  │ jerry-2  │  jerry     │     2      │
 │  3  | hansen-3 |  hansen    │     3      │
 └─────┴──────────┴────────────┴────────────┘
+\`\`\`
+
+### 6. PadLeft
+(Select column: <u>idx</u>, Pad the string until it reaches this length: <u>2</u>, The character to pad the string with: <u>*</u>)
+\`\`\`
+┌─────┬──────────┐
+│ idx │ name     │
+├─────┼──────────┤
+│ *1  │ tom-1    │
+│ *2  │ jerry-2  │
+│ *3  | hansen-3 |
+└─────┴──────────┘
+\`\`\`
+
+### 7. PadRight
+(Select column: <u>idx</u>, Pad the string until it reaches this length: <u>2</u>, The character to pad the string with: <u>*</u>)
+\`\`\`
+┌─────┬──────────┐
+│ idx │ name     │
+├─────┼──────────┤
+│ 1*  │ tom-1    │
+│ 2*  │ jerry-2  │
+│ 3*  | hansen-3 |
+└─────┴──────────┘
+\`\`\`
+
+### 7. PadBoth
+(Select column: <u>idx</u>, Pad the string until it reaches this length: <u>3</u>, The character to pad the string with: <u>*</u>)
+\`\`\`
+┌─────┬──────────┐
+│ idx │ name     │
+├─────┼──────────┤
+│ *1* │ tom-1    │
+│ *2* │ jerry-2  │
+│ *3* | hansen-3 |
+└─────┴──────────┘
 \`\`\`
 `;
 }

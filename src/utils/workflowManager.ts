@@ -12,31 +12,29 @@ export function useWorkflowManager(loadCurrentWorkflow: () => void) {
 
   // 创建新工作区
   async function createWorkflow() {
-    try {
-      const { value } = await ElMessageBox.prompt("New workspace", {
-        confirmButtonText: "Ok",
-        cancelButtonText: "Cancel",
-        inputPlaceholder: "Example name: ws001",
-        inputValidator: val => {
-          const name = val?.trim();
-          if (!name) {
-            return "The workspace name cannot be empty";
-          }
-          // 检查是否已存在
-          const exists = workflowStore.list.some(wf => wf.name === name);
-          if (exists) {
-            return "This name already exists. Please choose another one.";
-          }
+    ElMessageBox.prompt("New workspace", {
+      confirmButtonText: "Ok",
+      cancelButtonText: "Cancel",
+      inputPlaceholder: "Example name: ws001",
+      inputValidator: val => {
+        const name = val?.trim();
+        if (!name) {
+          return "The workspace name cannot be empty";
         }
-      });
-
-      const name = value?.trim();
-      if (name) {
-        workflowStore.create(name);
+        // 检查是否存在
+        const exists = workflowStore.list.some(wf => wf.name === name);
+        if (exists) {
+          return "This name already exists. Please choose another one.";
+        }
       }
-    } catch (err) {
-      message(`create workflow error: ${err}`);
-    }
+    })
+      .then(({ value }) => {
+        const name = value?.trim();
+        if (name) {
+          workflowStore.create(name);
+        }
+      })
+      .catch(() => {});
   }
 
   // 删除工作区

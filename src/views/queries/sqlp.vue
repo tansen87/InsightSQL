@@ -15,11 +15,11 @@ import {
 import { Icon } from "@iconify/vue";
 import { VAceEditor } from "vue3-ace-editor";
 import { useDark } from "@pureadmin/utils";
-import "./ace-config";
+import "@/utils/sql/aceConfig";
 import { useDynamicHeight } from "@/utils/utils";
 import { useSqlHistory } from "@/store/modules/sqlHistory";
-import { useSqlTabManager } from "@/utils/sqlTabManager";
-import { useSqlFileTree } from "@/utils/sqlFileTree";
+import { useSqlTabManager } from "@/utils/sql/sqlTabManager";
+import { useSqlFileTree } from "@/utils/sql/sqlFileTree";
 
 const data = reactive({
   write: false,
