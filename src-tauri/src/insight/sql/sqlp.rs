@@ -141,7 +141,7 @@ impl FileWriter for DataFrameWriter {
 
 async fn prepare_query(
   file_path: Vec<&str>,
-  sql_query: &str,
+  sql_query: String,
   varchar: bool,
   limit: bool,
   write: bool,
@@ -158,7 +158,6 @@ async fn prepare_query(
   let mut opt_state = OptFlags::from_bits_truncate(0);
   opt_state |= OptFlags::default();
 
-  let mut table_aliases = HashMap::with_capacity(file_path.len());
   let mut lossy_table_name = Cow::default();
   let mut table_name;
   let mut vec_sep = Vec::new();
@@ -173,7 +172,6 @@ async fn prepare_query(
         lossy_table_name = Path::new(table).to_string_lossy();
         &lossy_table_name
       });
-    table_aliases.insert(table_name.to_string(), format!("_t_{}", idx + 1));
 
     let file_extension = match Path::new(table).extension() {
       Some(ext) => ext.to_string_lossy().to_lowercase(),
@@ -243,20 +241,10 @@ async fn prepare_query(
     ctx.register(table_name, lf.with_optimizations(opt_state));
   }
 
-  let mut current_query = String::new();
-
-  // replace aliases in query
-  current_query.clone_from(&sql_query.to_string());
-  for (table_name, table_alias) in &table_aliases {
-    // we quote the table name to avoid issues with reserved keywords and
-    // other characters that are not allowed in identifiers
-    current_query = current_query.replace(table_alias, &format!(r#""{table_name}""#));
-  }
-
   let mut ctx = ctx.clone();
 
   let df = tokio::task::spawn_blocking(move || -> Result<_> {
-    Ok(ctx.execute(&current_query)?.collect()?)
+    Ok(ctx.execute(&sql_query)?.collect()?)
   })
   .await??;
 
@@ -304,7 +292,7 @@ fn query_df_to_json(mut df: DataFrame) -> Result<String> {
     .with_json_format(JsonFormat::Json)
     .finish(&mut df)?;
 
-  Ok(String::from_utf8(buffer).unwrap())
+  Ok(String::from_utf8_lossy(&buffer).to_string())
 }
 
 #[tauri::command]
@@ -321,7 +309,7 @@ pub async fn query(
 
   match prepare_query(
     file_path,
-    &sql_query,
+    sql_query,
     varchar,
     limit,
     write,

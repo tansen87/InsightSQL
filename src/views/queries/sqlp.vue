@@ -33,7 +33,7 @@ const [isRunningCurrent, isRunningNew, isExporting] = [
 ];
 const limitContent = ref("limit 500");
 const varcharContent = ref("dtype: string");
-const sqlQuery = ref("select\n*\nfrom _t_1\nlimit 100");
+const sqlQuery = ref('select\n*\nfrom "filename"\nlimit 100');
 
 const { dynamicHeight } = useDynamicHeight(36);
 const { isDark } = useDark();
