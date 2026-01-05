@@ -1,6 +1,7 @@
 use std::{
+  collections::HashMap,
   fs::File,
-  io::{BufReader, BufWriter},
+  io::{BufRead, BufReader, BufWriter},
   path::Path,
   sync::{Arc, Mutex},
   time::Duration,
@@ -129,17 +130,46 @@ where
   let encoding = opts.detect_encoding(bom)?;
   log::info!("{encoding:?}");
 
+  // 检测分隔符
+  let separator = {
+    let file = File::open(&path)?;
+    let decoder = DecodeReaderBytesBuilder::new()
+      .encoding(Some(encoding))
+      .build(file);
+    let mut lines = BufReader::new(decoder).lines();
+
+    let candidates = [b',', b';', b'\t', b'|', b'^'];
+    let mut counts: HashMap<u8, usize> = candidates.iter().map(|&c| (c, 0)).collect();
+
+    if let Some(Ok(line)) = lines.next() {
+      for &b in line.as_bytes() {
+        if counts.contains_key(&b) {
+          *counts.get_mut(&b).unwrap() += 1;
+        }
+      }
+    }
+
+    let (&best, &max) = counts
+      .iter()
+      .max_by_key(|&(_, v)| v)
+      .expect("Candidate separators map is empty");
+    if max > 0 { best } else { b',' }
+  };
+  log::info!("Separator: {:?}", separator as char);
+
   let file = File::open(&path)?;
   let decoder = DecodeReaderBytesBuilder::new()
     .encoding(Some(encoding))
     .build(file);
   let buf_reader = BufReader::new(decoder);
 
-  let mut rdr = csv::Reader::from_reader(buf_reader);
+  let mut rdr = ReaderBuilder::new()
+    .delimiter(separator)
+    .from_reader(buf_reader);
 
   let output_path = opts.output_path(Some("encoding"), None)?;
   let wtr = BufWriter::new(File::create(&output_path)?);
-  let mut wtr = csv::Writer::from_writer(wtr);
+  let mut wtr = WriterBuilder::new().delimiter(separator).from_writer(wtr);
 
   if let Ok(headers) = rdr.headers() {
     wtr.write_record(headers)?;
