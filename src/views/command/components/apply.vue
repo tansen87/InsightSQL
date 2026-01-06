@@ -168,6 +168,7 @@ function addNewColumn() {
 
           <div class="mt-2 ml-2 w-60 space-y-2">
             <el-select
+              v-if="mode === 'operations'"
               v-model="columns"
               filterable
               multiple
