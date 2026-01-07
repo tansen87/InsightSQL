@@ -212,6 +212,7 @@ function addNewColumn() {
               <el-option label="Reverse" value="reverse" />
               <el-option label="Abs" value="abs" />
               <el-option label="Neg" value="neg" />
+              <el-option label="Normalize" value="normalize" />
             </el-select>
 
             <template

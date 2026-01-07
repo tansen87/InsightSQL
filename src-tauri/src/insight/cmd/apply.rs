@@ -40,6 +40,7 @@ enum Operations {
   Reverse,
   Abs,
   Neg,
+  Normalize,
 }
 
 impl Operations {
@@ -59,6 +60,7 @@ impl Operations {
       "reverse" => Ok(Operations::Reverse),
       "abs" => Ok(Operations::Abs),
       "neg" => Ok(Operations::Neg),
+      "normalize" => Ok(Operations::Normalize),
       _ => Ok(Operations::Copy),
     }
   }
@@ -198,6 +200,17 @@ fn apply_operations(
       Operations::Strip => {
         let striper: &'static Regex = regex_oncelock!(r"[\r\n]+");
         *cell = striper.replace_all(cell, " ").into_owned();
+      }
+      Operations::Normalize => {
+        let normalizer: &'static Regex = regex_oncelock!(r"^(\d+(?:\.\d+)?)([+-])$");
+        if let Some(caps) = normalizer.captures(cell) {
+          let number = &caps[1];
+          let sign = &caps[2];
+          *cell = match sign {
+            "-" => format!("-{number}"),
+            _ => format!("{number}"), // "+"
+          };
+        }
       }
       Operations::Reverse => {
         *cell = cell.as_str().chars().rev().collect::<String>();
