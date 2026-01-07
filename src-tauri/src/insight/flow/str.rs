@@ -5,7 +5,7 @@ use dynfmt::{Format, SimpleCurlyFormat};
 use pinyin::ToPinyin;
 use regex::Regex;
 
-use crate::flow::utils::ProcessContext;
+use crate::{flow::utils::ProcessContext, regex_oncelock};
 
 pub fn str_process(
   record: &StringRecord,
@@ -23,7 +23,7 @@ pub fn str_process(
       let mut dynfmt_template_wrk = template.to_string();
       let mut dynfmt_fields = Vec::new();
 
-      let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
+      let formatstr_re: &'static Regex = regex_oncelock!(r"\{(?P<key>\w+)?\}");
       for format_fields in formatstr_re.captures_iter(template) {
         // safety: we already checked that the regex match is valid
         if let Some(key) = format_fields.name("key") {
@@ -54,7 +54,7 @@ pub fn str_process(
       let mut dynfmt_template_wrk = template.to_string();
       let mut dynfmt_fields = Vec::new();
 
-      let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
+      let formatstr_re: &'static Regex = regex_oncelock!(r"\{(?P<key>\w+)?\}");
       for cap in formatstr_re.captures_iter(template) {
         if let Some(key) = cap.name("key") {
           dynfmt_fields.push(key.as_str());
@@ -136,12 +136,23 @@ pub fn str_process(
         "ltrim" => row_fields[idx] = cell.trim_start().to_string(),
         "rtrim" => row_fields[idx] = cell.trim_end().to_string(),
         "squeeze" => {
-          let re = regex::Regex::new(r"\s+").unwrap();
+          let re: &'static Regex = regex_oncelock!(r"\s+");
           row_fields[idx] = re.replace_all(&cell, " ").into_owned();
         }
         "strip" => {
-          let re = regex::Regex::new(r"[\r\n]+").unwrap();
+          let re: &'static Regex = regex_oncelock!(r"[\r\n]+");
           row_fields[idx] = re.replace_all(&cell, " ").into_owned();
+        }
+        "normalize" => {
+          let re: &'static Regex = regex_oncelock!(r"^(\d+(?:\.\d+)?)([+-])$");
+          if let Some(caps) = re.captures(&cell) {
+            let number = &caps[1];
+            let sign = &caps[2];
+            row_fields[idx] = match sign {
+              "-" => format!("-{number}"),
+              _ => format!("{number}"), // "+"
+            };
+          }
         }
         "replace" => {
           let comparand = str_op.comparand.as_deref().unwrap_or("");
@@ -322,7 +333,8 @@ pub fn str_process(
       // 字段找不到时,只有新增列的操作才追加空字符串
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {}
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "normalize" => {}
         _ => {
           str_results.push(String::new());
         }

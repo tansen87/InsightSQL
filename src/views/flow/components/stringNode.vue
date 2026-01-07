@@ -128,6 +128,7 @@ function deleteBtn() {
           <el-option label="reverse" value="reverse" />
           <el-option label="strip" value="strip" />
           <el-option label="squeeze" value="squeeze" />
+          <el-option label="normalize" value="normalize" />
           <el-option label="round" value="round" />
           <el-option label="len" value="len" />
           <el-option label="replace" value="replace" />

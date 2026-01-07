@@ -1,11 +1,7 @@
-use std::fs::File;
-use std::io::BufWriter;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{fs::File, io::BufWriter, path::PathBuf, sync::Arc};
 
 use anyhow::{Result, anyhow};
-use csv::ReaderBuilder;
-use csv::WriterBuilder;
+use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::flow::filter;
 use crate::flow::str::str_process;
@@ -133,7 +129,8 @@ pub async fn process_operations(
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "normalize" => {
           continue;
         }
         _ => {}
@@ -154,7 +151,8 @@ pub async fn process_operations(
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "normalize" => {
           continue;
         }
         _ => {}
@@ -177,7 +175,8 @@ pub async fn process_operations(
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" => {
+        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
+        | "normalize" => {
           continue;
         }
         _ => {}
