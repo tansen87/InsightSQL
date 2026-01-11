@@ -11,7 +11,6 @@ pub struct Operation {
   pub value: Option<String>,
   pub comparand: Option<String>,
   pub replacement: Option<String>,
-  pub alias: Option<String>,
 }
 
 pub struct StrOperation {
@@ -20,7 +19,6 @@ pub struct StrOperation {
   pub mode: String,
   pub comparand: Option<String>,
   pub replacement: Option<String>,
-  pub alias: Option<String>,
 }
 
 pub struct Filter {
@@ -46,7 +44,6 @@ impl From<&str> for FilterLogic {
 
 pub struct ProcessContext {
   pub select: Option<Vec<usize>>,
-  pub alias: Option<Vec<Option<String>>>,
   pub filters: Vec<Filter>,
   pub filter_logic: FilterLogic,
   pub str_ops: Vec<StrOperation>,
@@ -56,7 +53,6 @@ impl ProcessContext {
   pub fn new() -> Self {
     ProcessContext {
       select: None,
-      alias: None,
       filters: Vec::new(),
       filter_logic: FilterLogic::Or,
       str_ops: Vec::new(),
@@ -89,7 +85,6 @@ impl ProcessContext {
     mode: &str,
     comparand: Option<&str>,
     replacement: Option<&str>,
-    alias: Option<String>,
   ) {
     self.str_ops.push(StrOperation {
       id: id.to_string(),
@@ -97,7 +92,6 @@ impl ProcessContext {
       mode: mode.to_string(),
       comparand: comparand.map(|s| s.to_string()),
       replacement: replacement.map(|s| s.to_string()),
-      alias,
     });
   }
 

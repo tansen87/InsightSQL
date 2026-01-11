@@ -34,15 +34,6 @@ pub async fn process_operations(
         if let Some(column) = &op.column {
           let columns: Vec<&str> = column.split('|').collect();
           context.add_select(&columns, &headers);
-          let aliases = if let Some(alias) = &op.alias {
-            alias
-              .split(|c| c == '|')
-              .map(|s| Some(s.to_string()))
-              .collect()
-          } else {
-            vec![None; columns.len()]
-          };
-          context.alias = Some(aliases);
         }
       }
       "filter" => {
@@ -83,7 +74,6 @@ pub async fn process_operations(
             mode,
             op.comparand.as_deref(),
             op.replacement.as_deref(),
-            op.alias.clone(),
           );
         } else if let Some(mode) = &op.mode {
           if mode == "cat" || mode == "calcconv" {
@@ -93,8 +83,7 @@ pub async fn process_operations(
               mode,
               op.comparand.as_deref(),
               op.replacement.as_deref(),
-              op.alias.clone(),
-            )
+            );
           }
         }
       }
@@ -106,113 +95,65 @@ pub async fn process_operations(
   let buf_wtr = BufWriter::with_capacity(256_000, output_file);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
-  if let Some(ref selected) = context.select {
-    let mut selected_headers: Vec<String> = Vec::new();
-    if let Some(ref aliases) = context.alias {
-      for (i, &idx) in selected.iter().enumerate() {
-        if let Some(Some(alias)) = aliases.get(i) {
-          selected_headers.push(alias.clone());
-        } else {
-          selected_headers.push(headers[idx].clone());
-        }
-      }
-    } else {
-      for &idx in selected {
-        selected_headers.push(headers[idx].clone());
-      }
-    }
-
-    let mut new_field_names = Vec::new();
-    let mut new_field_is_slice = Vec::new(); // true=slice, false=str
-    let mut new_field_aliases = Vec::new();
+  // 构建输出header
+  let output_headers: Vec<String> = if let Some(ref selected) = context.select {
+    let mut selected_headers: Vec<String> =
+      selected.iter().map(|&idx| headers[idx].clone()).collect();
 
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
         | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "normalize" => {
-          continue;
-        }
+        | "normalize" => continue,
         _ => {}
       }
-      let str_name = match &str_op.alias {
-        Some(alias) => alias.clone(),
-        None => match str_op.mode.as_str() {
-          "cat" => format!("cat{}", str_op.id),
-          "calcconv" => format!("calcconv{}", str_op.id),
-          mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
-        },
-      };
-      new_field_names.push(str_name.clone());
-      new_field_is_slice.push(false);
-      new_field_aliases.push(str_name);
-    }
-
-    for str_op in &context.str_ops {
-      match str_op.mode.as_str() {
-        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "normalize" => {
-          continue;
-        }
-        _ => {}
-      };
-      let str_name = match &str_op.alias {
-        Some(alias) => alias.clone(),
-        None => match str_op.mode.as_str() {
-          "cat" => format!("cat{}", str_op.id),
-          "calcconv" => format!("calcconv{}", str_op.id),
-          mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
-        },
+      let str_name = match str_op.mode.as_str() {
+        "cat" => format!("cat{}", str_op.id),
+        "calcconv" => format!("calcconv{}", str_op.id),
+        mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
       };
       selected_headers.push(str_name);
     }
-
-    wtr.write_record(&selected_headers)?;
+    selected_headers
   } else {
     let mut all_headers: Vec<String> = headers.iter().map(|s| s.to_string()).collect();
-
     for str_op in &context.str_ops {
       match str_op.mode.as_str() {
         "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
         | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "normalize" => {
-          continue;
-        }
+        | "normalize" => continue,
         _ => {}
-      };
-      let str_name = match &str_op.alias {
-        Some(alias) => alias.clone(),
-        None => match str_op.mode.as_str() {
-          "cat" => format!("cat{}", str_op.id),
-          "calcconv" => format!("calcconv{}", str_op.id),
-          mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
-        },
+      }
+      let str_name = match str_op.mode.as_str() {
+        "cat" => format!("cat{}", str_op.id),
+        "calcconv" => format!("calcconv{}", str_op.id),
+        mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
       };
       all_headers.push(str_name);
     }
+    all_headers
+  };
 
-    wtr.write_record(all_headers.iter().map(|s| s.as_str()))?;
-  }
+  wtr.write_record(&output_headers)?;
 
   for result in rdr.records() {
     let record = result?;
-
     let (row_fields, str_results) = str_process(&record, &context, &headers)?;
 
     if context.is_valid(&record) {
-      if let Some(selected) = &context.select {
-        let mut filtered: Vec<_> = selected
+      let output_row: Vec<&str> = if let Some(selected) = &context.select {
+        let mut filtered: Vec<&str> = selected
           .iter()
-          .map(|&idx| row_fields.get(idx).map(|s| s.as_str()).unwrap_or(""))
+          .map(|&idx| row_fields.get(idx).map_or("", |s| s.as_str()))
           .collect();
         filtered.extend(str_results.iter().map(|s| s.as_str()));
-        wtr.write_record(&filtered)?;
+        filtered
       } else {
-        let mut all_fields: Vec<_> = row_fields.iter().map(|s| s.as_str()).collect();
+        let mut all_fields: Vec<&str> = row_fields.iter().map(|s| s.as_str()).collect();
         all_fields.extend(str_results.iter().map(|s| s.as_str()));
-        wtr.write_record(&all_fields)?;
-      }
+        all_fields
+      };
+      wtr.write_record(&output_row)?;
     }
   }
 
