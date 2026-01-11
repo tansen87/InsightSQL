@@ -5,7 +5,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 use crate::flow::filter;
 use crate::flow::str::str_process;
-use crate::flow::utils::{FilterLogic, Operation, ProcessContext};
+use crate::flow::utils::{ColumnSource, FilterLogic, Operation, ProcessContext};
 use crate::io::csv::options::CsvOptions;
 
 pub async fn process_operations(
@@ -19,12 +19,8 @@ pub async fn process_operations(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(opts.rdr_skip_rows()?);
-  let headers = rdr
-    .headers()?
-    .clone()
-    .iter()
-    .map(|s| s.to_string())
-    .collect::<Vec<_>>();
+
+  let headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
   let mut context = ProcessContext::new();
 
@@ -33,7 +29,7 @@ pub async fn process_operations(
       "select" => {
         if let Some(column) = &op.column {
           let columns: Vec<&str> = column.split('|').collect();
-          context.add_select(&columns, &headers);
+          context.add_select(&columns);
         }
       }
       "filter" => {
@@ -42,7 +38,7 @@ pub async fn process_operations(
         {
           let col = Arc::from(col.as_str());
           let val = Arc::from(val.as_str());
-          let headers = Arc::new(headers.to_vec());
+          let headers = Arc::new(headers.clone());
           let logic = FilterLogic::from(logic.as_str());
           match mode.as_str() {
             "equal" => context.add_filter(filter::equal(col, val, headers)?, logic),
@@ -62,7 +58,7 @@ pub async fn process_operations(
             "between" => context.add_filter(filter::between(col, val, headers)?, logic),
             "is_null" => context.add_filter(filter::is_null(col, headers)?, logic),
             "is_not_null" => context.add_filter(filter::is_not_null(col, headers)?, logic),
-            _ => return Err(anyhow!("Not support filter mode: {}", mode)),
+            _ => return Err(anyhow!("Not supported filter mode: {}", mode)),
           }
         }
       }
@@ -87,53 +83,62 @@ pub async fn process_operations(
           }
         }
       }
-      _ => return Err(anyhow!("Not support operation: {}", op.op)),
+      _ => return Err(anyhow!("Not supported operation: {}", op.op)),
     }
   }
+
+  let dynamic_col_names: Vec<String> = context
+    .str_ops
+    .iter()
+    .filter(|op| op.produces_new_column())
+    .map(|op| match op.mode.as_str() {
+      "cat" => format!("cat{}", op.id),
+      "calcconv" => format!("calcconv{}", op.id),
+      mode => format!("{}_{}{}", op.column, mode, op.id),
+    })
+    .collect();
+
+  let (output_headers, output_column_sources) =
+    if let Some(ref select_cols) = context.select_columns {
+      let mut sources = Vec::with_capacity(select_cols.len());
+      let mut headers_out = Vec::with_capacity(select_cols.len());
+
+      for col_name in select_cols {
+        if let Some(idx) = headers.iter().position(|h| h == col_name) {
+          sources.push(ColumnSource::Original(idx));
+          headers_out.push(col_name.clone());
+        } else if let Some(idx) = dynamic_col_names.iter().position(|n| n == col_name) {
+          sources.push(ColumnSource::Dynamic(idx));
+          headers_out.push(col_name.clone());
+        } else {
+          return Err(anyhow!(
+            "Column '{}' not found in input headers or generated columns. \
+                     Available input columns: {:?}, generated columns: {:?}",
+            col_name,
+            headers,
+            dynamic_col_names
+          ));
+        }
+      }
+      (headers_out, Some(sources))
+    } else {
+      let sources: Vec<ColumnSource> = (0..headers.len())
+        .map(ColumnSource::Original)
+        .chain((0..dynamic_col_names.len()).map(ColumnSource::Dynamic))
+        .collect();
+      let headers_out: Vec<String> = headers
+        .iter()
+        .cloned()
+        .chain(dynamic_col_names.into_iter())
+        .collect();
+      (headers_out, Some(sources))
+    };
+
+  context.output_column_sources = output_column_sources;
 
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(256_000, output_file);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
-
-  // 构建输出header
-  let output_headers: Vec<String> = if let Some(ref selected) = context.select {
-    let mut selected_headers: Vec<String> =
-      selected.iter().map(|&idx| headers[idx].clone()).collect();
-
-    for str_op in &context.str_ops {
-      match str_op.mode.as_str() {
-        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "normalize" => continue,
-        _ => {}
-      }
-      let str_name = match str_op.mode.as_str() {
-        "cat" => format!("cat{}", str_op.id),
-        "calcconv" => format!("calcconv{}", str_op.id),
-        mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
-      };
-      selected_headers.push(str_name);
-    }
-    selected_headers
-  } else {
-    let mut all_headers: Vec<String> = headers.iter().map(|s| s.to_string()).collect();
-    for str_op in &context.str_ops {
-      match str_op.mode.as_str() {
-        "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze"
-        | "strip" | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg"
-        | "normalize" => continue,
-        _ => {}
-      }
-      let str_name = match str_op.mode.as_str() {
-        "cat" => format!("cat{}", str_op.id),
-        "calcconv" => format!("calcconv{}", str_op.id),
-        mode => format!("{}_{}{}", str_op.column, mode, str_op.id),
-      };
-      all_headers.push(str_name);
-    }
-    all_headers
-  };
-
   wtr.write_record(&output_headers)?;
 
   for result in rdr.records() {
@@ -141,21 +146,20 @@ pub async fn process_operations(
     let (row_fields, str_results) = str_process(&record, &context, &headers)?;
 
     if context.is_valid(&record) {
-      let output_row: Vec<&str> = if let Some(selected) = &context.select {
-        let mut filtered: Vec<&str> = selected
-          .iter()
-          .map(|&idx| row_fields.get(idx).map_or("", |s| s.as_str()))
-          .collect();
-        filtered.extend(str_results.iter().map(|s| s.as_str()));
-        filtered
-      } else {
-        let mut all_fields: Vec<&str> = row_fields.iter().map(|s| s.as_str()).collect();
-        all_fields.extend(str_results.iter().map(|s| s.as_str()));
-        all_fields
-      };
+      let output_row: Vec<&str> = context
+        .output_column_sources
+        .as_ref()
+        .unwrap()
+        .iter()
+        .map(|source| match source {
+          ColumnSource::Original(idx) => row_fields.get(*idx).map_or("", |s| s.as_str()),
+          ColumnSource::Dynamic(idx) => str_results.get(*idx).map_or("", |s| s.as_str()),
+        })
+        .collect();
+
       wtr.write_record(&output_row)?;
     }
   }
 
-  Ok(())
+  Ok(wtr.flush()?)
 }

@@ -13,12 +13,26 @@ pub struct Operation {
   pub replacement: Option<String>,
 }
 
+#[derive(Clone)]
 pub struct StrOperation {
   pub id: String,
   pub column: String,
   pub mode: String,
   pub comparand: Option<String>,
   pub replacement: Option<String>,
+}
+
+impl StrOperation {
+  /// Returns true if this operation produces a new output column.
+  pub fn produces_new_column(&self) -> bool {
+    match self.mode.as_str() {
+      // In-place modifications — do NOT produce new column
+      "fill" | "f_fill" | "lower" | "upper" | "trim" | "ltrim" | "rtrim" | "squeeze" | "strip"
+      | "replace" | "regex_replace" | "round" | "reverse" | "abs" | "neg" | "normalize" => false,
+      // All others produce a new column
+      _ => true,
+    }
+  }
 }
 
 pub struct Filter {
@@ -42,30 +56,35 @@ impl From<&str> for FilterLogic {
   }
 }
 
+#[derive(Clone)]
+pub enum ColumnSource {
+  Original(usize),
+  Dynamic(usize),
+}
+
 pub struct ProcessContext {
-  pub select: Option<Vec<usize>>,
+  // Store raw select column names (e.g., ["cat1", "name", "age_len2"])
+  pub select_columns: Option<Vec<String>>,
+
   pub filters: Vec<Filter>,
-  pub filter_logic: FilterLogic,
   pub str_ops: Vec<StrOperation>,
+
+  // Will be set after headers and dynamic columns are known
+  pub output_column_sources: Option<Vec<ColumnSource>>,
 }
 
 impl ProcessContext {
   pub fn new() -> Self {
     ProcessContext {
-      select: None,
+      select_columns: None,
       filters: Vec::new(),
-      filter_logic: FilterLogic::Or,
       str_ops: Vec::new(),
+      output_column_sources: None,
     }
   }
 
-  pub fn add_select(&mut self, columns: &[&str], header: &[String]) {
-    let selected_indices: Vec<usize> = columns
-      .iter()
-      .filter_map(|col| header.iter().position(|h| h == *col))
-      .collect();
-
-    self.select = Some(selected_indices);
+  pub fn add_select(&mut self, columns: &[&str]) {
+    self.select_columns = Some(columns.iter().map(|s| s.to_string()).collect());
   }
 
   pub fn add_filter<F>(&mut self, filter: F, logic: FilterLogic)
@@ -95,10 +114,6 @@ impl ProcessContext {
     });
   }
 
-  pub fn set_filter_logic(&mut self, logic: FilterLogic) {
-    self.filter_logic = logic
-  }
-
   pub fn is_valid(&self, record: &StringRecord) -> bool {
     if self.filters.is_empty() {
       return true;
@@ -113,12 +128,8 @@ impl ProcessContext {
       let prev_logic = &self.filters[i - 1].logic;
 
       match prev_logic {
-        FilterLogic::And => {
-          result = result && current_value;
-        }
-        FilterLogic::Or => {
-          result = result || current_value;
-        }
+        FilterLogic::And => result = result && current_value,
+        FilterLogic::Or => result = result || current_value,
       }
     }
 
