@@ -45,10 +45,10 @@
       }
     }
   },
-  "productName": "InsightSQL",
-  "mainBinaryName": "InsightSQL",
+  "productName": "insight-x",
+  "mainBinaryName": "insight-x",
   "version": "../package.json",
-  "identifier": "com.InsightSQL.dev",
+  "identifier": "com.insight-x.dev",
   "plugins": {},
   "app": {
     "windows": [
@@ -57,7 +57,7 @@
         "width": 840,
         "height": 660,
         "resizable": true,
-        "title": "InsightSQL",
+        "title": "insight-x",
         "dragDropEnabled": false,
         "center": true,
         "decorations": false

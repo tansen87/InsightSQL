@@ -1,8 +1,8 @@
-<h1>InsightSQL</h1>
+<h1>insight-x</h1>
 
 [English](./README.md) | 中文
 
-> InsightSQL是一个基于Tauri的数据处理工具箱，旨在简化数据操作和管理。它提供了一个直观的图形用户界面(GUI)。支持多种文件格式的处理，包括 Excel、CSV 和 Parquet 等。用户可以通过简单的操作完成复杂的数据处理任务，如数据查询、转换、合并、连接、排序、切片、格式转换等。
+> insight-x是一个基于Tauri的数据处理工具箱，旨在简化数据操作和管理。它提供了一个直观的图形用户界面(GUI)。支持多种文件格式的处理，包括 Excel、CSV 和 Parquet 等。用户可以通过简单的操作完成复杂的数据处理任务，如数据查询、转换、合并、连接、排序、切片、格式转换等。
 
 
 ## 📷截图
@@ -20,19 +20,19 @@
 | Function | Description |
 | ------- | ----------- |
 | [SQL](./src-tauri/src/lib/cmd/sqlp.rs) | 对多个文件执行Polars SQL查询 (支持Excel, CSV, Parquet, Json, Jsonl) |
-| [Flow](./src-tauri/src/lib/flow/mod.rs) | Csv Flow |
-| [Apply](./docs/apply.md) | 对给定的CSV列应用一系列字符串和数学转换 |
-| [Cat](./docs/cat.md) | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 (支持Polars和CSV引擎) |
-| [Convert](./src-tauri/src/lib/cmd/convert/mod.rs) | 未见类型转换 (access转csv, 格式化csv, csv转xlsx, dbf转csv, excel转csv, json转csv, jsonl转csv) |
+| [Flow](./src-tauri/src/lib/flow/mod.rs) | CSV工作流 |
+| [Apply](./docs/apply.md) | 对CSV的列操作 |
+| [Cat](./docs/cat.md) | 将多个CSV或Excel文件合并为一个CSV或xlsx文件 |
+| [Convert](./src-tauri/src/lib/cmd/convert/mod.rs) | 文件类型转换 (access转csv, 格式化csv, csv转xlsx, dbf转csv, excel转csv, json转csv, jsonl转csv) |
 | [Count](./docs/count.md) | 统计CSV文件的行数 (带索引的瞬时值) |
 | [Rename](./docs/rename.md) | 重命名CSV的列 |
 | [Select](./docs/select.md) | 选择、重新排序CSV的列 |
 | [Search](./docs/search.md) | 匹配列中的相应行 (包含模式: equal, contains, starts with, ends with, regex) |
 | [Fill](./docs/fill.md) | 填充CSV中的空值 |
-| [Split](./docs/split.md) | 将一个CSV文件拆分为多个CSV文件 (按rows或按lines拆,如果按rows拆分时存在索引,则使用多线程来加快速度) |
+| [Split](./docs/split.md) | 将一个CSV文件拆分为多个CSV文件 (按rows或按lines拆,如果按rows拆分时存在索引,则使用多线程来加快速度;按lines拆忽略分割符,适用于非标准text文件) |
 | [Skip](./docs/skip.md) | 跳过CSV中的行 |
-| [Enumerate](./docs/enumerate.md) | 添加一个新列,枚举CSV文件的行 |
-| [Pinyin](./docs/pinyin.md) | 将CSV中特定列的中文转换为拼音 |
+| [Enumerate](./docs/enumerate.md) | 添加一个新列,枚举CSV文件的行 (添加索引列) |
+| [Pinyin](./docs/pinyin.md) | 中文转换为拼音 |
 | [Replace](./docs/replace.md) | 使用正则表达式替换CSV数据 |
 | [Join](./docs/join.md) | 在指定列上连接两组CSV数据,可参考SQL的join |
 | [Sort](./docs/sort.md) | 对CSV排序 |
@@ -47,7 +47,7 @@
 ## 🏃‍运行环境
 * Node.js 20.19+
 * pnpm 10.0+
-* 🦀Rust 1.88.0+
+* 🦀Rust 1.91.1+
 
 
 ## 🚀开发

@@ -1,8 +1,8 @@
-<h1>InsightSQL</h1>
+<h1>insight-x</h1>
 
 English | [中文](./README_CN.md)
 
-> InsightSQL is a Tauri based data processing toolbox designed to simplify data operations and management. It provides an intuitive graphical user interface (GUI). Supports processing of multiple file formats, including Excel, CSV, Parquet, etc. Users can complete complex data processing tasks such as data queries, transformations, merges, joins, sorts, slices, format conversions, etc. through simple operations.
+> insight-x is a Tauri based data processing toolbox designed to simplify data operations and management. It provides an intuitive graphical user interface (GUI). Supports processing of multiple file formats, including Excel, CSV, Parquet, etc. Users can complete complex data processing tasks such as data queries, transformations, merges, joins, sorts, slices, format conversions, etc. through simple operations.
 
 
 ## 📷ScreenShot
@@ -48,7 +48,7 @@ English | [中文](./README_CN.md)
 ## 🏃‍Runtime Environment
 * Node.js 20.19+
 * pnpm 10.0+
-* 🦀Rust 1.88.0+
+* 🦀Rust 1.91.1+
 
 
 ## 🚀Development

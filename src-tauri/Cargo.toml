@@ -1,11 +1,11 @@
 [package]
-name = "InsightSQL"
+name = "insight-x"
 version = "0.5.4"
-description = "InsightSQL"
+description = "insight-x"
 authors = ["tansen"]
 license = "MIT"
-repository = "https://github.com/tansen87/InsightSQL"
-default-run = "InsightSQL"
+repository = "https://github.com/tansen87/insight-x"
+default-run = "insight-x"
 edition = "2024"
 rust-version = "1.91.0"
 

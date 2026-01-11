@@ -3,61 +3,6 @@
 version = 4
 
 [[package]]
-name = "InsightSQL"
-version = "0.5.4"
-dependencies = [
- "anyhow",
- "atoi_simd 0.17.0",
- "byteorder",
- "calamine",
- "chrono",
- "cpc",
- "csv",
- "csv-index",
- "dbase",
- "dynfmt",
- "encoding_rs",
- "encoding_rs_io",
- "env_logger",
- "ext-sort",
- "indexmap 2.12.0",
- "itoa",
- "json-objects-to-csv",
- "lazy_static",
- "log",
- "memmap2",
- "num_cpus",
- "odbc-api",
- "pinyin",
- "polars",
- "rayon",
- "regex",
- "rust_decimal",
- "rust_xlsxwriter",
- "rustc-hash",
- "ryu",
- "serde",
- "serde_json",
- "simdutf8",
- "smallvec",
- "sysinfo",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-http",
- "tauri-plugin-notification",
- "tauri-plugin-os",
- "tauri-plugin-process",
- "tauri-plugin-shell",
- "tempfile",
- "tokio",
- "xl",
-]
-
-[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2830,6 +2775,61 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "insight-x"
+version = "0.5.4"
+dependencies = [
+ "anyhow",
+ "atoi_simd 0.17.0",
+ "byteorder",
+ "calamine",
+ "chrono",
+ "cpc",
+ "csv",
+ "csv-index",
+ "dbase",
+ "dynfmt",
+ "encoding_rs",
+ "encoding_rs_io",
+ "env_logger",
+ "ext-sort",
+ "indexmap 2.12.0",
+ "itoa",
+ "json-objects-to-csv",
+ "lazy_static",
+ "log",
+ "memmap2",
+ "num_cpus",
+ "odbc-api",
+ "pinyin",
+ "polars",
+ "rayon",
+ "regex",
+ "rust_decimal",
+ "rust_xlsxwriter",
+ "rustc-hash",
+ "ryu",
+ "serde",
+ "serde_json",
+ "simdutf8",
+ "smallvec",
+ "sysinfo",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-http",
+ "tauri-plugin-notification",
+ "tauri-plugin-os",
+ "tauri-plugin-process",
+ "tauri-plugin-shell",
+ "tempfile",
+ "tokio",
+ "xl",
 ]
 
 [[package]]
