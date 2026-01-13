@@ -9,6 +9,7 @@ import {
   useFilter,
   useSelect,
   useStr,
+  useRename,
   useNodeStore,
   getExecutionConfig,
   isValidExecutionPath
@@ -19,6 +20,7 @@ const pathStore = usePath();
 const filterStore = useFilter();
 const selectStore = useSelect();
 const strStore = useStr();
+const renameStore = useRename();
 const nodeStore = useNodeStore();
 const node = useNode();
 const { removeNodes } = useVueFlow();
@@ -69,9 +71,11 @@ async function endFlow() {
     const config = getExecutionConfig(path, {
       selectStore,
       filterStore,
-      strStore
+      strStore,
+      renameStore
     });
     const jsonConfig = JSON.stringify(config);
+    console.log(jsonConfig);
     const rtime: string = await invoke("flow", {
       path: pathStore.path,
       jsonConfig: jsonConfig

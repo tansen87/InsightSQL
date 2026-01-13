@@ -23,7 +23,6 @@ pub struct StrOperation {
 }
 
 impl StrOperation {
-  /// Returns true if this operation produces a new output column.
   pub fn produces_new_column(&self) -> bool {
     match self.mode.as_str() {
       // In-place modifications — do NOT produce new column
@@ -63,14 +62,11 @@ pub enum ColumnSource {
 }
 
 pub struct ProcessContext {
-  // Store raw select column names (e.g., ["cat1", "name", "age_len2"])
   pub select_columns: Option<Vec<String>>,
-
   pub filters: Vec<Filter>,
   pub str_ops: Vec<StrOperation>,
-
-  // Will be set after headers and dynamic columns are known
   pub output_column_sources: Option<Vec<ColumnSource>>,
+  pub rename_columns: Vec<(String, String)>,
 }
 
 impl ProcessContext {
@@ -80,6 +76,7 @@ impl ProcessContext {
       filters: Vec::new(),
       str_ops: Vec::new(),
       output_column_sources: None,
+      rename_columns: Vec::new(),
     }
   }
 
@@ -112,6 +109,12 @@ impl ProcessContext {
       comparand: comparand.map(|s| s.to_string()),
       replacement: replacement.map(|s| s.to_string()),
     });
+  }
+
+  pub fn add_rename(&mut self, column: &str, value: &str) {
+    self
+      .rename_columns
+      .push((column.to_string(), value.to_string()));
   }
 
   pub fn is_valid(&self, record: &StringRecord) -> bool {

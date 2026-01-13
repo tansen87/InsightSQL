@@ -15,20 +15,22 @@ import {
   Download,
   Upload
 } from "@element-plus/icons-vue";
-import SelectNode from "./components/selectNode.vue";
-import FilterNode from "./components/filterNode.vue";
-import StringNode from "./components/stringNode.vue";
-import InputNode from "./components/inputNode.vue";
-import OutputNode from "./components/outputNode.vue";
+import SelectNode from "@/views/flow/components/selectNode.vue";
+import FilterNode from "@/views/flow/components/filterNode.vue";
+import StringNode from "@/views/flow/components/stringNode.vue";
+import RenameNode from "@/views/flow/components/renameNode.vue";
+import InputNode from "@/views/flow/components/inputNode.vue";
+import OutputNode from "@/views/flow/components/outputNode.vue";
 import { useNodeStore } from "@/store/modules/flow";
 import { useWorkflowStore } from "@/store/modules/workflow";
 import { useWorkflowManager } from "@/utils/workflowManager";
 
-const nodeTypes = ["start", "select", "filter", "str", "end"];
+const nodeTypes = ["start", "select", "filter", "str", "rename", "end"];
 const customNodeTypes = {
   select: SelectNode,
   filter: FilterNode,
   str: StringNode,
+  rename: RenameNode,
   start: InputNode,
   end: OutputNode
 };

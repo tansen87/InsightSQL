@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufWriter, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, fs::File, io::BufWriter, path::PathBuf, sync::Arc};
 
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
@@ -13,14 +13,14 @@ pub async fn process_operations(
   operations: &[Operation],
   output_path: PathBuf,
 ) -> Result<()> {
-  let opts = CsvOptions::new(input_path);
+  let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(opts.rdr_skip_rows()?);
 
-  let headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
+  let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
   let mut context = ProcessContext::new();
 
@@ -38,7 +38,7 @@ pub async fn process_operations(
         {
           let col = Arc::from(col.as_str());
           let val = Arc::from(val.as_str());
-          let headers = Arc::new(headers.clone());
+          let headers = Arc::new(original_headers.clone());
           let logic = FilterLogic::from(logic.as_str());
           match mode.as_str() {
             "equal" => context.add_filter(filter::equal(col, val, headers)?, logic),
@@ -83,6 +83,15 @@ pub async fn process_operations(
           }
         }
       }
+      "rename" => {
+        if let (Some(old_name), Some(new_name)) = (&op.column, &op.value) {
+          context.add_rename(old_name, new_name);
+        } else {
+          return Err(anyhow!(
+            "rename operation requires 'column' (old name) and 'value' (new name)"
+          ));
+        }
+      }
       _ => return Err(anyhow!("Not supported operation: {}", op.op)),
     }
   }
@@ -98,40 +107,66 @@ pub async fn process_operations(
     })
     .collect();
 
+  let logical_columns: Vec<String> = original_headers
+    .iter()
+    .cloned()
+    .chain(dynamic_col_names.iter().cloned())
+    .collect();
+
+  let mut final_column_names = logical_columns.clone();
+  let name_to_index: HashMap<_, _> = logical_columns
+    .iter()
+    .enumerate()
+    .map(|(i, name)| (name, i))
+    .collect();
+
+  for (old_name, new_name) in &context.rename_columns {
+    if let Some(&idx) = name_to_index.get(old_name) {
+      final_column_names[idx] = new_name.clone();
+    } else {
+      return Err(anyhow!(
+        "Cannot rename column '{}': not found in available columns.\nAvailable: {:?}",
+        old_name,
+        logical_columns
+      ));
+    }
+  }
+
   let (output_headers, output_column_sources) =
     if let Some(ref select_cols) = context.select_columns {
       let mut sources = Vec::with_capacity(select_cols.len());
       let mut headers_out = Vec::with_capacity(select_cols.len());
 
       for col_name in select_cols {
-        if let Some(idx) = headers.iter().position(|h| h == col_name) {
-          sources.push(ColumnSource::Original(idx));
-          headers_out.push(col_name.clone());
-        } else if let Some(idx) = dynamic_col_names.iter().position(|n| n == col_name) {
-          sources.push(ColumnSource::Dynamic(idx));
-          headers_out.push(col_name.clone());
+        if let Some(idx) = logical_columns.iter().position(|h| h == col_name) {
+          let source = if idx < original_headers.len() {
+            ColumnSource::Original(idx)
+          } else {
+            ColumnSource::Dynamic(idx - original_headers.len())
+          };
+          sources.push(source);
+          headers_out.push(final_column_names[idx].clone());
         } else {
           return Err(anyhow!(
-            "Column '{}' not found in input headers or generated columns. \
-                     Available input columns: {:?}, generated columns: {:?}",
+            "Column '{}' not found in input headers or generated columns.\n\
+                     Available logical columns: {:?}",
             col_name,
-            headers,
-            dynamic_col_names
+            logical_columns
           ));
         }
       }
       (headers_out, Some(sources))
     } else {
-      let sources: Vec<ColumnSource> = (0..headers.len())
-        .map(ColumnSource::Original)
-        .chain((0..dynamic_col_names.len()).map(ColumnSource::Dynamic))
+      let sources: Vec<ColumnSource> = (0..logical_columns.len())
+        .map(|i| {
+          if i < original_headers.len() {
+            ColumnSource::Original(i)
+          } else {
+            ColumnSource::Dynamic(i - original_headers.len())
+          }
+        })
         .collect();
-      let headers_out: Vec<String> = headers
-        .iter()
-        .cloned()
-        .chain(dynamic_col_names.into_iter())
-        .collect();
-      (headers_out, Some(sources))
+      (final_column_names, Some(sources))
     };
 
   context.output_column_sources = output_column_sources;
@@ -143,7 +178,7 @@ pub async fn process_operations(
 
   for result in rdr.records() {
     let record = result?;
-    let (row_fields, str_results) = str_process(&record, &context, &headers)?;
+    let (row_fields, str_results) = str_process(&record, &context, &original_headers)?;
 
     if context.is_valid(&record) {
       let output_row: Vec<&str> = context

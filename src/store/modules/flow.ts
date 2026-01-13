@@ -107,6 +107,8 @@ export function getExecutionConfig(order, stores) {
           return stores.filterStore.filters.find(f => f.id === node.id);
         case "str":
           return stores.strStore.strs.find(s => s.id === node.id);
+        case "rename":
+          return stores.renameStore.renames.find(s => s.id === node.id);
         default:
           return null;
       }
@@ -237,6 +239,28 @@ export const useStr = defineStore("str", {
         this.strs[index] = data;
       } else {
         this.strs.push(data);
+      }
+    }
+  }
+});
+
+// rename node
+export const useRename = defineStore("rename", {
+  state: () => ({
+    renames: [] as Array<{
+      id: string;
+      op: string;
+      column: string;
+      value: string;
+    }>
+  }),
+  actions: {
+    addRename(data: { id: string; op: string; column: string; value: string }) {
+      const index = this.renames.findIndex(s => s.id === data.id);
+      if (index > -1) {
+        this.renames[index] = data;
+      } else {
+        this.renames.push(data);
       }
     }
   }
