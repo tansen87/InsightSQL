@@ -72,7 +72,7 @@ function deleteBtn() {
             v-for="item in headerStore.headers"
             :key="item.value"
             :label="item.label"
-            :value="item.value"
+            :value="item.label"
           />
         </el-select>
 
