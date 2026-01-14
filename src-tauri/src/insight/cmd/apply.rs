@@ -238,19 +238,34 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   comparand: String,
   replacement: String,
   formatstr: String,
-  new_column: bool,
+  new_column_flag: bool,
 ) -> Result<()> {
   let columns: Vec<&str> = columns.split('|').collect();
+  if columns.is_empty() {
+    return Err(anyhow!("At least one column must be specified."));
+  }
+
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
   let sep_char = sep as char;
   let output_path = opts.output_path(Some("apply"), None)?;
 
-  let new_column: Option<String> = if new_column {
+  let force_new_column = mode == "cat" || mode == "calcconv";
+  let effective_new_column = new_column_flag || force_new_column;
+
+  let new_column: Option<String> = if effective_new_column {
+    let suffix = if mode == "cat" {
+      "_dynfmt"
+    } else if mode == "calcconv" {
+      "_calcconv"
+    } else {
+      "_new"
+    };
+
     Some(
       columns
         .iter()
-        .map(|col| format!("{col}_new"))
+        .map(|col| format!("{}{}", col, suffix))
         .collect::<Vec<_>>()
         .join(&sep_char.to_string()),
     )
@@ -287,7 +302,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     })
     .collect::<Result<Vec<usize>, _>>()
     .map_err(|err| anyhow!(err))?;
-  let column_index_next = *column_index.iter().next().unwrap();
+  let column_index_next = *column_index.iter().next().unwrap(); // safe due to columns.is_empty() check
 
   let mut headers = rdr.headers()?.clone();
 
@@ -302,16 +317,12 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     let mut dynfmt_template_wrk = formatstr.clone();
     let mut dynfmt_fields = Vec::new();
 
-    // first, get the fields used in the dynfmt template
     let formatstr_re: &'static Regex = crate::regex_oncelock!(r"\{(?P<key>\w+)?\}");
     for format_fields in formatstr_re.captures_iter(&formatstr) {
-      // safety: we already checked that the regex match is valid
       dynfmt_fields.push(format_fields.name("key").unwrap().as_str());
     }
-    // we sort the fields so we can do binary_search
     dynfmt_fields.sort_unstable();
 
-    // now, get the indices of the columns for the lookup vec
     for (i, field) in headers.iter().enumerate() {
       if dynfmt_fields.binary_search(&field).is_ok() {
         let field_with_curly = format!("{{{field}}}");
@@ -345,34 +356,24 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     ApplyCmd::Cat
   };
 
-  #[allow(unused_assignments)]
   let mut batch_record = csv::StringRecord::new();
-
-  // reuse batch buffers
   let batchsize = 50_000;
   let mut batch = Vec::with_capacity(batchsize);
   let mut batch_results = Vec::with_capacity(batchsize);
 
-  // main loop to read CSV and construct batches for parallel processing.
-  // each batch is processed via Rayon parallel iterator.
-  // loop exits when batch is empty.
   'batch_loop: loop {
     for _ in 0..batchsize {
       match rdr.read_record(&mut batch_record) {
         Ok(true) => batch.push(std::mem::take(&mut batch_record)),
         Ok(false) => break,
-        Err(err) => {
-          return Err(anyhow!("Error reading file: {err}"));
-        }
+        Err(err) => return Err(anyhow!("Error reading file: {err}")),
       }
     }
 
     if batch.is_empty() {
-      // break out of infinite loop when at EOF
       break 'batch_loop;
     }
 
-    // do actual apply command via Rayon parallel iterator
     batch
       .par_iter()
       .with_min_len(1024)
@@ -396,10 +397,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
               String::new()
             } else {
               let mut cell = record[column_index_next].to_owned();
-              let mut record_vec: Vec<String> = Vec::with_capacity(record.len());
-              for field in &record {
-                record_vec.push(field.to_string());
-              }
+              let record_vec: Vec<String> = record.iter().map(|f| f.to_string()).collect();
               if let Ok(formatted) = dynfmt::SimpleCurlyFormat.format(&dynfmt_template, record_vec)
               {
                 cell = formatted.to_string();
@@ -420,43 +418,27 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
                     answer.value.to_string()
                   }
                 }
-                Err(e) => {
-                  format!("ERROR: {e}")
-                }
+                Err(e) => format!("ERROR: {e}"),
               }
             };
-
-            if new_column.is_some() {
-              record.push_field(&result);
-            } else {
-              record = replace_column_value(&record, column_index_next, &result);
-            }
+            record.push_field(&result);
           }
           ApplyCmd::Cat => {
             let mut cell = record[column_index_next].to_owned();
             if !cell.is_empty() {
-              let mut record_vec: Vec<String> = Vec::with_capacity(record.len());
-              for field in &record {
-                record_vec.push(field.to_string());
-              }
+              let record_vec: Vec<String> = record.iter().map(|f| f.to_string()).collect();
               if let Ok(formatted) = dynfmt::SimpleCurlyFormat.format(&dynfmt_template, record_vec)
               {
                 cell = formatted.to_string();
               }
             }
-            if new_column.is_some() {
-              record.push_field(&cell);
-            } else {
-              record = replace_column_value(&record, column_index_next, &cell);
-            }
+            record.push_field(&cell);
           }
         }
-
         record
       })
       .collect_into_vec(&mut batch_results);
 
-    // rayon collect() guarantees original order, so we can just append results each batch
     for result_record in &batch_results {
       wtr.write_record(result_record)?;
     }

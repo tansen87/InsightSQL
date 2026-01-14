@@ -93,7 +93,17 @@ async function applyData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (columns.value.length === 0) {
+
+  let finalColumns = [...columns.value];
+  if (
+    (mode.value === "cat" || mode.value === "calcconv") &&
+    finalColumns.length === 0 &&
+    tableHeader.value.length > 0
+  ) {
+    finalColumns = [tableHeader.value[0].value];
+  }
+
+  if (mode.value === "operations" && finalColumns.length === 0) {
     message("Column not selected", { type: "warning" });
     return;
   }
@@ -102,7 +112,7 @@ async function applyData() {
     isLoading.value = true;
     const result: string = await invoke("apply", {
       path: path.value,
-      columns: Object.values(columns.value).join("|"),
+      columns: finalColumns.join("|"),
       mode: mode.value,
       operations: operations.value.join("|"),
       comparand: comparand.value,
@@ -118,13 +128,22 @@ async function applyData() {
 }
 
 function addNewColumn() {
-  newColumn.value = !newColumn.value;
-  if (newColumn.value === true) {
-    columnContent.value = "add column";
-  } else {
-    columnContent.value = "no column";
+  if (mode.value === "cat" || mode.value === "calcconv") {
+    newColumn.value = true;
+    return;
   }
+  newColumn.value = !newColumn.value;
+  columnContent.value = newColumn.value ? "add column" : "no column";
 }
+
+watch(mode, newMode => {
+  if (newMode === "cat" || newMode === "calcconv") {
+    newColumn.value = true;
+    columnContent.value = "New column always added for DynFmt/CalcConv";
+  } else {
+    columnContent.value = newColumn.value ? "add column" : "no column";
+  }
+});
 </script>
 
 <template>
@@ -142,7 +161,12 @@ function addNewColumn() {
               />
             </el-tooltip>
             <el-tooltip :content="columnContent" effect="light">
-              <el-button @click="addNewColumn" text circle>
+              <el-button
+                @click="addNewColumn"
+                text
+                circle
+                :disabled="mode === 'cat' || mode === 'calcconv'"
+              >
                 <el-icon>
                   <CirclePlus v-if="newColumn" />
                   <Remove v-else />

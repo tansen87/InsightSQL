@@ -4,7 +4,9 @@ import {
   VueFlow,
   useVueFlow,
   type Connection,
-  MarkerType
+  MarkerType,
+  type Node,
+  type Edge
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
@@ -13,49 +15,55 @@ import {
   Select,
   Delete,
   Download,
-  Upload
+  Upload,
+  ArrowRight
 } from "@element-plus/icons-vue";
 import SelectNode from "@/views/flow/components/selectNode.vue";
 import FilterNode from "@/views/flow/components/filterNode.vue";
 import StringNode from "@/views/flow/components/stringNode.vue";
 import RenameNode from "@/views/flow/components/renameNode.vue";
 import InputNode from "@/views/flow/components/inputNode.vue";
-import OutputNode from "@/views/flow/components/outputNode.vue";
-import { useNodeStore } from "@/store/modules/flow";
+import {
+  getExecutionConfig,
+  isValidExecutionPath,
+  useFilter,
+  usePath,
+  useRename,
+  useSelect,
+  useStr
+} from "@/store/modules/flow";
 import { useWorkflowStore } from "@/store/modules/workflow";
 import { useWorkflowManager } from "@/utils/workflowManager";
+import { message } from "@/utils/message";
+import { invoke } from "@tauri-apps/api/core";
 
-const nodeTypes = ["start", "select", "filter", "str", "rename", "end"];
+const isLoading = ref(false);
+const nodeTypes = ["start", "select", "filter", "str", "rename"];
 const customNodeTypes = {
   select: SelectNode,
   filter: FilterNode,
   str: StringNode,
   rename: RenameNode,
-  start: InputNode,
-  end: OutputNode
+  start: InputNode
 };
 const vueFlowRef = ref();
-const flowKey = ref(0);
-const nodeStore = useNodeStore();
 const workflowStore = useWorkflowStore();
-const { addNodes, addEdges, onNodesChange, onEdgesChange, getNodes, getEdges } =
+const pathStore = usePath();
+const filterStore = useFilter();
+const selectStore = useSelect();
+const strStore = useStr();
+const renameStore = useRename();
+
+const { addNodes, addEdges, setNodes, setEdges, getNodes, getEdges } =
   useVueFlow();
-
-onNodesChange(() => {
-  nodeStore.nodes = getNodes.value;
-});
-
-onEdgesChange(() => {
-  nodeStore.edges = getEdges.value;
-});
 
 let nodeIdCounter = 1;
 function generateId() {
   return `${nodeIdCounter++}`;
 }
 
-const handleConnect = (connection: Connection) => {
-  if (!connection.target) return;
+function handleConnect(connection: Connection) {
+  if (!connection.source || !connection.target) return;
   addEdges([
     {
       ...connection,
@@ -67,7 +75,7 @@ const handleConnect = (connection: Connection) => {
       }
     }
   ]);
-};
+}
 
 const onDragStart = (event: DragEvent, type: string) => {
   event.dataTransfer?.setData("application/vueflow", type);
@@ -84,7 +92,7 @@ const onDrop = (event: DragEvent) => {
 
   const position = vueFlow.project({ x: event.offsetX, y: event.offsetY });
 
-  const newNode = {
+  const newNode: Node = {
     id: generateId(),
     type,
     position,
@@ -109,17 +117,13 @@ const initialEdges = computed(() => {
   return workflowStore.getWorkflowData(workflowStore.currentId)?.edges || [];
 });
 
-// 加载当前选中的工作区到画布
 function loadCurrentWorkflow() {
   if (!workflowStore.currentId) return;
   const data = workflowStore.getWorkflowData(workflowStore.currentId);
   if (!data) return;
 
-  if (flowKey.value >= 9999) {
-    flowKey.value = 0;
-  } else {
-    flowKey.value += 1;
-  }
+  setNodes(data.nodes || []);
+  setEdges(data.edges || []);
 }
 
 const {
@@ -131,29 +135,79 @@ const {
 } = useWorkflowManager(loadCurrentWorkflow);
 
 onMounted(() => {
-  // 如果还没有任何工作区,创建一个默认的
   if (workflowStore.list.length === 0) {
     workflowStore.create("Default");
   }
-
-  // 如果有当前选中的工作区,加载它
   if (workflowStore.currentId) {
     loadCurrentWorkflow();
   }
 });
+
+async function runWorkflow() {
+  try {
+    isLoading.value = true;
+
+    const nodes: Node[] = getNodes.value;
+    const edges: Edge[] = getEdges.value;
+
+    const { isValid, path, reason } = isValidExecutionPath(nodes, edges);
+
+    if (!isValid) {
+      let msg = "Invalid flow configuration.";
+      switch (reason) {
+        case "no_start":
+          msg = "Flow must start with exactly one <Start> node.";
+          break;
+        case "multi_start":
+          msg = "Flow must have only one <Start> node. Multiple found.";
+          break;
+        case "no_path":
+          msg = "No valid execution path from <Start>.";
+          break;
+        default:
+          msg = "Flow validation failed.";
+      }
+      message(msg, { type: "warning" });
+      isLoading.value = false;
+      return;
+    }
+
+    if (!pathStore.path) {
+      message("CSV file not selected", { type: "warning" });
+      isLoading.value = false;
+      return;
+    }
+
+    const config = getExecutionConfig(path, {
+      selectStore,
+      filterStore,
+      strStore,
+      renameStore
+    });
+    const jsonConfig = JSON.stringify(config);
+    const rtime: string = await invoke("flow", {
+      path: pathStore.path,
+      jsonConfig: jsonConfig
+    });
+
+    isLoading.value = false;
+    message(`Flow done, elapsed time: ${rtime} s`, { type: "success" });
+  } catch (err) {
+    isLoading.value = false;
+    message(err.toString(), { type: "error" });
+  }
+}
 </script>
 
 <template>
   <div class="page-container flex flex-col h-[calc(100vh-36px)]">
     <div class="p-2 border-b flex items-center">
-      <!-- 左侧操作按钮 -->
       <el-button @click="createWorkflow" :icon="Plus"> New </el-button>
 
       <el-button
         v-if="workflowStore.currentId"
         @click="saveWorkflow"
         :icon="Select"
-        type="success"
       >
         Save
       </el-button>
@@ -170,6 +224,10 @@ onMounted(() => {
       <el-button @click="exportWorkflow" :icon="Download">Export</el-button>
 
       <el-button @click="importWorkflow" :icon="Upload">Import</el-button>
+
+      <el-button @click="runWorkflow" :icon="ArrowRight" type="success">
+        Run
+      </el-button>
 
       <el-select
         v-if="workflowStore.list.length > 0"

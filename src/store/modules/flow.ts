@@ -36,37 +36,44 @@ export function getNodesInEdgeOrder(nodes: Node[], edges: Edge[]): Node[] {
   return result;
 }
 
-// Flow must start with the <Start> node and end with the <End> node
+// Flow must start with the <Start> node
 export function isValidExecutionPath(
   nodes: Node[],
   edges: Edge[]
 ): { isValid: boolean; path: Node[]; reason?: string } {
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
   const graph = new Map<string, string[]>();
+  const reverseGraph = new Map<string, string[]>();
 
   edges.forEach(edge => {
     if (edge.source && edge.target) {
       if (!graph.has(edge.source)) graph.set(edge.source, []);
       graph.get(edge.source)!.push(edge.target);
+
+      if (!reverseGraph.has(edge.target)) reverseGraph.set(edge.target, []);
+      reverseGraph.get(edge.target)!.push(edge.source);
     }
   });
 
   const startNodes = nodes.filter(n => n.type === "start");
-  const endNodes = nodes.filter(n => n.type === "end");
-
-  if (startNodes.length === 0)
+  if (startNodes.length === 0) {
     return { isValid: false, path: [], reason: "no_start" };
-  if (endNodes.length === 0)
-    return { isValid: false, path: [], reason: "no_end" };
-  if (startNodes.length > 1)
+  }
+  if (startNodes.length > 1) {
     return { isValid: false, path: [], reason: "multi_start" };
-  if (endNodes.length > 1)
-    return { isValid: false, path: [], reason: "multi_end" };
+  }
 
   const startNode = startNodes[0];
-  const endNode = endNodes[0];
 
-  // BFS
+  const leafNodes = nodes.filter(node => {
+    if (node.id === startNode.id && !graph.has(node.id)) return true;
+    return !graph.has(node.id) && node.type !== "start";
+  });
+
+  if (leafNodes.length === 0) {
+    return { isValid: false, path: [], reason: "no_leaf_node" };
+  }
+
   const visited = new Set<string>();
   const queue: { id: string; path: string[] }[] = [];
   queue.push({ id: startNode.id, path: [startNode.id] });
@@ -76,14 +83,12 @@ export function isValidExecutionPath(
     const { id, path } = queue.shift()!;
 
     const neighbors = graph.get(id) || [];
-    for (const neighbor of neighbors) {
-      if (neighbor === endNode.id) {
-        const fullPath = [...path, neighbor]
-          .map(id => nodeMap.get(id)!)
-          .filter(Boolean);
-        return { isValid: true, path: fullPath };
-      }
+    if (neighbors.length === 0) {
+      const fullPath = path.map(pid => nodeMap.get(pid)!).filter(Boolean);
+      return { isValid: true, path: fullPath };
+    }
 
+    for (const neighbor of neighbors) {
       if (!visited.has(neighbor)) {
         visited.add(neighbor);
         queue.push({ id: neighbor, path: [...path, neighbor] });
@@ -108,7 +113,7 @@ export function getExecutionConfig(order, stores) {
         case "str":
           return stores.strStore.strs.find(s => s.id === node.id);
         case "rename":
-          return stores.renameStore.renames.find(s => s.id === node.id);
+          return stores.renameStore.renames.find(r => r.id === node.id);
         default:
           return null;
       }
