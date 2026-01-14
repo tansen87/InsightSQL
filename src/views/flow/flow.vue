@@ -202,12 +202,13 @@ async function runWorkflow() {
 <template>
   <div class="page-container flex flex-col h-[calc(100vh-36px)]">
     <div class="p-2 border-b flex items-center">
-      <el-button @click="createWorkflow" :icon="Plus"> New </el-button>
+      <el-button @click="createWorkflow" :icon="Plus" text> New </el-button>
 
       <el-button
         v-if="workflowStore.currentId"
         @click="saveWorkflow"
         :icon="Select"
+        text
       >
         Save
       </el-button>
@@ -217,15 +218,24 @@ async function runWorkflow() {
         @click="deleteWorkflow"
         :icon="Delete"
         type="danger"
+        text
       >
         Delete
       </el-button>
 
-      <el-button @click="exportWorkflow" :icon="Download">Export</el-button>
+      <el-button @click="exportWorkflow" :icon="Download" text>
+        Export
+      </el-button>
 
-      <el-button @click="importWorkflow" :icon="Upload">Import</el-button>
+      <el-button @click="importWorkflow" :icon="Upload" text>Import</el-button>
 
-      <el-button @click="runWorkflow" :icon="ArrowRight" type="success">
+      <el-button
+        @click="runWorkflow"
+        :icon="ArrowRight"
+        type="success"
+        text
+        :loading="isLoading"
+      >
         Run
       </el-button>
 
