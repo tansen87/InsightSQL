@@ -10,7 +10,7 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdPinyin, useMarkdown } from "@/utils/markdown";
 
-const [mode, pinyinStyle] = [ref("nil"), ref("upper")];
+const [mode, pinyinStyle] = [ref("idx"), ref("upper")];
 const modeOptions = [
   { label: "Nil", value: "nil" },
   { label: "Idx", value: "idx" }

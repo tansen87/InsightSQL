@@ -43,6 +43,7 @@ const modeOptions = [
   { label: "CalcConv", value: "calcconv" },
   { label: "DynFmt", value: "cat" }
 ];
+const placeholderText = ref("format str... \nExample: {col1} + {col2}");
 const columnContent = ref("no column");
 const columns = ref<CheckboxValueType[]>([]);
 const { dynamicHeight } = useDynamicHeight(98);
@@ -258,9 +259,13 @@ watch(mode, newMode => {
             </template>
 
             <template v-if="['cat', 'calcconv'].includes(mode)">
-              <el-tooltip content="Expression" effect="light" placement="right">
-                <el-input v-model="formatstr" placeholder="{col1} + {col2}" />
-              </el-tooltip>
+              <el-input
+                v-model="formatstr"
+                :autosize="{ minRows: 8, maxRows: 8 }"
+                type="textarea"
+                style="width: 240px"
+                :placeholder="placeholderText"
+              />
             </template>
           </div>
 

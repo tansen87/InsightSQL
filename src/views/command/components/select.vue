@@ -13,7 +13,7 @@ import { mdSelect, useMarkdown } from "@/utils/markdown";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
-const [selMode, pgsMode] = [ref("include"), ref("nil")];
+const [selMode, pgsMode] = [ref("include"), ref("idx")];
 const selModeOptions = [
   { label: "Include", value: "include" },
   { label: "Exclude", value: "exclude" }

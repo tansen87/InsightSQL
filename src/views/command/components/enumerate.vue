@@ -10,7 +10,7 @@ import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdEnumer, useMarkdown } from "@/utils/markdown";
 
-const mode = ref("nil");
+const mode = ref("idx");
 const modeOptions = [
   { label: "Nil", value: "nil" },
   { label: "Idx", value: "idx" }

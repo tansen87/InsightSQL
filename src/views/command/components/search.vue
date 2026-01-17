@@ -10,11 +10,14 @@ import { useDynamicHeight } from "@/utils/utils";
 import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
 import { mdSearch, useMarkdown } from "@/utils/markdown";
 
-const [mode, progress] = [ref("equal"), ref("nil")];
+const [mode, progress] = [ref("equal"), ref("idx")];
 const pgsOptions = [
   { label: "Nil", value: "nil" },
   { label: "Idx", value: "idx" }
 ];
+const placeholderText = ref(
+  "Search conditions, Separate by |.\nExample: tom|jack|jerry"
+);
 const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
 const [column, path, condition] = [ref(""), ref(""), ref("")];
 const [dialog, isLoading, isBtnShow] = [ref(false), ref(false), ref(false)];
@@ -161,9 +164,9 @@ async function searchData() {
 
           <el-input
             v-model="condition"
-            :autosize="{ minRows: 8, maxRows: 8 }"
+            :autosize="{ minRows: 12, maxRows: 12 }"
             type="textarea"
-            placeholder="Search conditions......Separate by |. (Example: tom|jack|jerry)"
+            :placeholder="placeholderText"
             class="mt-2 ml-2"
             style="width: 240px"
           />

@@ -10,7 +10,7 @@ import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { mdRename, useMarkdown } from "@/utils/markdown";
 
-const mode = ref("nil");
+const mode = ref("idx");
 const modeOptions = [
   { label: "Nil", value: "nil" },
   { label: "Idx", value: "idx" }
