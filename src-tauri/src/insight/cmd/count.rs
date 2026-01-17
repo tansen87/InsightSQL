@@ -19,15 +19,15 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 }
 
 /// Used to check for counting errors caused by double quotation marks in CSV files
-pub async fn count_check<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
+pub async fn count_check<P: AsRef<Path> + Clone + Send + Sync>(path: P) -> Result<u64> {
   let opts = CsvOptions::new(&path);
-  let quoting_true = count_record(true, &opts).await?;
-  let quoting_false = count_record(false, &opts).await?;
 
-  let max_count = std::cmp::max(quoting_true, quoting_false);
-  let min_count = std::cmp::min(quoting_true, quoting_false);
+  let (c_false, c_true) = tokio::try_join!(
+    count_record(false, &opts),
+    count_record(true, &opts),
+  )?;
 
-  Ok(max_count - min_count)
+  Ok(c_false.abs_diff(c_true))
 }
 
 async fn count_record<P: AsRef<Path> + Send + Sync>(
