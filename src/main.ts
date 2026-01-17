@@ -52,3 +52,21 @@ getServerConfig(app).then(async config => {
 
 // 禁用鼠标右键
 window.addEventListener("contextmenu", e => e.preventDefault());
+
+// input textarea可以输入空格
+document.addEventListener(
+  "keydown",
+  e => {
+    // 只处理聚焦在可编辑元素上的空格键
+    const target = e.target as HTMLElement;
+    if (
+      e.code === "Space" &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.contentEditable === "true")
+    ) {
+      e.stopPropagation(); // 阻止冒泡到 WebView/Tauri 层
+    }
+  },
+  true
+);

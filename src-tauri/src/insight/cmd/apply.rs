@@ -111,7 +111,6 @@ fn round_num(dec_f64: f64, places: u32) -> String {
 fn validate_operations(
   operations: &Vec<&str>,
   comparand: &str,
-  replacement: &str,
   new_column: Option<&String>,
   formatstr: &str,
 ) -> Result<SmallVec<[Operations; 4]>> {
@@ -136,9 +135,9 @@ fn validate_operations(
         }
       }
       Operations::Replace => {
-        if comparand.is_empty() || replacement.is_empty() {
+        if comparand.is_empty() {
           return Err(anyhow!(
-            "comparand and replacement are required for replace operation."
+            "comparand is required for replace operation."
           ));
         }
       }
@@ -342,7 +341,6 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     match validate_operations(
       &operations.split('|').collect(),
       &comparand,
-      &replacement,
       new_column.as_ref(),
       &formatstr,
     ) {
