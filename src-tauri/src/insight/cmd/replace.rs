@@ -1,10 +1,13 @@
-use std::{borrow::Cow, path::Path, time::Instant};
+use std::{borrow::Cow, fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use regex::bytes::RegexBuilder;
 
-use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::{
+  io::csv::{options::CsvOptions, selection::Selection},
+  utils::WTR_BUFFER_SIZE,
+};
 
 pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -20,7 +23,10 @@ pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .from_reader(opts.rdr_skip_rows()?);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   let headers = rdr.byte_headers()?;
   let sel = Selection::from_headers(headers, &[sel.as_str()][..])?;

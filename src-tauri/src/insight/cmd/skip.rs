@@ -1,5 +1,7 @@
 use std::{
   fmt::Display,
+  fs::File,
+  io::BufWriter,
   path::Path,
   sync::{Arc, Mutex},
   time::{Duration, Instant},
@@ -10,7 +12,10 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
+use crate::{
+  io::csv::options::CsvOptions,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
+};
 
 pub async fn skip_csv<E, F, P>(
   path: P,
@@ -47,7 +52,9 @@ where
     .delimiter(sep)
     .from_reader(opts.rdr_skip_rows()?);
 
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   // 创建一个Arc<Mutex<usize>>用于跨线程安全地共享rows计数
   let rows = Arc::new(Mutex::new(0));

@@ -11,7 +11,10 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
-use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
+use crate::{
+  io::csv::options::CsvOptions,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
+};
 
 pub async fn enumerate_index<E, P>(path: P, mode: &str, emitter: E) -> Result<()>
 where
@@ -32,8 +35,9 @@ where
     .delimiter(sep)
     .from_reader(opts.rdr_skip_rows()?);
 
-  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   let headers = rdr.headers()?;
   let mut new_headers = vec![String::from("enumerate_idx")];

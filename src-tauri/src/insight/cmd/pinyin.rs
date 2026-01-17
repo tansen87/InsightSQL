@@ -14,7 +14,7 @@ use tokio::sync::oneshot;
 
 use crate::{
   io::csv::{options::CsvOptions, selection::Selection},
-  utils::EventEmitter,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
 enum PinyinStyle {
@@ -51,8 +51,9 @@ where
   let cols: Vec<&str> = columns.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &cols[..])?;
 
-  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(rdr.headers()?)?;
 

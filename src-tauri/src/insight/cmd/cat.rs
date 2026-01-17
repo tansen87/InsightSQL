@@ -1,5 +1,6 @@
 use std::{
   fs::File,
+  io::BufWriter,
   path::{Path, PathBuf},
   sync::Arc,
   time::Instant,
@@ -24,7 +25,7 @@ use crate::{
       xlsx_writer::XlsxWriter,
     },
   },
-  utils::EXCEL_MAX_ROW,
+  utils::{EXCEL_MAX_ROW, WTR_BUFFER_SIZE},
 };
 
 async fn cat_with_polars(
@@ -152,9 +153,11 @@ pub async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
     }
   }
 
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
   let mut wtr = WriterBuilder::new()
     .delimiter(vec_sep[0])
-    .from_path(output_path)?;
+    .from_writer(buf_wtr);
 
   for c in &all_columns {
     wtr.write_field(c)?;

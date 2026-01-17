@@ -4,7 +4,7 @@ use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use memmap2::MmapOptions;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::WTR_BUFFER_SIZE};
 
 pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
   let opts = CsvOptions::new(&path);
@@ -19,9 +19,10 @@ pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
 
   let file = File::open(path)?;
   let mmap = unsafe { MmapOptions::new().populate().map(&file)? };
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(output_path)?));
+
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   let mut record = ByteRecord::with_capacity(1024, nrows);
 
@@ -51,9 +52,9 @@ pub async fn multipass_transpose<P: AsRef<Path> + Send + Sync>(path: P) -> Resul
     .delimiter(sep)
     .from_reader(File::open(&path)?);
 
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(output_path)?));
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   let nrows = rdr.byte_headers()?.len();
 

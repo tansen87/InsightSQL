@@ -1,10 +1,13 @@
-use std::{cmp, path::Path, time::Instant};
+use std::{cmp, fs::File, io::BufWriter, path::Path, time::Instant};
 
 use anyhow::Result;
 use csv::{ReaderBuilder, WriterBuilder};
 
 use self::Number::{Float, Int};
-use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::{
+  io::csv::{options::CsvOptions, selection::Selection},
+  utils::WTR_BUFFER_SIZE,
+};
 
 pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -52,7 +55,9 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
     }),
   }
 
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(&headers)?;
 

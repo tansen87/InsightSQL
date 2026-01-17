@@ -1,6 +1,7 @@
 use std::{
   collections::{HashMap, HashSet},
   fs::File,
+  io::BufWriter,
   path::{Path, PathBuf},
   sync::{Arc, Mutex},
   time::{Duration, Instant},
@@ -15,7 +16,7 @@ use tokio::sync::oneshot;
 
 use crate::{
   io::csv::{options::CsvOptions, selection::Selection},
-  utils::EventEmitter,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
 #[derive(Debug)]
@@ -98,7 +99,9 @@ where
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column.as_str()][..])?;
 
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(rdr.headers()?)?;
 
@@ -895,164 +898,50 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
 
       match search_mode {
         SearchMode::Equal => {
-          equal(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          equal(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::NotEqual => {
-          not_equal(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          not_equal(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::Contains => {
-          contains(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          contains(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::NotContains => {
-          not_contains(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          not_contains(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::StartsWith => {
-          starts_with(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          starts_with(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::NotStartsWith => {
-          not_starts_with(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          not_starts_with(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::EndsWith => {
-          ends_with(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          ends_with(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::NotEndsWith => {
-          not_ends_with(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          not_ends_with(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         SearchMode::Regex => {
-          regex_search(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          regex_search(path, sep, column, conditions, output_path, app_handle).await
         }
-        SearchMode::IsNull => {
-          is_null(path, sep, column, vec![], output_path, app_handle).await
-        }
+        SearchMode::IsNull => is_null(path, sep, column, vec![], output_path, app_handle).await,
         SearchMode::IsNotNull => {
           is_not_null(path, sep, column, vec![], output_path, app_handle).await
         }
         SearchMode::GreaterThan => {
-          greater_than(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          greater_than(path, sep, column, conditions, output_path, app_handle).await
         }
         SearchMode::GreaterThanEqual => {
-          greater_than_or_equal(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          greater_than_or_equal(path, sep, column, conditions, output_path, app_handle).await
         }
         SearchMode::LessThan => {
-          less_than(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          less_than(path, sep, column, conditions, output_path, app_handle).await
         }
         SearchMode::LessThanEqual => {
-          less_than_or_equal(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          less_than_or_equal(path, sep, column, conditions, output_path, app_handle).await
         }
         SearchMode::Between => {
-          between(
-            path,
-            sep,
-            column,
-            vec_conditions,
-            output_path,
-            app_handle,
-          )
-          .await
+          between(path, sep, column, vec_conditions, output_path, app_handle).await
         }
         _ => Err(anyhow!("Unsupported search mode")),
       }

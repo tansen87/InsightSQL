@@ -12,7 +12,10 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
-use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
+use crate::{
+  io::csv::options::CsvOptions,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum SelectMode {
@@ -90,9 +93,9 @@ where
     }
   };
 
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(output_path)?));
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(output_headers.iter())?;
 

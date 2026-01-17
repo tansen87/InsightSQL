@@ -3,7 +3,10 @@ use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, time::Insta
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 
-use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::{
+  io::csv::{options::CsvOptions, selection::Selection},
+  utils::WTR_BUFFER_SIZE,
+};
 
 pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -22,9 +25,9 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &fill_columns[..])?;
 
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
-    .from_writer(BufWriter::new(File::create(output_path)?));
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(rdr.headers()?)?;
 

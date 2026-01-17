@@ -1,4 +1,7 @@
-use std::{collections::HashMap, ops::Neg, path::Path, sync::OnceLock, time::Instant};
+use std::{
+  collections::HashMap, fs::File, io::BufWriter, ops::Neg, path::Path, sync::OnceLock,
+  time::Instant,
+};
 
 use anyhow::{Result, anyhow};
 use cpc::{eval, units::Unit};
@@ -11,7 +14,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::WTR_BUFFER_SIZE};
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -88,20 +91,14 @@ fn replace_column_value(
 fn round_num(dec_f64: f64, places: u32) -> String {
   use rust_decimal::{Decimal, RoundingStrategy};
 
-  // if places is the sentinel value 9999, we don't round, just return the number as is
   if places == 9999 {
     return ryu::Buffer::new().format(dec_f64).to_owned();
   }
 
-  // use from_f64_retain, so we have all the excess bits before rounding with
-  // round_dp_with_strategy as from_f64 will prematurely round when it drops the excess bits
   let Some(dec_num) = Decimal::from_f64_retain(dec_f64) else {
     return String::new();
   };
 
-  // round using Midpoint Nearest Even Rounding Strategy AKA "Bankers Rounding."
-  // https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html#variant.MidpointNearestEven
-  // we also normalize to remove trailing zeroes and to change -0.0 to 0.0.
   dec_num
     .round_dp_with_strategy(places, RoundingStrategy::MidpointNearestEven)
     .normalize()
@@ -136,9 +133,7 @@ fn validate_operations(
       }
       Operations::Replace => {
         if comparand.is_empty() {
-          return Err(anyhow!(
-            "comparand is required for replace operation."
-          ));
+          return Err(anyhow!("comparand is required for replace operation."));
         }
       }
       Operations::Round => {
@@ -276,7 +271,9 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     .delimiter(sep)
     .from_reader(opts.rdr_skip_rows()?);
 
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let output_file = File::create(output_path)?;
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
+  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   let headers = rdr.byte_headers()?;
 
