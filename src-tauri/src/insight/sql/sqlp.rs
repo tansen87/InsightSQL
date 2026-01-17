@@ -12,7 +12,7 @@ use anyhow::{Result, anyhow};
 use polars::{
   io::SerReader,
   prelude::{
-    CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonReader, JsonWriter, LazyCsvReader,
+    CsvEncoding, CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonReader, JsonWriter, LazyCsvReader,
     LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, PlPath, SerWriter,
   },
   sql::SQLContext,
@@ -25,7 +25,7 @@ use crate::io::excel::excel_reader::{
 use crate::io::excel::xlsx_writer::XlsxWriter;
 use crate::{
   io::csv::options::CsvOptions,
-  utils::{WTR_BUFFER_SIZE, EXCEL_MAX_ROW},
+  utils::{EXCEL_MAX_ROW, WTR_BUFFER_SIZE},
 };
 
 #[derive(Serialize)]
@@ -150,7 +150,7 @@ async fn prepare_query(
 ) -> Result<String> {
   let infer_schema_length = match varchar {
     true => 0,
-    false => 1000,
+    false => 10000,
   };
 
   let mut ctx = SQLContext::new();
@@ -229,6 +229,7 @@ async fn prepare_query(
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(infer_schema_length))
+          .with_encoding(CsvEncoding::LossyUtf8)
           .finish()?;
 
         csv_reader
@@ -243,10 +244,9 @@ async fn prepare_query(
 
   let mut ctx = ctx.clone();
 
-  let df = tokio::task::spawn_blocking(move || -> Result<_> {
-    Ok(ctx.execute(&sql_query)?.collect()?)
-  })
-  .await??;
+  let df =
+    tokio::task::spawn_blocking(move || -> Result<_> { Ok(ctx.execute(&sql_query)?.collect()?) })
+      .await??;
 
   if write {
     DataFrameWriter::new(write_format.into())
