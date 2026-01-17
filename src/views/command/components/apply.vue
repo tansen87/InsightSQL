@@ -6,7 +6,8 @@ import {
   FolderOpened,
   CirclePlus,
   Remove,
-  Files
+  Files,
+  Check
 } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
@@ -73,6 +74,8 @@ async function selectFile() {
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
+  backendCompleted.value = false;
+  backendInfo.value = "";
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
   if (path.value === null) return;
@@ -120,7 +123,9 @@ async function applyData() {
       formatstr: formatstr.value,
       newColumn: newColumn.value
     });
-    message(`Apply done, elapsed time: ${result} s`, { type: "success" });
+    backendCompleted.value = true;
+    backendInfo.value = `Apply done, elapsed time: ${result} s`;
+    message(backendInfo.value, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -260,8 +265,13 @@ watch(mode, newMode => {
           </div>
 
           <el-link @click="dialog = true" class="mt-auto">
-            <span v-if="backendCompleted"> {{ backendInfo }} </span>
-            <span class="link-text">Apply</span>
+            <template v-if="backendCompleted">
+              <el-icon><Check /></el-icon>
+              <span>{{ backendInfo }}</span>
+            </template>
+            <template v-else>
+              <span class="link-text">Apply</span>
+            </template>
           </el-link>
         </div>
       </el-splitter-panel>
@@ -291,9 +301,7 @@ watch(mode, newMode => {
         </el-table>
 
         <el-text>
-          <el-icon class="ml-2">
-            <Files />
-          </el-icon>
+          <el-icon class="ml-2"><Files /></el-icon>
           {{ path }}
         </el-text>
       </el-splitter-panel>
