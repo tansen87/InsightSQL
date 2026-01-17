@@ -6,6 +6,7 @@ use std::{
 use anyhow::Context;
 
 pub mod filter;
+pub mod operation;
 pub mod process;
 pub mod str;
 pub mod utils;

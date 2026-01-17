@@ -25,7 +25,7 @@ use crate::io::excel::excel_reader::{
 use crate::io::excel::xlsx_writer::XlsxWriter;
 use crate::{
   io::csv::options::CsvOptions,
-  utils::{BUFFER_SIZE, EXCEL_MAX_ROW},
+  utils::{WTR_BUFFER_SIZE, EXCEL_MAX_ROW},
 };
 
 #[derive(Serialize)]
@@ -103,7 +103,7 @@ impl FileWriter for DataFrameWriter {
 
   fn write_csv(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
     let file = File::create(output_path)?;
-    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, file);
     CsvWriter::new(&mut wtr)
       .with_separator(self.separator)
       .with_float_precision(Some(2))
@@ -113,7 +113,7 @@ impl FileWriter for DataFrameWriter {
 
   fn write_parquet(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
     let file = File::create(output_path)?;
-    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, file);
     ParquetWriter::new(&mut wtr)
       .with_row_group_size(Some(768 * 768))
       .finish(&mut df)?;
@@ -122,7 +122,7 @@ impl FileWriter for DataFrameWriter {
 
   fn write_json(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
     let file = File::create(output_path)?;
-    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, file);
     JsonWriter::new(&mut wtr)
       .with_json_format(JsonFormat::Json)
       .finish(&mut df)?;
@@ -131,7 +131,7 @@ impl FileWriter for DataFrameWriter {
 
   fn write_jsonl(&self, mut df: DataFrame, output_path: impl AsRef<Path>) -> Result<()> {
     let file = File::create(output_path)?;
-    let mut wtr = BufWriter::with_capacity(BUFFER_SIZE, file);
+    let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, file);
     JsonWriter::new(&mut wtr)
       .with_json_format(JsonFormat::JsonLines)
       .finish(&mut df)?;

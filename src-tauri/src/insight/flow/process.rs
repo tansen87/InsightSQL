@@ -1,18 +1,36 @@
 use std::{collections::HashMap, fs::File, io::BufWriter, path::PathBuf, sync::Arc};
 
 use anyhow::{Result, anyhow};
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::{ReaderBuilder, StringRecord, WriterBuilder};
 
 use crate::flow::filter;
+use crate::flow::operation;
 use crate::flow::str::str_process;
 use crate::flow::utils::{ColumnSource, FilterLogic, Operation, ProcessContext};
 use crate::io::csv::options::CsvOptions;
+use crate::utils::WTR_BUFFER_SIZE;
 
 pub async fn process_operations(
   input_path: String,
   operations: &[Operation],
   output_path: PathBuf,
 ) -> Result<()> {
+  if let Some(rename_map) = operation::is_pure_rename(operations) {
+    return operation::process_rename_only(input_path, rename_map, output_path);
+  }
+  if let Some(select_cols) = operation::is_pure_select(operations) {
+    return operation::process_select_only(input_path, select_cols, output_path);
+  }
+  if let Some(filter_op) = operation::is_pure_filter(operations) {
+    return operation::process_filter_only(input_path, filter_op, output_path);
+  }
+  if operation::is_pure_str(operations) {
+    return operation::process_pure_str_fast(input_path, operations, output_path);
+  }
+  if operation::is_select_and_filter_only(operations) {
+    return operation::process_select_filter(input_path, operations, output_path);
+  }
+
   let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
 
@@ -21,7 +39,7 @@ pub async fn process_operations(
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
-
+  let headers_arc = Arc::new(original_headers.clone());
   let mut context = ProcessContext::new();
 
   for op in operations {
@@ -33,34 +51,42 @@ pub async fn process_operations(
         }
       }
       "filter" => {
-        if let (Some(col), Some(mode), Some(val), Some(logic)) =
-          (&op.column, &op.mode, &op.value, &op.logic)
-        {
-          let col = Arc::from(col.as_str());
-          let val = Arc::from(val.as_str());
-          let headers = Arc::new(original_headers.clone());
-          let logic = FilterLogic::from(logic.as_str());
-          match mode.as_str() {
-            "equal" => context.add_filter(filter::equal(col, val, headers)?, logic),
-            "not_equal" => context.add_filter(filter::not_equal(col, val, headers)?, logic),
-            "contains" => context.add_filter(filter::contains(col, val, headers)?, logic),
-            "not_contains" => context.add_filter(filter::not_contains(col, val, headers)?, logic),
-            "starts_with" => context.add_filter(filter::starts_with(col, val, headers)?, logic),
-            "not_starts_with" => {
-              context.add_filter(filter::not_starts_with(col, val, headers)?, logic)
-            }
-            "ends_with" => context.add_filter(filter::ends_with(col, val, headers)?, logic),
-            "not_ends_with" => context.add_filter(filter::not_ends_with(col, val, headers)?, logic),
-            "gt" => context.add_filter(filter::gt(col, val, headers)?, logic),
-            "ge" => context.add_filter(filter::ge(col, val, headers)?, logic),
-            "lt" => context.add_filter(filter::lt(col, val, headers)?, logic),
-            "le" => context.add_filter(filter::le(col, val, headers)?, logic),
-            "between" => context.add_filter(filter::between(col, val, headers)?, logic),
-            "is_null" => context.add_filter(filter::is_null(col, headers)?, logic),
-            "is_not_null" => context.add_filter(filter::is_not_null(col, headers)?, logic),
-            _ => return Err(anyhow!("Not supported filter mode: {}", mode)),
-          }
-        }
+        let col = op
+          .column
+          .as_deref()
+          .ok_or_else(|| anyhow!("Missing column in filter"))?;
+        let mode = op
+          .mode
+          .as_deref()
+          .ok_or_else(|| anyhow!("Missing mode in filter"))?;
+        let val = op
+          .value
+          .as_deref()
+          .ok_or_else(|| anyhow!("Missing value in filter"))?;
+        let logic = FilterLogic::from(op.logic.as_deref().unwrap_or("or"));
+        let col_arc = Arc::from(col);
+        let val_arc = Arc::from(val);
+
+        let filter_fn: Box<dyn Fn(&StringRecord) -> bool + Send + Sync> = match mode {
+          "equal" => filter::equal(col_arc, val_arc, headers_arc.clone())?,
+          "not_equal" => filter::not_equal(col_arc, val_arc, headers_arc.clone())?,
+          "contains" => filter::contains(col_arc, val_arc, headers_arc.clone())?,
+          "not_contains" => filter::not_contains(col_arc, val_arc, headers_arc.clone())?,
+          "starts_with" => filter::starts_with(col_arc, val_arc, headers_arc.clone())?,
+          "not_starts_with" => filter::not_starts_with(col_arc, val_arc, headers_arc.clone())?,
+          "ends_with" => filter::ends_with(col_arc, val_arc, headers_arc.clone())?,
+          "not_ends_with" => filter::not_ends_with(col_arc, val_arc, headers_arc.clone())?,
+          "gt" => filter::gt(col_arc, val_arc, headers_arc.clone())?,
+          "ge" => filter::ge(col_arc, val_arc, headers_arc.clone())?,
+          "lt" => filter::lt(col_arc, val_arc, headers_arc.clone())?,
+          "le" => filter::le(col_arc, val_arc, headers_arc.clone())?,
+          "between" => filter::between(col_arc, val_arc, headers_arc.clone())?,
+          "is_null" => filter::is_null(col_arc, headers_arc.clone())?,
+          "is_not_null" => filter::is_not_null(col_arc, headers_arc.clone())?,
+          _ => return Err(anyhow!("Not supported filter mode: {}", mode)),
+        };
+
+        context.add_filter(filter_fn, logic);
       }
       "str" => {
         if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
@@ -149,7 +175,7 @@ pub async fn process_operations(
         } else {
           return Err(anyhow!(
             "Column '{}' not found in input headers or generated columns.\n\
-                     Available logical columns: {:?}",
+                         Available logical columns: {:?}",
             col_name,
             logical_columns
           ));
@@ -172,7 +198,7 @@ pub async fn process_operations(
   context.output_column_sources = output_column_sources;
 
   let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(256_000, output_file);
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
   wtr.write_record(&output_headers)?;
 
