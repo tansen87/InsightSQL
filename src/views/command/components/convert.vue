@@ -99,6 +99,11 @@ const fileSelect = ref<ListenEvent[]>([]);
 const { dynamicHeight } = useDynamicHeight(74);
 const { isDark } = useDark();
 
+interface ExcelSheetMap {
+  [filename: string]: string[];
+}
+const mapSheets = ref<ExcelSheetMap | null>(null);
+
 listen("update-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
   updateEvent(fileSelect, filename, file => {
@@ -172,6 +177,21 @@ function updateFileSheet(file: ListenEvent) {
   }
 }
 
+const filterBySheetCount = (filterValue: string, row: any): boolean => {
+  const sheetCount = row.sheets?.length ?? 0;
+
+  switch (filterValue) {
+    case "zero":
+      return sheetCount === 0;
+    case "one":
+      return sheetCount === 1;
+    case "many":
+      return sheetCount > 1;
+    default:
+      return true;
+  }
+};
+
 async function selectFile() {
   fileSelect.value = [];
   sheetsData.value = [];
@@ -192,10 +212,10 @@ async function selectFile() {
         duration: 0,
         icon: Loading
       });
-      const mapSheets: string[] = await invoke("map_excel_sheets", {
+      mapSheets.value = await invoke<ExcelSheetMap>("map_excel_sheets", {
         path: path.value
       });
-      sheetsData.value = mapSheets[0];
+      sheetsData.value = mapSheets.value[0];
       for (const fileName in sheetsData.value) {
         sheetsData.value[fileName].forEach(sheet => {
           sheetOptions.value.push({
@@ -600,13 +620,23 @@ async function convert() {
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="message" label="Message">
+          <el-table-column
+            prop="message"
+            label="Message"
+            :filters="[
+              { text: 'No worksheet', value: 'zero' },
+              { text: '1 worksheet', value: 'one' },
+              { text: 'Multiple worksheets', value: 'many' }
+            ]"
+            :filter-method="filterBySheetCount"
+          >
             <template #default="scope">
               <template v-if="activeTab === 'excel'">
                 <el-select
                   v-model="scope.row.selectSheet"
                   placeholder="Select a sheet"
                   @change="updateFileSheet(scope.row)"
+                  :disabled="!scope.row.sheets || scope.row.sheets.length === 0"
                 >
                   <el-option
                     v-for="sheet in scope.row.sheets"
