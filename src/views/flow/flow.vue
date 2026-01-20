@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import {
   VueFlow,
   useVueFlow,
@@ -36,6 +36,7 @@ import { useWorkflowStore } from "@/store/modules/workflow";
 import { useWorkflowManager } from "@/utils/workflowManager";
 import { message } from "@/utils/message";
 import { invoke } from "@tauri-apps/api/core";
+import { nanoid } from "nanoid";
 
 const isLoading = ref(false);
 const nodeTypes = ["start", "select", "filter", "str", "rename"];
@@ -54,58 +55,7 @@ const selectStore = useSelect();
 const strStore = useStr();
 const renameStore = useRename();
 
-const { addNodes, addEdges, setNodes, setEdges, getNodes, getEdges } =
-  useVueFlow();
-
-let nodeIdCounter = 1;
-function generateId() {
-  return `${nodeIdCounter++}`;
-}
-
-function handleConnect(connection: Connection) {
-  if (!connection.source || !connection.target) return;
-  addEdges([
-    {
-      ...connection,
-      markerEnd: {
-        type: MarkerType.Arrow,
-        color: "#666",
-        width: 20,
-        height: 20
-      }
-    }
-  ]);
-}
-
-const onDragStart = (event: DragEvent, type: string) => {
-  event.dataTransfer?.setData("application/vueflow", type);
-  event.dataTransfer.effectAllowed = "move";
-};
-
-const onDrop = (event: DragEvent) => {
-  event.preventDefault();
-  const vueFlow = vueFlowRef.value;
-  if (!vueFlow) return;
-
-  const type = event.dataTransfer?.getData("application/vueflow");
-  if (!type || !nodeTypes.includes(type)) return;
-
-  const position = vueFlow.project({ x: event.offsetX, y: event.offsetY });
-
-  const newNode: Node = {
-    id: generateId(),
-    type,
-    position,
-    data: { label: `${type} Node` }
-  };
-
-  addNodes([newNode]);
-};
-
-const onDragOver = (event: DragEvent) => {
-  event.preventDefault();
-  event.dataTransfer.dropEffect = "move";
-};
+const { getNodes, getEdges } = useVueFlow();
 
 const initialNodes = computed(() => {
   if (!workflowStore.currentId) return [];
@@ -117,14 +67,55 @@ const initialEdges = computed(() => {
   return workflowStore.getWorkflowData(workflowStore.currentId)?.edges || [];
 });
 
-function loadCurrentWorkflow() {
-  if (!workflowStore.currentId) return;
-  const data = workflowStore.getWorkflowData(workflowStore.currentId);
-  if (!data) return;
+const onDragStart = (event: DragEvent, type: string) => {
+  event.dataTransfer?.setData("application/vueflow", type);
+  event.dataTransfer.effectAllowed = "move";
+};
 
-  setNodes(data.nodes || []);
-  setEdges(data.edges || []);
+const onDragOver = (event: DragEvent) => {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+};
+
+const onDrop = (event: DragEvent) => {
+  event.preventDefault();
+  const vueFlow = vueFlowRef.value;
+  if (!vueFlow || !workflowStore.currentId) return;
+
+  const type = event.dataTransfer?.getData("application/vueflow");
+  if (!type || !nodeTypes.includes(type)) return;
+
+  const position = vueFlow.project({ x: event.offsetX, y: event.offsetY });
+
+  const newNode: Node = {
+    id: nanoid(),
+    type,
+    position,
+    data: { label: `${type} Node` }
+  };
+
+  workflowStore.addNode(newNode);
+};
+
+function handleConnect(connection: Connection) {
+  if (!connection.source || !connection.target) return;
+  if (connection.source === connection.target) return;
+
+  const newEdge: Edge = {
+    id: nanoid(),
+    ...connection,
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: "#666",
+      width: 20,
+      height: 20
+    }
+  };
+
+  workflowStore.addEdge(newEdge);
 }
+
+function loadCurrentWorkflow() {}
 
 const {
   createWorkflow,
@@ -132,14 +123,11 @@ const {
   deleteWorkflow,
   exportWorkflow,
   importWorkflow
-} = useWorkflowManager(loadCurrentWorkflow);
+} = useWorkflowManager(loadCurrentWorkflow, getNodes, getEdges);
 
 onMounted(() => {
   if (workflowStore.list.length === 0) {
     workflowStore.create("Default");
-  }
-  if (workflowStore.currentId) {
-    loadCurrentWorkflow();
   }
 });
 
@@ -203,7 +191,6 @@ async function runWorkflow() {
   <div class="page-container flex flex-col h-[calc(100vh-36px)]">
     <div class="p-2 border-b flex items-center">
       <el-button @click="createWorkflow" :icon="Plus" text> New </el-button>
-
       <el-button
         v-if="workflowStore.currentId"
         @click="saveWorkflow"
@@ -212,7 +199,6 @@ async function runWorkflow() {
       >
         Save
       </el-button>
-
       <el-button
         v-if="workflowStore.currentId && workflowStore.list.length > 1"
         @click="deleteWorkflow"
@@ -222,13 +208,12 @@ async function runWorkflow() {
       >
         Delete
       </el-button>
-
       <el-button @click="exportWorkflow" :icon="Download" text>
         Export
       </el-button>
-
-      <el-button @click="importWorkflow" :icon="Upload" text>Import</el-button>
-
+      <el-button @click="importWorkflow" :icon="Upload" text>
+        Import
+      </el-button>
       <el-button
         @click="runWorkflow"
         :icon="ArrowRight"
@@ -242,7 +227,6 @@ async function runWorkflow() {
       <el-select
         v-if="workflowStore.list.length > 0"
         v-model="workflowStore.currentId"
-        @change="loadCurrentWorkflow"
         style="width: 120px"
         class="ml-auto"
       >
@@ -260,7 +244,7 @@ async function runWorkflow() {
         <div
           v-for="type in nodeTypes"
           :key="type"
-          class="draggable-node"
+          class="draggable-node mb-2 text-center cursor-move p-1 bg-gray-100 rounded"
           draggable="true"
           @dragstart="onDragStart($event, type)"
         >
@@ -277,6 +261,7 @@ async function runWorkflow() {
           @connect="handleConnect"
           @drop="onDrop"
           @dragover="onDragOver"
+          fit-view-on-init
         >
           <Background />
         </VueFlow>
@@ -284,6 +269,7 @@ async function runWorkflow() {
     </div>
   </div>
 </template>
+
 <style scoped>
 .draggable-node {
   padding: 5px;
@@ -297,5 +283,8 @@ async function runWorkflow() {
 .draggable-node:hover {
   background-color: #f0e6e6;
   transform: scale(1.02);
+}
+.vue-flow__node {
+  transition: none !important;
 }
 </style>

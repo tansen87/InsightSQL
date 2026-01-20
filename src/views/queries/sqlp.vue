@@ -286,7 +286,7 @@ onUnmounted(() => {
         type="button"
         @click="copyFileName"
       >
-        <el-icon><CopyDocument /></el-icon> Copy File Name
+        <el-icon><CopyDocument /></el-icon> Copy Filename
       </div>
       <div
         v-if="contextMenuItem?.type === 'file'"

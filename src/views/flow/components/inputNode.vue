@@ -1,22 +1,24 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { Handle, Position, useNode, useVueFlow } from "@vue-flow/core";
+import { Handle, Position } from "@vue-flow/core";
 import { FolderOpened, CloseBold } from "@element-plus/icons-vue";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { shortFileName } from "@/utils/utils";
 import { usePath, useHeaders } from "@/store/modules/flow";
+import { useWorkflowStore } from "@/store/modules/workflow";
 
 const path = ref("");
 const isPath = ref(false);
 const [tableColumn, tableData] = [ref([]), ref([])];
 const headerStore = useHeaders();
 const pathStore = usePath();
-const node = useNode();
-const { removeNodes } = useVueFlow();
+
+const props = defineProps<{ id: string }>();
 
 function deleteBtn() {
-  removeNodes(node.id);
+  const store = useWorkflowStore();
+  store.removeNodes([props.id]);
 }
 
 async function selectFile() {
@@ -40,7 +42,7 @@ async function selectFile() {
 </script>
 
 <template>
-  <div class="page-container node-container">
+  <div class="page-container node-container w-[400px]">
     <div class="text-center p-[5px]">
       <el-button
         circle

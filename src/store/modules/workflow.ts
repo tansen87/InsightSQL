@@ -41,6 +41,24 @@ export const useWorkflowStore = defineStore("workflow", {
       return newWorkflow.id;
     },
 
+    addNode(node: Node) {
+      if (!this.currentId) return;
+      const workflow = this.list.find(w => w.id === this.currentId);
+      if (workflow) {
+        workflow.nodes = [...workflow.nodes, node];
+        workflow.updatedAt = new Date().toISOString();
+      }
+    },
+
+    addEdge(edge: Edge) {
+      if (!this.currentId) return;
+      const workflow = this.list.find(w => w.id === this.currentId);
+      if (workflow) {
+        workflow.edges = [...workflow.edges, { ...edge }];
+        workflow.updatedAt = new Date().toISOString();
+      }
+    },
+
     // 手动保存当前画布状态到当前工作区
     saveCurrent(nodes: Node[], edges: Edge[]) {
       if (!this.currentId) {
@@ -64,6 +82,30 @@ export const useWorkflowStore = defineStore("workflow", {
       this.list = this.list.filter(w => w.id !== id);
       if (this.currentId === id) {
         this.currentId = this.list[0]?.id || null;
+      }
+    },
+
+    removeNodes(nodeIds: string[]) {
+      if (!this.currentId) return;
+      const workflow = this.list.find(w => w.id === this.currentId);
+      if (!workflow) return;
+
+      const newNodes = workflow.nodes.filter(n => !nodeIds.includes(n.id));
+      const newEdges = workflow.edges.filter(
+        e => !nodeIds.includes(e.source) && !nodeIds.includes(e.target)
+      );
+
+      workflow.nodes = newNodes;
+      workflow.edges = newEdges;
+      workflow.updatedAt = new Date().toISOString();
+    },
+
+    removeEdges(edgeIds: string[]) {
+      if (!this.currentId) return;
+      const workflow = this.list.find(w => w.id === this.currentId);
+      if (workflow) {
+        workflow.edges = workflow.edges.filter(e => !edgeIds.includes(e.id));
+        workflow.updatedAt = new Date().toISOString();
       }
     },
 

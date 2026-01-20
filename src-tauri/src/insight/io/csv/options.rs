@@ -13,6 +13,7 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use crate::{
   index::Indexed,
   io::excel::excel_reader::{self, FastExcelReader},
+  utils::RDR_BUFFER_SIZE,
 };
 
 pub struct CsvOptions<P: AsRef<Path> + Send + Sync> {
@@ -142,7 +143,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
   /// Skip the first n lines of csv
   pub fn rdr_skip_rows(&self) -> Result<BufReader<File>> {
-    let mut reader = BufReader::new(File::open(&self.path)?);
+    let file = File::open(&self.path)?;
+    let mut reader = BufReader::with_capacity(RDR_BUFFER_SIZE, file);
     let mut line = String::new();
 
     if self.skip_rows > 0 {
@@ -170,10 +172,10 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
     if bom && sample.len() >= 2 {
       match (&sample[0..2], sample.len().checked_sub(2)) {
-        ([0xFF, 0xFE], _) => return Ok(UTF_16LE),  // UTF-16LE BOM
-        ([0xFE, 0xFF], _) => return Ok(UTF_16BE),  // UTF-16BE BOM
+        ([0xFF, 0xFE], _) => return Ok(UTF_16LE), // UTF-16LE BOM
+        ([0xFE, 0xFF], _) => return Ok(UTF_16BE), // UTF-16BE BOM
         ([0xEF, 0xBB], Some(rest)) if rest > 0 && sample[2] == 0xBF => {
-          return Ok(UTF_8);  // UTF-8 BOM
+          return Ok(UTF_8); // UTF-8 BOM
         }
         _ => {}
       }

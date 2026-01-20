@@ -1,14 +1,17 @@
 import { ElMessageBox } from "element-plus";
 import { save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { useVueFlow } from "@vue-flow/core";
+import type { Node, Edge } from "@vue-flow/core";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import { useWorkflowStore } from "@/store/modules/workflow";
 
-export function useWorkflowManager(loadCurrentWorkflow: () => void) {
+export function useWorkflowManager(
+  loadCurrentWorkflow: () => void,
+  getNodes: () => Node[],
+  getEdges: () => Edge[]
+) {
   const workflowStore = useWorkflowStore();
-  const { getNodes, getEdges } = useVueFlow();
 
   // 创建新工作区
   async function createWorkflow() {
@@ -127,11 +130,18 @@ export function useWorkflowManager(loadCurrentWorkflow: () => void) {
   // 保存当前画布
   function saveWorkflow() {
     if (!workflowStore.currentId) {
-      message("Please create or select a workspace first", { type: "warning" });
+      message("No workflow selected", { type: "warning" });
       return;
     }
-    workflowStore.saveCurrent(getNodes.value, getEdges.value);
-    message("Workflow saved", { type: "success" });
+
+    try {
+      const nodes = getNodes();
+      const edges = getEdges();
+      workflowStore.saveCurrent(nodes, edges);
+      message("Workflow saved successfully", { type: "success" });
+    } catch (err) {
+      message(`Failed to save workflow: ${err}`, { type: "error" });
+    }
   }
 
   return {

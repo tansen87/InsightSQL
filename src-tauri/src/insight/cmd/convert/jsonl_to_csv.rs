@@ -114,7 +114,7 @@ pub async fn jsonl_to_csv(path: &str, wtr_sep: &str, ignore_err: bool) -> Result
     .delimiter(sep)
     .from_path(output_path)?;
 
-  let mut rdr = BufReader::with_capacity(utils::RDR_BUFFER_CAPACITY, File::open(path)?);
+  let mut rdr = BufReader::with_capacity(utils::RDR_BUFFER_SIZE, File::open(path)?);
 
   let mut headers: Vec<Vec<String>> = Vec::new();
   let mut headers_emitted: bool = false;

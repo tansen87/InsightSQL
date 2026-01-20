@@ -48,7 +48,7 @@ export function useSqlTabManager(options: ResultTabOptions) {
       columns: [],
       data: [],
       currentPage: 1,
-      pageSize: 50,
+      pageSize: 20,
       total: 0
     };
   }

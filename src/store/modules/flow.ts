@@ -126,7 +126,6 @@ export const useHeaders = defineStore("headers", {
   state: () => ({
     headers: [] as Array<{ label: string; value: string }>
   }),
-
   actions: {
     setHeaderForNode(nodeId: string, label: string) {
       if (label.trim() === "") {
@@ -142,14 +141,16 @@ export const useHeaders = defineStore("headers", {
         this.headers.push({ label, value: nodeId });
       }
     }
-  }
+  },
+  persist: true
 });
 
 // path
 export const usePath = defineStore("path", {
   state: () => ({
     path: "" as string
-  })
+  }),
+  persist: true
 });
 
 // node
@@ -165,7 +166,8 @@ export const useNodeStore = defineStore("node", {
     addEdge(edge) {
       this.edges = edge;
     }
-  }
+  },
+  persist: true
 });
 
 // filter node
@@ -194,7 +196,8 @@ export const useFilter = defineStore("filter", {
         this.filters.push(data);
       }
     }
-  }
+  },
+  persist: true
 });
 
 // select node
@@ -215,7 +218,8 @@ export const useSelect = defineStore("select", {
         this.selects.push(data);
       }
     }
-  }
+  },
+  persist: true
 });
 
 // str node
@@ -246,7 +250,8 @@ export const useStr = defineStore("str", {
         this.strs.push(data);
       }
     }
-  }
+  },
+  persist: true
 });
 
 // rename node
@@ -268,5 +273,6 @@ export const useRename = defineStore("rename", {
         this.renames.push(data);
       }
     }
-  }
+  },
+  persist: true
 });

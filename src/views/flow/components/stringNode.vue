@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import {
-  Handle,
-  Position,
-  useNodeId,
-  useNode,
-  useVueFlow
-} from "@vue-flow/core";
+import { Handle, Position, useNodeId, useNode } from "@vue-flow/core";
 import { CloseBold } from "@element-plus/icons-vue";
 import { useHeaders, useStr } from "@/store/modules/flow";
+import { useWorkflowStore } from "@/store/modules/workflow";
 
 const mode = ref("len");
 const [comparand, replacement, columns] = [ref(""), ref(""), ref("")];
@@ -16,7 +11,6 @@ const nodeId = useNodeId();
 const headerStore = useHeaders();
 const strStore = useStr();
 const node = useNode();
-const { removeNodes } = useVueFlow();
 const strData = computed(() => {
   return {
     op: "str",
@@ -79,10 +73,13 @@ function generateHeaderLabel(
   return `${column}`;
 }
 
+const props = defineProps<{ id: string }>();
+
 function deleteBtn() {
   // 当删除节点时,同时删除该节点生成的header
   headerStore.headers = headerStore.headers.filter(h => h.value !== node.id);
-  removeNodes(node.id);
+  const store = useWorkflowStore();
+  store.removeNodes([props.id]);
 }
 </script>
 

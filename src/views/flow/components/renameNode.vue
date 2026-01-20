@@ -1,18 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import {
-  Handle,
-  Position,
-  useNodeId,
-  useNode,
-  useVueFlow
-} from "@vue-flow/core";
+import { Handle, Position, useNodeId } from "@vue-flow/core";
 import { CloseBold } from "@element-plus/icons-vue";
 import { useHeaders, useRename } from "@/store/modules/flow";
+import { useWorkflowStore } from "@/store/modules/workflow";
 
 const [old_col, new_col] = [ref(""), ref("")];
-const node = useNode();
-const { removeNodes } = useVueFlow();
 const nodeId = useNodeId();
 const headerStore = useHeaders();
 const renameStore = useRename();
@@ -37,8 +30,11 @@ watch(
   { deep: true, immediate: true }
 );
 
+const props = defineProps<{ id: string }>();
+
 function deleteBtn() {
-  removeNodes(node.id);
+  const store = useWorkflowStore();
+  store.removeNodes([props.id]);
 }
 </script>
 

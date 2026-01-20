@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import {
-  Handle,
-  Position,
-  useNodeId,
-  useNode,
-  useVueFlow
-} from "@vue-flow/core";
+import { Handle, Position, useNodeId } from "@vue-flow/core";
 import { CloseBold } from "@element-plus/icons-vue";
 import { useHeaders, useFilter } from "@/store/modules/flow";
+import { useWorkflowStore } from "@/store/modules/workflow";
 
 const [columns, condition] = [ref(""), ref("")];
 const logic = ref("or");
 const mode = ref("equal");
-const node = useNode();
-const { removeNodes } = useVueFlow();
 const nodeId = useNodeId();
 const headerStore = useHeaders();
 const filterStore = useFilter();
@@ -44,8 +37,11 @@ watch(
   { deep: true, immediate: true }
 );
 
+const props = defineProps<{ id: string }>();
+
 function deleteBtn() {
-  removeNodes(node.id);
+  const store = useWorkflowStore();
+  store.removeNodes([props.id]);
 }
 </script>
 
