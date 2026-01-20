@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   VueFlow,
   useVueFlow,
@@ -12,7 +12,6 @@ import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
 import {
   Plus,
-  Select,
   Delete,
   Download,
   Upload,
@@ -117,13 +116,8 @@ function handleConnect(connection: Connection) {
 
 function loadCurrentWorkflow() {}
 
-const {
-  createWorkflow,
-  saveWorkflow,
-  deleteWorkflow,
-  exportWorkflow,
-  importWorkflow
-} = useWorkflowManager(loadCurrentWorkflow, getNodes, getEdges);
+const { createWorkflow, deleteWorkflow, exportWorkflow, importWorkflow } =
+  useWorkflowManager(loadCurrentWorkflow);
 
 onMounted(() => {
   if (workflowStore.list.length === 0) {
@@ -191,14 +185,6 @@ async function runWorkflow() {
   <div class="page-container flex flex-col h-[calc(100vh-36px)]">
     <div class="p-2 border-b flex items-center">
       <el-button @click="createWorkflow" :icon="Plus" text> New </el-button>
-      <el-button
-        v-if="workflowStore.currentId"
-        @click="saveWorkflow"
-        :icon="Select"
-        text
-      >
-        Save
-      </el-button>
       <el-button
         v-if="workflowStore.currentId && workflowStore.list.length > 1"
         @click="deleteWorkflow"
@@ -283,8 +269,5 @@ async function runWorkflow() {
 .draggable-node:hover {
   background-color: #f0e6e6;
   transform: scale(1.02);
-}
-.vue-flow__node {
-  transition: none !important;
 }
 </style>
