@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -107,9 +107,9 @@ const { mdShow } = useMarkdown(mdStr);
     <el-splitter>
       <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light" placement="right">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File
+          </el-button>
 
           <!-- mode choice -->
           <div class="mode-toggle-v mb-2 w-40 h-[128px]">
@@ -232,15 +232,14 @@ const { mdShow } = useMarkdown(mdStr);
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light" placement="right">
-          <el-button
-            @click="StrData()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="StrData()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
 
         <el-table
           :data="tableData"

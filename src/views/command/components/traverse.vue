@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { appConfigDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
-import { ArrowRight, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened, SwitchButton } from "@element-plus/icons-vue";
 import { message } from "@/utils/message";
 
 const folderPath = ref("");
@@ -62,19 +62,18 @@ async function traverseDirectory() {
   <el-form class="page-container">
     <div class="splitter-container">
       <div class="custom-container2">
-        <el-tooltip content="Add data" effect="light">
-          <el-button @click="selectFolder()" :icon="FolderOpened" circle text />
-        </el-tooltip>
+        <el-button @click="selectFolder()" :icon="FolderOpened" text round>
+          Open Folder
+        </el-button>
 
-        <el-tooltip content="Run" effect="light">
-          <el-button
-            @click="traverseDirectory()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="traverseDirectory()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
       </div>
       <el-text>
         <span v-if="isPath">{{ folderPath }}</span>

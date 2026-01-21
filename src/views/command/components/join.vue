@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -88,24 +88,18 @@ async function joinData() {
     <el-splitter>
       <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
-          <div class="flex items-center">
-            <el-tooltip content="Add data 1" effect="light">
-              <el-button
-                @click="selectFile(1)"
-                :icon="FolderOpened"
-                circle
-                text
-              />
-            </el-tooltip>
-            <el-tooltip content="Add data 2" effect="light">
-              <el-button
-                @click="selectFile(2)"
-                :icon="FolderOpened"
-                circle
-                text
-              />
-            </el-tooltip>
-          </div>
+          <el-button @click="selectFile(1)" :icon="FolderOpened" text round
+            >data 1
+          </el-button>
+
+          <el-button
+            @click="selectFile(2)"
+            :icon="FolderOpened"
+            text
+            round
+            class="mr-[12px]"
+            >data 2
+          </el-button>
 
           <el-tooltip
             content="column of file1"
@@ -197,15 +191,14 @@ async function joinData() {
       <el-splitter-panel>
         <el-splitter layout="vertical">
           <el-splitter-panel size="33" :resizable="false">
-            <el-tooltip content="Run" effect="light" placement="right">
-              <el-button
-                @click="joinData()"
-                :loading="isLoading"
-                :icon="ArrowRight"
-                circle
-                text
-              />
-            </el-tooltip>
+            <el-button
+              @click="joinData()"
+              :loading="isLoading"
+              :icon="SwitchButton"
+              text
+              round
+              >Run
+            </el-button>
           </el-splitter-panel>
 
           <el-splitter-panel :resizable="false">

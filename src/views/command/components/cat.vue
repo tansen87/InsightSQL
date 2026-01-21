@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, ArrowRight, Loading } from "@element-plus/icons-vue";
+import { FolderOpened, Loading, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdCat, useMarkdown } from "@/utils/markdown";
@@ -119,9 +119,9 @@ async function concatData() {
     <el-splitter>
       <el-splitter-panel size="240" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light" placement="right">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File(s)
+          </el-button>
 
           <div class="mode-toggle w-[220px]">
             <span
@@ -170,15 +170,14 @@ async function concatData() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light" placement="right">
-          <el-button
-            @click="concatData()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="concatData()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
 
         <el-table
           :data="fileSelect"

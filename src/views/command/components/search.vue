@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
-import { Files, FolderOpened, ArrowRight } from "@element-plus/icons-vue";
+import { Files, FolderOpened, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { useDynamicHeight } from "@/utils/utils";
@@ -92,9 +92,9 @@ async function searchData() {
     <el-splitter>
       <el-splitter-panel size="260" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light" placement="right">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File
+          </el-button>
 
           <el-tooltip
             content="if Nil, no progress bar"
@@ -187,15 +187,14 @@ async function searchData() {
 
       <el-splitter-panel>
         <div class="flex justify-between items-center">
-          <el-tooltip content="Run" effect="light" placement="right">
-            <el-button
-              @click="searchData()"
-              :loading="isLoading"
-              :icon="ArrowRight"
-              circle
-              text
-            />
-          </el-tooltip>
+          <el-button
+            @click="searchData()"
+            :loading="isLoading"
+            :icon="SwitchButton"
+            text
+            round
+            >Run
+          </el-button>
 
           <el-text v-if="matchRows" style="margin-right: 8px">
             match rows: {{ matchRows }}

@@ -8,7 +8,7 @@ import {
   Loading,
   Select,
   CloseBold,
-  ArrowRight
+  SwitchButton
 } from "@element-plus/icons-vue";
 import { useDynamicHeight, updateEvent } from "@/utils/utils";
 import { useDark } from "@pureadmin/utils";
@@ -97,9 +97,9 @@ async function skipLines() {
     <el-splitter>
       <el-splitter-panel size="180" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light" placement="right">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File(s)
+          </el-button>
 
           <el-tooltip
             content="if Nil, no progress bar"
@@ -137,15 +137,14 @@ async function skipLines() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light" placement="right">
-          <el-button
-            @click="skipLines()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="skipLines()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
 
         <el-table
           :data="fileSelect"

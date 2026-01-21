@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderOpened, Files, ArrowRight } from "@element-plus/icons-vue";
+import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
@@ -100,9 +100,9 @@ async function sortData() {
     <el-splitter>
       <el-splitter-panel size="200" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light" placement="right">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File
+          </el-button>
 
           <div class="mode-toggle w-[180px]">
             <span
@@ -185,15 +185,14 @@ async function sortData() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light" placement="right">
-          <el-button
-            @click="sortData()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="sortData()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
 
         <el-table
           :data="tableData"

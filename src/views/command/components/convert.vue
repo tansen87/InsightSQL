@@ -9,7 +9,7 @@ import {
   Select,
   FolderOpened,
   Loading,
-  ArrowRight
+  SwitchButton
 } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import {
@@ -317,9 +317,9 @@ async function convert() {
     <el-splitter>
       <el-splitter-panel size="240" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light" placement="right">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File(s)
+          </el-button>
 
           <!-- mode choice -->
           <div class="mode-toggle-v mb-2 w-[220px] h-[128px]">
@@ -569,15 +569,14 @@ async function convert() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light" placement="right">
-          <el-button
-            @click="convert()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="convert()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
 
         <el-table
           :data="fileSelect"

@@ -10,7 +10,7 @@ import {
   FolderOpened,
   CloseBold,
   Select,
-  ArrowRight
+  SwitchButton
 } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { shortFileName, useDynamicHeight, updateEvent } from "@/utils/utils";
@@ -102,9 +102,9 @@ async function countData() {
     <el-splitter>
       <el-splitter-panel size="200" :resizable="false">
         <div class="splitter-container">
-          <el-tooltip content="Add data" effect="light">
-            <el-button @click="selectFile()" :icon="FolderOpened" circle text />
-          </el-tooltip>
+          <el-button @click="selectFile()" :icon="FolderOpened" text round>
+            Open File(s)
+          </el-button>
 
           <div class="mode-toggle w-[180px]">
             <span
@@ -128,15 +128,15 @@ async function countData() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light">
-          <el-button
-            @click="countData()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            circle
-            text
-          />
-        </el-tooltip>
+        <el-button
+          @click="countData()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+        >
+          Run
+        </el-button>
 
         <el-table
           :data="fileSelect"

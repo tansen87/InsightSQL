@@ -2,12 +2,12 @@
 import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  ArrowRight,
   FolderOpened,
   CirclePlus,
   Remove,
   Files,
-  Check
+  Check,
+  SwitchButton
 } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
@@ -157,28 +157,23 @@ watch(mode, newMode => {
     <el-splitter>
       <el-splitter-panel size="260" :resizable="false">
         <div class="splitter-container">
-          <div class="flex items-center">
-            <el-tooltip content="Add data" effect="light">
-              <el-button
-                @click="selectFile()"
-                :icon="FolderOpened"
-                text
-                circle
-              />
-            </el-tooltip>
-            <el-tooltip :content="columnContent" effect="light">
-              <el-button
-                @click="addNewColumn"
-                text
-                circle
-                :disabled="mode === 'cat' || mode === 'calcconv'"
-              >
-                <el-icon>
-                  <CirclePlus v-if="newColumn" />
-                  <Remove v-else />
-                </el-icon>
-              </el-button>
-            </el-tooltip>
+          <div>
+            <el-button @click="selectFile()" :icon="FolderOpened" text round>
+              Open File
+            </el-button>
+
+            <el-button
+              @click="addNewColumn"
+              text
+              round
+              :disabled="mode === 'cat' || mode === 'calcconv'"
+            >
+              <el-icon>
+                <CirclePlus v-if="newColumn" />
+                <Remove v-else />
+              </el-icon>
+              {{ columnContent }}
+            </el-button>
           </div>
 
           <div class="mode-toggle w-60">
@@ -282,15 +277,14 @@ watch(mode, newMode => {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-tooltip content="Run" effect="light">
-          <el-button
-            @click="applyData()"
-            :loading="isLoading"
-            :icon="ArrowRight"
-            text
-            circle
-          />
-        </el-tooltip>
+        <el-button
+          @click="applyData()"
+          :loading="isLoading"
+          :icon="SwitchButton"
+          text
+          round
+          >Run
+        </el-button>
 
         <el-table
           :data="tableData"
