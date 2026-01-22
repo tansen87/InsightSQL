@@ -12,7 +12,10 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use tokio::sync::oneshot;
 
-use crate::{io::csv::options::CsvOptions, utils::EventEmitter};
+use crate::{
+  io::csv::options::CsvOptions,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
+};
 
 /// Reformat a CSV with different delimiters, quoting rules
 pub async fn csv_to_csv<E, P>(
@@ -56,7 +59,7 @@ where
     .delimiter(rdr_sep)
     .from_reader(opts.rdr_skip_rows()?);
 
-  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
+  let buf_writer = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
   let mut wtr = WriterBuilder::new()
     .delimiter(sep)
     .quote(quote)

@@ -4,7 +4,7 @@ use anyhow::Result;
 use csv::WriterBuilder;
 use dbase::FieldValue;
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::WTR_BUFFER_SIZE};
 
 /// convert dbf to csv
 pub async fn dbf_to_csv(path: &str, wtr_sep: String) -> Result<()> {
@@ -24,7 +24,7 @@ pub async fn dbf_to_csv(path: &str, wtr_sep: String) -> Result<()> {
     .map(|field| field.name().to_string())
     .collect();
 
-  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
+  let buf_writer = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
   wtr.write_record(&headers)?;
 

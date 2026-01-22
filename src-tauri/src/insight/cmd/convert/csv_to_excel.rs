@@ -7,8 +7,8 @@ use polars::{
   prelude::{CsvParseOptions, CsvReadOptions},
 };
 
-use crate::io::csv::options::CsvOptions;
 use crate::io::excel::xlsx_writer::XlsxWriter;
+use crate::{io::csv::options::CsvOptions, utils::EXCEL_MAX_ROW};
 
 /// convert csv to xlsx
 pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
@@ -22,7 +22,7 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
 
   if use_polars {
     let row_count = opts.std_count_rows()?;
-    if row_count > 104_8575 {
+    if row_count > EXCEL_MAX_ROW {
       return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
     }
 

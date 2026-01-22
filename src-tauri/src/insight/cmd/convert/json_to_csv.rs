@@ -4,7 +4,7 @@ use anyhow::{Result, anyhow};
 use csv::WriterBuilder;
 use json_objects_to_csv::{Json2Csv, flatten_json_object::Flattener};
 
-use crate::io::csv::options::CsvOptions;
+use crate::{io::csv::options::CsvOptions, utils::RDR_BUFFER_SIZE};
 
 pub async fn json_to_csv(path: &str, wtr_sep: String) -> Result<()> {
   let sep = if wtr_sep == "\\t" {
@@ -13,7 +13,7 @@ pub async fn json_to_csv(path: &str, wtr_sep: String) -> Result<()> {
     wtr_sep.into_bytes()[0]
   };
   let file = File::open(path)?;
-  let reader = BufReader::with_capacity(256_000, file);
+  let reader = BufReader::with_capacity(RDR_BUFFER_SIZE, file);
 
   let value: serde_json::Value = serde_json::from_reader(reader)?;
   if value.is_null() {
