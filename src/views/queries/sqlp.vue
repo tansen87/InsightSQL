@@ -102,6 +102,33 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("click", clickOutside);
 });
+
+async function handleRunCurrent() {
+  isRunningCurrent.value = true;
+  try {
+    await runCurrentTab();
+  } finally {
+    isRunningCurrent.value = false;
+  }
+}
+
+async function handleRunNew() {
+  isRunningNew.value = true;
+  try {
+    await runNewTab();
+  } finally {
+    isRunningNew.value = false;
+  }
+}
+
+async function handleExport() {
+  isExporting.value = true;
+  try {
+    await exportActiveTab();
+  } finally {
+    isExporting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -142,7 +169,7 @@ onUnmounted(() => {
           <div class="flex items-center">
             <el-tooltip content="Run" effect="light">
               <el-button
-                @click="runCurrentTab"
+                @click="handleRunCurrent"
                 :loading="isRunningCurrent"
                 :icon="ArrowRight"
                 circle
@@ -155,7 +182,7 @@ onUnmounted(() => {
             </el-tooltip>
             <el-tooltip content="Run in new tab" effect="light">
               <el-button
-                @click="runNewTab"
+                @click="handleRunNew"
                 :loading="isRunningNew"
                 :icon="DArrowRight"
                 circle
@@ -238,7 +265,7 @@ onUnmounted(() => {
                   />
                   <div class="flex items-center gap-2">
                     <el-button
-                      @click="exportActiveTab"
+                      @click="handleExport"
                       :loading="isExporting"
                       :icon="Download"
                       circle
