@@ -222,7 +222,6 @@ pub(crate) fn process_pure_str_fast(
   for op in operations {
     if let (Some(col), Some(mode)) = (&op.column, &op.mode) {
       context.add_str(
-        &op.id,
         col,
         mode,
         op.comparand.as_deref(),
@@ -231,7 +230,6 @@ pub(crate) fn process_pure_str_fast(
     } else if let Some(mode) = &op.mode {
       if mode == "cat" || mode == "calcconv" {
         context.add_str(
-          &op.id,
           "",
           mode,
           op.comparand.as_deref(),
@@ -246,9 +244,9 @@ pub(crate) fn process_pure_str_fast(
     .iter()
     .filter(|op| op.produces_new_column())
     .map(|op| match op.mode.as_str() {
-      "cat" => format!("cat{}", op.id),
-      "calcconv" => format!("calcconv{}", op.id),
-      mode => format!("{}_{}{}", op.column, mode, op.id),
+      "cat" => format!("concatenated"),
+      "calcconv" => format!("calculated"),
+      mode => format!("{}_{}", op.column, mode),
     })
     .collect();
 

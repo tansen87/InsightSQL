@@ -29,27 +29,27 @@ watch(
         id: nodeId,
         ...newData
       });
-      const label = generateHeaderLabel(newData, nodeId);
+      const label = generateHeaderLabel(newData);
       headerStore.setHeaderForNode(nodeId, label);
     }
   },
   { deep: true, immediate: true }
 );
 
-function generateHeaderLabel(
-  data: { mode: string; column: string | string[] },
-  id: string
-): string {
+function generateHeaderLabel(data: {
+  mode: string;
+  column: string | string[];
+}): string {
   const { mode, column } = data;
 
   if (mode === "cat") {
-    return `cat${id}`;
+    return "concatenated";
   }
   if (mode === "calcconv") {
-    return `calcconv${id}`;
+    return "calculated";
   }
 
-  // others: {colmn}_{mode}{id}
+  // others: {colmn}_{mode}
   const needCol = [
     "copy",
     "left",
@@ -66,7 +66,7 @@ function generateHeaderLabel(
   if (needCol) {
     const colStr = Array.isArray(column) ? column[0] : column;
     if (colStr && colStr.trim()) {
-      return `${colStr}_${mode}${id}`;
+      return `${colStr}_${mode}`;
     }
   }
 
@@ -113,7 +113,7 @@ function deleteBtn() {
             v-for="item in headerStore.headers"
             :key="item.value"
             :label="item.label"
-            :value="item.value"
+            :value="item.label"
           />
         </el-select>
         <el-select v-model="mode" filterable style="margin-bottom: 6px">

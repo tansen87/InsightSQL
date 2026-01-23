@@ -3,7 +3,6 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct Operation {
-  pub id: String,
   pub op: String,
   pub mode: Option<String>,
   pub logic: Option<String>,
@@ -15,7 +14,6 @@ pub struct Operation {
 
 #[derive(Clone)]
 pub struct StrOperation {
-  pub id: String,
   pub column: String,
   pub mode: String,
   pub comparand: Option<String>,
@@ -96,14 +94,12 @@ impl ProcessContext {
 
   pub fn add_str(
     &mut self,
-    id: &str,
     column: &str,
     mode: &str,
     comparand: Option<&str>,
     replacement: Option<&str>,
   ) {
     self.str_ops.push(StrOperation {
-      id: id.to_string(),
       column: column.to_string(),
       mode: mode.to_string(),
       comparand: comparand.map(|s| s.to_string()),

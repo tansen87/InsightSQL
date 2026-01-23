@@ -171,7 +171,6 @@ async function runWorkflow() {
       path: pathStore.path,
       jsonConfig: jsonConfig
     });
-
     isLoading.value = false;
     message(`Flow done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

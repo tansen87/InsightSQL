@@ -126,22 +126,50 @@ export const useHeaders = defineStore("headers", {
   state: () => ({
     headers: [] as Array<{ label: string; value: string }>
   }),
+
+  getters: {
+    usedFieldNames(state) {
+      return new Set(state.headers.map(h => h.label));
+    },
+    getFieldNameByNodeId: state => (nodeId: string) => {
+      const item = state.headers.find(h => h.value === nodeId);
+      return item ? item.label : null;
+    }
+  },
+
   actions: {
-    setHeaderForNode(nodeId: string, label: string) {
-      if (label.trim() === "") {
-        // 如果label无效,从headers中移除
+    setHeaderForNode(nodeId: string, baseLabel: string) {
+      if (!baseLabel?.trim()) {
         this.headers = this.headers.filter(h => h.value !== nodeId);
         return;
       }
 
+      let finalLabel = baseLabel.trim();
+      let counter = 1;
+
+      while (this.usedFieldNames.has(finalLabel)) {
+        const existingItem = this.headers.find(h => h.label === finalLabel);
+        if (existingItem && existingItem.value === nodeId) {
+          break;
+        }
+        finalLabel = `${baseLabel.trim()}_${counter}`;
+        counter++;
+      }
+
+      // 更新或添加
       const existingIndex = this.headers.findIndex(h => h.value === nodeId);
       if (existingIndex >= 0) {
-        this.headers[existingIndex].label = label;
+        this.headers[existingIndex].label = finalLabel;
       } else {
-        this.headers.push({ label, value: nodeId });
+        this.headers.push({ label: finalLabel, value: nodeId });
       }
+    },
+
+    removeHeaderForNode(nodeId: string) {
+      this.headers = this.headers.filter(h => h.value !== nodeId);
     }
   },
+
   persist: true
 });
 
