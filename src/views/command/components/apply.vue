@@ -148,7 +148,7 @@ function addNewColumn() {
 watch(mode, newMode => {
   if (newMode === "cat" || newMode === "calcconv") {
     newColumn.value = true;
-    columnContent.value = "New column always added for DynFmt/CalcConv";
+    columnContent.value = "add column";
   } else {
     columnContent.value = newColumn.value ? "add column" : "no column";
   }

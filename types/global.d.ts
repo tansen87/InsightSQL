@@ -140,10 +140,6 @@ declare global {
       epThemeColor?: string;
     };
     configure: {
-      grey?: boolean;
-      weak?: boolean;
-      hideTabs?: boolean;
-      showLogo?: boolean;
       showModel?: string;
       multiTagsCache?: boolean;
     };
