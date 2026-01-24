@@ -2,11 +2,14 @@ use std::{
   fs::File,
   io::BufWriter,
   path::Path,
-  sync::{Arc, Mutex},
+  sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+  },
   time::{Duration, Instant},
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use pinyin::ToPinyin;
 use tauri::AppHandle;
@@ -59,9 +62,8 @@ where
 
   wtr.write_record(rdr.headers()?)?;
 
-  let rows = Arc::new(Mutex::new(0));
+  let rows = Arc::new(AtomicUsize::new(0));
   let rows_clone = Arc::clone(&rows);
-
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
@@ -70,13 +72,7 @@ where
     loop {
       tokio::select! {
         _ = interval.tick() => {
-          let current_rows = match rows_clone.lock() {
-            Ok(lock) => *lock,
-            Err(err) => {
-              eprintln!("Failed to lock current rows: {err}");
-              0
-            }
-          };
+          let current_rows = rows_clone.load(Ordering::Relaxed);
           if let Err(err) = emitter.emit_update_rows(current_rows).await {
             let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
           }
@@ -129,16 +125,11 @@ where
 
       wtr.write_record(&new_record)?;
 
-      let mut cnt = rows
-        .lock()
-        .map_err(|poison| anyhow!("cnt lock poisoned: {poison}"))?;
-      *cnt += 1;
+      rows.fetch_add(1, Ordering::Relaxed);
       record.clear();
     }
 
-    let final_rows = *rows
-      .lock()
-      .map_err(|poison| anyhow!("final rows lock poisoned: {poison}"))?;
+    let final_rows = rows.load(Ordering::Relaxed);
     let _ = done_tx.send(final_rows);
     Ok::<_, anyhow::Error>(wtr.flush()?)
   });
