@@ -105,6 +105,7 @@ pub async fn split<P: AsRef<Path> + Send + Sync>(
   n: i32,
   by: &str,
   mode: SplitMode,
+  quoting: bool,
 ) -> Result<()> {
   let num = n as usize;
   if n < 1 {
@@ -122,6 +123,7 @@ pub async fn split<P: AsRef<Path> + Send + Sync>(
 
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);

@@ -7,6 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdTranspose, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const [path, mode] = [ref(""), ref("memory")];
 const modeOptions = [
@@ -18,6 +19,7 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdTranspose);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   tableHeader.value = [];
@@ -48,7 +50,8 @@ async function transposeData() {
     isLoading.value = true;
     const rtime: string = await invoke("transpose", {
       path: path.value,
-      mode: mode.value
+      mode: mode.value,
+      quoting: quotingStore.quoting
     });
     message(`Transpose done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

@@ -20,6 +20,7 @@ async fn test_replace() -> anyhow::Result<()> {
     "age".to_string(),
     r"^\d+$".to_string(),
     "XX".to_string(),
+    true
   )
   .await?;
 

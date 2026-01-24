@@ -23,6 +23,7 @@ pub async fn csv_to_csv<E, P>(
   wtr_sep: &str,
   quote: &str,
   quote_style: &str,
+  quoting: bool,
   filename: String,
   progress: &str,
   emitter: E,
@@ -57,6 +58,7 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(rdr_sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let buf_writer = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
@@ -125,7 +127,7 @@ where
   Ok(())
 }
 
-pub async fn encoding_to_utf8<P>(path: P, bom: bool) -> Result<()>
+pub async fn encoding_to_utf8<P>(path: P, bom: bool, quoting: bool) -> Result<()>
 where
   P: AsRef<Path> + Send + Sync,
 {
@@ -168,6 +170,7 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(separator)
+    .quoting(quoting)
     .from_reader(buf_reader);
 
   let output_path = opts.output_path(Some("encoding"), None)?;

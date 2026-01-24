@@ -9,6 +9,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdPinyin, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const [mode, pinyinStyle] = [ref("idx"), ref("upper")];
 const modeOptions = [
@@ -26,6 +27,7 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdPinyin);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -72,7 +74,8 @@ async function chineseToPinyin() {
       path: path.value,
       columns: cols,
       mode: mode.value,
-      pinyinStyle: pinyinStyle.value
+      pinyinStyle: pinyinStyle.value,
+      quoting: quotingStore.quoting
     });
     message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

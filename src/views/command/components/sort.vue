@@ -7,6 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSort, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const mode = ref("Sort");
 const modeOptions = [
@@ -33,6 +34,7 @@ const [isLoading, dialog, numeric, reverse] = [
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSort);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   column.value = "";
@@ -72,17 +74,20 @@ async function sortData() {
         path: path.value,
         column: column.value,
         numeric: numeric.value,
-        reverse: reverse.value
+        reverse: reverse.value,
+        quoting: quotingStore.quoting
       });
     } else if (mode.value == "ExtSort") {
       rtime = await invoke("extsort", {
         path: path.value,
         column: column.value,
-        reverse: reverse.value
+        reverse: reverse.value,
+        quoting: quotingStore.quoting
       });
     } else if (mode.value == "Index") {
       rtime = await invoke("idx", {
-        path: path.value
+        path: path.value,
+        quoting: quotingStore.quoting
       });
     }
     message(`${mode.value} done, elapsed time: ${rtime} s`, {

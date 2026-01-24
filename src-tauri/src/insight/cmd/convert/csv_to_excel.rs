@@ -15,6 +15,7 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   path: P,
   use_polars: bool,
   chunk_size: usize,
+  quoting: bool,
 ) -> Result<()> {
   let dest = path.as_ref().with_extension("xlsx");
   let opts = CsvOptions::new(&path);
@@ -36,6 +37,7 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   } else {
     let rdr = ReaderBuilder::new()
       .delimiter(sep)
+      .quoting(quoting)
       .from_reader(opts.rdr_skip_rows()?);
 
     XlsxWriter::new().write_xlsx(rdr, chunk_size, dest)?;

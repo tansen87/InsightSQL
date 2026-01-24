@@ -143,7 +143,7 @@ pub async fn split_lines(
 }
 
 #[tauri::command]
-pub async fn split(path: String, size: u32, mode: String) -> Result<String, String> {
+pub async fn split(path: String, size: u32, mode: String, quoting: bool) -> Result<String, String> {
   let start_time = Instant::now();
 
   let opts = CsvOptions::new(path.as_str());
@@ -174,7 +174,7 @@ pub async fn split(path: String, size: u32, mode: String) -> Result<String, Stri
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    "index" => match crate::cmd::idx::create_index(path).await {
+    "index" => match crate::cmd::idx::create_index(path, quoting).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

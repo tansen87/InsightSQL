@@ -19,6 +19,7 @@ async fn test_rename() -> anyhow::Result<()> {
     file_path.to_str().unwrap(),
     "first_name,years_old,sex".to_string(),
     "idx",
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;

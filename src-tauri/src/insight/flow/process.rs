@@ -14,21 +14,22 @@ pub async fn process_operations(
   input_path: String,
   operations: &[Operation],
   output_path: PathBuf,
+  quoting: bool,
 ) -> Result<()> {
   if let Some(rename_map) = operation::is_pure_rename(operations) {
-    return operation::process_rename_only(input_path, rename_map, output_path);
+    return operation::process_rename_only(input_path, rename_map, output_path, quoting);
   }
   if let Some(select_cols) = operation::is_pure_select(operations) {
-    return operation::process_select_only(input_path, select_cols, output_path);
+    return operation::process_select_only(input_path, select_cols, output_path, quoting);
   }
   if let Some(filter_op) = operation::is_pure_filter(operations) {
-    return operation::process_filter_only(input_path, filter_op, output_path);
+    return operation::process_filter_only(input_path, filter_op, output_path, quoting);
   }
   if operation::is_pure_str(operations) {
-    return operation::process_pure_str_fast(input_path, operations, output_path);
+    return operation::process_pure_str_fast(input_path, operations, output_path, quoting);
   }
   if operation::is_select_and_filter_only(operations) {
-    return operation::process_select_filter(input_path, operations, output_path);
+    return operation::process_select_filter(input_path, operations, output_path, quoting);
   }
 
   let opts = CsvOptions::new(&input_path);
@@ -36,6 +37,7 @@ pub async fn process_operations(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();

@@ -22,6 +22,7 @@ pub async fn skip_csv<E, F, P>(
   file_name: F,
   skip_rows: usize,
   progress: &str,
+  quoting: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -50,6 +51,7 @@ where
   let mut rdr = ReaderBuilder::new()
     .has_headers(false)
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let output_file = File::create(output_path)?;
@@ -122,6 +124,7 @@ pub async fn skip(
   path: String,
   skip_rows: String,
   progress: String,
+  quoting: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -144,7 +147,8 @@ pub async fn skip(
       fp,
       file_name.to_string(),
       skip_rows,
-      progress.as_str(),
+      &progress,
+      quoting,
       emitter.clone(),
     )
     .await

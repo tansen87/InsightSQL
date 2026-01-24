@@ -28,6 +28,7 @@ pub async fn chinese_to_pinyin<E, P>(
   columns: String,
   mode: &str,
   pinyin_style: &str,
+  quoting: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -46,6 +47,7 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let cols: Vec<&str> = columns.split('|').collect();
@@ -154,19 +156,12 @@ pub async fn pinyin(
   columns: String,
   mode: String,
   pinyin_style: String,
+  quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(
-    path,
-    columns,
-    mode.as_str(),
-    pinyin_style.as_str(),
-    app_handle,
-  )
-  .await
-  {
+  match chinese_to_pinyin(path, columns, &mode, &pinyin_style, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

@@ -15,6 +15,7 @@ import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import { useMarkdown, mdSkip } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const path = ref("");
 const fileSelect = ref([]);
@@ -27,6 +28,7 @@ const [dialog, isLoading] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdSkip);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 listen("update-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
@@ -81,8 +83,9 @@ async function skipLines() {
     isLoading.value = true;
     const result: string = await invoke("skip", {
       path: path.value,
+      skipRows: skipRows.value,
       progress: progress.value,
-      skipRows: skipRows.value
+      quoting: quotingStore.quoting
     });
     message(`Skip done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {

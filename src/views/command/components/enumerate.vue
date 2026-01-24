@@ -9,6 +9,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdEnumer, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const mode = ref("idx");
 const modeOptions = [
@@ -22,6 +23,7 @@ const [tableColumn, tableData] = [ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdEnumer);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -58,7 +60,8 @@ async function enumerate() {
     isLoading.value = true;
     const rtime: string = await invoke("enumer", {
       path: path.value,
-      mode: mode.value
+      mode: mode.value,
+      quoting: quotingStore.quoting
     });
     message(`Enumerate done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

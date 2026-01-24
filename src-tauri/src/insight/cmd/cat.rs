@@ -131,7 +131,7 @@ async fn cat_with_polars(
   Ok(())
 }
 
-pub async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
+pub async fn cat_with_csv(path: String, output_path: String, quoting: bool) -> Result<()> {
   let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
 
   let mut vec_sep = Vec::new();
@@ -145,6 +145,7 @@ pub async fn cat_with_csv(path: String, output_path: String) -> Result<()> {
 
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
+      .quoting(quoting)
       .from_reader(opts.rdr_skip_rows()?);
 
     for field in rdr.byte_headers()? {
@@ -214,11 +215,12 @@ pub async fn concat(
   file_type: String,
   mode: String,
   use_cols: String,
+  quoting: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   match mode.as_str() {
-    "csv" => match cat_with_csv(path, output_path).await {
+    "csv" => match cat_with_csv(path, output_path, quoting).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

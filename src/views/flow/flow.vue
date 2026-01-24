@@ -31,11 +31,12 @@ import {
   useSelect,
   useStr
 } from "@/store/modules/flow";
+import { nanoid } from "nanoid";
 import { useWorkflowStore } from "@/store/modules/workflow";
 import { useWorkflowManager } from "@/utils/workflowManager";
 import { message } from "@/utils/message";
 import { invoke } from "@tauri-apps/api/core";
-import { nanoid } from "nanoid";
+import { useQuoting } from "@/store/modules/options";
 
 const isLoading = ref(false);
 const nodeTypes = ["start", "select", "filter", "str", "rename"];
@@ -53,6 +54,7 @@ const filterStore = useFilter();
 const selectStore = useSelect();
 const strStore = useStr();
 const renameStore = useRename();
+const quotingStore = useQuoting();
 
 const { getNodes, getEdges } = useVueFlow();
 
@@ -169,7 +171,8 @@ async function runWorkflow() {
     const jsonConfig = JSON.stringify(config);
     const rtime: string = await invoke("flow", {
       path: pathStore.path,
-      jsonConfig: jsonConfig
+      jsonConfig: jsonConfig,
+      quoting: quotingStore.quoting
     });
     isLoading.value = false;
     message(`Flow done, elapsed time: ${rtime} s`, { type: "success" });

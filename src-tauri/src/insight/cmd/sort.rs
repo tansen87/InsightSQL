@@ -14,6 +14,7 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   column: String,
   numeric: bool,
   reverse: bool,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
@@ -21,6 +22,7 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
   let headers = rdr.byte_headers()?.clone();
   let sel = Selection::from_headers(&headers, &[column.as_str()][..])?;
@@ -149,10 +151,11 @@ pub async fn sort(
   column: String,
   numeric: bool,
   reverse: bool,
+  quoting: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match sort_csv(path, column, numeric, reverse).await {
+  match sort_csv(path, column, numeric, reverse, quoting).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

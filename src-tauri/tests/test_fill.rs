@@ -21,6 +21,7 @@ async fn test_fill() -> anyhow::Result<()> {
     "gender|age".to_string(),
     "unknown".to_string(),
     "fill",
+    true
   )
   .await?;
 

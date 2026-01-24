@@ -20,6 +20,7 @@ async fn test_pinyin() -> anyhow::Result<()> {
     "name|gender".to_string(),
     "nil",
     "upper",
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;

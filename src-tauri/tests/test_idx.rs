@@ -10,7 +10,7 @@ async fn test_idx() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  insight::cmd::idx::create_index(&file_path).await?;
+  insight::cmd::idx::create_index(&file_path, true).await?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.csv.idx",

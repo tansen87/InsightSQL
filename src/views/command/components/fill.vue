@@ -7,6 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdFill, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const [fillChar, mode] = [ref("0"), ref("fill")];
 const modeOptions = [
@@ -19,6 +20,7 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdFill);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   path.value = "";
@@ -58,7 +60,8 @@ async function fillData() {
       path: path.value,
       columns: cols,
       values: fillChar.value,
-      mode: mode.value
+      mode: mode.value,
+      quoting: quotingStore.quoting
     });
     message(`Fill done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

@@ -59,6 +59,7 @@ pub async fn pad<P: AsRef<Path> + Send + Sync>(
   length: String,
   fill_char: &str,
   mode: &str,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
@@ -67,6 +68,7 @@ pub async fn pad<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 

@@ -193,6 +193,7 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
   sel1: String,
   sel2: String,
   nulls: bool,
+  quoting: bool,
 ) -> Result<IoState<File, Box<dyn Write + 'static>>> {
   let opts1 = CsvOptions::new(&path1);
   let sep1 = opts1.detect_separator()?;
@@ -202,9 +203,11 @@ fn new_io_state<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr1 = ReaderBuilder::new()
     .delimiter(sep1)
+    .quoting(quoting)
     .from_reader(File::open(&path1)?);
   let mut rdr2 = ReaderBuilder::new()
     .delimiter(sep2)
+    .quoting(quoting)
     .from_reader(File::open(&path2)?);
 
   let boxed_writer: Box<dyn Write> = Box::new(File::create(output_path)?);
@@ -314,8 +317,9 @@ pub async fn run_join<P: AsRef<Path> + Send + Sync>(
   sel2: String,
   join_type: &str,
   nulls: bool,
+  quoting: bool,
 ) -> Result<()> {
-  let mut state = new_io_state(path1, path2, sel1, sel2, nulls)?;
+  let mut state = new_io_state(path1, path2, sel1, sel2, nulls, quoting)?;
   match join_type {
     "left" => {
       state.write_headers(true)?;
@@ -374,10 +378,11 @@ pub async fn join(
   sel2: String,
   join_type: String,
   nulls: bool,
+  quoting: bool
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match run_join(path1, path2, sel1, sel2, join_type.as_str(), nulls).await {
+  match run_join(path1, path2, sel1, sel2, &join_type, nulls, quoting).await {
     Ok(()) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

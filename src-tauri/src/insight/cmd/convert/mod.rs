@@ -61,6 +61,7 @@ pub async fn csv2csv(
   wtr_sep: String,
   quote: String,
   quote_style: String,
+  quoting: bool,
   progress: String,
   emitter: AppHandle,
 ) -> Result<String, String> {
@@ -81,6 +82,7 @@ pub async fn csv2csv(
       &wtr_sep,
       &quote,
       &quote_style,
+      quoting,
       filename.to_string(),
       &progress,
       emitter.clone(),
@@ -109,12 +111,12 @@ pub async fn csv2csv(
 }
 
 #[tauri::command]
-pub async fn encoding2utf8(path: String, bom: bool) -> Result<String, String> {
+pub async fn encoding2utf8(path: String, bom: bool, quoting: bool) -> Result<String, String> {
   let start_time = Instant::now();
   let paths: Vec<&str> = path.split('|').collect();
   let p = paths.first().unwrap();
 
-  match csv_to_csv::encoding_to_utf8(p, bom).await {
+  match csv_to_csv::encoding_to_utf8(p, bom, quoting).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -129,6 +131,7 @@ pub async fn csv2xlsx(
   path: String,
   csv_mode: String,
   chunksize: String,
+  quoting: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -146,7 +149,7 @@ pub async fn csv2xlsx(
       .emit_info(filename)
       .await
       .map_err(|e| e.to_string())?;
-    match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize).await {
+    match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize, quoting).await {
       Ok(_) => {
         emitter
           .emit_success(filename)

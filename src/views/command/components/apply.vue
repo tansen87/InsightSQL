@@ -15,6 +15,7 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { CheckboxValueType } from "element-plus";
 import { mdApply, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const [
   isLoading,
@@ -68,6 +69,7 @@ const handleCheckAll = (val: CheckboxValueType) => {
   }
 };
 const { mdShow } = useMarkdown(mdApply);
+const quotingStore = useQuoting();
 
 async function selectFile() {
   columns.value = [];
@@ -122,7 +124,8 @@ async function applyData() {
       comparand: comparand.value,
       replacement: replacement.value,
       formatstr: formatstr.value,
-      newColumn: newColumn.value
+      newColumn: newColumn.value,
+      quoting: quotingStore.quoting
     });
     backendCompleted.value = true;
     backendInfo.value = `Apply done, elapsed time: ${result} s`;

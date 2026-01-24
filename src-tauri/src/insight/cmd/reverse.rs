@@ -5,13 +5,14 @@ use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 
 use crate::io::csv::options::CsvOptions;
 
-pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
+pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P, quoting: bool) -> Result<()> {
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("reverse"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
@@ -47,11 +48,11 @@ pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(path: P) -> Result<()> {
 }
 
 #[tauri::command]
-pub async fn reverse(path: String, mode: String) -> Result<String, String> {
+pub async fn reverse(path: String, mode: String, quoting: bool) -> Result<String, String> {
   let start_time = Instant::now();
 
   match mode.as_str() {
-    "reverse" => match reverse_csv(path).await {
+    "reverse" => match reverse_csv(path, quoting).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -60,7 +61,7 @@ pub async fn reverse(path: String, mode: String) -> Result<String, String> {
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match crate::cmd::idx::create_index(path).await {
+    _ => match crate::cmd::idx::create_index(path, quoting).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

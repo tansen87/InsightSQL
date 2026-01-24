@@ -14,6 +14,7 @@ pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
   sel: String,
   regex_pattern: String,
   replacement: String,
+  quoting: bool,
 ) -> Result<()> {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
   let opts = CsvOptions::new(&path);
@@ -22,6 +23,7 @@ pub async fn regex_replace<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let output_file = File::create(output_path)?;
@@ -62,10 +64,11 @@ pub async fn replace(
   column: String,
   regex_pattern: String,
   replacement: String,
+  quoting: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match regex_replace(path, column, regex_pattern, replacement).await {
+  match regex_replace(path, column, regex_pattern, replacement, quoting).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

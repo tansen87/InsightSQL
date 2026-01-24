@@ -6,6 +6,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdReplace, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
@@ -17,6 +18,7 @@ const [column, path, regexPattern, replacement] = [
 ];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdReplace);
+const quotingStore = useQuoting();
 
 async function selectFile() {
   column.value = "";
@@ -54,7 +56,8 @@ async function replaceData() {
       path: path.value,
       column: column.value,
       regexPattern: regexPattern.value,
-      replacement: replacement.value
+      replacement: replacement.value,
+      quoting: quotingStore.quoting
     });
     message(`Replace done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

@@ -13,6 +13,7 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
   fill_column: String,
   fill_value: String,
   mode: &str,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
@@ -20,6 +21,7 @@ pub async fn fill_null<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let fill_columns: Vec<&str> = fill_column.split('|').collect();
@@ -70,10 +72,11 @@ pub async fn fill(
   columns: String,
   values: String,
   mode: String,
+  quoting: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match fill_null(path, columns, values, mode.as_str()).await {
+  match fill_null(path, columns, values, &mode, quoting).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

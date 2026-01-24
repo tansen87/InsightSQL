@@ -7,6 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { mdSplit, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
+import { useQuoting } from "@/store/modules/options";
 
 const [path, size, mode] = [ref(""), ref(1000000), ref("rows")];
 const modeOptions = [
@@ -19,6 +20,7 @@ const [isLoading, dialog] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSplit);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   path.value = "";
@@ -49,7 +51,8 @@ async function splitData() {
     const rtime: string = await invoke("split", {
       path: path.value,
       size: size.value,
-      mode: mode.value
+      mode: mode.value,
+      quoting: quotingStore.quoting
     });
     message(`Split done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

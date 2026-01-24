@@ -37,7 +37,7 @@ async fn test_left_outer_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "left", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "left", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
@@ -57,7 +57,7 @@ async fn test_right_outer_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "right", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "right", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["idx,name,idx,age", "1,Tom,1,18", "3,Patrick,3,20", ",,4,19"];
@@ -72,7 +72,7 @@ async fn test_full_outer_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "full", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "full", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
@@ -93,7 +93,7 @@ async fn test_cross_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "cross", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "cross", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
@@ -119,7 +119,7 @@ async fn test_inner_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "inner", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "inner", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["idx,name,idx,age", "1,Tom,1,18", "3,Patrick,3,20"];
@@ -134,7 +134,7 @@ async fn test_left_semi_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "left_semi", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "left_semi", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["idx,name", "1,Tom", "3,Patrick"];
@@ -149,7 +149,7 @@ async fn test_left_anti_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "left_anti", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "left_anti", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["idx,name", "2,Jerry"];
@@ -164,7 +164,7 @@ async fn test_right_semi_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "right_semi", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "right_semi", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["idx,age", "1,18", "3,20"];
@@ -179,7 +179,7 @@ async fn test_right_anti_join() -> anyhow::Result<()> {
   let sel1 = "idx".to_string();
   let sel2 = "idx".to_string();
 
-  insight::cmd::join::run_join(path1, path2, sel1, sel2, "right_anti", false).await?;
+  insight::cmd::join::run_join(path1, path2, sel1, sel2, "right_anti", false, true).await?;
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["idx,age", "4,19"];

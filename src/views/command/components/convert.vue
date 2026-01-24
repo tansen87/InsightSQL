@@ -20,6 +20,7 @@ import {
 } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
+import { useQuoting } from "@/store/modules/options";
 
 const [
   activeTab,
@@ -98,6 +99,7 @@ const sheetsData = ref({});
 const fileSelect = ref<ListenEvent[]>([]);
 const { dynamicHeight } = useDynamicHeight(74);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 interface ExcelSheetMap {
   [filename: string]: string[];
@@ -267,12 +269,14 @@ async function convert() {
         wtrSep: wtrSep.value,
         quote: quote.value,
         quoteStyle: quoteStyle.value,
+        quoting: quotingStore.quoting,
         progress: progress.value
       });
     } else if (activeTab.value === "encoding") {
       rtime = await invoke("encoding2utf8", {
         path: path.value,
-        bom: bom.value
+        bom: bom.value,
+        quoting: quotingStore.quoting
       });
     } else if (activeTab.value === "access") {
       rtime = await invoke("access2csv", {
@@ -288,7 +292,8 @@ async function convert() {
       rtime = await invoke("csv2xlsx", {
         path: path.value,
         csvMode: csvMode.value,
-        chunksize: chunksize.value
+        chunksize: chunksize.value,
+        quoting: quotingStore.quoting
       });
     } else if (activeTab.value === "json") {
       rtime = await invoke("json2csv", {

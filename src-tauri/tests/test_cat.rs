@@ -27,6 +27,7 @@ async fn test_cat_csv() -> anyhow::Result<()> {
   insight::cmd::cat::cat_with_csv(
     format!("{p1}|{p2}"),
     output_path.to_string_lossy().to_string(),
+    true
   )
   .await?;
   let binding = std::fs::read_to_string(&output_path)?;

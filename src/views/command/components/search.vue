@@ -9,6 +9,7 @@ import { message } from "@/utils/message";
 import { useDynamicHeight } from "@/utils/utils";
 import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
 import { mdSearch, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const [mode, progress] = [ref("equal"), ref("idx")];
 const pgsOptions = [
@@ -25,6 +26,7 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSearch);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -73,7 +75,8 @@ async function searchData() {
       column: column.value,
       mode: mode.value,
       condition: condition.value,
-      progress: progress.value
+      progress: progress.value,
+      quoting: quotingStore.quoting
     });
     matchRows.value = Number(res[0]);
     isBtnShow.value = true;

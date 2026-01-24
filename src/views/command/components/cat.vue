@@ -8,6 +8,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mdCat, useMarkdown } from "@/utils/markdown";
 import { message, closeAllMessage } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
+import { useQuoting } from "@/store/modules/options";
 
 const mode = ref("polars");
 const modeOptions = [
@@ -25,6 +26,7 @@ const [isLoading, backendCompleted, dialog] = [
 const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdCat);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   columns.value = "";
@@ -103,7 +105,8 @@ async function concatData() {
       outputPath: outputPath,
       fileType: saveFileType,
       mode: mode.value,
-      useCols: useCols
+      useCols: useCols,
+      quoting: quotingStore.quoting
     });
     backendInfo.value = `${mode.value} done, elapsed time: ${rtime} s`;
     backendCompleted.value = true;

@@ -233,6 +233,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   replacement: String,
   formatstr: String,
   new_column_flag: bool,
+  quoting: bool,
 ) -> Result<()> {
   let columns: Vec<&str> = columns.split('|').collect();
   if columns.is_empty() {
@@ -269,6 +270,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let output_file = File::create(output_path)?;
@@ -454,6 +456,7 @@ pub async fn apply(
   replacement: String,
   formatstr: String,
   new_column: bool,
+  quoting: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -466,6 +469,7 @@ pub async fn apply(
     replacement,
     formatstr,
     new_column,
+    quoting,
   )
   .await
   {

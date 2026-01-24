@@ -22,10 +22,7 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
 pub async fn count_check<P: AsRef<Path> + Clone + Send + Sync>(path: P) -> Result<u64> {
   let opts = CsvOptions::new(&path);
 
-  let (c_false, c_true) = tokio::try_join!(
-    count_record(false, &opts),
-    count_record(true, &opts),
-  )?;
+  let (c_false, c_true) = tokio::try_join!(count_record(false, &opts), count_record(true, &opts),)?;
 
   Ok(c_false.abs_diff(c_true))
 }
@@ -52,6 +49,7 @@ async fn single_process(
   file: &str,
   mode: &str,
   start_time: Instant,
+  quoting: bool,
   window: &Window,
 ) -> Result<(), String> {
   let opts = CsvOptions::new(file);
@@ -60,7 +58,7 @@ async fn single_process(
   window.emit("info", &filename).map_err(|e| e.to_string())?;
 
   match mode {
-    "index" => match crate::cmd::idx::create_index(file).await {
+    "index" => match crate::cmd::idx::create_index(file, quoting).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -107,6 +105,7 @@ fn parallel_process(
   file: &str,
   mode: &str,
   start_time: Instant,
+  quoting: bool,
   window: &Window,
 ) -> Result<(), String> {
   let opts = CsvOptions::new(file);
@@ -117,7 +116,7 @@ fn parallel_process(
   match mode {
     "index" => {
       let _ = tauri::async_runtime::block_on(async {
-        match crate::cmd::idx::create_index(file).await {
+        match crate::cmd::idx::create_index(file, quoting).await {
           Ok(_) => {
             let elapsed_time = start_time.elapsed().as_secs_f64();
             if let Err(e) = window
@@ -191,17 +190,22 @@ fn parallel_process(
 }
 
 #[tauri::command]
-pub async fn count(path: String, mode: String, window: Window) -> Result<String, String> {
+pub async fn count(
+  path: String,
+  mode: String,
+  quoting: bool,
+  window: Window,
+) -> Result<String, String> {
   let start_time = Instant::now();
   let paths: Vec<&str> = path.split('|').collect();
 
   let result = if paths.len() > 1 {
     paths
       .par_iter()
-      .try_for_each(|file| parallel_process(file, &mode, start_time, &window))
+      .try_for_each(|file| parallel_process(file, &mode, start_time, quoting, &window))
   } else {
     Ok(if let Some(file) = paths.first() {
-      single_process(file, &mode, start_time, &window).await?;
+      single_process(file, &mode, start_time, quoting, &window).await?;
     })
   };
 

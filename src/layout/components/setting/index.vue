@@ -12,16 +12,17 @@ import panel from "../panel/index.vue";
 import { resetRouter } from "@/router";
 import { removeToken } from "@/utils/auth";
 import { routerArrays } from "@/layout/types";
-import { useNav } from "@/layout/hooks/useNav";
+// import { useNav } from "@/layout/hooks/useNav";
 import { useAppStoreHook } from "@/store/modules/app";
 import { toggleTheme } from "@pureadmin/theme/dist/browser-utils";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
+import { useQuoting } from "@/store/modules/options";
 
 import Logout from "@iconify-icons/ri/logout-circle-r-line";
 
 const router = useRouter();
-const { device, tooltipEffect } = useNav();
+// const { device, tooltipEffect } = useNav();
 const { $storage } = useGlobal<GlobalPropertiesApi>();
 
 const mixRef = ref();
@@ -48,12 +49,6 @@ const settings = reactive({
   multiTagsCache: $storage.configure.multiTagsCache
 });
 
-function storageConfigureChange<T>(key: string, val: T): void {
-  const storageConfigure = $storage.configure;
-  storageConfigure[key] = val;
-  $storage.configure = storageConfigure;
-}
-
 function toggleClass(flag: boolean, clsName: string, target?: HTMLElement) {
   const targetEl = target || document.body;
   let { className } = targetEl;
@@ -61,21 +56,7 @@ function toggleClass(flag: boolean, clsName: string, target?: HTMLElement) {
   targetEl.className = flag ? `${className} ${clsName} ` : className;
 }
 
-/** 灰色模式设置 */
-const greyChange = (value): void => {
-  toggleClass(settings.greyVal, "html-grey", document.querySelector("html"));
-  storageConfigureChange("grey", value);
-};
-
-/** 色弱模式设置 */
-const weekChange = (value): void => {
-  toggleClass(
-    settings.weakVal,
-    "html-weakness",
-    document.querySelector("html")
-  );
-  storageConfigureChange("weak", value);
-};
+const quotingStore = useQuoting();
 
 /** 清空缓存并返回登录页 */
 function onReset() {
@@ -146,8 +127,8 @@ onBeforeMount(() => {
 
 <template>
   <panel>
-    <el-divider>导航栏模式</el-divider>
-    <ul class="pure-theme">
+    <!-- <el-divider>导航栏模式</el-divider> -->
+    <!-- <ul class="pure-theme">
       <el-tooltip
         :effect="tooltipEffect"
         class="item"
@@ -182,30 +163,18 @@ onBeforeMount(() => {
           <div />
         </li>
       </el-tooltip>
-    </ul>
+    </ul> -->
 
-    <el-divider>界面显示</el-divider>
     <ul class="setting">
       <li>
-        <span class="dark:text-white">灰色模式</span>
+        <span class="dark:text-white">quoting</span>
         <el-switch
-          v-model="settings.greyVal"
+          :model-value="quotingStore.quoting"
+          @change="quotingStore.setQuoting"
           inline-prompt
           inactive-color="#a6a6a6"
-          active-text="开"
-          inactive-text="关"
-          @change="greyChange"
-        />
-      </li>
-      <li>
-        <span class="dark:text-white">色弱模式</span>
-        <el-switch
-          v-model="settings.weakVal"
-          inline-prompt
-          inactive-color="#a6a6a6"
-          active-text="开"
-          inactive-text="关"
-          @change="weekChange"
+          active-text="true"
+          inactive-text="false"
         />
       </li>
     </ul>

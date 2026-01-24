@@ -16,7 +16,13 @@ use crate::{
   utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
-pub async fn rename_headers<E, P>(path: P, r_header: String, mode: &str, emitter: E) -> Result<()>
+pub async fn rename_headers<E, P>(
+  path: P,
+  r_header: String,
+  mode: &str,
+  quoting: bool,
+  emitter: E,
+) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
@@ -33,9 +39,11 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
   let new_headers = new_rdr.byte_headers()?;
+
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
@@ -103,11 +111,12 @@ pub async fn rename(
   path: String,
   headers: String,
   mode: String,
+  quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match rename_headers(path, headers, mode.as_str(), app_handle).await {
+  match rename_headers(path, headers, &mode, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

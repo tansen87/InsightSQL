@@ -28,6 +28,7 @@ async fn test_skip() -> anyhow::Result<()> {
     file_name,
     2,
     "nil",
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;

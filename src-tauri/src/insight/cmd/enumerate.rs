@@ -16,7 +16,7 @@ use crate::{
   utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
-pub async fn enumerate_index<E, P>(path: P, mode: &str, emitter: E) -> Result<()>
+pub async fn enumerate_index<E, P>(path: P, mode: &str, quoting: bool, emitter: E) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
@@ -33,6 +33,7 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let output_file = File::create(output_path)?;
@@ -112,10 +113,15 @@ where
 }
 
 #[tauri::command]
-pub async fn enumer(path: String, mode: String, app_handle: AppHandle) -> Result<String, String> {
+pub async fn enumer(
+  path: String,
+  mode: String,
+  quoting: bool,
+  app_handle: AppHandle,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match enumerate_index(path, mode.as_str(), app_handle).await {
+  match enumerate_index(path, &mode, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

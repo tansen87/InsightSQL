@@ -58,11 +58,13 @@ pub(crate) fn process_rename_only(
   input_path: String,
   rename_map: HashMap<String, String>,
   output_path: PathBuf,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
@@ -88,11 +90,13 @@ pub(crate) fn process_select_only(
   input_path: String,
   select_cols: Vec<String>,
   output_path: PathBuf,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
@@ -139,11 +143,13 @@ pub(crate) fn process_filter_only(
   input_path: String,
   filter_op: &Operation,
   output_path: PathBuf,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
@@ -202,11 +208,13 @@ pub(crate) fn process_pure_str_fast(
   input_path: String,
   operations: &[Operation],
   output_path: PathBuf,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
@@ -276,11 +284,13 @@ pub(crate) fn process_select_filter(
   input_path: String,
   operations: &[Operation],
   output_path: PathBuf,
+  quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&input_path);
   let sep = opts.detect_separator()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();

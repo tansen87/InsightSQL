@@ -7,6 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdReverse, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const path = ref("");
 const mode = ref("reverse");
@@ -19,6 +20,7 @@ const [isLoading, dialog] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdReverse);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   tableColumn.value = [];
@@ -47,7 +49,8 @@ async function reverseData() {
     isLoading.value = true;
     const rtime: string = await invoke("reverse", {
       path: path.value,
-      mode: mode.value
+      mode: mode.value,
+      quoting: quotingStore.quoting
     });
     message(`Reverse done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

@@ -7,6 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { mdStr, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
+import { useQuoting } from "@/store/modules/options";
 
 const [column, path] = [ref(""), ref("")];
 const [n, length, by, activeTab] = [ref("4"), ref("5"), ref("-"), ref("left")];
@@ -28,6 +29,7 @@ const modeOptions = [
 ];
 const { dynamicHeight } = useDynamicHeight(98);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 async function selectFile() {
   column.value = "";
@@ -69,7 +71,8 @@ async function StrData() {
         n: n.value,
         length: length.value,
         reverse: reverse.value,
-        mode: activeTab.value
+        mode: activeTab.value,
+        quoting: quotingStore.quoting
       });
     }
     if (["split_n", "split_max"].includes(activeTab.value)) {
@@ -78,7 +81,8 @@ async function StrData() {
         column: column.value,
         n: n.value,
         by: by.value,
-        mode: activeTab.value
+        mode: activeTab.value,
+        quoting: quotingStore.quoting
       });
     }
     if (["pad_left", "pad_right", "pad_both"].includes(activeTab.value)) {
@@ -87,7 +91,8 @@ async function StrData() {
         column: column.value,
         length: length.value,
         fillChar: by.value,
-        mode: activeTab.value
+        mode: activeTab.value,
+        quoting: quotingStore.quoting
       });
     }
     message(`${activeTab.value} done, elapsed time: ${rtime} s`, {

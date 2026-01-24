@@ -16,6 +16,7 @@ import { useDark } from "@pureadmin/utils";
 import { shortFileName, useDynamicHeight, updateEvent } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { useMarkdown, mdCount } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const mode = ref("count");
 const modeOptions = [
@@ -29,6 +30,7 @@ const fileSelect = ref([]);
 const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdCount);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 
 listen("info", (event: Event<string>) => {
   const filename = event.payload;
@@ -85,7 +87,8 @@ async function countData() {
     isLoading.value = true;
     const rtime: string = await invoke("count", {
       path: path.value,
-      mode: mode.value
+      mode: mode.value,
+      quoting: quotingStore.quoting
     });
     message(`${mode.value} done, elapsed time: ${rtime} s`, {
       type: "success"

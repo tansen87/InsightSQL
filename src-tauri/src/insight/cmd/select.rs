@@ -38,6 +38,7 @@ pub async fn select_columns<E, P>(
   sel_cols: String,
   sel_mode: SelectMode,
   pgs_mode: &str,
+  quoting: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -57,6 +58,7 @@ where
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
+    .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
   let headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
@@ -173,13 +175,14 @@ pub async fn select(
   sel_cols: String,
   sel_mode: String,
   pgs_mode: String,
+  quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   let sel_mode: SelectMode = sel_mode.as_str().into();
 
-  match select_columns(path, sel_cols, sel_mode, &pgs_mode, app_handle).await {
+  match select_columns(path, sel_cols, sel_mode, &pgs_mode, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

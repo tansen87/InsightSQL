@@ -10,6 +10,7 @@ import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdSelect, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -32,6 +33,7 @@ const [isLoading, dialog, checkAll, indeterminate] = [
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSelect);
 const { isDark } = useDark();
+const quotingStore = useQuoting();
 const selColumns = ref<CheckboxValueType[]>([]);
 
 watch(selColumns, val => {
@@ -101,7 +103,8 @@ async function selectColumns() {
       path: path.value,
       selCols: selCols,
       selMode: selMode.value,
-      pgsMode: pgsMode.value
+      pgsMode: pgsMode.value,
+      quoting: quotingStore.quoting
     });
     message(`Select done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
