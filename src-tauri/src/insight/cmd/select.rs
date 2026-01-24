@@ -37,7 +37,7 @@ pub async fn select_columns<E, P>(
   path: P,
   sel_cols: String,
   sel_mode: SelectMode,
-  pgs_mode: &str,
+  progress: bool,
   quoting: bool,
   emitter: E,
 ) -> Result<()>
@@ -50,9 +50,9 @@ where
   let output_path = opts.output_path(Some("select"), None)?;
   let col_names: HashSet<&str> = sel_cols.split('|').collect();
 
-  let total_rows = match pgs_mode {
-    "idx" => opts.idx_count_rows().await?,
-    _ => 0,
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
 
@@ -174,7 +174,7 @@ pub async fn select(
   path: String,
   sel_cols: String,
   sel_mode: String,
-  pgs_mode: String,
+  progress: bool,
   quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
@@ -182,7 +182,7 @@ pub async fn select(
 
   let sel_mode: SelectMode = sel_mode.as_str().into();
 
-  match select_columns(path, sel_cols, sel_mode, &pgs_mode, quoting, app_handle).await {
+  match select_columns(path, sel_cols, sel_mode, progress, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

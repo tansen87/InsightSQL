@@ -20,22 +20,12 @@ import {
 } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
-const [
-  activeTab,
-  chunksize,
-  csvMode,
-  progress,
-  wtrSep,
-  skipRows,
-  quote,
-  quoteStyle
-] = [
+const [activeTab, chunksize, csvMode, wtrSep, skipRows, quote, quoteStyle] = [
   ref("excel"),
   ref("700000"),
   ref("csv"),
-  ref("nil"),
   ref("|"),
   ref("0"),
   ref('"'),
@@ -73,10 +63,6 @@ const quoteOptions = [
   { label: "'", value: "'" },
   { label: '"', value: '"' }
 ];
-const pgsOptions = [
-  { label: "Nil", value: "nil" },
-  { label: "Idx", value: "idx" }
-];
 const csvModeOptions = [
   { label: "Csv", value: "csv" },
   { label: "Polars", value: "polars" }
@@ -100,6 +86,7 @@ const fileSelect = ref<ListenEvent[]>([]);
 const { dynamicHeight } = useDynamicHeight(74);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
 
 interface ExcelSheetMap {
   [filename: string]: string[];
@@ -270,7 +257,7 @@ async function convert() {
         quote: quote.value,
         quoteStyle: quoteStyle.value,
         quoting: quotingStore.quoting,
-        progress: progress.value
+        progress: progressStore.progress
       });
     } else if (activeTab.value === "encoding") {
       rtime = await invoke("encoding2utf8", {
@@ -439,28 +426,6 @@ async function convert() {
                   'active-dark': isDark && quote === item.value
                 }"
                 @click="quote = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
-
-          <el-tooltip
-            v-if="activeTab === 'fmt'"
-            content="if Nil, no progress bar"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle mt-2 w-[220px]">
-              <span
-                v-for="item in pgsOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: progress === item.value,
-                  'active-dark': isDark && progress === item.value
-                }"
-                @click="progress = item.value"
               >
                 {{ item.label }}
               </span>

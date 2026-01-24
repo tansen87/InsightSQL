@@ -17,7 +17,7 @@ async fn test_enumerate() -> anyhow::Result<()> {
 
   insight::cmd::enumerate::enumerate_index(
     file_path.to_str().unwrap(),
-    "nil",
+    false,
     true,
     insight::utils::MockEmitter::default(),
   )

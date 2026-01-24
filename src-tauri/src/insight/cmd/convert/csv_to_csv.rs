@@ -25,7 +25,7 @@ pub async fn csv_to_csv<E, P>(
   quote_style: &str,
   quoting: bool,
   filename: String,
-  progress: &str,
+  progress: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -49,8 +49,8 @@ where
   };
 
   let total_rows = match progress {
-    "idx" => opts.idx_count_rows().await?,
-    _ => 0,
+    true => opts.idx_count_rows().await?,
+    false => 0,
   };
   emitter
     .emit_total_msg(&format!("{filename}|{total_rows}"))

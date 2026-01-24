@@ -10,18 +10,14 @@ import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdSelect, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
-const [selMode, pgsMode] = [ref("include"), ref("idx")];
+const selMode = ref("include");
 const selModeOptions = [
   { label: "Include", value: "include" },
   { label: "Exclude", value: "exclude" }
-];
-const pgsModeOptions = [
-  { label: "Nil", value: "nil" },
-  { label: "Idx", value: "idx" }
 ];
 const [originalColumns, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, dialog, checkAll, indeterminate] = [
@@ -34,6 +30,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSelect);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
 const selColumns = ref<CheckboxValueType[]>([]);
 
 watch(selColumns, val => {
@@ -103,7 +100,7 @@ async function selectColumns() {
       path: path.value,
       selCols: selCols,
       selMode: selMode.value,
-      pgsMode: pgsMode.value,
+      progress: progressStore.progress,
       quoting: quotingStore.quoting
     });
     message(`Select done, elapsed time: ${rtime} s`, { type: "success" });
@@ -123,43 +120,20 @@ async function selectColumns() {
             Open File
           </el-button>
 
-          <el-tooltip content="Select mode" effect="light" placement="right">
-            <div class="mode-toggle w-[200px]">
-              <span
-                v-for="item in selModeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: selMode === item.value,
-                  'active-dark': isDark && selMode === item.value
-                }"
-                @click="selMode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
-
-          <el-tooltip
-            content="if Nil, no progress bar"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle mt-2 w-[200px]">
-              <span
-                v-for="item in pgsModeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: pgsMode === item.value,
-                  'active-dark': isDark && pgsMode === item.value
-                }"
-                @click="pgsMode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
+          <div class="mode-toggle w-[200px]">
+            <span
+              v-for="item in selModeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: selMode === item.value,
+                'active-dark': isDark && selMode === item.value
+              }"
+              @click="selMode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
           <el-select
             v-model="selColumns"

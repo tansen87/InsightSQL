@@ -4,26 +4,20 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
 import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
-import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { mdRename, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
-const mode = ref("idx");
-const modeOptions = [
-  { label: "Nil", value: "nil" },
-  { label: "Idx", value: "idx" }
-];
 const tableData = ref([]);
 const [search, path] = [ref(""), ref("")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
 const [dialog, isLoading] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdRename);
-const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -78,7 +72,7 @@ async function renameData() {
     const rtime: string = await invoke("rename", {
       path: path.value,
       headers: headersString,
-      mode: mode.value,
+      progress: progressStore.progress,
       quoting: quotingStore.quoting
     });
     message(`Rename done, elapsed time: ${rtime} s`, { type: "success" });
@@ -101,27 +95,6 @@ async function headerEdit(row: any) {
           <el-button @click="selectFile()" :icon="FolderOpened" text round>
             Open File
           </el-button>
-
-          <el-tooltip
-            content="if Nil, no progress bar"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle w-40">
-              <span
-                v-for="item in modeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: mode === item.value,
-                  'active-dark': isDark && mode === item.value
-                }"
-                @click="mode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
 
           <div class="flex flex-col mt-auto">
             <el-progress

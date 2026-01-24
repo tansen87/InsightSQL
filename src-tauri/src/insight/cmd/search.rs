@@ -890,7 +890,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   column: String,
   conditions: String,
   mode: &str,
-  progress: &str,
+  progress: bool,
   quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String> {
@@ -898,8 +898,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   let sep = opts.detect_separator()?;
 
   let total_rows = match progress {
-    "idx" => opts.idx_count_rows().await?,
-    _ => 0,
+    true => opts.idx_count_rows().await?,
+    false => 0,
   };
   app_handle.emit("total-rows", total_rows)?;
 
@@ -1128,14 +1128,14 @@ pub async fn search(
   column: String,
   mode: String,
   condition: String,
-  progress: String,
+  progress: bool,
   quoting: bool,
   app_handle: AppHandle,
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
   match perform_search(
-    path, column, condition, &mode, &progress, quoting, app_handle,
+    path, column, condition, &mode, progress, quoting, app_handle,
   )
   .await
   {

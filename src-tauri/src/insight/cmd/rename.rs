@@ -19,7 +19,7 @@ use crate::{
 pub async fn rename_headers<E, P>(
   path: P,
   r_header: String,
-  mode: &str,
+  progress: bool,
   quoting: bool,
   emitter: E,
 ) -> Result<()>
@@ -31,9 +31,9 @@ where
   let sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("rename"), None)?;
 
-  let total_rows = match mode {
-    "idx" => opts.idx_count_rows().await?,
-    _ => 0,
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
 
@@ -110,13 +110,13 @@ where
 pub async fn rename(
   path: String,
   headers: String,
-  mode: String,
+  progress: bool,
   quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match rename_headers(path, headers, &mode, quoting, app_handle).await {
+  match rename_headers(path, headers, progress, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

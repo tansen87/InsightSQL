@@ -14,3 +14,15 @@ export const useQuoting = defineStore("quoting", {
   },
   persist: true
 });
+
+export const useProgress = defineStore("progress", {
+  state: () => ({
+    progress: true
+  }),
+  actions: {
+    setProgress(value) {
+      this.progress = !!value;
+    }
+  },
+  persist: true
+});

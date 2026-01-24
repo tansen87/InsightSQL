@@ -19,8 +19,8 @@ async fn test_select() -> anyhow::Result<()> {
   insight::cmd::select::select_columns(
     file_path.to_str().unwrap(),
     cols,
-    "nil".into(),
     "include".into(),
+    false,
     true,
     insight::utils::MockEmitter::default(),
   )

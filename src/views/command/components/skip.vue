@@ -11,24 +11,19 @@ import {
   SwitchButton
 } from "@element-plus/icons-vue";
 import { useDynamicHeight, updateEvent } from "@/utils/utils";
-import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import { useMarkdown, mdSkip } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
 const path = ref("");
 const fileSelect = ref([]);
-const [skipRows, progress] = [ref("1"), ref("nil")];
-const pgsOptions = [
-  { label: "Nil", value: "nil" },
-  { label: "Idx", value: "idx" }
-];
+const skipRows = ref("1");
 const [dialog, isLoading] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdSkip);
-const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
 
 listen("update-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
@@ -84,7 +79,7 @@ async function skipLines() {
     const result: string = await invoke("skip", {
       path: path.value,
       skipRows: skipRows.value,
-      progress: progress.value,
+      progress: progressStore.progress,
       quoting: quotingStore.quoting
     });
     message(`Skip done, elapsed time: ${result} s`, { type: "success" });
@@ -103,27 +98,6 @@ async function skipLines() {
           <el-button @click="selectFile()" :icon="FolderOpened" text round>
             Open File(s)
           </el-button>
-
-          <el-tooltip
-            content="if Nil, no progress bar"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle w-40">
-              <span
-                v-for="item in pgsOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: progress === item.value,
-                  'active-dark': isDark && progress === item.value
-                }"
-                @click="progress = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
 
           <el-tooltip content="skip rows" effect="light" placement="right">
             <el-input

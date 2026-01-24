@@ -26,7 +26,7 @@ enum PinyinStyle {
 pub async fn chinese_to_pinyin<E, P>(
   path: P,
   columns: String,
-  mode: &str,
+  progress: bool,
   pinyin_style: &str,
   quoting: bool,
   emitter: E,
@@ -39,9 +39,9 @@ where
   let sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("pinyin"), None)?;
 
-  let total_rows = match mode {
-    "idx" => opts.idx_count_rows().await?,
-    _ => 0,
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
 
@@ -154,14 +154,14 @@ where
 pub async fn pinyin(
   path: String,
   columns: String,
-  mode: String,
+  progress: bool,
   pinyin_style: String,
   quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(path, columns, &mode, &pinyin_style, quoting, app_handle).await {
+  match chinese_to_pinyin(path, columns, progress, &pinyin_style, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

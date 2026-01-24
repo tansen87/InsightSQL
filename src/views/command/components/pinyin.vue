@@ -9,13 +9,9 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdPinyin, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
-const [mode, pinyinStyle] = [ref("idx"), ref("upper")];
-const modeOptions = [
-  { label: "Nil", value: "nil" },
-  { label: "Idx", value: "idx" }
-];
+const pinyinStyle = ref("upper");
 const pyOptions = [
   { label: "Upper", value: "upper" },
   { label: "Lower", value: "lower" }
@@ -28,6 +24,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdPinyin);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -73,7 +70,7 @@ async function chineseToPinyin() {
     const rtime: string = await invoke("pinyin", {
       path: path.value,
       columns: cols,
-      mode: mode.value,
+      progress: progressStore.progress,
       pinyinStyle: pinyinStyle.value,
       quoting: quotingStore.quoting
     });
@@ -93,27 +90,6 @@ async function chineseToPinyin() {
           <el-button @click="selectFile()" :icon="FolderOpened" text round>
             Open File
           </el-button>
-
-          <el-tooltip
-            content="if Nil, no progress bar"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle w-40">
-              <span
-                v-for="item in modeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: mode === item.value,
-                  'active-dark': isDark && mode === item.value
-                }"
-                @click="mode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
 
           <el-tooltip content="pinyin style" effect="light" placement="right">
             <div class="mode-toggle mt-2 w-40">

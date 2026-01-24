@@ -18,7 +18,7 @@ async fn test_rename() -> anyhow::Result<()> {
   insight::cmd::rename::rename_headers(
     file_path.to_str().unwrap(),
     "first_name,years_old,sex".to_string(),
-    "idx",
+    false,
     true,
     insight::utils::MockEmitter::default(),
   )

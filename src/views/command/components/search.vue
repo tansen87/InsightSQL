@@ -4,18 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Event } from "@tauri-apps/api/event";
 import { Files, FolderOpened, SwitchButton } from "@element-plus/icons-vue";
-import { useDark } from "@pureadmin/utils";
 import { message } from "@/utils/message";
 import { useDynamicHeight } from "@/utils/utils";
 import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
 import { mdSearch, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
-const [mode, progress] = [ref("equal"), ref("idx")];
-const pgsOptions = [
-  { label: "Nil", value: "nil" },
-  { label: "Idx", value: "idx" }
-];
+const mode = ref("equal");
 const placeholderText = ref(
   "Search conditions, Separate by |.\nExample: tom|jack|jerry"
 );
@@ -25,8 +20,8 @@ const [dialog, isLoading, isBtnShow] = [ref(false), ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSearch);
-const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -75,7 +70,7 @@ async function searchData() {
       column: column.value,
       mode: mode.value,
       condition: condition.value,
-      progress: progress.value,
+      progress: progressStore.progress,
       quoting: quotingStore.quoting
     });
     matchRows.value = Number(res[0]);
@@ -98,27 +93,6 @@ async function searchData() {
           <el-button @click="selectFile()" :icon="FolderOpened" text round>
             Open File
           </el-button>
-
-          <el-tooltip
-            content="if Nil, no progress bar"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle w-60">
-              <span
-                v-for="item in pgsOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: progress === item.value,
-                  'active-dark': isDark && progress === item.value
-                }"
-                @click="progress = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
 
           <el-select
             v-model="column"

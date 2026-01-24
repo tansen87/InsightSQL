@@ -16,7 +16,7 @@ use crate::{
   utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
-pub async fn enumerate_index<E, P>(path: P, mode: &str, quoting: bool, emitter: E) -> Result<()>
+pub async fn enumerate_index<E, P>(path: P, progress: bool, quoting: bool, emitter: E) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
@@ -25,9 +25,9 @@ where
   let sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("enumer"), None)?;
 
-  let total_rows = match mode {
-    "idx" => opts.idx_count_rows().await?,
-    _ => 0,
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
 
@@ -115,13 +115,13 @@ where
 #[tauri::command]
 pub async fn enumer(
   path: String,
-  mode: String,
+  progress: bool,
   quoting: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match enumerate_index(path, &mode, quoting, app_handle).await {
+  match enumerate_index(path, progress, quoting, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

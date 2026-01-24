@@ -18,7 +18,7 @@ async fn test_pinyin() -> anyhow::Result<()> {
   insight::cmd::pinyin::chinese_to_pinyin(
     file_path.to_str().unwrap(),
     "name|gender".to_string(),
-    "nil",
+    false,
     "upper",
     true,
     insight::utils::MockEmitter::default(),

@@ -21,7 +21,7 @@ pub async fn skip_csv<E, F, P>(
   path: P,
   file_name: F,
   skip_rows: usize,
-  progress: &str,
+  progress: bool,
   quoting: bool,
   emitter: E,
 ) -> Result<()>
@@ -40,9 +40,9 @@ where
   let output_path = opts.output_path(Some("skip"), None)?;
 
   let total_rows = match progress {
-    "idx" => opts.idx_count_rows().await?.saturating_sub(skip_rows) + 1,
-    "std" => opts.std_count_rows()?.saturating_sub(skip_rows) + 1,
-    _ => 0,
+    true => opts.idx_count_rows().await?.saturating_sub(skip_rows) + 1,
+    // "std" => opts.std_count_rows()?.saturating_sub(skip_rows) + 1,
+    false => 0,
   };
   emitter
     .emit_total_msg(&format!("{file_name}|{total_rows}"))
@@ -123,7 +123,7 @@ where
 pub async fn skip(
   path: String,
   skip_rows: String,
-  progress: String,
+  progress: bool,
   quoting: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
@@ -147,7 +147,7 @@ pub async fn skip(
       fp,
       file_name.to_string(),
       skip_rows,
-      &progress,
+      progress,
       quoting,
       emitter.clone(),
     )
