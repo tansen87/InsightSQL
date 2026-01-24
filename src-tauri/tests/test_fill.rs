@@ -20,8 +20,10 @@ async fn test_fill() -> anyhow::Result<()> {
     file_path.to_str().unwrap(),
     "gender|age".to_string(),
     "unknown".to_string(),
-    "fill",
-    true
+    "fill".to_string(),
+    true,
+    false,
+    insight::utils::MockEmitter::default(),
   )
   .await?;
 
