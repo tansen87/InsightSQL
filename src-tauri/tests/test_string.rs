@@ -44,7 +44,16 @@ fn create_temp_csv() -> anyhow::Result<(
 async fn test_slice_left() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  insight::cmd::string::slice::slice_nchar(rdr, wtr, "name", 1, false, "left").await?;
+  insight::cmd::string::slice::slice_nchar(
+    rdr,
+    wtr,
+    "name",
+    1,
+    false,
+    "left".to_string(),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?;
 
   let context = std::fs::read_to_string(output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -63,7 +72,16 @@ async fn test_slice_left() -> anyhow::Result<()> {
 async fn test_slice_right() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  insight::cmd::string::slice::slice_nchar(rdr, wtr, "name", 1, false, "right").await?;
+  insight::cmd::string::slice::slice_nchar(
+    rdr,
+    wtr,
+    "name",
+    1,
+    false,
+    "right".to_string(),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -82,7 +100,15 @@ async fn test_slice_right() -> anyhow::Result<()> {
 async fn test_split_n() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  insight::cmd::string::split::split_n(rdr, wtr, "name", 2, "-").await?;
+  insight::cmd::string::split::split_n(
+    rdr,
+    wtr,
+    "name",
+    2,
+    "-".to_string(),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
@@ -101,7 +127,15 @@ async fn test_split_n() -> anyhow::Result<()> {
 async fn test_split_max() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  insight::cmd::string::split::split_max(rdr, wtr, "name", 2, "-").await?;
+  insight::cmd::string::split::split_max(
+    rdr,
+    wtr,
+    "name".to_string(),
+    2,
+    "-".to_string(),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
@@ -8,11 +10,13 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { mdStr, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
 import { useQuoting } from "@/store/modules/options";
+import { useProgress } from "@/store/modules/options";
 
 const [column, path] = [ref(""), ref("")];
 const [n, length, by, activeTab] = [ref("4"), ref("5"), ref("-"), ref("left")];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const [isLoading, dialog, reverse] = [ref(false), ref(false), ref(false)];
+const [currentRows, totalRows] = [ref(0), ref(0)];
 const reverseOptions = [
   { label: "True", value: true },
   { label: "False", value: false }
@@ -30,6 +34,14 @@ const modeOptions = [
 const { dynamicHeight } = useDynamicHeight(98);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const progressStore = useProgress();
+
+listen("update-rows", (event: Event<number>) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: Event<number>) => {
+  totalRows.value = event.payload;
+});
 
 async function selectFile() {
   column.value = "";
@@ -72,7 +84,8 @@ async function StrData() {
         length: length.value,
         reverse: reverse.value,
         mode: activeTab.value,
-        quoting: quotingStore.quoting
+        quoting: quotingStore.quoting,
+        progress: progressStore.progress
       });
     }
     if (["split_n", "split_max"].includes(activeTab.value)) {
@@ -82,7 +95,8 @@ async function StrData() {
         n: n.value,
         by: by.value,
         mode: activeTab.value,
-        quoting: quotingStore.quoting
+        quoting: quotingStore.quoting,
+        progress: progressStore.progress
       });
     }
     if (["pad_left", "pad_right", "pad_both"].includes(activeTab.value)) {
@@ -92,7 +106,8 @@ async function StrData() {
         length: length.value,
         fillChar: by.value,
         mode: activeTab.value,
-        quoting: quotingStore.quoting
+        quoting: quotingStore.quoting,
+        progress: progressStore.progress
       });
     }
     message(`${activeTab.value} done, elapsed time: ${rtime} s`, {
@@ -230,9 +245,16 @@ const { mdShow } = useMarkdown(mdStr);
             </el-tooltip>
           </template>
 
-          <el-link @click="dialog = true" class="mt-auto">
-            <span class="link-text">String</span>
-          </el-link>
+          <div class="flex flex-col mt-auto">
+            <el-progress
+              v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+              :percentage="Math.round((currentRows / totalRows) * 100)"
+              class="mb-2 ml-2"
+            />
+            <el-link @click="dialog = true" class="mt-auto">
+              <span class="link-text">String</span>
+            </el-link>
+          </div>
         </div>
       </el-splitter-panel>
 
@@ -261,9 +283,7 @@ const { mdShow } = useMarkdown(mdStr);
         </el-table>
 
         <el-text>
-          <el-icon class="ml-2">
-            <Files />
-          </el-icon>
+          <el-icon class="ml-2"><Files /></el-icon>
           {{ path }}
         </el-text>
       </el-splitter-panel>

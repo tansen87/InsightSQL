@@ -2,12 +2,21 @@ use std::{
   fs::File,
   io::{BufReader, BufWriter},
   path::Path,
+  sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+  },
+  time::Duration,
 };
 
 use anyhow::{Result, anyhow};
 use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
+use tokio::sync::oneshot;
 
-use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::{
+  io::csv::{options::CsvOptions, selection::Selection},
+  utils::{EventEmitter, RDR_BUFFER_SIZE},
+};
 
 #[derive(Debug)]
 pub enum SliceMode {
@@ -37,14 +46,18 @@ impl SliceMode {
   }
 }
 
-pub async fn slice_nchar(
+pub async fn slice_nchar<E>(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
   column: &str,
   n: usize,
   reverse: bool,
-  mode: &str,
-) -> Result<()> {
+  mode: String,
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+{
   let headers = rdr.headers()?.clone();
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
@@ -55,38 +68,76 @@ pub async fn slice_nchar(
 
   wtr.write_record(&new_headers)?;
 
-  for result in rdr.records() {
-    let record = result?;
+  let rows = Arc::new(AtomicUsize::new(0));
+  let rows_clone = Arc::clone(&rows);
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-    if let Some(value) = record.get(sel.first_indices()?) {
-      let slice_n = {
-        let chars: Vec<char> = value.chars().collect();
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = rows_clone.load(Ordering::Relaxed);
+          if let Err(err) = emitter.emit_update_rows(current_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = emitter.emit_update_rows(final_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => { break; }
+      }
+    }
+  });
 
-        let slice = if mode == "left" {
-          &chars[..n.min(chars.len())]
-        } else {
-          // mode == "right"
-          let len = chars.len();
-          &chars[len.saturating_sub(n)..]
+  let counter_task = tokio::task::spawn_blocking(move || {
+    for result in rdr.records() {
+      let record = result?;
+
+      if let Some(value) = record.get(sel.first_indices()?) {
+        let slice_n = {
+          let chars: Vec<char> = value.chars().collect();
+
+          let slice = if mode == "left" {
+            &chars[..n.min(chars.len())]
+          } else {
+            // mode == "right"
+            let len = chars.len();
+            &chars[len.saturating_sub(n)..]
+          };
+
+          let mut result: String = slice.iter().collect();
+
+          if reverse {
+            result = result.chars().rev().collect();
+          }
+
+          result
         };
 
-        let mut result: String = slice.iter().collect();
+        let mut new_record = record.clone();
+        new_record.push_field(&slice_n);
 
-        if reverse {
-          result = result.chars().rev().collect();
-        }
+        wtr.write_record(&new_record)?;
+      }
 
-        result
-      };
-
-      let mut new_record = record.clone();
-      new_record.push_field(&slice_n);
-
-      wtr.write_record(&new_record)?;
+      rows.fetch_add(1, Ordering::Relaxed);
     }
-  }
 
-  Ok(wtr.flush()?)
+    let final_rows = rows.load(Ordering::Relaxed);
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
+
+  Ok(())
 }
 
 pub async fn slice(
@@ -162,7 +213,7 @@ pub async fn slice(
   Ok(wtr.flush()?)
 }
 
-pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
+pub async fn perform_slice<E, P>(
   path: P,
   column: &str,
   n: i32,
@@ -170,7 +221,13 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   reverse: bool,
   mode: SliceMode,
   quoting: bool,
-) -> Result<()> {
+  progress: bool,
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let num = n as usize;
   if n < 1 && mode.to_str() != "slice" {
     return Err(anyhow!(
@@ -185,20 +242,44 @@ pub async fn perform_slice<P: AsRef<Path> + Send + Sync>(
   let sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("slice"), None)?;
 
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
+  };
+  emitter.emit_total_rows(total_rows).await?;
+
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
     .from_reader(opts.rdr_skip_rows()?);
 
-  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
+  let buf_writer = BufWriter::with_capacity(RDR_BUFFER_SIZE, File::create(output_path)?);
   let wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
   match mode {
     SliceMode::Left => {
-      slice_nchar(rdr, wtr, column, num, reverse, SliceMode::Left.to_str()).await?
+      slice_nchar(
+        rdr,
+        wtr,
+        column,
+        num,
+        reverse,
+        SliceMode::Left.to_str().to_string(),
+        emitter,
+      )
+      .await?
     }
     SliceMode::Right => {
-      slice_nchar(rdr, wtr, column, num, reverse, SliceMode::Right.to_str()).await?
+      slice_nchar(
+        rdr,
+        wtr,
+        column,
+        num,
+        reverse,
+        SliceMode::Right.to_str().to_string(),
+        emitter,
+      )
+      .await?
     }
     SliceMode::Slice => slice(rdr, wtr, column, n, length, reverse).await?,
   }

@@ -1,9 +1,22 @@
-use std::{fs::File, io::BufWriter, path::Path};
+use std::{
+  fs::File,
+  io::BufWriter,
+  path::Path,
+  sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+  },
+  time::Duration,
+};
 
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
+use tokio::sync::oneshot;
 
-use crate::io::csv::{options::CsvOptions, selection::Selection};
+use crate::{
+  io::csv::{options::CsvOptions, selection::Selection},
+  utils::EventEmitter,
+};
 
 #[derive(Debug)]
 pub enum PadMode {
@@ -53,18 +66,30 @@ fn pad_string(cell: &str, length: usize, fill_char: &str, mode: PadMode) -> Resu
   }
 }
 
-pub async fn pad<P: AsRef<Path> + Send + Sync>(
+pub async fn pad<E, P>(
   path: P,
   column: &str,
   length: String,
-  fill_char: &str,
-  mode: &str,
+  fill_char: String,
+  mode: String,
   quoting: bool,
-) -> Result<()> {
+  progress: bool,
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  P: AsRef<Path> + Send + Sync,
+{
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
   let output_path = opts.output_path(Some("pad"), None)?;
   let length = length.parse::<usize>()?;
+
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
+  };
+  emitter.emit_total_rows(total_rows).await?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
@@ -76,15 +101,53 @@ pub async fn pad<P: AsRef<Path> + Send + Sync>(
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
   wtr.write_record(rdr.headers()?)?;
 
-  for result in rdr.records() {
-    let record = result?;
-    let mut row_fields: Vec<String> = record.iter().map(|s| s.to_string()).collect();
-    let idx = sel.first_indices()?;
-    let cell = &row_fields[idx];
-    let pad_cell = pad_string(cell, length, fill_char, mode.into())?;
-    row_fields[idx] = pad_cell;
-    wtr.write_record(&row_fields)?;
-  }
+  let rows = Arc::new(AtomicUsize::new(0));
+  let rows_clone = Arc::clone(&rows);
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-  Ok(wtr.flush()?)
+  let timer_task = tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    loop {
+      tokio::select! {
+        _ = interval.tick() => {
+          let current_rows = rows_clone.load(Ordering::Relaxed);
+          if let Err(err) = emitter.emit_update_rows(current_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+          }
+        },
+        Ok(final_rows) = (&mut done_rx) => {
+          if let Err(err) = emitter.emit_update_rows(final_rows).await {
+            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+          }
+          break;
+        },
+        _ = (&mut stop_rx) => { break; }
+      }
+    }
+  });
+
+  let counter_task = tokio::task::spawn_blocking(move || {
+    for result in rdr.records() {
+      let record = result?;
+      let mut row_fields: Vec<String> = record.iter().map(|s| s.to_string()).collect();
+      let idx = sel.first_indices()?;
+      let cell = &row_fields[idx];
+      let pad_cell = pad_string(cell, length, &fill_char, mode.as_str().into())?;
+      row_fields[idx] = pad_cell;
+      wtr.write_record(&row_fields)?;
+
+      rows.fetch_add(1, Ordering::Relaxed);
+    }
+
+    let final_rows = rows.load(Ordering::Relaxed);
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  timer_task.await?;
+
+  Ok(())
 }

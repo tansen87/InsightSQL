@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use tauri::AppHandle;
+
 pub mod pad;
 pub mod slice;
 pub mod split;
@@ -13,6 +15,8 @@ pub async fn str_slice(
   reverse: bool,
   mode: String,
   quoting: bool,
+  progress: bool,
+  app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -26,6 +30,8 @@ pub async fn str_slice(
     reverse,
     slice_mode,
     quoting,
+    progress,
+    app_handle,
   )
   .await
   {
@@ -46,6 +52,8 @@ pub async fn str_split(
   by: String,
   mode: String,
   quoting: bool,
+  progress: bool,
+  app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -53,11 +61,13 @@ pub async fn str_split(
 
   match split::split(
     path,
-    column.as_str(),
+    column,
     n.parse::<i32>().map_err(|e| e.to_string())?,
-    by.as_str(),
+    by,
     split_mode,
     quoting,
+    progress,
+    app_handle,
   )
   .await
   {
@@ -78,10 +88,16 @@ pub async fn str_pad(
   fill_char: String,
   mode: String,
   quoting: bool,
+  progress: bool,
+  app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match pad::pad(path, &column, length, &fill_char, &mode, quoting).await {
+  match pad::pad(
+    path, &column, length, fill_char, mode, quoting, progress, app_handle,
+  )
+  .await
+  {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
