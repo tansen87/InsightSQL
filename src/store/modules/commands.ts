@@ -72,6 +72,12 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/skip"
       },
       {
+        title: "Slice",
+        icon: "ri:timeline-view",
+        description: "Returns rows of a CSV file in the specified range",
+        route: "/command/components/slice"
+      },
+      {
         title: "Enumerate",
         icon: "ri:sort-number-asc",
         description: "Add a new column enumerating the lines of a CSV file",

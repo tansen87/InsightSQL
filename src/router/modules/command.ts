@@ -115,6 +115,15 @@ export default {
       }
     },
     {
+      path: "/command/components/slice",
+      name: "slice",
+      component: () => import("@/views/command/components/slice.vue"),
+      meta: {
+        title: "slice",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/enumerate",
       name: "enumerate",
       component: () => import("@/views/command/components/enumerate.vue"),

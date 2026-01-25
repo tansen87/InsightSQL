@@ -5,7 +5,7 @@ import { emitter } from "@/utils/mitt";
 import { toggleTheme } from "@pureadmin/theme/dist/browser-utils";
 import { useAppStoreHook } from "@/store/modules/app";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useFlexible, useProgress, useQuoting } from "@/store/modules/options";
 
 const { $storage } = useGlobal<GlobalPropertiesApi>();
 const { layoutTheme, dataThemeChange } = useDataThemeChange();
@@ -35,6 +35,7 @@ function toggleClass(flag: boolean, clsName: string, target?: HTMLElement) {
 }
 
 const quotingStore = useQuoting();
+const flexibleStore = useFlexible();
 const progressStore = useProgress();
 
 const mixRef = ref();
@@ -98,6 +99,25 @@ onBeforeMount(() => {
         <el-switch
           :model-value="quotingStore.quoting"
           @change="quotingStore.setQuoting"
+          inline-prompt
+          style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
+          active-text="true"
+          inactive-text="false"
+        />
+      </div>
+    </el-card>
+
+    <el-card class="setting-card mt-2">
+      <div class="setting-item">
+        <div class="setting-label">
+          <span class="setting-title">flexible</span>
+          <span class="setting-desc">
+            When set to false, enable column count check
+          </span>
+        </div>
+        <el-switch
+          :model-value="flexibleStore.flexible"
+          @change="flexibleStore.setFlexible"
           inline-prompt
           style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
           active-text="true"

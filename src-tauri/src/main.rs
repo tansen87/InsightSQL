@@ -24,6 +24,7 @@ use insight::cmd::search;
 use insight::cmd::select;
 use insight::cmd::separate;
 use insight::cmd::skip;
+use insight::cmd::slice;
 use insight::cmd::sort;
 use insight::cmd::split;
 use insight::cmd::string;
@@ -69,7 +70,6 @@ fn main() {
       command::to_json,
       flow::flow,
       apply::apply,
-      skip::skip,
       cat::concat,
       convert::excel_to_csv::map_excel_sheets,
       #[cfg(target_os = "windows")]
@@ -94,6 +94,8 @@ fn main() {
       search::search,
       select::select,
       separate::separate,
+      skip::skip,
+      slice::slice,
       sort::sort,
       split::split,
       sql::sqlp::query,

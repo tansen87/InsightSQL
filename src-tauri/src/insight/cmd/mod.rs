@@ -15,6 +15,7 @@ pub mod search;
 pub mod select;
 pub mod separate;
 pub mod skip;
+pub mod slice;
 pub mod sort;
 pub mod split;
 pub mod string;

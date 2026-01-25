@@ -15,6 +15,18 @@ export const useQuoting = defineStore("quoting", {
   persist: true
 });
 
+export const useFlexible = defineStore("flexible", {
+  state: () => ({
+    flexible: false
+  }),
+  actions: {
+    setFlexible(value) {
+      this.flexible = !!value;
+    }
+  },
+  persist: true
+});
+
 export const useProgress = defineStore("progress", {
   state: () => ({
     progress: true
