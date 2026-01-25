@@ -1,38 +1,21 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import type { Event } from "@tauri-apps/api/event";
 import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
-import { mdReplace, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { mdSeparate, useMarkdown } from "@/utils/markdown";
+import { useQuoting } from "@/store/modules/options";
 
+const [path, expectedColumns] = [ref(""), ref("0")];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const [currentRows, totalRows] = [ref(0), ref(0)];
-const [column, path, regexPattern, replacement] = [
-  ref(""),
-  ref(""),
-  ref(""),
-  ref("")
-];
 const { dynamicHeight } = useDynamicHeight(98);
-const { mdShow } = useMarkdown(mdReplace);
+const { mdShow } = useMarkdown(mdSeparate);
 const quotingStore = useQuoting();
-const progressStore = useProgress();
-
-listen("update-rows", (event: Event<number>) => {
-  currentRows.value = event.payload;
-});
-listen("total-rows", (event: Event<number>) => {
-  totalRows.value = event.payload;
-});
 
 async function selectFile() {
-  column.value = "";
   tableHeader.value = [];
   tableColumn.value = [];
   tableData.value = [];
@@ -50,28 +33,21 @@ async function selectFile() {
   }
 }
 
-// invoke replace
-async function replaceData() {
+// invoke separate
+async function separateData() {
   if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
-    return;
-  }
-  if (column.value.length === 0) {
-    message("Column not selected", { type: "warning" });
     return;
   }
 
   try {
     isLoading.value = true;
-    const rtime: string = await invoke("replace", {
+    const rtime: string = await invoke("separate", {
       path: path.value,
-      column: column.value,
-      regexPattern: regexPattern.value,
-      replacement: replacement.value,
       quoting: quotingStore.quoting,
-      progress: progressStore.progress
+      expectedColumns: expectedColumns.value
     });
-    message(`Replace done, elapsed time: ${rtime} s`, { type: "success" });
+    message(`Separate done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -88,37 +64,27 @@ async function replaceData() {
             Open File
           </el-button>
 
-          <div class="ml-2 w-40 space-y-2">
-            <el-select v-model="column" filterable placeholder="Select column">
-              <el-option
-                v-for="item in tableHeader"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
-            </el-select>
-
-            <el-input v-model="regexPattern" placeholder="regex pattern" />
-
-            <el-input v-model="replacement" placeholder="replacement" />
-          </div>
-
-          <div class="flex flex-col mt-auto">
-            <el-progress
-              v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
-              :percentage="Math.round((currentRows / totalRows) * 100)"
-              class="mb-2 ml-2"
+          <el-tooltip
+            content="Expected number of columns"
+            effect="light"
+            placement="right"
+          >
+            <el-input
+              v-model="expectedColumns"
+              class="ml-2"
+              style="width: 160px"
             />
-            <el-link @click="dialog = true">
-              <span class="link-text">Replace</span>
-            </el-link>
-          </div>
+          </el-tooltip>
+
+          <el-link @click="dialog = true" class="mt-auto">
+            <span class="link-text">Separate</span>
+          </el-link>
         </div>
       </el-splitter-panel>
 
       <el-splitter-panel>
         <el-button
-          @click="replaceData()"
+          @click="separateData()"
           :loading="isLoading"
           :icon="SwitchButton"
           text
@@ -149,7 +115,7 @@ async function replaceData() {
 
     <el-dialog
       v-model="dialog"
-      title="Replace - Replace CSV data using a regex"
+      title="Separate - Separate CSV into good and bad rows"
       width="70%"
     >
       <el-scrollbar :height="dynamicHeight * 0.7">

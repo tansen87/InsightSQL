@@ -22,6 +22,7 @@ use insight::cmd::replace;
 use insight::cmd::reverse;
 use insight::cmd::search;
 use insight::cmd::select;
+use insight::cmd::separate;
 use insight::cmd::skip;
 use insight::cmd::sort;
 use insight::cmd::split;
@@ -92,6 +93,7 @@ fn main() {
       reverse::reverse,
       search::search,
       select::select,
+      separate::separate,
       sort::sort,
       split::split,
       sql::sqlp::query,

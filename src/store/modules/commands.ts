@@ -42,6 +42,12 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/select"
       },
       {
+        title: "Separate",
+        icon: "ri:menu-search-line",
+        description: "Separate CSV into good and bad rows",
+        route: "/command/components/separate"
+      },
+      {
         title: "Search",
         icon: "ri:filter-2-line",
         description: "Select fields matching rows",

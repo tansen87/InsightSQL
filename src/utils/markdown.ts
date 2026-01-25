@@ -1042,3 +1042,36 @@ Transpose result
 \`\`\`
 `;
 }
+
+export function mdSeparate() {
+  return `
+### Suggestion: set quoting to false
+\`\`\`
+sample file
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  1  │ tom,1  │
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+good file
+\`\`\`
+┌─────┬────────┐
+│ idx │ name   │
+├─────┼────────┤
+│  2  │ jerry  │
+│  3  | hansen |
+└─────┴────────┘
+\`\`\`
+
+bad file
+\`\`\`
+┌─────┬────────┐
+│  1  │ tom,1  │
+└─────┴────────┘
+\`\`\`
+`;
+}

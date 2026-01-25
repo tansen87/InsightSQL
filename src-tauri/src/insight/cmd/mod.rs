@@ -13,6 +13,7 @@ pub mod replace;
 pub mod reverse;
 pub mod search;
 pub mod select;
+pub mod separate;
 pub mod skip;
 pub mod sort;
 pub mod split;

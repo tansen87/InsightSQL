@@ -70,6 +70,15 @@ export default {
       }
     },
     {
+      path: "/command/components/separate",
+      name: "separate",
+      component: () => import("@/views/command/components/separate.vue"),
+      meta: {
+        title: "separate",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/search",
       name: "search",
       component: () => import("@/views/command/components/search.vue"),
