@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import type { Event } from "@tauri-apps/api/event";
 import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdReplace, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting } from "@/store/modules/options";
 
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
+const [currentRows, totalRows] = [ref(0), ref(0)];
 const [column, path, regexPattern, replacement] = [
   ref(""),
   ref(""),
@@ -19,6 +22,14 @@ const [column, path, regexPattern, replacement] = [
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdReplace);
 const quotingStore = useQuoting();
+const progressStore = useProgress();
+
+listen("update-rows", (event: Event<number>) => {
+  currentRows.value = event.payload;
+});
+listen("total-rows", (event: Event<number>) => {
+  totalRows.value = event.payload;
+});
 
 async function selectFile() {
   column.value = "";
@@ -57,7 +68,8 @@ async function replaceData() {
       column: column.value,
       regexPattern: regexPattern.value,
       replacement: replacement.value,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      progress: progressStore.progress
     });
     message(`Replace done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -91,9 +103,16 @@ async function replaceData() {
             <el-input v-model="replacement" placeholder="replacement" />
           </div>
 
-          <el-link @click="dialog = true" class="mt-auto">
-            <span class="link-text">Replace</span>
-          </el-link>
+          <div class="flex flex-col mt-auto">
+            <el-progress
+              v-if="totalRows !== 0 && isFinite(currentRows / totalRows)"
+              :percentage="Math.round((currentRows / totalRows) * 100)"
+              class="mb-2 ml-2"
+            />
+            <el-link @click="dialog = true" class="mt-auto">
+              <span class="link-text">Replace</span>
+            </el-link>
+          </div>
         </div>
       </el-splitter-panel>
 
@@ -122,9 +141,7 @@ async function replaceData() {
         </el-table>
 
         <el-text>
-          <el-icon class="ml-2">
-            <Files />
-          </el-icon>
+          <el-icon class="ml-2"><Files /></el-icon>
           {{ path }}
         </el-text>
       </el-splitter-panel>

@@ -158,7 +158,17 @@ async fn test_split_max() -> anyhow::Result<()> {
 async fn test_slice() -> anyhow::Result<()> {
   let (temp_dir, rdr, wtr, output_path) = create_temp_csv()?;
 
-  insight::cmd::string::slice::slice(rdr, wtr, "name", 2, 3, false).await?;
+  insight::cmd::string::slice::slice(
+    rdr,
+    wtr,
+    "name",
+    2,
+    3,
+    false,
+    true,
+    insight::utils::MockEmitter::default(),
+  )
+  .await?;
 
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();

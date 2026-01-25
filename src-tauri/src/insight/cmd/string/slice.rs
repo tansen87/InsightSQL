@@ -148,14 +148,19 @@ where
   Ok(())
 }
 
-pub async fn slice(
+pub async fn slice<E>(
   mut rdr: Reader<BufReader<File>>,
   mut wtr: Writer<BufWriter<File>>,
   column: &str,
   start_idx: i32,
   length: usize,
   reverse: bool,
-) -> Result<()> {
+  progress: bool,
+  emitter: E,
+) -> Result<()>
+where
+  E: EventEmitter + Send + Sync + 'static,
+{
   let headers = rdr.headers()?.clone();
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
@@ -165,60 +170,105 @@ pub async fn slice(
 
   wtr.write_record(&new_headers)?;
 
-  for result in rdr.records() {
-    let record = result?;
+  let rows = Arc::new(AtomicUsize::new(0));
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-    if let Some(value) = record.get(sel.first_indices()?) {
-      let slice_sl = {
-        let chars: Vec<char> = value.chars().collect();
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
 
-        let (start, is_reversed) = if start_idx > 0 {
-          ((start_idx - 1).try_into()?, false)
-        } else if start_idx < 0 {
-          let start = chars.len().saturating_sub((-start_idx - 1).try_into()?);
-          (start, true)
-        } else {
-          return Err(anyhow!("Number of the slice cannot be equal to 0"));
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(Duration::from_millis(500));
+      loop {
+        tokio::select! {
+          _ = interval.tick() => {
+            let current_rows = rows_clone.load(Ordering::Relaxed);
+            if let Err(err) = emitter.emit_update_rows(current_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+            }
+          },
+          Ok(final_rows) = (&mut done_rx) => {
+            if let Err(err) = emitter.emit_update_rows(final_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+            }
+            break;
+          },
+          _ = (&mut stop_rx) => { break; }
+        }
+      }
+    }))
+  } else {
+    None
+  };
+
+  let counter_task = tokio::task::spawn_blocking(move || {
+    for result in rdr.records() {
+      let record = result?;
+
+      if let Some(value) = record.get(sel.first_indices()?) {
+        let slice_sl = {
+          let chars: Vec<char> = value.chars().collect();
+
+          let (start, is_reversed) = if start_idx > 0 {
+            ((start_idx - 1).try_into()?, false)
+          } else if start_idx < 0 {
+            let start = chars.len().saturating_sub((-start_idx - 1).try_into()?);
+            (start, true)
+          } else {
+            return Err(anyhow!("Number of the slice cannot be equal to 0"));
+          };
+
+          // determine the indices of the slice
+          let end = start + length;
+          let slice = if is_reversed {
+            chars
+              .iter()
+              .rev()
+              .skip(chars.len().saturating_sub(end))
+              .take(length)
+              .cloned()
+              .collect::<Vec<char>>()
+          } else {
+            chars
+              .get(start..end)
+              .map(|r| r.to_vec())
+              .unwrap_or_default()
+          };
+
+          let mut result: String = slice.into_iter().collect();
+
+          // warning: 不需要将以下两个if合并到一起
+          if start_idx < 0 {
+            result = result.chars().rev().collect();
+          }
+          if reverse {
+            result = result.chars().rev().collect();
+          }
+
+          result
         };
 
-        // determine the indices of the slice
-        let end = start + length;
-        let slice = if is_reversed {
-          chars
-            .iter()
-            .rev()
-            .skip(chars.len().saturating_sub(end))
-            .take(length)
-            .cloned()
-            .collect::<Vec<char>>()
-        } else {
-          chars
-            .get(start..end)
-            .map(|r| r.to_vec())
-            .unwrap_or_default()
-        };
+        let mut new_record = record.clone();
+        new_record.push_field(&slice_sl);
 
-        let mut result: String = slice.into_iter().collect();
+        wtr.write_record(&new_record)?;
+      }
 
-        // warning: 不需要将以下两个if合并到一起
-        if start_idx < 0 {
-          result = result.chars().rev().collect();
-        }
-        if reverse {
-          result = result.chars().rev().collect();
-        }
-
-        result
-      };
-
-      let mut new_record = record.clone();
-      new_record.push_field(&slice_sl);
-
-      wtr.write_record(&new_record)?;
+      rows.fetch_add(1, Ordering::Relaxed);
     }
+
+    let final_rows = rows.load(Ordering::Relaxed);
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  if let Some(task) = timer_task {
+    task.await?;
   }
 
-  Ok(wtr.flush()?)
+  Ok(())
 }
 
 pub async fn perform_slice<E, P>(
@@ -291,7 +341,7 @@ where
       )
       .await?
     }
-    SliceMode::Slice => slice(rdr, wtr, column, n, length, reverse).await?,
+    SliceMode::Slice => slice(rdr, wtr, column, n, length, reverse, progress, emitter).await?,
   }
 
   Ok(())
