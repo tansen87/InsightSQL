@@ -29,7 +29,7 @@ where
   let output_path = opts.output_path(Some("enumer"), None)?;
 
   let total_rows = match progress {
-    true => opts.idx_count_rows().await?,
+    true => opts.std_count_rows()?,
     false => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
@@ -37,11 +37,15 @@ where
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
+    .flexible(true)
     .from_reader(opts.rdr_skip_rows()?);
 
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
+  let mut wtr = WriterBuilder::new()
+    .delimiter(sep)
+    .flexible(true)
+    .from_writer(buf_wtr);
 
   let headers = rdr.headers()?;
   let mut new_headers = vec![String::from("enumerate_idx")];
