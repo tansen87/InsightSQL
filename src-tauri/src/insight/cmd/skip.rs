@@ -1,7 +1,7 @@
 use std::{
   fmt::Display,
   fs::File,
-  io::BufWriter,
+  io::{BufRead, BufReader, BufWriter, Write},
   path::Path,
   sync::{
     Arc,
@@ -11,13 +11,12 @@ use std::{
 };
 
 use anyhow::{Result, anyhow};
-use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
 use crate::{
   io::csv::options::CsvOptions,
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  utils::{EventEmitter, RDR_BUFFER_SIZE, WTR_BUFFER_SIZE},
 };
 
 pub async fn skip_csv<E, F, P>(
@@ -25,7 +24,6 @@ pub async fn skip_csv<E, F, P>(
   file_name: F,
   skip_rows: usize,
   progress: bool,
-  quoting: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -37,29 +35,25 @@ where
     return Err(anyhow!("The skip rows must be greater than or equal to 1"));
   }
 
-  let mut opts = CsvOptions::new(&path);
-  opts.set_skip_rows(skip_rows);
-  let sep = opts.detect_separator()?;
+  let rdr = BufReader::with_capacity(RDR_BUFFER_SIZE, File::open(&path)?);
+
+  let opts = CsvOptions::new(&path);
   let output_path = opts.output_path(Some("skip"), None)?;
+  let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
 
   let total_rows = match progress {
-    true => opts.idx_count_rows().await?.saturating_sub(skip_rows) + 1,
-    // "std" => opts.std_count_rows()?.saturating_sub(skip_rows) + 1,
+    true => opts.std_count_rows()?.saturating_sub(skip_rows) + 1,
     false => 0,
   };
   emitter
     .emit_total_msg(&format!("{file_name}|{total_rows}"))
     .await?;
 
-  let mut rdr = ReaderBuilder::new()
-    .has_headers(false)
-    .delimiter(sep)
-    .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+  let mut lines = rdr.lines();
 
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
+  for _ in 0..skip_rows {
+    let _ = lines.next();
+  }
 
   let rows = Arc::new(AtomicUsize::new(0));
   // 创建一次性通道用于控制定时器结束
@@ -95,9 +89,8 @@ where
   };
 
   let counter_task = tokio::task::spawn_blocking(move || {
-    let mut record = ByteRecord::new();
-    while rdr.read_byte_record(&mut record)? {
-      wtr.write_byte_record(&record)?;
+    for line in lines {
+      writeln!(wtr, "{}", line?)?;
 
       rows.fetch_add(1, Ordering::Relaxed);
     }
@@ -122,7 +115,6 @@ pub async fn skip(
   path: String,
   skip_rows: String,
   progress: bool,
-  quoting: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -146,7 +138,6 @@ pub async fn skip(
       file_name.to_string(),
       skip_rows,
       progress,
-      quoting,
       emitter.clone(),
     )
     .await

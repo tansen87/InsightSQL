@@ -14,7 +14,7 @@ import { useDynamicHeight, updateEvent } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import { useMarkdown, mdSkip } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress } from "@/store/modules/options";
 
 const path = ref("");
 const fileSelect = ref([]);
@@ -22,7 +22,6 @@ const skipRows = ref("1");
 const [dialog, isLoading] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdSkip);
-const quotingStore = useQuoting();
 const progressStore = useProgress();
 
 listen("update-msg", (event: Event<string>) => {
@@ -33,6 +32,7 @@ listen("update-msg", (event: Event<string>) => {
 });
 listen("total-msg", (event: Event<string>) => {
   const [filename, rows] = event.payload.split("|");
+  console.log(rows);
   updateEvent(fileSelect, filename, file => {
     file.totalRows = rows;
   });
@@ -79,8 +79,7 @@ async function skipLines() {
     const result: string = await invoke("skip", {
       path: path.value,
       skipRows: skipRows.value,
-      progress: progressStore.progress,
-      quoting: quotingStore.quoting
+      progress: progressStore.progress
     });
     message(`Skip done, elapsed time: ${result} s`, { type: "success" });
   } catch (err) {

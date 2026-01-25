@@ -27,7 +27,6 @@ async fn test_skip() -> anyhow::Result<()> {
     file_path.to_str().unwrap(),
     file_name,
     2,
-    false,
     true,
     insight::utils::MockEmitter::default(),
   )
