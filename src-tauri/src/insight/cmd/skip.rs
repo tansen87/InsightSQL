@@ -62,32 +62,37 @@ where
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   let rows = Arc::new(AtomicUsize::new(0));
-  let rows_clone = Arc::clone(&rows);
   // 创建一次性通道用于控制定时器结束
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
   // 启动定时器任务
-  let timer_task = tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_millis(500));
-    loop {
-      tokio::select! {
-        _ = interval.tick() => {
-          let current_rows = rows_clone.load(Ordering::Relaxed);
-          if let Err(err) = emitter.emit_update_msg(&format!("{file_name}|{current_rows}")).await {
-            let _ = emitter.emit_err(&format!("{file_name}|{err}")).await;
-          }
-        },
-        Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = emitter.emit_update_msg(&format!("{file_name}|{final_rows}")).await {
-            let _ = emitter.emit_err(&format!("{file_name}|{err}")).await;
-          }
-          break;
-        },
-        _ = (&mut stop_rx) => { break; }
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
+
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(Duration::from_millis(500));
+      loop {
+        tokio::select! {
+          _ = interval.tick() => {
+            let current_rows = rows_clone.load(Ordering::Relaxed);
+            if let Err(err) = emitter.emit_update_msg(&format!("{file_name}|{current_rows}")).await {
+              let _ = emitter.emit_err(&format!("{file_name}|{err}")).await;
+            }
+          },
+          Ok(final_rows) = (&mut done_rx) => {
+            if let Err(err) = emitter.emit_update_msg(&format!("{file_name}|{final_rows}")).await {
+              let _ = emitter.emit_err(&format!("{file_name}|{err}")).await;
+            }
+            break;
+          },
+          _ = (&mut stop_rx) => { break; }
+        }
       }
-    }
-  });
+    }))
+  } else {
+    None
+  };
 
   let counter_task = tokio::task::spawn_blocking(move || {
     let mut record = ByteRecord::new();
@@ -105,7 +110,9 @@ where
 
   counter_task.await??;
   let _ = stop_tx.send(());
-  timer_task.await?;
+  if let Some(task) = timer_task {
+    task.await?;
+  }
 
   Ok(())
 }

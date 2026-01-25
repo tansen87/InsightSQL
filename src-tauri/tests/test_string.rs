@@ -51,6 +51,7 @@ async fn test_slice_left() -> anyhow::Result<()> {
     1,
     false,
     "left".to_string(),
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;
@@ -79,6 +80,7 @@ async fn test_slice_right() -> anyhow::Result<()> {
     1,
     false,
     "right".to_string(),
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;
@@ -106,6 +108,7 @@ async fn test_split_n() -> anyhow::Result<()> {
     "name",
     2,
     "-".to_string(),
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;
@@ -133,6 +136,7 @@ async fn test_split_max() -> anyhow::Result<()> {
     "name".to_string(),
     2,
     "-".to_string(),
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?;
@@ -159,7 +163,7 @@ async fn test_slice() -> anyhow::Result<()> {
   let context = std::fs::read_to_string(&output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![
-    "name,age,gender,name_slen",
+    "name,age,gender,name_slice",
     "汤-姆-1,18,男,-姆-",
     "杰-瑞-2,19,male,-瑞-",
     "Sa-n-dy,24,female,a-n",

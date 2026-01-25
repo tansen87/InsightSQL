@@ -40,6 +40,7 @@ pub async fn split_n<E>(
   column: &str,
   n: usize,
   by: String,
+  progress: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -54,30 +55,35 @@ where
   wtr.write_record(&headers)?;
 
   let rows = Arc::new(AtomicUsize::new(0));
-  let rows_clone = Arc::clone(&rows);
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-  let timer_task = tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_millis(500));
-    loop {
-      tokio::select! {
-        _ = interval.tick() => {
-          let current_rows = rows_clone.load(Ordering::Relaxed);
-          if let Err(err) = emitter.emit_update_rows(current_rows).await {
-            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
-          }
-        },
-        Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = emitter.emit_update_rows(final_rows).await {
-            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
-          }
-          break;
-        },
-        _ = (&mut stop_rx) => { break; }
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
+
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(Duration::from_millis(500));
+      loop {
+        tokio::select! {
+          _ = interval.tick() => {
+            let current_rows = rows_clone.load(Ordering::Relaxed);
+            if let Err(err) = emitter.emit_update_rows(current_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+            }
+          },
+          Ok(final_rows) = (&mut done_rx) => {
+            if let Err(err) = emitter.emit_update_rows(final_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+            }
+            break;
+          },
+          _ = (&mut stop_rx) => { break; }
+        }
       }
-    }
-  });
+    }))
+  } else {
+    None
+  };
 
   let counter_task = tokio::task::spawn_blocking(move || {
     for result in rdr.records() {
@@ -105,7 +111,9 @@ where
 
   counter_task.await??;
   let _ = stop_tx.send(());
-  timer_task.await?;
+  if let Some(task) = timer_task {
+    task.await?;
+  }
 
   Ok(())
 }
@@ -116,6 +124,7 @@ pub async fn split_max<E>(
   column: String,
   n: usize,
   by: String,
+  progress: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -126,30 +135,35 @@ where
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column.as_str()][..])?;
 
   let rows = Arc::new(AtomicUsize::new(0));
-  let rows_clone = Arc::clone(&rows);
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-  let timer_task = tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_millis(500));
-    loop {
-      tokio::select! {
-        _ = interval.tick() => {
-          let current_rows = rows_clone.load(Ordering::Relaxed);
-          if let Err(err) = emitter.emit_update_rows(current_rows).await {
-            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
-          }
-        },
-        Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = emitter.emit_update_rows(final_rows).await {
-            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
-          }
-          break;
-        },
-        _ = (&mut stop_rx) => { break; }
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
+
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(Duration::from_millis(500));
+      loop {
+        tokio::select! {
+          _ = interval.tick() => {
+            let current_rows = rows_clone.load(Ordering::Relaxed);
+            if let Err(err) = emitter.emit_update_rows(current_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+            }
+          },
+          Ok(final_rows) = (&mut done_rx) => {
+            if let Err(err) = emitter.emit_update_rows(final_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+            }
+            break;
+          },
+          _ = (&mut stop_rx) => { break; }
+        }
       }
-    }
-  });
+    }))
+  } else {
+    None
+  };
 
   let counter_task = tokio::task::spawn_blocking(move || {
     let mut first_record = true;
@@ -187,7 +201,9 @@ where
 
   counter_task.await??;
   let _ = stop_tx.send(());
-  timer_task.await?;
+  if let Some(task) = timer_task {
+    task.await?;
+  }
 
   Ok(())
 }
@@ -235,8 +251,8 @@ where
   let wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
 
   match mode {
-    SplitMode::Nth => split_n(rdr, wtr, &column, num, by, emitter).await?,
-    SplitMode::Max => split_max(rdr, wtr, column, num, by, emitter).await?,
+    SplitMode::Nth => split_n(rdr, wtr, &column, num, by, progress, emitter).await?,
+    SplitMode::Max => split_max(rdr, wtr, column, num, by, progress, emitter).await?,
   }
 
   Ok(())

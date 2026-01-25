@@ -87,6 +87,7 @@ async fn generic_search<E, F, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   match_fn: F,
   emitter: E,
 ) -> Result<String>
@@ -111,32 +112,37 @@ where
   wtr.write_record(rdr.headers()?)?;
 
   let rows = Arc::new(AtomicUsize::new(0));
-  let rows_clone = Arc::clone(&rows);
   let match_rows = Arc::new(AtomicUsize::new(0));
   let match_rows_clone = Arc::clone(&match_rows);
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-  let timer_task = tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_millis(500));
-    loop {
-      tokio::select! {
-        _ = interval.tick() => {
-          let current_rows = rows_clone.load(Ordering::Relaxed);
-          if let Err(err) = emitter.emit_update_rows(current_rows).await {
-            let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
-          }
-        },
-        Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = emitter.emit_update_rows(final_rows).await {
-            let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
-          }
-          break;
-        },
-        _ = (&mut stop_rx) => { break; }
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
+
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(Duration::from_millis(500));
+      loop {
+        tokio::select! {
+          _ = interval.tick() => {
+            let current_rows = rows_clone.load(Ordering::Relaxed);
+            if let Err(err) = emitter.emit_update_rows(current_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+            }
+          },
+          Ok(final_rows) = (&mut done_rx) => {
+            if let Err(err) = emitter.emit_update_rows(final_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+            }
+            break;
+          },
+          _ = (&mut stop_rx) => { break; }
+        }
       }
-    }
-  });
+    }))
+  } else {
+    None
+  };
 
   let counter_task = tokio::task::spawn_blocking(move || {
     for result in rdr.records() {
@@ -158,7 +164,9 @@ where
 
   counter_task.await??;
   let _ = stop_tx.send(());
-  timer_task.await?;
+  if let Some(task) = timer_task {
+    task.await?;
+  }
 
   let final_match_rows = match_rows_clone.load(Ordering::Relaxed);
   Ok(final_match_rows.to_string())
@@ -170,6 +178,7 @@ async fn generic_multi_search<E, F, P>(
   column: String,
   conditions: Vec<String>,
   quoting: bool,
+  progress: bool,
   match_fn: F,
   emitter: E,
 ) -> Result<String>
@@ -200,32 +209,37 @@ where
     .collect();
 
   let rows = Arc::new(AtomicUsize::new(0));
-  let rows_clone = Arc::clone(&rows);
   let match_rows = Arc::new(AtomicUsize::new(0));
   let match_rows_clone = Arc::clone(&match_rows);
   let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
   let (done_tx, mut done_rx) = oneshot::channel::<usize>();
 
-  let timer_task = tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_millis(500));
-    loop {
-      tokio::select! {
-        _ = interval.tick() => {
-          let current_rows = rows_clone.load(Ordering::Relaxed);
-          if let Err(err) = emitter.emit_update_rows(current_rows).await {
-            eprintln!("Failed to emit current rows: {err:?}");
-          }
-        },
-        Ok(final_rows) = (&mut done_rx) => {
-          if let Err(err) = emitter.emit_update_rows(final_rows).await {
-            eprintln!("Failed to emit final rows: {err:?}");
-          }
-          break;
-        },
-        _ = (&mut stop_rx) => { break; }
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
+
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(Duration::from_millis(500));
+      loop {
+        tokio::select! {
+          _ = interval.tick() => {
+            let current_rows = rows_clone.load(Ordering::Relaxed);
+            if let Err(err) = emitter.emit_update_rows(current_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit current rows: {err}")).await;
+            }
+          },
+          Ok(final_rows) = (&mut done_rx) => {
+            if let Err(err) = emitter.emit_update_rows(final_rows).await {
+              let _ = emitter.emit_err(&format!("failed to emit final rows: {err}")).await;
+            }
+            break;
+          },
+          _ = (&mut stop_rx) => { break; }
+        }
       }
-    }
-  });
+    }))
+  } else {
+    None
+  };
 
   let counter_task = tokio::task::spawn_blocking(move || {
     let mut writers: HashMap<String, Writer<std::fs::File>> = HashMap::new();
@@ -278,7 +292,9 @@ where
 
   counter_task.await??;
   let _ = stop_tx.send(());
-  timer_task.await?;
+  if let Some(task) = timer_task {
+    task.await?;
+  }
 
   let final_match_rows = match_rows_clone.load(Ordering::Relaxed);
   Ok(final_match_rows.to_string())
@@ -291,6 +307,7 @@ pub async fn equal<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -304,6 +321,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conditions| conditions.contains(&value.to_string()),
     emitter,
   )
@@ -316,6 +334,7 @@ pub async fn equal_multi<E, P>(
   column: String,
   conditions: Vec<String>,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -328,6 +347,7 @@ where
     column,
     conditions,
     quoting,
+    progress,
     |value, condition| value == condition,
     emitter,
   )
@@ -341,6 +361,7 @@ pub async fn not_equal<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -354,6 +375,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, cond| !cond.contains(&value.to_string()),
     emitter,
   )
@@ -367,6 +389,7 @@ pub async fn contains<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -380,6 +403,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
     emitter,
   )
@@ -392,6 +416,7 @@ pub async fn contains_multi<E, P>(
   column: String,
   conditions: Vec<String>,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -404,6 +429,7 @@ where
     column,
     conditions,
     quoting,
+    progress,
     |value, condition| value.contains(condition),
     emitter,
   )
@@ -417,6 +443,7 @@ pub async fn not_contains<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -430,6 +457,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conds| !conds.iter().any(|cond| value.contains(cond)),
     emitter,
   )
@@ -443,6 +471,7 @@ pub async fn starts_with<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -456,6 +485,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
     emitter,
   )
@@ -468,6 +498,7 @@ pub async fn starts_with_multi<E, P>(
   column: String,
   conditions: Vec<String>,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -480,6 +511,7 @@ where
     column,
     conditions,
     quoting,
+    progress,
     |value, condition| value.starts_with(condition),
     emitter,
   )
@@ -493,6 +525,7 @@ pub async fn not_starts_with<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -506,6 +539,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conds| !conds.iter().any(|cond| value.starts_with(cond)),
     emitter,
   )
@@ -519,6 +553,7 @@ pub async fn ends_with<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -532,6 +567,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conds| conds.iter().any(|cond| value.ends_with(cond)),
     emitter,
   )
@@ -544,6 +580,7 @@ pub async fn ends_with_multi<E, P>(
   column: String,
   conditions: Vec<String>,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -556,6 +593,7 @@ where
     column,
     conditions,
     quoting,
+    progress,
     |value, conds| value.ends_with(conds),
     emitter,
   )
@@ -569,6 +607,7 @@ pub async fn not_ends_with<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -582,6 +621,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, conds| !conds.iter().any(|cond| value.ends_with(cond)),
     emitter,
   )
@@ -595,6 +635,7 @@ pub async fn regex_search<E, P>(
   regex_char: String,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -610,6 +651,7 @@ where
     vec![regex_char],
     output_path,
     quoting,
+    progress,
     move |value, _| pattern.is_match(value.as_bytes()),
     emitter,
   )
@@ -623,6 +665,7 @@ pub async fn is_null<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -636,6 +679,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, _c| value.trim().is_empty(),
     emitter,
   )
@@ -649,6 +693,7 @@ pub async fn is_not_null<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -662,6 +707,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     |value, _c| !value.trim().is_empty(),
     emitter,
   )
@@ -675,6 +721,7 @@ pub async fn greater_than<E, P>(
   conditions: String,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -692,6 +739,7 @@ where
     vec![conditions],
     output_path,
     quoting,
+    progress,
     move |value, _| {
       value
         .parse::<f64>()
@@ -710,6 +758,7 @@ pub async fn greater_than_or_equal<E, P>(
   conditions: String,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -727,6 +776,7 @@ where
     vec![conditions],
     output_path,
     quoting,
+    progress,
     move |value, _| {
       value
         .parse::<f64>()
@@ -745,6 +795,7 @@ pub async fn less_than<E, P>(
   conditions: String,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -762,6 +813,7 @@ where
     vec![conditions],
     output_path,
     quoting,
+    progress,
     move |value, _| {
       value
         .parse::<f64>()
@@ -780,6 +832,7 @@ pub async fn less_than_or_equal<E, P>(
   conditions: String,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -797,6 +850,7 @@ where
     vec![conditions],
     output_path,
     quoting,
+    progress,
     move |value, _| {
       value
         .parse::<f64>()
@@ -815,6 +869,7 @@ pub async fn between<E, P>(
   conditions: Vec<String>,
   output_path: PathBuf,
   quoting: bool,
+  progress: bool,
   emitter: E,
 ) -> Result<String>
 where
@@ -848,6 +903,7 @@ where
     conditions,
     output_path,
     quoting,
+    progress,
     move |value, _| {
       value
         .parse::<f64>()
@@ -866,7 +922,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   mode: &str,
   progress: bool,
   quoting: bool,
-  app_handle: AppHandle,
+  emitter: AppHandle,
 ) -> Result<String> {
   let opts = CsvOptions::new(&path);
   let sep = opts.detect_separator()?;
@@ -875,7 +931,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
     true => opts.idx_count_rows().await?,
     false => 0,
   };
-  app_handle.emit("total-rows", total_rows)?;
+  emitter.emit("total-rows", total_rows)?;
 
   let multi_conditions = if conditions.contains('|') {
     conditions
@@ -900,16 +956,16 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
-      equal_multi(path, sep, column, conditions, quoting, app_handle).await
+      equal_multi(path, sep, column, conditions, quoting, progress, emitter).await
     }
     SearchMode::StartsWithMulti(conditions) => {
-      starts_with_multi(path, sep, column, conditions, quoting, app_handle).await
+      starts_with_multi(path, sep, column, conditions, quoting, progress, emitter).await
     }
     SearchMode::ContainsMulti(conditions) => {
-      contains_multi(path, sep, column, conditions, quoting, app_handle).await
+      contains_multi(path, sep, column, conditions, quoting, progress, emitter).await
     }
     SearchMode::EndsWithMulti(conditions) => {
-      ends_with_multi(path, sep, column, conditions, quoting, app_handle).await
+      ends_with_multi(path, sep, column, conditions, quoting, progress, emitter).await
     }
     _ => {
       let vec_conditions = multi_conditions.to_vec();
@@ -924,7 +980,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -936,7 +993,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -948,7 +1006,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -960,7 +1019,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -972,7 +1032,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -984,7 +1045,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -996,7 +1058,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -1008,7 +1071,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -1020,15 +1084,36 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
         SearchMode::IsNull => {
-          is_null(path, sep, column, vec![], output_path, quoting, app_handle).await
+          is_null(
+            path,
+            sep,
+            column,
+            vec![],
+            output_path,
+            quoting,
+            progress,
+            emitter,
+          )
+          .await
         }
         SearchMode::IsNotNull => {
-          is_not_null(path, sep, column, vec![], output_path, quoting, app_handle).await
+          is_not_null(
+            path,
+            sep,
+            column,
+            vec![],
+            output_path,
+            quoting,
+            progress,
+            emitter,
+          )
+          .await
         }
         SearchMode::GreaterThan => {
           greater_than(
@@ -1038,7 +1123,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -1050,7 +1136,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -1062,7 +1149,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -1074,7 +1162,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }
@@ -1086,7 +1175,8 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             vec_conditions,
             output_path,
             quoting,
-            app_handle,
+            progress,
+            emitter,
           )
           .await
         }

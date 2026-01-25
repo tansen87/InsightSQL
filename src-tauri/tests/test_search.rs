@@ -42,6 +42,7 @@ async fn test_equal() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -69,6 +70,7 @@ async fn test_not_equal() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -103,6 +105,7 @@ async fn test_contains() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -130,6 +133,7 @@ async fn test_not_contains() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -164,6 +168,7 @@ async fn test_starts_with() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -191,6 +196,7 @@ async fn test_not_starts_with() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -225,6 +231,7 @@ async fn test_ends_with() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -252,6 +259,7 @@ async fn test_not_ends_with() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -286,6 +294,7 @@ async fn test_regex() -> anyhow::Result<()> {
     regex_char,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -314,6 +323,7 @@ async fn test_is_null() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -341,6 +351,7 @@ async fn test_is_not_null() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -376,6 +387,7 @@ async fn test_gt() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -403,6 +415,7 @@ async fn test_ge() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -437,6 +450,7 @@ async fn test_lt() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -465,6 +479,7 @@ async fn test_le() -> anyhow::Result<()> {
     conditions,
     output_path.clone().into(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -492,6 +507,7 @@ async fn test_between() -> anyhow::Result<()> {
     column,
     conditions,
     output_path.clone().into(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -530,6 +546,7 @@ async fn test_equal_multi() -> anyhow::Result<()> {
     sep,
     column,
     conditions.clone(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
@@ -603,6 +620,7 @@ async fn test_contains_multi() -> anyhow::Result<()> {
     column,
     conditions.clone(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -675,6 +693,7 @@ async fn test_starts_with_multi() -> anyhow::Result<()> {
     column,
     conditions.clone(),
     true,
+    true,
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -746,6 +765,7 @@ async fn test_ends_with_multi() -> anyhow::Result<()> {
     sep,
     column,
     conditions.clone(),
+    true,
     true,
     insight::utils::MockEmitter::default(),
   )
