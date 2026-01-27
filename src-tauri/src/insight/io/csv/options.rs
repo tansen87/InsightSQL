@@ -1,7 +1,7 @@
 use std::{
   collections::{HashMap, HashSet},
   fs::File,
-  io::{BufRead, BufReader, Read},
+  io::{self, BufRead, BufReader, Cursor, Read},
   path::{Path, PathBuf},
 };
 
@@ -18,22 +18,37 @@ use crate::{
 
 pub struct CsvOptions<P: AsRef<Path> + Send + Sync> {
   path: P,
-  skip_rows: usize,
+  skiprows: usize,
+  quoting: bool,
+  flexible: bool,
 }
 
 impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   pub fn new(path: P) -> CsvOptions<P> {
-    CsvOptions { path, skip_rows: 0 }
+    CsvOptions {
+      path,
+      skiprows: 0,
+      quoting: true,
+      flexible: false,
+    }
   }
 
   /// Sets the number of rows to skip
-  pub fn set_skip_rows(&mut self, skip_rows: usize) {
-    self.skip_rows = skip_rows;
+  pub fn set_skiprows(&mut self, skiprows: usize) {
+    self.skiprows = skiprows;
   }
 
   /// Get the numer of rows to skip
   pub fn get_skip_rows(&self) -> usize {
-    self.skip_rows
+    self.skiprows
+  }
+
+  pub fn set_quoting(&mut self, quoting: bool) {
+    self.quoting = quoting;
+  }
+
+  pub fn set_flexible(&mut self, flexible: bool) {
+    self.flexible = flexible;
   }
 
   /// return parent path
@@ -86,8 +101,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
     let mut lines_iter = reader.lines();
 
-    // Skip the first `skip_rows` lines
-    for _ in 0..self.skip_rows {
+    // Skip the first `skiprows` lines
+    for _ in 0..self.skiprows {
       if let Some(Ok(_)) = lines_iter.next() {
         // Line skipped
       } else {
@@ -128,7 +143,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
   /// Count csv rows (applicable to all csv files)
   pub async fn idx_count_rows(&self) -> Result<usize> {
-    let total_rows = crate::cmd::count::count_rows(&self.path).await? as usize;
+    let total_rows = crate::cmd::count::count_rows(&self.path, self.skiprows).await? as usize;
 
     Ok(total_rows)
   }
@@ -147,8 +162,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     let mut reader = BufReader::with_capacity(RDR_BUFFER_SIZE, file);
     let mut line = String::new();
 
-    if self.skip_rows > 0 {
-      for _ in 0..self.skip_rows {
+    if self.skiprows > 0 {
+      for _ in 0..self.skiprows {
         line.clear();
         if reader.read_line(&mut line)? == 0 {
           break;
@@ -157,6 +172,77 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     }
 
     Ok(reader)
+  }
+
+  /// 跳过CSV文件开头的指定行数,并自动检测分隔符,返回分隔符与可继续读取剩余内容的reader
+  ///
+  /// # 返回值
+  /// - `Ok((delimiter, reader))`: 成功时返回delimiter和 reader
+  /// - `Err(...)`: 文件不存在,I/O错误或跳行过程中文件提前结束
+  pub fn skiprows_and_delimiter(&self) -> Result<(u8, BufReader<Box<dyn Read + Send>>)> {
+    let file = File::open(&self.path)?;
+    let mut reader = BufReader::new(file);
+
+    // 跳过前skiprows行
+    for i in 0..self.skiprows {
+      let mut line = String::new();
+      let n = reader.read_line(&mut line)?;
+      if n == 0 {
+        return Err(anyhow!(
+          "File ended at line {} while skipping {} rows",
+          i,
+          self.skiprows
+        ));
+      }
+      log::debug!("Skipped line {}: {:?}", i, line.trim_end());
+    }
+
+    let mut header_line = String::new();
+    let n = reader.read_line(&mut header_line)?;
+    if n == 0 {
+      // 文件在跳行后无数据: 返回默认分隔符+空reader
+      let empty: Box<dyn Read + Send> = Box::new(io::empty());
+      return Ok((b',', BufReader::new(empty)));
+    }
+
+    let candidates = [b';', b',', b'\t', b'|', b'^'];
+    let mut counts: HashMap<u8, usize> = candidates.iter().map(|&c| (c, 0)).collect();
+    let mut max_count = 0;
+    let mut best_sep = b',';
+
+    for &byte in header_line.as_bytes() {
+      if let Some(cnt) = counts.get_mut(&byte) {
+        *cnt += 1;
+        if *cnt > max_count {
+          max_count = *cnt;
+          best_sep = byte;
+        }
+      }
+    }
+
+    // 把header_line放回reader前面
+    let chained: Box<dyn Read + Send> =
+      Box::new(Cursor::new(header_line.into_bytes()).chain(reader));
+    let final_reader = BufReader::new(chained);
+
+    Ok((best_sep, final_reader))
+  }
+
+  pub fn skiprows_reader(
+    &self,
+  ) -> Result<csv::Reader<std::io::BufReader<Box<dyn std::io::Read + Send>>>> {
+    let (delimiter, reader) = self.skiprows_and_delimiter()?;
+    let rdr = ReaderBuilder::new()
+      .delimiter(delimiter)
+      .quoting(self.quoting)
+      .flexible(self.flexible)
+      .from_reader(reader);
+    Ok(rdr)
+  }
+
+  pub fn get_delimiter(&self) -> Result<u8> {
+    let (delimiter, _) = self.skiprows_and_delimiter()?;
+    Ok(delimiter)
   }
 
   /// Detect the text encoding of csv
@@ -233,8 +319,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
         if excel_extensions.contains(file_extension.as_str()) {
           let mut n: usize = 1;
-          if self.skip_rows >= n {
-            n = self.skip_rows + 1;
+          if self.skiprows >= n {
+            n = self.skiprows + 1;
           }
           let column_names = if file_extension == "xlsx" {
             // use `xl` to get the headers
@@ -244,12 +330,12 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
               return None;
             }
 
-            n_rows.get(self.skip_rows)?.to_string()
+            n_rows.get(self.skiprows)?.to_string()
           } else {
             // use `calamine` to get the headers
             let columns: Vec<String> = excel_reader::ExcelReader::from_path(f)
               .ok()?
-              .get_column_names(0, self.skip_rows as u32)
+              .get_column_names(0, self.skiprows as u32)
               .ok()?;
 
             columns.join("|")
@@ -263,7 +349,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
         } else {
           // use `csv` to get the headers
           let mut opts = CsvOptions::new(f);
-          opts.set_skip_rows(self.skip_rows);
+          opts.set_skiprows(self.skiprows);
           let mut rdr = ReaderBuilder::new()
             .delimiter(opts.detect_separator().ok()?)
             .has_headers(false)
@@ -390,10 +476,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   }
 
   pub fn from_headers(&self) -> Result<Vec<String>> {
-    let mut rdr = ReaderBuilder::new()
-      .delimiter(self.detect_separator()?)
-      .from_reader(self.rdr_skip_rows()?);
-
+    let mut rdr = self.skiprows_reader()?;
     let headers: Vec<String> = rdr.headers()?.iter().map(|h| h.to_string()).collect();
 
     Ok(headers)

@@ -27,6 +27,18 @@ export const useFlexible = defineStore("flexible", {
   persist: true
 });
 
+export const useSkiprows = defineStore("skiprows", {
+  state: () => ({
+    skiprows: 0
+  }),
+  actions: {
+    setSkiprows(value: string) {
+      this.skiprows = Math.max(0, parseInt(value) || 0);
+    }
+  },
+  persist: true
+});
+
 export const useProgress = defineStore("progress", {
   state: () => ({
     progress: true

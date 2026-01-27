@@ -20,6 +20,7 @@ async fn test_rename() -> anyhow::Result<()> {
     "first_name,years_old,sex".to_string(),
     false,
     true,
+    0,
     insight::utils::MockEmitter::default(),
   )
   .await?;

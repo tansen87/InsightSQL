@@ -10,9 +10,10 @@ use crate::io::csv::options::CsvOptions;
 use crate::tojson;
 
 #[tauri::command]
-pub async fn from_headers(path: String) -> Result<Vec<String>, String> {
-  let opts = CsvOptions::new(path);
-
+pub async fn from_headers(path: String, skiprows: usize) -> Result<Vec<String>, String> {
+  let mut opts = CsvOptions::new(path);
+  opts.set_skiprows(skiprows);
+  
   async { opts.from_headers().map_err(|e| e.to_string()) }.await
 }
 
@@ -22,7 +23,7 @@ pub async fn map_headers(
   skip_rows: String,
 ) -> Result<Vec<HashMap<String, String>>, String> {
   let mut opts = CsvOptions::new(path);
-  opts.set_skip_rows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+  opts.set_skiprows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
 
   async { opts.map_headers().map_err(|e| e.to_string()) }.await
 }

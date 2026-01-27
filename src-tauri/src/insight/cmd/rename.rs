@@ -10,7 +10,7 @@ use std::{
 };
 
 use anyhow::Result;
-use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
+use csv::{ByteRecord, Reader, WriterBuilder};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
@@ -24,14 +24,17 @@ pub async fn rename_headers<E, P>(
   r_header: String,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("rename"), None)?;
 
   let total_rows = match progress {
@@ -40,10 +43,11 @@ where
   };
   emitter.emit_total_rows(total_rows).await?;
 
-  let mut rdr = ReaderBuilder::new()
+  let mut rdr = csv::ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
+
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
   let new_headers = new_rdr.byte_headers()?;
 
@@ -111,11 +115,12 @@ pub async fn rename(
   headers: String,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match rename_headers(path, headers, progress, quoting, app_handle).await {
+  match rename_headers(path, headers, progress, quoting, skiprows, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

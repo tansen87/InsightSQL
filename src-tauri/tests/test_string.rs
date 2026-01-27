@@ -30,7 +30,7 @@ fn create_temp_csv() -> anyhow::Result<(
     .to_string();
 
   let mut csv_options = insight::io::csv::options::CsvOptions::new(file_path);
-  csv_options.set_skip_rows(1);
+  csv_options.set_skiprows(1);
   let rdr = csv::ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
 
   let output_file = std::fs::File::create(&output_path)?;

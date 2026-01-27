@@ -7,8 +7,9 @@ use tauri::{Emitter, Window};
 
 use crate::io::csv::options::CsvOptions;
 
-pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P) -> Result<u64> {
-  let opts = CsvOptions::new(&path);
+pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P, skiprows: usize) -> Result<u64> {
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
 
   let count = match opts.indexed()? {
     Some(idx) => idx.count(),
@@ -31,10 +32,12 @@ async fn count_record<P: AsRef<Path> + Send + Sync>(
   quoting: bool,
   opts: &CsvOptions<P>,
 ) -> Result<u64> {
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
+
   let mut rdr = ReaderBuilder::new()
-    .delimiter(opts.detect_separator()?)
+    .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let mut record = ByteRecord::new();
   let mut count: u64 = 0;
@@ -50,6 +53,7 @@ async fn single_process(
   mode: &str,
   start_time: Instant,
   quoting: bool,
+  skiprows: usize,
   window: &Window,
 ) -> Result<(), String> {
   let opts = CsvOptions::new(file);
@@ -72,7 +76,7 @@ async fn single_process(
           .map_err(|e| e.to_string())?;
       }
     },
-    "count" => match count_rows(file).await {
+    "count" => match count_rows(file, skiprows).await {
       Ok(cnt) => {
         window
           .emit("success", format!("{filename}|{cnt}"))
@@ -106,6 +110,7 @@ fn parallel_process(
   mode: &str,
   start_time: Instant,
   quoting: bool,
+  skiprows: usize,
   window: &Window,
 ) -> Result<(), String> {
   let opts = CsvOptions::new(file);
@@ -140,7 +145,7 @@ fn parallel_process(
     }
     "count" => {
       let _ = tauri::async_runtime::block_on(async {
-        match count_rows(file).await {
+        match count_rows(file, skiprows).await {
           Ok(cnt) => {
             if let Err(e) = window
               .emit("success", format!("{filename}|{cnt}"))
@@ -194,6 +199,7 @@ pub async fn count(
   path: String,
   mode: String,
   quoting: bool,
+  skiprows: usize,
   window: Window,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -202,10 +208,10 @@ pub async fn count(
   let result = if paths.len() > 1 {
     paths
       .par_iter()
-      .try_for_each(|file| parallel_process(file, &mode, start_time, quoting, &window))
+      .try_for_each(|file| parallel_process(file, &mode, start_time, quoting, skiprows, &window))
   } else {
     Ok(if let Some(file) = paths.first() {
-      single_process(file, &mode, start_time, quoting, &window).await?;
+      single_process(file, &mode, start_time, quoting, skiprows, &window).await?;
     })
   };
 

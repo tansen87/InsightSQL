@@ -16,7 +16,7 @@ async fn test_count() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  let row_count = insight::cmd::count::count_rows(file_path.to_str().unwrap()).await?;
+  let row_count = insight::cmd::count::count_rows(file_path.to_str().unwrap(), 0).await?;
   assert_eq!(row_count, 4);
 
   Ok(temp_dir.close()?)
