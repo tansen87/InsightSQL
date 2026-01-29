@@ -8,7 +8,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mdCat, useMarkdown } from "@/utils/markdown";
 import { message, closeAllMessage } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const mode = ref("polars");
 const modeOptions = [
@@ -27,6 +27,7 @@ const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdCat);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   columns.value = "";
@@ -46,7 +47,8 @@ async function selectFile() {
       icon: Loading
     });
     const headers: string[] = await invoke("inter_headers", {
-      path: path.value
+      path: path.value,
+      skiprows: skiprowsStore.skiprows
     });
     originalColumns.value = headers.map(header => ({
       label: header,
@@ -74,7 +76,8 @@ async function concatData() {
       icon: Loading
     });
     await invoke("dupli_headers", {
-      path: path.value
+      path: path.value,
+      skiprows: skiprowsStore.skiprows
     });
     backendInfo.value = "find duplicate headers done";
     backendCompleted.value = true;
@@ -106,7 +109,8 @@ async function concatData() {
       fileType: saveFileType,
       mode: mode.value,
       useCols: useCols,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     backendInfo.value = `${mode.value} done, elapsed time: ${rtime} s`;
     backendCompleted.value = true;

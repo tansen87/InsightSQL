@@ -7,7 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdTranspose, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [path, mode] = [ref(""), ref("memory")];
 const modeOptions = [
@@ -20,6 +20,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdTranspose);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   tableHeader.value = [];
@@ -30,8 +31,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -51,7 +55,8 @@ async function transposeData() {
     const rtime: string = await invoke("transpose", {
       path: path.value,
       mode: mode.value,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Transpose done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

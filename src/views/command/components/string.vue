@@ -9,7 +9,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { mdStr, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 import { useProgress } from "@/store/modules/options";
 
 const [column, path] = [ref(""), ref("")];
@@ -35,6 +35,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
 const progressStore = useProgress();
+const skiprowsStore = useSkiprows();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -53,8 +54,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {

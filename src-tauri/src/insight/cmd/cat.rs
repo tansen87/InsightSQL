@@ -33,6 +33,7 @@ async fn cat_with_polars(
   output_path: String,
   file_type: String,
   use_cols: String,
+  skiprows: usize,
 ) -> Result<()> {
   /* merge csv and excel files into a xlsx or csv file */
   let paths: Vec<&str> = path.split('|').collect();
@@ -62,8 +63,9 @@ async fn cat_with_polars(
         vec_sep.push(b'|');
       }
       _ => {
-        let opts = CsvOptions::new(file);
-        vec_sep.push(opts.detect_separator()?);
+        let mut opts = CsvOptions::new(file);
+        opts.set_skiprows(skiprows);
+        vec_sep.push(opts.get_delimiter()?);
       }
     }
 
@@ -89,6 +91,7 @@ async fn cat_with_polars(
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(0))
+          .with_skip_rows(skiprows)
           .finish()?;
 
         let csv_reader = if use_cols == vec!["all"] {
@@ -131,22 +134,25 @@ async fn cat_with_polars(
   Ok(())
 }
 
-pub async fn cat_with_csv(path: String, output_path: String, quoting: bool) -> Result<()> {
+pub async fn cat_with_csv(
+  path: String,
+  output_path: String,
+  quoting: bool,
+  skiprows: usize,
+) -> Result<()> {
   let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
-
-  let mut vec_sep = Vec::new();
 
   let paths: Vec<&str> = path.split('|').collect();
 
   for p in &paths {
-    let opts = CsvOptions::new(p);
-    let sep = opts.detect_separator()?;
-    vec_sep.push(sep);
+    let mut opts = CsvOptions::new(p);
+    opts.set_skiprows(skiprows);
+    let (sep, reader) = opts.skiprows_and_delimiter()?;
 
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
       .quoting(quoting)
-      .from_reader(opts.rdr_skip_rows()?);
+      .from_reader(reader);
 
     for field in rdr.byte_headers()? {
       let fi = field.to_vec().into_boxed_slice();
@@ -156,20 +162,22 @@ pub async fn cat_with_csv(path: String, output_path: String, quoting: bool) -> R
 
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new()
-    .delimiter(vec_sep[0])
-    .from_writer(buf_wtr);
+  // TODO: 添加write delimiter
+  let mut wtr = WriterBuilder::new().delimiter(b'|').from_writer(buf_wtr);
 
   for c in &all_columns {
     wtr.write_field(c)?;
   }
   wtr.write_byte_record(&ByteRecord::new())?;
 
-  for (idx, p) in paths.iter().enumerate() {
-    let opts = CsvOptions::new(p);
+  for p in paths.iter() {
+    let mut opts = CsvOptions::new(p);
+    opts.set_skiprows(skiprows);
+    let (sep, reader) = opts.skiprows_and_delimiter()?;
     let mut rdr = ReaderBuilder::new()
-      .delimiter(vec_sep[idx])
-      .from_reader(opts.rdr_skip_rows()?);
+      .delimiter(sep)
+      .quoting(quoting)
+      .from_reader(reader);
 
     let h = rdr.byte_headers()?;
 
@@ -205,7 +213,7 @@ pub async fn cat_with_csv(path: String, output_path: String, quoting: bool) -> R
     }
   }
 
-  Ok(())
+  Ok(wtr.flush()?)
 }
 
 #[tauri::command]
@@ -216,11 +224,12 @@ pub async fn concat(
   mode: String,
   use_cols: String,
   quoting: bool,
+  skiprows: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   match mode.as_str() {
-    "csv" => match cat_with_csv(path, output_path, quoting).await {
+    "csv" => match cat_with_csv(path, output_path, quoting, skiprows).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -228,7 +237,7 @@ pub async fn concat(
       }
       Err(err) => Err(format!("{err}")),
     },
-    _ => match cat_with_polars(path, output_path, file_type, use_cols).await {
+    _ => match cat_with_polars(path, output_path, file_type, use_cols, skiprows).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

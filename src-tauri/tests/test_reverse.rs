@@ -19,7 +19,7 @@ async fn test_reverse() -> anyhow::Result<()> {
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 
-  insight::cmd::reverse::reverse_csv(file_path.to_string_lossy().to_string(), true).await?;
+  insight::cmd::reverse::reverse_csv(file_path.to_string_lossy().to_string(), true, 0).await?;
   let context = std::fs::read_to_string(output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec![

@@ -9,7 +9,7 @@ use std::{
   time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
@@ -19,17 +19,29 @@ use crate::{
   utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
-pub async fn enumerate_index<E, P>(path: P, progress: bool, quoting: bool, emitter: E) -> Result<()>
+pub async fn enumerate_index<E, P>(
+  path: P,
+  progress: bool,
+  quoting: bool,
+  skiprows: usize,
+  emitter: E,
+) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("enumer"), None)?;
 
   let total_rows = match progress {
-    true => opts.std_count_rows()?,
+    true => {
+      opts
+        .std_count_rows()
+        .map_err(|e| anyhow!("count rows error: {e}"))?
+        - skiprows
+    }
     false => 0,
   };
   emitter.emit_total_rows(total_rows).await?;
@@ -38,7 +50,7 @@ where
     .delimiter(sep)
     .quoting(quoting)
     .flexible(true)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
@@ -119,11 +131,12 @@ pub async fn enumer(
   path: String,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match enumerate_index(path, progress, quoting, app_handle).await {
+  match enumerate_index(path, progress, quoting, skiprows, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

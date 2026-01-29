@@ -20,8 +20,12 @@ pub async fn count_rows<P: AsRef<Path> + Send + Sync>(path: P, skiprows: usize) 
 }
 
 /// Used to check for counting errors caused by double quotation marks in CSV files
-pub async fn count_check<P: AsRef<Path> + Clone + Send + Sync>(path: P) -> Result<u64> {
-  let opts = CsvOptions::new(&path);
+pub async fn count_check<P: AsRef<Path> + Clone + Send + Sync>(
+  path: P,
+  skiprows: usize,
+) -> Result<u64> {
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
 
   let (c_false, c_true) = tokio::try_join!(count_record(false, &opts), count_record(true, &opts),)?;
 
@@ -62,7 +66,7 @@ async fn single_process(
   window.emit("info", &filename).map_err(|e| e.to_string())?;
 
   match mode {
-    "index" => match crate::cmd::idx::create_index(file, quoting).await {
+    "index" => match crate::cmd::idx::create_index(file, quoting, skiprows).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
@@ -88,7 +92,7 @@ async fn single_process(
           .map_err(|e| e.to_string())?;
       }
     },
-    _ => match count_check(file).await {
+    _ => match count_check(file, skiprows).await {
       Ok(cnt) => {
         window
           .emit("success", format!("{filename}|{cnt}"))
@@ -121,7 +125,7 @@ fn parallel_process(
   match mode {
     "index" => {
       let _ = tauri::async_runtime::block_on(async {
-        match crate::cmd::idx::create_index(file, quoting).await {
+        match crate::cmd::idx::create_index(file, quoting, skiprows).await {
           Ok(_) => {
             let elapsed_time = start_time.elapsed().as_secs_f64();
             if let Err(e) = window
@@ -168,7 +172,7 @@ fn parallel_process(
     }
     _ => {
       let _ = tauri::async_runtime::block_on(async {
-        match count_check(file).await {
+        match count_check(file, skiprows).await {
           Ok(cnt) => {
             if let Err(e) = window
               .emit("success", format!("{filename}|{cnt}"))

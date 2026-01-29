@@ -20,17 +20,18 @@ pub async fn from_headers(path: String, skiprows: usize) -> Result<Vec<String>, 
 #[tauri::command]
 pub async fn map_headers(
   path: String,
-  skip_rows: String,
+  skiprows: usize,
 ) -> Result<Vec<HashMap<String, String>>, String> {
   let mut opts = CsvOptions::new(path);
-  opts.set_skiprows(skip_rows.parse::<usize>().map_err(|e| e.to_string())?);
+  opts.set_skiprows(skiprows);
 
   async { opts.map_headers().map_err(|e| e.to_string()) }.await
 }
 
 #[tauri::command]
-pub async fn inter_headers(path: String) -> Result<HashSet<String>, String> {
-  let opts = CsvOptions::new(path);
+pub async fn inter_headers(path: String, skiprows: usize) -> Result<HashSet<String>, String> {
+  let mut opts = CsvOptions::new(path);
+  opts.set_skiprows(skiprows);
 
   match async { opts.inter_headers() }.await {
     Ok(result) => Ok(result),
@@ -41,6 +42,7 @@ pub async fn inter_headers(path: String) -> Result<HashSet<String>, String> {
 #[tauri::command]
 pub async fn dupli_headers(
   path: String,
+  skiprows: usize,
   window: Window,
 ) -> Result<(HashSet<String>, HashSet<String>), String> {
   let paths: Vec<&str> = path.split('|').collect();
@@ -55,7 +57,8 @@ pub async fn dupli_headers(
 
     window.emit("dupler", filename).map_err(|e| e.to_string())?;
 
-    let opts = CsvOptions::new(p);
+    let mut opts = CsvOptions::new(p);
+    opts.set_skiprows(skiprows);
 
     match opts.dupli_headers() {
       Ok((duplicate_headers, unique_headers)) => {
@@ -82,8 +85,8 @@ pub async fn dupli_headers(
 }
 
 #[tauri::command]
-pub async fn to_json(path: String) -> Result<String, String> {
-  match async { tojson::csv_to_json(path) }.await {
+pub async fn to_json(path: String, skiprows: usize) -> Result<String, String> {
+  match async { tojson::csv_to_json(path, skiprows) }.await {
     Ok(result) => Ok(result),
     Err(err) => Err(format!("{err}")),
   }

@@ -7,12 +7,14 @@ import { message } from "@/utils/message";
 import { shortFileName } from "@/utils/utils";
 import { usePath, useHeaders } from "@/store/modules/flow";
 import { useWorkflowStore } from "@/store/modules/workflow";
+import { useSkiprows } from "@/store/modules/options";
 
 const path = ref("");
 const isPath = ref(false);
 const [tableColumn, tableData] = [ref([]), ref([])];
 const headerStore = useHeaders();
 const pathStore = usePath();
+const skiprowsStore = useSkiprows();
 
 const props = defineProps<{ id: string }>();
 
@@ -30,9 +32,12 @@ async function selectFile() {
   pathStore.path = path.value;
   isPath.value = true;
   try {
-    const headers: any = await mapHeaders(path.value, "0");
+    const headers: any = await mapHeaders(path.value, skiprowsStore.skiprows);
     headerStore.headers = headers;
-    const { columnView, dataView } = await toJson(path.value);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {

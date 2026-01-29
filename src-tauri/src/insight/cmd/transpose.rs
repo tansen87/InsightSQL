@@ -9,15 +9,17 @@ use crate::{io::csv::options::CsvOptions, utils::WTR_BUFFER_SIZE};
 pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(
   path: P,
   quoting: bool,
+  skiprows: usize
 ) -> Result<()> {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("transpose"), None)?;
 
   let nrows = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?)
+    .from_reader(reader)
     .byte_headers()?
     .len();
 
@@ -52,7 +54,7 @@ pub async fn in_memory_transpose<P: AsRef<Path> + Send + Sync>(
 
 pub async fn multipass_transpose<P: AsRef<Path> + Send + Sync>(path: P, quoting: bool) -> Result<()> {
   let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let sep = opts.get_delimiter()?;
   let output_path = opts.output_path(Some("transpose"), None)?;
 
   let mut rdr = ReaderBuilder::new()
@@ -85,11 +87,11 @@ pub async fn multipass_transpose<P: AsRef<Path> + Send + Sync>(path: P, quoting:
 }
 
 #[tauri::command]
-pub async fn transpose(path: String, mode: String, quoting: bool) -> Result<String, String> {
+pub async fn transpose(path: String, mode: String, quoting: bool, skiprows: usize) -> Result<String, String> {
   let start_time = Instant::now();
 
   match mode.as_str() {
-    "memory" => match in_memory_transpose(path, quoting).await {
+    "memory" => match in_memory_transpose(path, quoting, skiprows).await {
       Ok(()) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

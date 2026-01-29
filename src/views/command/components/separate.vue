@@ -6,7 +6,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSeparate, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [path, expectedColumns] = [ref(""), ref("0")];
 const [isLoading, dialog] = [ref(false), ref(false)];
@@ -14,6 +14,7 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSeparate);
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   tableHeader.value = [];
@@ -24,8 +25,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -45,7 +49,8 @@ async function separateData() {
     const rtime: string = await invoke("separate", {
       path: path.value,
       quoting: quotingStore.quoting,
-      expectedColumns: expectedColumns.value
+      expectedColumns: expectedColumns.value,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Separate done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

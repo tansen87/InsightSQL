@@ -42,14 +42,16 @@ pub async fn select_columns<E, P>(
   sel_mode: SelectMode,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("select"), None)?;
   let col_names: HashSet<&str> = sel_cols.split('|').collect();
 
@@ -62,7 +64,7 @@ where
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
@@ -175,13 +177,18 @@ pub async fn select(
   sel_mode: String,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   let sel_mode: SelectMode = sel_mode.as_str().into();
 
-  match select_columns(path, sel_cols, sel_mode, progress, quoting, app_handle).await {
+  match select_columns(
+    path, sel_cols, sel_mode, progress, quoting, skiprows, app_handle,
+  )
+  .await
+  {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

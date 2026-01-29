@@ -11,6 +11,7 @@ pub async fn slice_csv_by_lines<P>(
   flexible: bool,
   start: usize,
   end: usize,
+  skiprows: usize,
 ) -> Result<()>
 where
   P: AsRef<Path> + Send + Sync,
@@ -19,15 +20,16 @@ where
     return Err(anyhow!("start must less than end"));
   }
 
-  let opts = CsvOptions::new(path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("slice"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
     .flexible(flexible)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
   let mut wtr = WriterBuilder::new()
@@ -60,6 +62,7 @@ pub async fn slice(
   flexible: bool,
   start: String,
   end: String,
+  skiprows: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -73,6 +76,7 @@ pub async fn slice(
     end
       .parse::<usize>()
       .map_err(|e| format!("parse end error: {e}"))?,
+    skiprows,
   )
   .await
   {

@@ -7,7 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSort, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const mode = ref("Sort");
 const modeOptions = [
@@ -35,6 +35,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSort);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   column.value = "";
@@ -46,8 +47,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -75,7 +79,8 @@ async function sortData() {
         column: column.value,
         numeric: numeric.value,
         reverse: reverse.value,
-        quoting: quotingStore.quoting
+        quoting: quotingStore.quoting,
+        skiprows: skiprowsStore.skiprows
       });
     } else if (mode.value == "ExtSort") {
       rtime = await invoke("extsort", {
@@ -87,7 +92,8 @@ async function sortData() {
     } else if (mode.value == "Index") {
       rtime = await invoke("idx", {
         path: path.value,
-        quoting: quotingStore.quoting
+        quoting: quotingStore.quoting,
+        skiprows: skiprowsStore.skiprows
       });
     }
     message(`${mode.value} done, elapsed time: ${rtime} s`, {

@@ -10,7 +10,7 @@ use std::{
 };
 
 use anyhow::Result;
-use csv::{ByteRecord, Reader, WriterBuilder};
+use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
@@ -33,7 +33,6 @@ where
 {
   let mut opts = CsvOptions::new(&path);
   opts.set_skiprows(skiprows);
-
   let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("rename"), None)?;
 
@@ -43,7 +42,7 @@ where
   };
   emitter.emit_total_rows(total_rows).await?;
 
-  let mut rdr = csv::ReaderBuilder::new()
+  let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
     .from_reader(reader);

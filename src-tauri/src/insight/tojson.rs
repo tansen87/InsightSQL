@@ -4,14 +4,15 @@ use serde_json::{Value, json};
 
 use crate::io::csv::options::CsvOptions;
 
-pub fn csv_to_json(path: String) -> Result<String> {
+pub fn csv_to_json(path: String, skiprows: usize) -> Result<String> {
   let n_rows = 20;
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let headers = rdr.headers()?.clone();
 

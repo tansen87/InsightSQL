@@ -234,14 +234,16 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   formatstr: String,
   new_column_flag: bool,
   quoting: bool,
+  skiprows: usize,
 ) -> Result<()> {
   let columns: Vec<&str> = columns.split('|').collect();
   if columns.is_empty() {
     return Err(anyhow!("At least one column must be specified."));
   }
 
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let sep_char = sep as char;
   let output_path = opts.output_path(Some("apply"), None)?;
 
@@ -271,7 +273,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
@@ -457,6 +459,7 @@ pub async fn apply(
   formatstr: String,
   new_column: bool,
   quoting: bool,
+  skiprows: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -464,12 +467,13 @@ pub async fn apply(
     path,
     columns,
     mode,
-    operations.as_str(),
+    &operations,
     comparand,
     replacement,
     formatstr,
     new_column,
     quoting,
+    skiprows,
   )
   .await
   {

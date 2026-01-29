@@ -15,7 +15,7 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { CheckboxValueType } from "element-plus";
 import { mdApply, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [
   isLoading,
@@ -70,6 +70,7 @@ const handleCheckAll = (val: CheckboxValueType) => {
 };
 const { mdShow } = useMarkdown(mdApply);
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   columns.value = [];
@@ -84,8 +85,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -125,7 +129,8 @@ async function applyData() {
       replacement: replacement.value,
       formatstr: formatstr.value,
       newColumn: newColumn.value,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     backendCompleted.value = true;
     backendInfo.value = `Apply done, elapsed time: ${result} s`;

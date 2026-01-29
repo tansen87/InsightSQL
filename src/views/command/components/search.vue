@@ -8,7 +8,7 @@ import { message } from "@/utils/message";
 import { useDynamicHeight } from "@/utils/utils";
 import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
 import { mdSearch, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const mode = ref("equal");
 const placeholderText = ref(
@@ -21,6 +21,7 @@ const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSearch);
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 
 listen("update-rows", (event: Event<number>) => {
@@ -43,8 +44,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -71,7 +75,8 @@ async function searchData() {
       mode: mode.value,
       condition: condition.value,
       progress: progressStore.progress,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     matchRows.value = Number(res[0]);
     isBtnShow.value = true;

@@ -32,14 +32,16 @@ pub async fn chinese_to_pinyin<E, P>(
   progress: bool,
   pinyin_style: &str,
   quoting: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("pinyin"), None)?;
 
   let total_rows = match progress {
@@ -51,7 +53,7 @@ where
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let cols: Vec<&str> = columns.split('|').collect();
   let sel = Selection::from_headers(rdr.byte_headers()?, &cols[..])?;
@@ -155,11 +157,22 @@ pub async fn pinyin(
   progress: bool,
   pinyin_style: String,
   quoting: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match chinese_to_pinyin(path, columns, progress, &pinyin_style, quoting, app_handle).await {
+  match chinese_to_pinyin(
+    path,
+    columns,
+    progress,
+    &pinyin_style,
+    quoting,
+    skiprows,
+    app_handle,
+  )
+  .await
+  {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

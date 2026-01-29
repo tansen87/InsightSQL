@@ -2,7 +2,7 @@ use std::{
   collections::{HashMap, HashSet},
   fs::File,
   io::BufWriter,
-  path::{Path, PathBuf},
+  path::Path,
   sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -14,7 +14,7 @@ use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, Writer, WriterBuilder};
 use regex::bytes::RegexBuilder;
 use smallvec::SmallVec;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::{
@@ -82,10 +82,9 @@ fn sanitize_condition(condition: &str) -> String {
 
 async fn generic_search<E, F, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   match_fn: F,
@@ -96,12 +95,21 @@ where
   F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
+  let output_path = opts.output_path(Some("search"), None)?;
+
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
+  };
+  emitter.emit_total_rows(total_rows).await?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column.as_str()][..])?;
 
@@ -174,9 +182,9 @@ where
 
 async fn generic_multi_search<E, F, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   match_fn: F,
@@ -194,7 +202,15 @@ where
     .collect::<Vec<_>>();
   let conditions = Arc::new(unique_conditions);
   let match_fn = Arc::new(match_fn);
-  let opts = CsvOptions::new(&path);
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
+
+  let total_rows = match progress {
+    true => opts.idx_count_rows().await?,
+    false => 0,
+  };
+  emitter.emit_total_rows(total_rows).await?;
 
   // prepare writers for each condition with sanitized output paths
   let parent_path = opts.parent_path()?;
@@ -252,11 +268,10 @@ where
       );
     }
 
-    let opts = CsvOptions::new(&path);
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
       .quoting(quoting)
-      .from_reader(opts.rdr_skip_rows()?);
+      .from_reader(reader);
     let headers = rdr.headers()?.clone();
 
     for wtr in writers.values_mut() {
@@ -302,10 +317,9 @@ where
 
 pub async fn equal<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -316,10 +330,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conditions| conditions.contains(&value.to_string()),
@@ -330,9 +343,9 @@ where
 
 pub async fn equal_multi<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -343,9 +356,9 @@ where
 {
   generic_multi_search(
     path,
-    sep,
     column,
     conditions,
+    skiprows,
     quoting,
     progress,
     |value, condition| value == condition,
@@ -356,10 +369,9 @@ where
 
 pub async fn not_equal<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -370,10 +382,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, cond| !cond.contains(&value.to_string()),
@@ -384,10 +395,9 @@ where
 
 pub async fn contains<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -398,10 +408,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
@@ -412,9 +421,9 @@ where
 
 pub async fn contains_multi<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -425,9 +434,9 @@ where
 {
   generic_multi_search(
     path,
-    sep,
     column,
     conditions,
+    skiprows,
     quoting,
     progress,
     |value, condition| value.contains(condition),
@@ -438,10 +447,9 @@ where
 
 pub async fn not_contains<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -452,10 +460,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conds| !conds.iter().any(|cond| value.contains(cond)),
@@ -466,10 +473,9 @@ where
 
 pub async fn starts_with<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -480,10 +486,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
@@ -494,9 +499,9 @@ where
 
 pub async fn starts_with_multi<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -507,9 +512,9 @@ where
 {
   generic_multi_search(
     path,
-    sep,
     column,
     conditions,
+    skiprows,
     quoting,
     progress,
     |value, condition| value.starts_with(condition),
@@ -520,10 +525,9 @@ where
 
 pub async fn not_starts_with<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -534,10 +538,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conds| !conds.iter().any(|cond| value.starts_with(cond)),
@@ -548,10 +551,9 @@ where
 
 pub async fn ends_with<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -562,10 +564,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conds| conds.iter().any(|cond| value.ends_with(cond)),
@@ -576,9 +577,9 @@ where
 
 pub async fn ends_with_multi<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -589,9 +590,9 @@ where
 {
   generic_multi_search(
     path,
-    sep,
     column,
     conditions,
+    skiprows,
     quoting,
     progress,
     |value, conds| value.ends_with(conds),
@@ -602,10 +603,9 @@ where
 
 pub async fn not_ends_with<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -616,10 +616,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, conds| !conds.iter().any(|cond| value.ends_with(cond)),
@@ -630,10 +629,9 @@ where
 
 pub async fn regex_search<E, P>(
   path: P,
-  sep: u8,
   column: String,
   regex_char: String,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -646,10 +644,9 @@ where
 
   generic_search(
     path,
-    sep,
     column,
     vec![regex_char],
-    output_path,
+    skiprows,
     quoting,
     progress,
     move |value, _| pattern.is_match(value.as_bytes()),
@@ -660,10 +657,9 @@ where
 
 pub async fn is_null<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -674,10 +670,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, _c| value.trim().is_empty(),
@@ -688,10 +683,9 @@ where
 
 pub async fn is_not_null<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -702,10 +696,9 @@ where
 {
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     |value, _c| !value.trim().is_empty(),
@@ -716,10 +709,9 @@ where
 
 pub async fn greater_than<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: String,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -734,10 +726,9 @@ where
 
   generic_search(
     path,
-    sep,
     column,
     vec![conditions],
-    output_path,
+    skiprows,
     quoting,
     progress,
     move |value, _| {
@@ -753,10 +744,9 @@ where
 
 pub async fn greater_than_or_equal<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: String,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -771,10 +761,9 @@ where
 
   generic_search(
     path,
-    sep,
     column,
     vec![conditions],
-    output_path,
+    skiprows,
     quoting,
     progress,
     move |value, _| {
@@ -790,10 +779,9 @@ where
 
 pub async fn less_than<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: String,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -808,10 +796,9 @@ where
 
   generic_search(
     path,
-    sep,
     column,
     vec![conditions],
-    output_path,
+    skiprows,
     quoting,
     progress,
     move |value, _| {
@@ -827,10 +814,9 @@ where
 
 pub async fn less_than_or_equal<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: String,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -845,10 +831,9 @@ where
 
   generic_search(
     path,
-    sep,
     column,
     vec![conditions],
-    output_path,
+    skiprows,
     quoting,
     progress,
     move |value, _| {
@@ -864,10 +849,9 @@ where
 
 pub async fn between<E, P>(
   path: P,
-  sep: u8,
   column: String,
   conditions: Vec<String>,
-  output_path: PathBuf,
+  skiprows: usize,
   quoting: bool,
   progress: bool,
   emitter: E,
@@ -898,10 +882,9 @@ where
 
   generic_search(
     path,
-    sep,
     column,
     conditions,
-    output_path,
+    skiprows,
     quoting,
     progress,
     move |value, _| {
@@ -922,17 +905,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   mode: &str,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   emitter: AppHandle,
 ) -> Result<String> {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
-
-  let total_rows = match progress {
-    true => opts.idx_count_rows().await?,
-    false => 0,
-  };
-  emitter.emit("total-rows", total_rows)?;
-
   let multi_conditions = if conditions.contains('|') {
     conditions
       .split('|')
@@ -956,29 +931,39 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
 
   match search_mode {
     SearchMode::EqualMulti(conditions) => {
-      equal_multi(path, sep, column, conditions, quoting, progress, emitter).await
+      equal_multi(
+        path, column, conditions, skiprows, quoting, progress, emitter,
+      )
+      .await
     }
     SearchMode::StartsWithMulti(conditions) => {
-      starts_with_multi(path, sep, column, conditions, quoting, progress, emitter).await
+      starts_with_multi(
+        path, column, conditions, skiprows, quoting, progress, emitter,
+      )
+      .await
     }
     SearchMode::ContainsMulti(conditions) => {
-      contains_multi(path, sep, column, conditions, quoting, progress, emitter).await
+      contains_multi(
+        path, column, conditions, skiprows, quoting, progress, emitter,
+      )
+      .await
     }
     SearchMode::EndsWithMulti(conditions) => {
-      ends_with_multi(path, sep, column, conditions, quoting, progress, emitter).await
+      ends_with_multi(
+        path, column, conditions, skiprows, quoting, progress, emitter,
+      )
+      .await
     }
     _ => {
       let vec_conditions = multi_conditions.to_vec();
-      let output_path = opts.output_path(Some("search"), None)?;
 
       match search_mode {
         SearchMode::Equal => {
           equal(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -988,10 +973,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::NotEqual => {
           not_equal(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1001,10 +985,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::Contains => {
           contains(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1014,10 +997,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::NotContains => {
           not_contains(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1027,10 +1009,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::StartsWith => {
           starts_with(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1040,10 +1021,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::NotStartsWith => {
           not_starts_with(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1053,10 +1033,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::EndsWith => {
           ends_with(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1066,10 +1045,9 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         SearchMode::NotEndsWith => {
           not_ends_with(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1078,102 +1056,46 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
         }
         SearchMode::Regex => {
           regex_search(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            quoting,
-            progress,
-            emitter,
+            path, column, conditions, skiprows, quoting, progress, emitter,
           )
           .await
         }
         SearchMode::IsNull => {
-          is_null(
-            path,
-            sep,
-            column,
-            vec![],
-            output_path,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          is_null(path, column, vec![], skiprows, quoting, progress, emitter).await
         }
         SearchMode::IsNotNull => {
-          is_not_null(
-            path,
-            sep,
-            column,
-            vec![],
-            output_path,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          is_not_null(path, column, vec![], skiprows, quoting, progress, emitter).await
         }
         SearchMode::GreaterThan => {
           greater_than(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            quoting,
-            progress,
-            emitter,
+            path, column, conditions, skiprows, quoting, progress, emitter,
           )
           .await
         }
         SearchMode::GreaterThanEqual => {
           greater_than_or_equal(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            quoting,
-            progress,
-            emitter,
+            path, column, conditions, skiprows, quoting, progress, emitter,
           )
           .await
         }
         SearchMode::LessThan => {
           less_than(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            quoting,
-            progress,
-            emitter,
+            path, column, conditions, skiprows, quoting, progress, emitter,
           )
           .await
         }
         SearchMode::LessThanEqual => {
           less_than_or_equal(
-            path,
-            sep,
-            column,
-            conditions,
-            output_path,
-            quoting,
-            progress,
-            emitter,
+            path, column, conditions, skiprows, quoting, progress, emitter,
           )
           .await
         }
         SearchMode::Between => {
           between(
             path,
-            sep,
             column,
             vec_conditions,
-            output_path,
+            skiprows,
             quoting,
             progress,
             emitter,
@@ -1194,12 +1116,13 @@ pub async fn search(
   condition: String,
   progress: bool,
   quoting: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
   match perform_search(
-    path, column, condition, &mode, progress, quoting, app_handle,
+    path, column, condition, &mode, progress, quoting, skiprows, app_handle,
   )
   .await
   {

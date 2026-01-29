@@ -10,7 +10,7 @@ import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdSelect, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -30,6 +30,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSelect);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 const selColumns = ref<CheckboxValueType[]>([]);
 
@@ -73,8 +74,14 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    originalColumns.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    originalColumns.value = await mapHeaders(
+      path.value,
+      skiprowsStore.skiprows
+    );
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -101,7 +108,8 @@ async function selectColumns() {
       selCols: selCols,
       selMode: selMode.value,
       progress: progressStore.progress,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Select done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

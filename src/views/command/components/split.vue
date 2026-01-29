@@ -7,7 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { mdSplit, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [path, size, mode] = [ref(""), ref(1000000), ref("rows")];
 const modeOptions = [
@@ -21,6 +21,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSplit);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   path.value = "";
@@ -31,7 +32,10 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    const { columnView, dataView } = await toJson(path.value);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -52,7 +56,8 @@ async function splitData() {
       path: path.value,
       size: size.value,
       mode: mode.value,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Split done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

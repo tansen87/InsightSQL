@@ -9,7 +9,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdFill, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [fillChar, mode] = [ref("0"), ref("fill")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -24,6 +24,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdFill);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 
 listen("update-rows", (event: Event<number>) => {
@@ -44,8 +45,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -73,7 +77,8 @@ async function fillData() {
       values: fillChar.value,
       mode: mode.value,
       quoting: quotingStore.quoting,
-      progress: progressStore.progress
+      progress: progressStore.progress,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Fill done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

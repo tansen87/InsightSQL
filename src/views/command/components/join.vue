@@ -7,7 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdJoin, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const joinType = ref("left");
 const [sel1, sel2] = [ref(""), ref("")];
@@ -29,6 +29,7 @@ const { dynamicHeight } = useDynamicHeight(36);
 const { mdShow } = useMarkdown(mdJoin);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile(fileIndex: number) {
   const selectColumn = fileIndex === 1 ? sel1 : sel2;
@@ -47,8 +48,11 @@ async function selectFile(fileIndex: number) {
   if (data[path] === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(data[path], "0");
-    const { columnView, dataView } = await toJson(data[path]);
+    tableHeader.value = await mapHeaders(data[path], skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      data[path],
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {

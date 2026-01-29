@@ -9,7 +9,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdPinyin, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const pinyinStyle = ref("upper");
 const pyOptions = [
@@ -24,6 +24,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdPinyin);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 
 listen("update-rows", (event: Event<number>) => {
@@ -44,8 +45,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -72,7 +76,8 @@ async function chineseToPinyin() {
       columns: cols,
       progress: progressStore.progress,
       pinyinStyle: pinyinStyle.value,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

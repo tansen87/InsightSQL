@@ -28,6 +28,7 @@ pub async fn regex_replace<E, P>(
   replacement: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
@@ -35,8 +36,9 @@ where
   P: AsRef<Path> + Send + Sync,
 {
   let pattern = RegexBuilder::new(&regex_pattern).build()?;
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("replace"), None)?;
 
   let total_rows = match progress {
@@ -48,7 +50,7 @@ where
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let output_file = File::create(output_path)?;
   let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
@@ -135,6 +137,7 @@ pub async fn replace(
   replacement: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -146,6 +149,7 @@ pub async fn replace(
     replacement,
     quoting,
     progress,
+    skiprows,
     emitter,
   )
   .await

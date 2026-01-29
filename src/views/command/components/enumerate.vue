@@ -8,7 +8,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdEnumer, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -17,6 +17,7 @@ const [tableColumn, tableData] = [ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdEnumer);
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 
 listen("update-rows", (event: Event<number>) => {
@@ -35,7 +36,10 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    const { columnView, dataView } = await toJson(path.value);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -55,7 +59,8 @@ async function enumerate() {
     const rtime: string = await invoke("enumer", {
       path: path.value,
       progress: progressStore.progress,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Enumerate done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

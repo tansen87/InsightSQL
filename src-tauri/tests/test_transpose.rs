@@ -31,7 +31,7 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
 async fn test_memory() -> anyhow::Result<()> {
   let (temp_dir, path, output_path) = create_temp_csv()?;
 
-  insight::cmd::transpose::in_memory_transpose(path, true).await?;
+  insight::cmd::transpose::in_memory_transpose(path, true, 0).await?;
   let context = std::fs::read_to_string(output_path)?;
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["Tom,Jerry,Patrick", "18,19,4", "female,male,male"];

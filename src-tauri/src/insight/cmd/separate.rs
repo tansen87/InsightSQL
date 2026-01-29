@@ -1,6 +1,6 @@
 use std::{
   fs::File,
-  io::{BufRead, BufReader, BufWriter, Write},
+  io::{BufRead, BufWriter, Write},
   path::Path,
   time::Instant,
 };
@@ -16,13 +16,18 @@ use crate::utils::WTR_BUFFER_SIZE;
 /// # 参数
 /// - `path`: 输入CSV路径
 /// - `expected_columns`: 可手动指定期望列数:若为 None,则以第一行为准
-pub async fn separate_csv<P>(path: P, quoting: bool, expected_columns: Option<usize>) -> Result<()>
+pub async fn separate_csv<P>(
+  path: P,
+  quoting: bool,
+  expected_columns: Option<usize>,
+  skiprows: usize,
+) -> Result<()>
 where
   P: AsRef<Path> + Send + Sync,
 {
-  let reader = BufReader::new(File::open(&path)?);
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let good_path = opts.output_path(Some("good"), None)?;
   let bad_path = opts.output_path(Some("bad"), None)?;
 
@@ -132,6 +137,7 @@ pub async fn separate(
   path: String,
   quoting: bool,
   expected_columns: String,
+  skiprows: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -139,6 +145,7 @@ pub async fn separate(
     path,
     quoting,
     Some(expected_columns.parse::<usize>().unwrap_or(0)),
+    skiprows,
   )
   .await
   {

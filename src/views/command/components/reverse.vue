@@ -2,25 +2,19 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
-import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdReverse, useMarkdown } from "@/utils/markdown";
-import { useQuoting } from "@/store/modules/options";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
 const path = ref("");
-const mode = ref("reverse");
-const modeOptions = [
-  { label: "Reverse", value: "reverse" },
-  { label: "Index", value: "index" }
-];
 const [tableColumn, tableData] = [ref([]), ref([])];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdReverse);
-const { isDark } = useDark();
 const quotingStore = useQuoting();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   tableColumn.value = [];
@@ -30,7 +24,10 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    const { columnView, dataView } = await toJson(path.value);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -49,8 +46,8 @@ async function reverseData() {
     isLoading.value = true;
     const rtime: string = await invoke("reverse", {
       path: path.value,
-      mode: mode.value,
-      quoting: quotingStore.quoting
+      quoting: quotingStore.quoting,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Reverse done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -68,27 +65,6 @@ async function reverseData() {
           <el-button @click="selectFile()" :icon="FolderOpened" text round>
             Open File
           </el-button>
-
-          <el-tooltip
-            content="Add index or reverse"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle w-40">
-              <span
-                v-for="item in modeOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: mode === item.value,
-                  'active-dark': isDark && mode === item.value
-                }"
-                @click="mode = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
 
           <el-link @click="dialog = true" class="mt-auto">
             <span class="link-text">Reverse</span>
@@ -121,9 +97,7 @@ async function reverseData() {
         </el-table>
 
         <el-text>
-          <el-icon class="ml-2">
-            <Files />
-          </el-icon>
+          <el-icon class="ml-2"><Files /></el-icon>
           {{ path }}
         </el-text>
       </el-splitter-panel>

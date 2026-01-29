@@ -32,11 +32,11 @@ pub async fn sequential_split_rows(
   size: u32,
   output_path: &str,
 ) -> Result<()> {
-  let sep = opts.detect_separator()?;
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let headers = rdr.byte_headers()?.clone();
 
@@ -115,11 +115,7 @@ fn new_lines_writer(
   Ok(wtr)
 }
 
-pub async fn split_lines(
-  opts: CsvOptions<&str>,
-  size: u32,
-  output_path: &str,
-) -> Result<()> {
+pub async fn split_lines(opts: CsvOptions<&str>, size: u32, output_path: &str) -> Result<()> {
   let reader = opts.rdr_skip_rows()?;
   let mut lines = reader.lines();
   let headers = lines.next().transpose()?;
@@ -143,10 +139,17 @@ pub async fn split_lines(
 }
 
 #[tauri::command]
-pub async fn split(path: String, size: u32, mode: String, quoting: bool) -> Result<String, String> {
+pub async fn split(
+  path: String,
+  size: u32,
+  mode: String,
+  quoting: bool,
+  skiprows: usize,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  let opts = CsvOptions::new(path.as_str());
+  let mut opts = CsvOptions::new(path.as_str());
+  opts.set_skiprows(skiprows);
   let parent_path = opts
     .parent_path()
     .map_err(|e| format!("get parent path failed: {e}"))?;
@@ -174,7 +177,7 @@ pub async fn split(path: String, size: u32, mode: String, quoting: bool) -> Resu
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.2}"))
     }
-    "index" => match crate::cmd::idx::create_index(path, quoting).await {
+    "index" => match crate::cmd::idx::create_index(path, quoting, skiprows).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

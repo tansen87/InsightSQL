@@ -15,15 +15,17 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   numeric: bool,
   reverse: bool,
   quoting: bool,
+  skiprows: usize,
 ) -> Result<()> {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("sort"), None)?;
 
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
   let headers = rdr.byte_headers()?.clone();
   let sel = Selection::from_headers(&headers, &[column.as_str()][..])?;
 
@@ -152,10 +154,11 @@ pub async fn sort(
   numeric: bool,
   reverse: bool,
   quoting: bool,
+  skiprows: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match sort_csv(path, column, numeric, reverse, quoting).await {
+  match sort_csv(path, column, numeric, reverse, quoting, skiprows).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

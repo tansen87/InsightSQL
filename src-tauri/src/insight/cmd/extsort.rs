@@ -24,7 +24,7 @@ pub async fn sort_csv(
   quoting: bool,
 ) -> Result<()> {
   let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
 
   let mut idxfile = match opts.indexed() {
     Ok(idx) => {
@@ -41,7 +41,7 @@ pub async fn sort_csv(
   let mut input_rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let linewtr_tfile = tempfile::NamedTempFile::new_in(tmp_dir)?;
   let mut line_wtr = BufWriter::with_capacity(RW_BUFFER_CAPACITY, linewtr_tfile.as_file());

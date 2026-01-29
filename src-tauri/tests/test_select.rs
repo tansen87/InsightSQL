@@ -22,6 +22,7 @@ async fn test_select() -> anyhow::Result<()> {
     "include".into(),
     false,
     true,
+    0,
     insight::utils::MockEmitter::default(),
   )
   .await?;

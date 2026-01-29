@@ -90,7 +90,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     let file_stem = self.file_stem()?;
     let cmd = cmd.unwrap_or("cmd");
     let ext = ext.unwrap_or("csv");
-    output_path.push(format!("{file_stem}.{cmd}.{ext}"));
+    output_path.push(format!("{file_stem}_{cmd}.{ext}"));
     Ok(output_path)
   }
 
@@ -143,7 +143,10 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
   /// Count csv rows (applicable to all csv files)
   pub async fn idx_count_rows(&self) -> Result<usize> {
-    let total_rows = crate::cmd::count::count_rows(&self.path, self.skiprows).await? as usize;
+    let total_rows = crate::cmd::count::count_rows(&self.path, self.skiprows)
+      .await
+      .map_err(|e| anyhow!("Failed to count the number of lines: {e}"))?
+      as usize;
 
     Ok(total_rows)
   }
@@ -181,7 +184,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   /// - `Err(...)`: 文件不存在,I/O错误或跳行过程中文件提前结束
   pub fn skiprows_and_delimiter(&self) -> Result<(u8, BufReader<Box<dyn Read + Send>>)> {
     let file = File::open(&self.path)?;
-    let mut reader = BufReader::new(file);
+    let mut reader = BufReader::with_capacity(RDR_BUFFER_SIZE, file);
 
     // 跳过前skiprows行
     for i in 0..self.skiprows {
@@ -350,10 +353,11 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
           // use `csv` to get the headers
           let mut opts = CsvOptions::new(f);
           opts.set_skiprows(self.skiprows);
+          let (sep, reader) = opts.skiprows_and_delimiter().ok()?;
           let mut rdr = ReaderBuilder::new()
-            .delimiter(opts.detect_separator().ok()?)
-            .has_headers(false)
-            .from_reader(opts.rdr_skip_rows().ok()?);
+            .delimiter(sep)
+            // .has_headers(false)
+            .from_reader(reader);
 
           rdr
             .headers()
@@ -377,10 +381,11 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
   /// Get csv headers {key: label, value: value}
   pub fn map_headers(&self) -> Result<Vec<HashMap<String, String>>> {
+    let (sep, reader) = self.skiprows_and_delimiter()?;
     let mut rdr = ReaderBuilder::new()
-      .delimiter(self.detect_separator()?)
-      .has_headers(false)
-      .from_reader(self.rdr_skip_rows()?);
+      .delimiter(sep)
+      // .has_headers(false)
+      .from_reader(reader);
 
     let headers: Vec<HashMap<String, String>> = rdr
       .headers()?
@@ -402,9 +407,10 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     let mut duplicate_headers: HashSet<String> = HashSet::new();
     let mut unique_headers: HashSet<String> = HashSet::new();
 
+    let (sep, reader) = self.skiprows_and_delimiter()?;
     let mut rdr = ReaderBuilder::new()
-      .delimiter(self.detect_separator()?)
-      .from_reader(self.rdr_skip_rows()?);
+      .delimiter(sep)
+      .from_reader(reader);
 
     match rdr.headers() {
       Ok(headers) => {

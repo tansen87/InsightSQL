@@ -6,7 +6,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSlice, useMarkdown } from "@/utils/markdown";
-import { useFlexible, useQuoting } from "@/store/modules/options";
+import { useFlexible, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [path, start, end] = [ref(""), ref("1"), ref("10")];
 const [isLoading, dialog] = [ref(false), ref(false)];
@@ -15,6 +15,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSlice);
 const quotingStore = useQuoting();
 const flexibleStore = useFlexible();
+const skiprowsStore = useSkiprows();
 
 async function selectFile() {
   tableHeader.value = [];
@@ -25,8 +26,11 @@ async function selectFile() {
   if (path.value === null) return;
 
   try {
-    tableHeader.value = await mapHeaders(path.value, "0");
-    const { columnView, dataView } = await toJson(path.value);
+    tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
+    const { columnView, dataView } = await toJson(
+      path.value,
+      skiprowsStore.skiprows
+    );
     tableColumn.value = columnView;
     tableData.value = dataView;
   } catch (err) {
@@ -48,7 +52,8 @@ async function sliceData() {
       quoting: quotingStore.quoting,
       flexible: flexibleStore.flexible,
       start: start.value,
-      end: end.value
+      end: end.value,
+      skiprows: skiprowsStore.skiprows
     });
     message(`Slice done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

@@ -66,9 +66,10 @@ export async function trimOpenFile(
   }
 }
 
-export async function toJson(path: string) {
+export async function toJson(path: string, skiprows: number) {
   const result: string = await invoke("to_json", {
-    path: path
+    path: path,
+    skiprows: skiprows
   });
   const jsonData = JSON.parse(result);
   const arrayData = Array.isArray(jsonData) ? jsonData : [jsonData];
@@ -83,10 +84,10 @@ export async function toJson(path: string) {
   };
 }
 
-export async function mapHeaders(path: string, skipRows: string) {
+export async function mapHeaders(path: string, skiprows: number) {
   const headers: string[] = await invoke("map_headers", {
     path: path,
-    skipRows: skipRows
+    skiprows: skiprows
   });
 
   return headers;
