@@ -89,7 +89,8 @@ async function StrData() {
         reverse: reverse.value,
         mode: activeTab.value,
         quoting: quotingStore.quoting,
-        progress: progressStore.progress
+        progress: progressStore.progress,
+        skiprows: skiprowsStore.skiprows
       });
     }
     if (["split_n", "split_max"].includes(activeTab.value)) {
@@ -100,7 +101,8 @@ async function StrData() {
         by: by.value,
         mode: activeTab.value,
         quoting: quotingStore.quoting,
-        progress: progressStore.progress
+        progress: progressStore.progress,
+        skiprows: skiprowsStore.skiprows
       });
     }
     if (["pad_left", "pad_right", "pad_both"].includes(activeTab.value)) {
@@ -111,7 +113,8 @@ async function StrData() {
         fillChar: by.value,
         mode: activeTab.value,
         quoting: quotingStore.quoting,
-        progress: progressStore.progress
+        progress: progressStore.progress,
+        skiprows: skiprowsStore.skiprows
       });
     }
     message(`${activeTab.value} done, elapsed time: ${rtime} s`, {

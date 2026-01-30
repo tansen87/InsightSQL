@@ -59,7 +59,6 @@ pub async fn slice_nchar<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  
   let headers = rdr.headers()?.clone();
 
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
@@ -209,44 +208,37 @@ where
       if let Some(value) = record.get(sel.first_indices()?) {
         let slice_sl = {
           let chars: Vec<char> = value.chars().collect();
+          let total_len = chars.len();
 
-          let (start, is_reversed) = if start_idx > 0 {
-            ((start_idx - 1).try_into()?, false)
-          } else if start_idx < 0 {
-            let start = chars.len().saturating_sub((-start_idx - 1).try_into()?);
-            (start, true)
+          if total_len == 0 {
+            String::new()
+          } else if start_idx == 0 {
+            return Err(anyhow!("Start index cannot be zero"));
           } else {
-            return Err(anyhow!("Number of the slice cannot be equal to 0"));
-          };
+            let start = if start_idx > 0 {
+              (start_idx - 1) as usize
+            } else {
+              // start_idx < 0
+              let offset = (-start_idx) as usize;
+              if offset == 0 {
+                return Err(anyhow!("Invalid negative index"));
+              }
+              total_len.saturating_sub(offset)
+            };
 
-          // determine the indices of the slice
-          let end = start + length;
-          let slice = if is_reversed {
-            chars
-              .iter()
-              .rev()
-              .skip(chars.len().saturating_sub(end))
-              .take(length)
-              .cloned()
-              .collect::<Vec<char>>()
-          } else {
-            chars
-              .get(start..end)
-              .map(|r| r.to_vec())
-              .unwrap_or_default()
-          };
+            if start >= total_len {
+              String::new()
+            } else {
+              let end = std::cmp::min(start + length, total_len);
+              let mut slice: String = chars[start..end].iter().collect();
 
-          let mut result: String = slice.into_iter().collect();
+              if reverse {
+                slice = slice.chars().rev().collect();
+              }
 
-          // warning: 不需要将以下两个if合并到一起
-          if start_idx < 0 {
-            result = result.chars().rev().collect();
+              slice
+            }
           }
-          if reverse {
-            result = result.chars().rev().collect();
-          }
-
-          result
         };
 
         let mut new_record = record.clone();
