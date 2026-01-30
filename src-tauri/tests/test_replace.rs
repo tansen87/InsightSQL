@@ -1,19 +1,21 @@
 #[tokio::test]
 async fn test_replace() -> anyhow::Result<()> {
+  use std::io::Write;
+
   let temp_dir = tempfile::TempDir::new()?;
 
   let data = vec![
+    "",
     "name,age,gender",
     "Jerry,19,male",
     "Patrick,4,male",
     "Sandy,24,female",
   ];
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
 
   insight::cmd::replace::regex_replace(
     file_path.to_str().unwrap(),
@@ -22,13 +24,13 @@ async fn test_replace() -> anyhow::Result<()> {
     "XX".to_string(),
     true,
     true,
-    0,
+    1,
     insight::utils::MockEmitter::default(),
   )
   .await?;
 
   let output_path = temp_dir.path().join(format!(
-    "{}.replace.csv",
+    "{}_replace.csv",
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 

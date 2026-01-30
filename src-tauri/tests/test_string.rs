@@ -1,12 +1,15 @@
 fn create_temp_csv() -> anyhow::Result<(
   tempfile::TempDir,
-  csv::Reader<std::io::BufReader<std::fs::File>>,
+  csv::Reader<std::io::BufReader<Box<dyn std::io::Read + Send>>>,
   csv::Writer<std::io::BufWriter<std::fs::File>>,
   String,
 )> {
+  use std::io::Write;
+
   let temp_dir = tempfile::TempDir::new()?;
 
   let data = vec![
+    "",
     "Patrick,4,male",
     "name,age,gender",
     "汤-姆-1,18,男",
@@ -14,24 +17,23 @@ fn create_temp_csv() -> anyhow::Result<(
     "Sa-n-dy,24,female",
   ];
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
 
   let output_path = temp_dir
     .path()
     .join(format!(
-      "{}.slice.csv",
+      "{}_slice.csv",
       file_path.file_stem().unwrap().to_str().unwrap()
     ))
     .to_string_lossy()
     .to_string();
 
   let mut csv_options = insight::io::csv::options::CsvOptions::new(file_path);
-  csv_options.set_skiprows(1);
-  let rdr = csv::ReaderBuilder::new().from_reader(csv_options.rdr_skip_rows()?);
+  csv_options.set_skiprows(2);
+  let rdr = csv_options.skiprows_reader()?;
 
   let output_file = std::fs::File::create(&output_path)?;
   let buf_writer = std::io::BufWriter::with_capacity(256_000, output_file);

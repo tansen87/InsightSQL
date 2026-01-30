@@ -1,19 +1,21 @@
 #[tokio::test]
 async fn test_pinyin() -> anyhow::Result<()> {
+  use std::io::Write;
+
   let temp_dir = tempfile::TempDir::new()?;
 
   let data = vec![
+    "",
     "name,age,gender",
     "汤姆,18,男",
     "杰瑞,19,male",
     "Sandy,24,female",
   ];
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
 
   insight::cmd::pinyin::chinese_to_pinyin(
     file_path.to_str().unwrap(),
@@ -21,13 +23,13 @@ async fn test_pinyin() -> anyhow::Result<()> {
     false,
     "upper",
     true,
-    0,
+    1,
     insight::utils::MockEmitter::default(),
   )
   .await?;
 
   let output_path = temp_dir.path().join(format!(
-    "{}.pinyin.csv",
+    "{}_pinyin.csv",
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 

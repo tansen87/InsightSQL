@@ -1,5 +1,8 @@
 fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
+  use std::io::Write;
+
   let data = vec![
+    "",
     "name,age,gender",
     "Tom,18,male",
     "Jerry,19,male",
@@ -9,17 +12,16 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
 
   let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
 
   let path = file_path.to_str().unwrap().to_string();
   let output_path = temp_dir
     .path()
     .join(format!(
-      "{}.search.csv",
+      "{}_search.csv",
       file_path.file_stem().unwrap().to_str().unwrap()
     ))
     .to_string_lossy()
@@ -38,7 +40,7 @@ async fn test_equal() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -66,7 +68,7 @@ async fn test_not_equal() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -99,7 +101,7 @@ async fn test_contains() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -127,7 +129,7 @@ async fn test_not_contains() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -160,7 +162,7 @@ async fn test_starts_with() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -188,7 +190,7 @@ async fn test_not_starts_with() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -221,7 +223,7 @@ async fn test_ends_with() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -249,7 +251,7 @@ async fn test_not_ends_with() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -282,7 +284,7 @@ async fn test_regex() -> anyhow::Result<()> {
     path,
     column,
     regex_char,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -310,7 +312,7 @@ async fn test_is_null() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -338,7 +340,7 @@ async fn test_is_not_null() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -372,7 +374,7 @@ async fn test_gt() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -400,7 +402,7 @@ async fn test_ge() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -433,7 +435,7 @@ async fn test_lt() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -461,7 +463,7 @@ async fn test_le() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -489,7 +491,7 @@ async fn test_between() -> anyhow::Result<()> {
     path,
     column,
     conditions,
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -528,7 +530,7 @@ async fn test_equal_multi() -> anyhow::Result<()> {
     path,
     column,
     conditions.clone(),
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -601,7 +603,7 @@ async fn test_contains_multi() -> anyhow::Result<()> {
     path,
     column,
     conditions.clone(),
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -674,7 +676,7 @@ async fn test_starts_with_multi() -> anyhow::Result<()> {
     path,
     column,
     conditions.clone(),
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),
@@ -747,7 +749,7 @@ async fn test_ends_with_multi() -> anyhow::Result<()> {
     path,
     column,
     conditions.clone(),
-    0,
+    1,
     true,
     true,
     insight::utils::MockEmitter::default(),

@@ -1,16 +1,15 @@
 #[tokio::test]
 async fn test_sort() -> anyhow::Result<()> {
-  let data = vec!["index,age,name", "1,18,AC", "3,19,AD", "2,24,AA"];
+  use std::io::Write;
+
+  let data = vec!["", "index,age,name", "1,18,AC", "3,19,AD", "2,24,AA"];
 
   let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
-
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
-
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let file_name = file_path.file_name().unwrap().to_str().unwrap();
   let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
@@ -25,9 +24,10 @@ async fn test_sort() -> anyhow::Result<()> {
   ];
 
   for (numeric, reverse, select_column, expected) in test_cases {
-    insight::cmd::sort::sort_csv(&path, select_column.to_string(), numeric, reverse, true, 0).await?;
+    insight::cmd::sort::sort_csv(&path, select_column.to_string(), numeric, reverse, true, 1)
+      .await?;
 
-    let output_path = format!("{}.sort.csv", path1);
+    let output_path = format!("{}_sort.csv", path1);
     let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;
 
     let result: Vec<String> = rdr

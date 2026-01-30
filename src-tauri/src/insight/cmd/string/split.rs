@@ -1,6 +1,6 @@
 use std::{
   fs::File,
-  io::{BufReader, BufWriter},
+  io::{BufReader, BufWriter, Read},
   path::Path,
   sync::{
     Arc,
@@ -35,7 +35,7 @@ impl From<&str> for SplitMode {
 }
 
 pub async fn split_n<E>(
-  mut rdr: Reader<BufReader<File>>,
+  mut rdr: Reader<BufReader<Box<dyn Read + Send>>>,
   mut wtr: Writer<BufWriter<File>>,
   column: &str,
   n: usize,
@@ -119,7 +119,7 @@ where
 }
 
 pub async fn split_max<E>(
-  mut rdr: Reader<BufReader<File>>,
+  mut rdr: Reader<BufReader<Box<dyn Read + Send>>>,
   mut wtr: Writer<BufWriter<File>>,
   column: String,
   n: usize,
@@ -216,6 +216,7 @@ pub async fn split<E, P>(
   mode: SplitMode,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
@@ -232,8 +233,9 @@ where
     return Err(anyhow!("by must be a single character"));
   }
 
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("split"), None)?;
 
   let total_rows = match progress {
@@ -245,7 +247,7 @@ where
   let rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
   let wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);

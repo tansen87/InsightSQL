@@ -141,13 +141,17 @@ pub async fn cat_with_csv(
   skiprows: usize,
 ) -> Result<()> {
   let mut all_columns: IndexSet<Box<[u8]>> = IndexSet::with_capacity(16);
-
+  let mut first_sep = None;
   let paths: Vec<&str> = path.split('|').collect();
 
-  for p in &paths {
+  for (i, p) in paths.iter().enumerate() {
     let mut opts = CsvOptions::new(p);
     opts.set_skiprows(skiprows);
     let (sep, reader) = opts.skiprows_and_delimiter()?;
+
+    if i == 0 {
+      first_sep = Some(sep);
+    }
 
     let mut rdr = ReaderBuilder::new()
       .delimiter(sep)
@@ -160,10 +164,10 @@ pub async fn cat_with_csv(
     }
   }
 
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  // TODO: 添加write delimiter
-  let mut wtr = WriterBuilder::new().delimiter(b'|').from_writer(buf_wtr);
+  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
+  let mut wtr = WriterBuilder::new()
+    .delimiter(first_sep.unwrap_or(b'|'))
+    .from_writer(buf_wtr);
 
   for c in &all_columns {
     wtr.write_field(c)?;

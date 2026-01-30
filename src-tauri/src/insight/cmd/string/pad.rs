@@ -15,7 +15,7 @@ use tokio::sync::oneshot;
 
 use crate::{
   io::csv::{options::CsvOptions, selection::Selection},
-  utils::EventEmitter,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
 #[derive(Debug)]
@@ -74,14 +74,16 @@ pub async fn pad<E, P>(
   mode: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("pad"), None)?;
   let length = length.parse::<usize>()?;
 
@@ -94,10 +96,10 @@ where
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column][..])?;
 
-  let buf_writer = BufWriter::with_capacity(256_000, File::create(output_path)?);
+  let buf_writer = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
   let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_writer);
   wtr.write_record(rdr.headers()?)?;
 

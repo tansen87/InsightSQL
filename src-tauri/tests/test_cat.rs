@@ -1,22 +1,22 @@
 #[tokio::test]
 async fn test_cat_csv() -> anyhow::Result<()> {
+  use std::io::Write;
+
   let temp_dir = tempfile::TempDir::new()?;
 
-  let data1 = vec!["Tom,1", "name,age", "Tom,18", "Jerry,19"];
+  let data1 = vec!["", "Tom,1", "name,age", "Tom,18", "Jerry,19"];
   let file_path1 = temp_dir.path().join("input1.csv");
-  let mut wtr1 = csv::Writer::from_path(&file_path1)?;
+  let mut file1 = std::fs::File::create(&file_path1)?;
   for line in &data1 {
-    wtr1.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file1, "{}", line)?;
   }
-  wtr1.flush()?;
 
-  let data2 = vec!["Tom,1", "idx,name", "1,Sandy", "2,Patrick"];
+  let data2 = vec!["\\n", "Tom,1", "idx,name", "1,Sandy", "2,Patrick"];
   let file_path2 = temp_dir.path().join("input2.csv");
-  let mut wtr2 = csv::Writer::from_path(&file_path2)?;
+  let mut file2 = std::fs::File::create(&file_path2)?;
   for line in &data2 {
-    wtr2.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file2, "{}", line)?;
   }
-  wtr2.flush()?;
 
   let output_path = temp_dir.path().join(format!(
     "{}.cat.csv",
@@ -28,7 +28,7 @@ async fn test_cat_csv() -> anyhow::Result<()> {
     format!("{p1}|{p2}"),
     output_path.to_string_lossy().to_string(),
     true,
-    1
+    2,
   )
   .await?;
   let binding = std::fs::read_to_string(&output_path)?;

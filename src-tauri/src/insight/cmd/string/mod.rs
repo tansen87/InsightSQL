@@ -16,6 +16,7 @@ pub async fn str_slice(
   mode: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -31,6 +32,7 @@ pub async fn str_slice(
     slice_mode,
     quoting,
     progress,
+    skiprows,
     app_handle,
   )
   .await
@@ -53,6 +55,7 @@ pub async fn str_split(
   mode: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -67,6 +70,7 @@ pub async fn str_split(
     split_mode,
     quoting,
     progress,
+    skiprows,
     app_handle,
   )
   .await
@@ -89,12 +93,13 @@ pub async fn str_pad(
   mode: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
   match pad::pad(
-    path, &column, length, fill_char, mode, quoting, progress, app_handle,
+    path, &column, length, fill_char, mode, quoting, progress, skiprows, app_handle,
   )
   .await
   {

@@ -1,6 +1,9 @@
 #[tokio::test]
 async fn test_select() -> anyhow::Result<()> {
+  use std::io::Write;
+
   let data = vec![
+    "",
     "name,age,gender",
     "Tom,18,male",
     "Jerry,19,male",
@@ -9,11 +12,10 @@ async fn test_select() -> anyhow::Result<()> {
   ];
   let temp_dir = tempfile::TempDir::new()?;
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
   let cols = "name|age".to_string();
 
   insight::cmd::select::select_columns(
@@ -22,13 +24,13 @@ async fn test_select() -> anyhow::Result<()> {
     "include".into(),
     false,
     true,
-    0,
+    1,
     insight::utils::MockEmitter::default(),
   )
   .await?;
 
   let output_path = temp_dir.path().join(format!(
-    "{}.select.csv",
+    "{}_select.csv",
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 

@@ -18,7 +18,7 @@ fn create_temp_csv() -> anyhow::Result<(tempfile::TempDir, String, String)> {
   let output_path = temp_dir
     .path()
     .join(format!(
-      "{}.transpose.csv",
+      "{}_transpose.csv",
       file_path.file_stem().unwrap().to_str().unwrap()
     ))
     .to_string_lossy()

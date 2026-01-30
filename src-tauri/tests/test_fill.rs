@@ -1,8 +1,11 @@
 #[tokio::test]
 async fn test_fill() -> anyhow::Result<()> {
+  use std::io::Write;
+
   let temp_dir = tempfile::TempDir::new()?;
 
   let data = vec![
+    "",
     "name,age,gender",
     "Jerry,19,",
     "Patrick,4,male",
@@ -10,11 +13,10 @@ async fn test_fill() -> anyhow::Result<()> {
   ];
 
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::Writer::from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(',').map(|s| s.as_bytes()))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
 
   insight::cmd::fill::fill_null(
     file_path.to_str().unwrap(),
@@ -23,13 +25,13 @@ async fn test_fill() -> anyhow::Result<()> {
     "fill".to_string(),
     true,
     false,
-    0,
+    1,
     insight::utils::MockEmitter::default(),
   )
   .await?;
 
   let output_path = temp_dir.path().join(format!(
-    "{}.fill.csv",
+    "{}_fill.csv",
     file_path.file_stem().unwrap().to_str().unwrap()
   ));
 

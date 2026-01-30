@@ -1,27 +1,28 @@
 #[tokio::test]
 async fn test_skip() -> anyhow::Result<()> {
+  use std::io::Write;
+
   let temp_dir = tempfile::TempDir::new()?;
 
   let data = vec![
-    "汤姆,18,男",
+    "汤姆,18",
     "Patrick,4,male",
     "name,age,gender",
     "杰瑞,19,male",
     "Sandy,24,female",
   ];
   let file_path = temp_dir.path().join("input.csv");
-  let mut wtr = csv::WriterBuilder::new().from_path(&file_path)?;
+  let mut file = std::fs::File::create(&file_path)?;
   for line in &data {
-    wtr.write_record(line.split(','))?;
+    writeln!(file, "{}", line)?;
   }
-  wtr.flush()?;
 
   let file_stem = file_path.file_stem().unwrap().to_string_lossy().to_string();
   let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let output_path = temp_dir
     .path()
-    .join(format!("{parent_path}/{file_stem}.skip.csv"));
+    .join(format!("{parent_path}/{file_stem}_skip.csv"));
 
   insight::cmd::skip::skip_csv(
     file_path.to_str().unwrap(),
