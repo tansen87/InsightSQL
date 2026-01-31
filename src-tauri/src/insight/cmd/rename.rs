@@ -1,6 +1,4 @@
 use std::{
-  fs::File,
-  io::BufWriter,
   path::Path,
   sync::{
     Arc,
@@ -10,13 +8,13 @@ use std::{
 };
 
 use anyhow::Result;
-use csv::{ByteRecord, Reader, ReaderBuilder, WriterBuilder};
+use csv::{ByteRecord, Reader};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::{
-  io::csv::options::CsvOptions,
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions},
+  utils::EventEmitter,
 };
 
 pub async fn rename_headers<E, P>(
@@ -25,6 +23,7 @@ pub async fn rename_headers<E, P>(
   progress: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -42,17 +41,18 @@ where
   };
   emitter.emit_total_rows(total_rows).await?;
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(reader);
+    .build();
+
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   let mut new_rdr = Reader::from_reader(r_header.as_bytes());
   let new_headers = new_rdr.byte_headers()?;
 
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
   wtr.write_record(new_headers)?;
 
   let rows = Arc::new(AtomicUsize::new(0));
@@ -115,15 +115,20 @@ pub async fn rename(
   progress: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match rename_headers(path, headers, progress, quoting, skiprows, app_handle).await {
+  match rename_headers(
+    path, headers, progress, quoting, skiprows, flexible, app_handle,
+  )
+  .await
+  {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
+      Ok(format!("{elapsed_time:.0}"))
     }
     Err(err) => Err(format!("{err}")),
   }

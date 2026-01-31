@@ -26,6 +26,7 @@ async fn test_fill() -> anyhow::Result<()> {
     true,
     false,
     1,
+    false,
     insight::utils::MockEmitter::default(),
   )
   .await?;

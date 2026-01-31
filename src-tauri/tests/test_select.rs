@@ -25,6 +25,7 @@ async fn test_select() -> anyhow::Result<()> {
     false,
     true,
     1,
+    false,
     insight::utils::MockEmitter::default(),
   )
   .await?;

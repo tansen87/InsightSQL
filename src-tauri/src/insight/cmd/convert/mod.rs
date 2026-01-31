@@ -64,6 +64,7 @@ pub async fn csv2csv(
   quoting: bool,
   progress: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -87,6 +88,7 @@ pub async fn csv2csv(
       filename.to_string(),
       progress,
       skiprows,
+      flexible,
       emitter.clone(),
     )
     .await

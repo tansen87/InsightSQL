@@ -9,7 +9,12 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdPinyin, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
+import {
+  useFlexible,
+  useProgress,
+  useQuoting,
+  useSkiprows
+} from "@/store/modules/options";
 
 const pinyinStyle = ref("upper");
 const pyOptions = [
@@ -26,6 +31,7 @@ const { isDark } = useDark();
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
+const flexibleStore = useFlexible();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -77,7 +83,8 @@ async function chineseToPinyin() {
       progress: progressStore.progress,
       pinyinStyle: pinyinStyle.value,
       quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      flexible: flexibleStore.flexible
     });
     message(`Convert done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

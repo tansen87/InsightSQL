@@ -1,7 +1,5 @@
 use std::{
   borrow::Cow,
-  fs::File,
-  io::BufWriter,
   path::Path,
   sync::{
     Arc,
@@ -11,14 +9,14 @@ use std::{
 };
 
 use anyhow::Result;
-use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
+use csv::ByteRecord;
 use regex::bytes::RegexBuilder;
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::{
-  io::csv::{options::CsvOptions, selection::Selection},
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions, selection::Selection},
+  utils::EventEmitter,
 };
 
 pub async fn regex_replace<E, P>(
@@ -29,6 +27,7 @@ pub async fn regex_replace<E, P>(
   quoting: bool,
   progress: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -47,14 +46,14 @@ where
   };
   emitter.emit_total_rows(total_rows).await?;
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(reader);
+    .build();
 
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   let headers = rdr.byte_headers()?;
   let sel = Selection::from_headers(headers, &[sel.as_str()][..])?;
@@ -138,6 +137,7 @@ pub async fn replace(
   quoting: bool,
   progress: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -150,6 +150,7 @@ pub async fn replace(
     quoting,
     progress,
     skiprows,
+    flexible,
     emitter,
   )
   .await

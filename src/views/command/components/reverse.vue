@@ -6,7 +6,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdReverse, useMarkdown } from "@/utils/markdown";
-import { useQuoting, useSkiprows } from "@/store/modules/options";
+import { useFlexible, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const path = ref("");
 const [tableColumn, tableData] = [ref([]), ref([])];
@@ -15,6 +15,7 @@ const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdReverse);
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
+const flexibleStore = useFlexible();
 
 async function selectFile() {
   tableColumn.value = [];
@@ -47,7 +48,8 @@ async function reverseData() {
     const rtime: string = await invoke("reverse", {
       path: path.value,
       quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      flexible: flexibleStore.flexible
     });
     message(`Reverse done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

@@ -1,26 +1,29 @@
 use std::{path::Path, time::Instant};
 
 use anyhow::Result;
-use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
+use csv::ByteRecord;
 
-use crate::io::csv::options::CsvOptions;
+use crate::io::csv::{config::CsvConfigBuilder, options::CsvOptions};
 
 pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
 ) -> Result<()> {
   let mut opts = CsvOptions::new(path);
   opts.set_skiprows(skiprows);
   let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("reverse"), None)?;
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(reader);
+    .build();
 
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_path(output_path)?;
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   if let Some(mut idx_file) = opts.indexed()? {
     // we have an index, no need to check avail mem,
@@ -53,10 +56,15 @@ pub async fn reverse_csv<P: AsRef<Path> + Send + Sync>(
 }
 
 #[tauri::command]
-pub async fn reverse(path: String, quoting: bool, skiprows: usize) -> Result<String, String> {
+pub async fn reverse(
+  path: String,
+  quoting: bool,
+  skiprows: usize,
+  flexible: bool,
+) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match reverse_csv(path, quoting, skiprows).await {
+  match reverse_csv(path, quoting, skiprows, flexible).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

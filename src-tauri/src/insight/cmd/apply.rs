@@ -1,11 +1,7 @@
-use std::{
-  collections::HashMap, fs::File, io::BufWriter, ops::Neg, path::Path, sync::OnceLock,
-  time::Instant,
-};
+use std::{collections::HashMap, ops::Neg, path::Path, sync::OnceLock, time::Instant};
 
 use anyhow::{Result, anyhow};
 use cpc::{eval, units::Unit};
-use csv::{ReaderBuilder, WriterBuilder};
 use dynfmt::Format;
 use rayon::{
   iter::{IndexedParallelIterator, ParallelIterator},
@@ -14,7 +10,7 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::{io::csv::options::CsvOptions, utils::WTR_BUFFER_SIZE};
+use crate::io::csv::{config::CsvConfigBuilder, options::CsvOptions};
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -235,6 +231,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   new_column_flag: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
 ) -> Result<()> {
   let columns: Vec<&str> = columns.split('|').collect();
   if columns.is_empty() {
@@ -270,14 +267,14 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
     None
   };
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(reader);
+    .build();
 
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   let headers = rdr.byte_headers()?;
 
@@ -460,6 +457,7 @@ pub async fn apply(
   new_column: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -474,6 +472,7 @@ pub async fn apply(
     new_column,
     quoting,
     skiprows,
+    flexible,
   )
   .await
   {

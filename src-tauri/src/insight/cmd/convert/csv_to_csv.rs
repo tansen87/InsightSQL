@@ -16,8 +16,8 @@ use encoding_rs_io::DecodeReaderBytesBuilder;
 use tokio::sync::oneshot;
 
 use crate::{
-  io::csv::options::CsvOptions,
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions},
+  utils::EventEmitter,
 };
 
 /// Reformat a CSV with different delimiters, quoting rules
@@ -30,6 +30,7 @@ pub async fn csv_to_csv<E, P>(
   filename: String,
   progress: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -61,17 +62,17 @@ where
     .emit_total_msg(&format!("{filename}|{total_rows}"))
     .await?;
 
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(rdr_sep)
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
+    .read_delimiter(rdr_sep)
     .quoting(quoting)
-    .from_reader(reader);
-
-  let buf_writer = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
+    .write_delimiter(sep)
     .quote(quote)
     .quote_style(quote_style)
-    .from_writer(buf_writer);
+    .build();
+
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   wtr.write_record(rdr.headers()?)?;
 

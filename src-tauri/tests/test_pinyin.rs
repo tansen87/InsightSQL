@@ -24,6 +24,7 @@ async fn test_pinyin() -> anyhow::Result<()> {
     "upper",
     true,
     1,
+    false,
     insight::utils::MockEmitter::default(),
   )
   .await?;

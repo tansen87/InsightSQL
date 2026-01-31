@@ -1,13 +1,9 @@
-use std::{cmp, fs::File, io::BufWriter, path::Path, time::Instant};
+use std::{cmp, path::Path, time::Instant};
 
 use anyhow::Result;
-use csv::{ReaderBuilder, WriterBuilder};
 
 use self::Number::{Float, Int};
-use crate::{
-  io::csv::{options::CsvOptions, selection::Selection},
-  utils::WTR_BUFFER_SIZE,
-};
+use crate::io::csv::{config::CsvConfigBuilder, options::CsvOptions, selection::Selection};
 
 pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   path: P,
@@ -15,6 +11,7 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   numeric: bool,
   reverse: bool,
   quoting: bool,
+  flexible: bool,
   skiprows: usize,
 ) -> Result<()> {
   let mut opts = CsvOptions::new(&path);
@@ -22,10 +19,15 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
   let (sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("sort"), None)?;
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(reader);
+    .build();
+
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
+
   let headers = rdr.byte_headers()?.clone();
   let sel = Selection::from_headers(&headers, &[column.as_str()][..])?;
 
@@ -58,10 +60,6 @@ pub async fn sort_csv<P: AsRef<Path> + Send + Sync>(
       )
     }),
   }
-
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(&headers)?;
 
@@ -155,10 +153,11 @@ pub async fn sort(
   reverse: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match sort_csv(path, column, numeric, reverse, quoting, skiprows).await {
+  match sort_csv(path, column, numeric, reverse, quoting, flexible, skiprows).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

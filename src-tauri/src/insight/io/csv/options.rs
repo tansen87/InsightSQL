@@ -19,9 +19,7 @@ use crate::{
 pub struct CsvOptions<P: AsRef<Path> + Send + Sync> {
   path: P,
   skiprows: usize,
-  quoting: bool,
-  flexible: bool,
-  header: bool,
+  decrease: bool,
 }
 
 impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
@@ -29,9 +27,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     CsvOptions {
       path,
       skiprows: 0,
-      quoting: true,
-      flexible: false,
-      header: true,
+      decrease: true,
     }
   }
 
@@ -45,16 +41,8 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     self.skiprows
   }
 
-  pub fn set_quoting(&mut self, quoting: bool) {
-    self.quoting = quoting;
-  }
-
-  pub fn set_flexible(&mut self, flexible: bool) {
-    self.flexible = flexible;
-  }
-
-  pub fn set_header(&mut self, header: bool) {
-    self.header = header;
+  pub fn set_decrease(&mut self, decrease: bool) {
+    self.decrease = decrease;
   }
 
   /// return parent path
@@ -152,7 +140,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   /// Count the lines of file
   pub fn count_lines(&self) -> Result<usize> {
     let reader = BufReader::new(File::open(&self.path)?);
-    let line_count = if self.header {
+    let line_count = if self.decrease {
       reader.lines().count().saturating_sub(1)
     } else {
       reader.lines().count()
@@ -215,20 +203,18 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok((best_sep, final_reader))
   }
 
-  pub fn skiprows_reader(
-    &self,
-  ) -> Result<csv::Reader<std::io::BufReader<Box<dyn std::io::Read + Send>>>> {
+  pub fn skiprows_reader(&self) -> Result<csv::Reader<BufReader<Box<dyn Read + Send>>>> {
     let (delimiter, reader) = self.skiprows_and_delimiter()?;
     let rdr = ReaderBuilder::new()
       .delimiter(delimiter)
-      .quoting(self.quoting)
-      .flexible(self.flexible)
       .from_reader(reader);
+
     Ok(rdr)
   }
 
   pub fn get_delimiter(&self) -> Result<u8> {
     let (delimiter, _) = self.skiprows_and_delimiter()?;
+
     Ok(delimiter)
   }
 
@@ -392,9 +378,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     let mut unique_headers: HashSet<String> = HashSet::new();
 
     let (sep, reader) = self.skiprows_and_delimiter()?;
-    let mut rdr = ReaderBuilder::new()
-      .delimiter(sep)
-      .from_reader(reader);
+    let mut rdr = ReaderBuilder::new().delimiter(sep).from_reader(reader);
 
     match rdr.headers() {
       Ok(headers) => {

@@ -10,7 +10,12 @@ import { message } from "@/utils/message";
 import { viewOpenFile, mapHeaders, toJson } from "@/utils/view";
 import { useDynamicHeight } from "@/utils/utils";
 import { mdSelect, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
+import {
+  useFlexible,
+  useProgress,
+  useQuoting,
+  useSkiprows
+} from "@/store/modules/options";
 
 const path = ref("");
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -32,6 +37,7 @@ const { isDark } = useDark();
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
+const flexibleStore = useFlexible();
 const selColumns = ref<CheckboxValueType[]>([]);
 
 watch(selColumns, val => {
@@ -109,7 +115,8 @@ async function selectColumns() {
       selMode: selMode.value,
       progress: progressStore.progress,
       quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      flexible: flexibleStore.flexible
     });
     message(`Select done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

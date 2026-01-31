@@ -25,6 +25,7 @@ async fn test_replace() -> anyhow::Result<()> {
     true,
     true,
     1,
+    false,
     insight::utils::MockEmitter::default(),
   )
   .await?;

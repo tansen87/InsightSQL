@@ -22,6 +22,7 @@ async fn test_enumerate() -> anyhow::Result<()> {
     false,
     true,
     1,
+    false,
     insight::utils::MockEmitter::default(),
   )
   .await?;

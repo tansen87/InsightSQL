@@ -15,7 +15,7 @@ import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { CheckboxValueType } from "element-plus";
 import { mdApply, useMarkdown } from "@/utils/markdown";
-import { useQuoting, useSkiprows } from "@/store/modules/options";
+import { useFlexible, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [
   isLoading,
@@ -71,6 +71,7 @@ const handleCheckAll = (val: CheckboxValueType) => {
 const { mdShow } = useMarkdown(mdApply);
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
+const flexibleStore = useFlexible();
 
 async function selectFile() {
   columns.value = [];
@@ -130,7 +131,8 @@ async function applyData() {
       formatstr: formatstr.value,
       newColumn: newColumn.value,
       quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      flexible: flexibleStore.flexible
     });
     backendCompleted.value = true;
     backendInfo.value = `Apply done, elapsed time: ${result} s`;

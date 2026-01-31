@@ -24,8 +24,16 @@ async fn test_sort() -> anyhow::Result<()> {
   ];
 
   for (numeric, reverse, select_column, expected) in test_cases {
-    insight::cmd::sort::sort_csv(&path, select_column.to_string(), numeric, reverse, true, 1)
-      .await?;
+    insight::cmd::sort::sort_csv(
+      &path,
+      select_column.to_string(),
+      numeric,
+      reverse,
+      true,
+      false,
+      1,
+    )
+    .await?;
 
     let output_path = format!("{}_sort.csv", path1);
     let mut rdr = csv::ReaderBuilder::new().from_path(output_path)?;

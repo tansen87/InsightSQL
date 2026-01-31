@@ -23,6 +23,7 @@ async fn test_rename() -> anyhow::Result<()> {
     false,
     true,
     1,
+    false,
     insight::utils::MockEmitter::default(),
   )
   .await?;

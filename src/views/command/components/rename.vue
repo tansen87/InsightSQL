@@ -8,7 +8,12 @@ import { useDynamicHeight } from "@/utils/utils";
 import { message } from "@/utils/message";
 import { viewOpenFile } from "@/utils/view";
 import { mdRename, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
+import {
+  useFlexible,
+  useProgress,
+  useQuoting,
+  useSkiprows
+} from "@/store/modules/options";
 
 const tableData = ref([]);
 const [search, path] = [ref(""), ref("")];
@@ -19,6 +24,7 @@ const { mdShow } = useMarkdown(mdRename);
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
+const flexibleStore = useFlexible();
 const filterTableData = computed(() =>
   tableData.value.filter(
     (data: any) =>
@@ -76,7 +82,8 @@ async function renameData() {
       headers: headersString,
       progress: progressStore.progress,
       quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      flexible: flexibleStore.flexible
     });
     message(`Rename done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

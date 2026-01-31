@@ -1,6 +1,4 @@
 use std::{
-  fs::File,
-  io::BufWriter,
   path::Path,
   sync::{
     Arc,
@@ -10,13 +8,13 @@ use std::{
 };
 
 use anyhow::{Result, anyhow};
-use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
+use csv::ByteRecord;
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::{
-  io::csv::options::CsvOptions,
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions},
+  utils::EventEmitter,
 };
 
 pub async fn enumerate_index<E, P>(
@@ -24,6 +22,7 @@ pub async fn enumerate_index<E, P>(
   progress: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -46,18 +45,14 @@ where
   };
   emitter.emit_total_rows(total_rows).await?;
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .flexible(true)
-    .from_reader(reader);
+    .build();
 
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new()
-    .delimiter(sep)
-    .flexible(true)
-    .from_writer(buf_wtr);
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   let headers = rdr.headers()?;
   let mut new_headers = vec![String::from("enumerate_idx")];
@@ -132,15 +127,16 @@ pub async fn enumer(
   progress: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  match enumerate_index(path, progress, quoting, skiprows, app_handle).await {
+  match enumerate_index(path, progress, quoting, skiprows, flexible, app_handle).await {
     Ok(_) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
+      Ok(format!("{elapsed_time:.0}"))
     }
     Err(err) => Err(format!("{err}")),
   }

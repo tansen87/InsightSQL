@@ -7,7 +7,7 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSort, useMarkdown } from "@/utils/markdown";
-import { useQuoting, useSkiprows } from "@/store/modules/options";
+import { useFlexible, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const mode = ref("Sort");
 const modeOptions = [
@@ -35,6 +35,7 @@ const { mdShow } = useMarkdown(mdSort);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
+const flexibleStore = useFlexible();
 
 async function selectFile() {
   column.value = "";
@@ -79,7 +80,8 @@ async function sortData() {
         numeric: numeric.value,
         reverse: reverse.value,
         quoting: quotingStore.quoting,
-        skiprows: skiprowsStore.skiprows
+        skiprows: skiprowsStore.skiprows,
+        flexible: flexibleStore.flexible
       });
     } else if (mode.value == "ExtSort") {
       rtime = await invoke("extsort", {

@@ -1,7 +1,5 @@
 use std::{
   collections::{BTreeMap, HashSet},
-  fs::File,
-  io::BufWriter,
   path::Path,
   sync::{
     Arc,
@@ -11,13 +9,13 @@ use std::{
 };
 
 use anyhow::Result;
-use csv::{ByteRecord, ReaderBuilder, WriterBuilder};
+use csv::ByteRecord;
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::{
-  io::csv::options::CsvOptions,
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions},
+  utils::EventEmitter,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -43,6 +41,7 @@ pub async fn select_columns<E, P>(
   progress: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
   emitter: E,
 ) -> Result<()>
 where
@@ -61,10 +60,14 @@ where
   };
   emitter.emit_total_rows(total_rows).await?;
 
-  let mut rdr = ReaderBuilder::new()
+  let config = CsvConfigBuilder::new()
+    .flexible(flexible)
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(reader);
+    .build();
+
+  let mut rdr = config.build_reader(reader);
+  let mut wtr = config.build_writer(&output_path)?;
 
   let headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
@@ -99,10 +102,6 @@ where
       (indices, out_headers)
     }
   };
-
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(output_headers.iter())?;
 
@@ -178,6 +177,7 @@ pub async fn select(
   progress: bool,
   quoting: bool,
   skiprows: usize,
+  flexible: bool,
   app_handle: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -185,7 +185,7 @@ pub async fn select(
   let sel_mode: SelectMode = sel_mode.as_str().into();
 
   match select_columns(
-    path, sel_cols, sel_mode, progress, quoting, skiprows, app_handle,
+    path, sel_cols, sel_mode, progress, quoting, skiprows, flexible, app_handle,
   )
   .await
   {

@@ -1,7 +1,7 @@
 use std::{
   collections::{HashMap, HashSet},
   fs::File,
-  io::BufWriter,
+  io::{BufReader, BufWriter, Read},
   path::Path,
   sync::{
     Arc,
@@ -18,8 +18,8 @@ use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::{
-  io::csv::{options::CsvOptions, selection::Selection},
-  utils::{EventEmitter, WTR_BUFFER_SIZE},
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions, selection::Selection},
+  utils::EventEmitter,
 };
 
 #[derive(Debug)]
@@ -80,12 +80,11 @@ fn sanitize_condition(condition: &str) -> String {
     .collect()
 }
 
-async fn generic_search<E, F, P>(
-  path: P,
+async fn generic_search<E, F>(
+  mut rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  mut wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   match_fn: F,
   emitter: E,
@@ -93,29 +92,8 @@ async fn generic_search<E, F, P>(
 where
   E: EventEmitter + Send + Sync + 'static,
   F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
-  let mut opts = CsvOptions::new(&path);
-  opts.set_skiprows(skiprows);
-  let (sep, reader) = opts.skiprows_and_delimiter()?;
-  let output_path = opts.output_path(Some("search"), None)?;
-
-  let total_rows = match progress {
-    true => opts.idx_count_rows().await?,
-    false => 0,
-  };
-  emitter.emit_total_rows(total_rows).await?;
-
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(sep)
-    .quoting(quoting)
-    .from_reader(reader);
-
   let sel = Selection::from_headers(rdr.byte_headers()?, &[column.as_str()][..])?;
-
-  let output_file = File::create(output_path)?;
-  let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, output_file);
-  let mut wtr = WriterBuilder::new().delimiter(sep).from_writer(buf_wtr);
 
   wtr.write_record(rdr.headers()?)?;
 
@@ -315,25 +293,22 @@ where
   Ok(final_match_rows.to_string())
 }
 
-pub async fn equal<E, P>(
-  path: P,
+pub async fn equal<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conditions| conditions.contains(&value.to_string()),
     emitter,
@@ -367,25 +342,22 @@ where
   .await
 }
 
-pub async fn not_equal<E, P>(
-  path: P,
+pub async fn not_equal<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, cond| !cond.contains(&value.to_string()),
     emitter,
@@ -393,25 +365,22 @@ where
   .await
 }
 
-pub async fn contains<E, P>(
-  path: P,
+pub async fn contains<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conditions| conditions.iter().any(|cond| value.contains(cond)),
     emitter,
@@ -445,25 +414,22 @@ where
   .await
 }
 
-pub async fn not_contains<E, P>(
-  path: P,
+pub async fn not_contains<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conds| !conds.iter().any(|cond| value.contains(cond)),
     emitter,
@@ -471,25 +437,22 @@ where
   .await
 }
 
-pub async fn starts_with<E, P>(
-  path: P,
+pub async fn starts_with<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conditions| conditions.iter().any(|cond| value.starts_with(cond)),
     emitter,
@@ -523,25 +486,22 @@ where
   .await
 }
 
-pub async fn not_starts_with<E, P>(
-  path: P,
+pub async fn not_starts_with<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conds| !conds.iter().any(|cond| value.starts_with(cond)),
     emitter,
@@ -549,25 +509,22 @@ where
   .await
 }
 
-pub async fn ends_with<E, P>(
-  path: P,
+pub async fn ends_with<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conds| conds.iter().any(|cond| value.ends_with(cond)),
     emitter,
@@ -601,25 +558,22 @@ where
   .await
 }
 
-pub async fn not_ends_with<E, P>(
-  path: P,
+pub async fn not_ends_with<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, conds| !conds.iter().any(|cond| value.ends_with(cond)),
     emitter,
@@ -627,27 +581,24 @@ where
   .await
 }
 
-pub async fn regex_search<E, P>(
-  path: P,
+pub async fn regex_search<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   regex_char: String,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   let pattern = RegexBuilder::new(&regex_char).build()?;
 
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     vec![regex_char],
-    skiprows,
-    quoting,
     progress,
     move |value, _| pattern.is_match(value.as_bytes()),
     emitter,
@@ -655,25 +606,22 @@ where
   .await
 }
 
-pub async fn is_null<E, P>(
-  path: P,
+pub async fn is_null<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, _c| value.trim().is_empty(),
     emitter,
@@ -681,25 +629,22 @@ where
   .await
 }
 
-pub async fn is_not_null<E, P>(
-  path: P,
+pub async fn is_not_null<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     |value, _c| !value.trim().is_empty(),
     emitter,
@@ -707,29 +652,26 @@ where
   .await
 }
 
-pub async fn greater_than<E, P>(
-  path: P,
+pub async fn greater_than<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: String,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
 
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     vec![conditions],
-    skiprows,
-    quoting,
     progress,
     move |value, _| {
       value
@@ -742,29 +684,26 @@ where
   .await
 }
 
-pub async fn greater_than_or_equal<E, P>(
-  path: P,
+pub async fn greater_than_or_equal<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: String,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
 
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     vec![conditions],
-    skiprows,
-    quoting,
     progress,
     move |value, _| {
       value
@@ -777,29 +716,26 @@ where
   .await
 }
 
-pub async fn less_than<E, P>(
-  path: P,
+pub async fn less_than<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: String,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Invalid number: {conditions}"))?;
 
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     vec![conditions],
-    skiprows,
-    quoting,
     progress,
     move |value, _| {
       value
@@ -812,29 +748,26 @@ where
   .await
 }
 
-pub async fn less_than_or_equal<E, P>(
-  path: P,
+pub async fn less_than_or_equal<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: String,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
 
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     vec![conditions],
-    skiprows,
-    quoting,
     progress,
     move |value, _| {
       value
@@ -847,18 +780,16 @@ where
   .await
 }
 
-pub async fn between<E, P>(
-  path: P,
+pub async fn between<E>(
+  rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  wtr: csv::Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
-  skiprows: usize,
-  quoting: bool,
   progress: bool,
   emitter: E,
 ) -> Result<String>
 where
   E: EventEmitter + Send + Sync + 'static,
-  P: AsRef<Path> + Send + Sync,
 {
   if conditions.len() != 2 {
     return Err(anyhow!(
@@ -881,11 +812,10 @@ where
   };
 
   generic_search(
-    path,
+    rdr,
+    wtr,
     column,
     conditions,
-    skiprows,
-    quoting,
     progress,
     move |value, _| {
       value
@@ -905,6 +835,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   mode: &str,
   progress: bool,
   quoting: bool,
+  flexible: bool,
   skiprows: usize,
   emitter: AppHandle,
 ) -> Result<String> {
@@ -956,152 +887,59 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
     }
     _ => {
       let vec_conditions = multi_conditions.to_vec();
+      let mut opts = CsvOptions::new(&path);
+      opts.set_skiprows(skiprows);
+      let (sep, reader) = opts.skiprows_and_delimiter()?;
+      let output_path = opts.output_path(Some("search"), None)?;
+      let config = CsvConfigBuilder::new()
+        .flexible(flexible)
+        .delimiter(sep)
+        .quoting(quoting)
+        .build();
+      let rdr = config.build_reader(reader);
+      let wtr = config.build_writer(&output_path)?;
+
+      let total_rows = match progress {
+        true => opts.idx_count_rows().await?,
+        false => 0,
+      };
+      emitter.emit_total_rows(total_rows).await?;
 
       match search_mode {
-        SearchMode::Equal => {
-          equal(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
-        }
+        SearchMode::Equal => equal(rdr, wtr, column, vec_conditions, progress, emitter).await,
         SearchMode::NotEqual => {
-          not_equal(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          not_equal(rdr, wtr, column, vec_conditions, progress, emitter).await
         }
-        SearchMode::Contains => {
-          contains(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
-        }
+        SearchMode::Contains => contains(rdr, wtr, column, vec_conditions, progress, emitter).await,
         SearchMode::NotContains => {
-          not_contains(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          not_contains(rdr, wtr, column, vec_conditions, progress, emitter).await
         }
         SearchMode::StartsWith => {
-          starts_with(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          starts_with(rdr, wtr, column, vec_conditions, progress, emitter).await
         }
         SearchMode::NotStartsWith => {
-          not_starts_with(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          not_starts_with(rdr, wtr, column, vec_conditions, progress, emitter).await
         }
         SearchMode::EndsWith => {
-          ends_with(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          ends_with(rdr, wtr, column, vec_conditions, progress, emitter).await
         }
         SearchMode::NotEndsWith => {
-          not_ends_with(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
+          not_ends_with(rdr, wtr, column, vec_conditions, progress, emitter).await
         }
-        SearchMode::Regex => {
-          regex_search(
-            path, column, conditions, skiprows, quoting, progress, emitter,
-          )
-          .await
-        }
-        SearchMode::IsNull => {
-          is_null(path, column, vec![], skiprows, quoting, progress, emitter).await
-        }
-        SearchMode::IsNotNull => {
-          is_not_null(path, column, vec![], skiprows, quoting, progress, emitter).await
-        }
+        SearchMode::Regex => regex_search(rdr, wtr, column, conditions, progress, emitter).await,
+        SearchMode::IsNull => is_null(rdr, wtr, column, vec![], progress, emitter).await,
+        SearchMode::IsNotNull => is_not_null(rdr, wtr, column, vec![], progress, emitter).await,
         SearchMode::GreaterThan => {
-          greater_than(
-            path, column, conditions, skiprows, quoting, progress, emitter,
-          )
-          .await
+          greater_than(rdr, wtr, column, conditions, progress, emitter).await
         }
         SearchMode::GreaterThanEqual => {
-          greater_than_or_equal(
-            path, column, conditions, skiprows, quoting, progress, emitter,
-          )
-          .await
+          greater_than_or_equal(rdr, wtr, column, conditions, progress, emitter).await
         }
-        SearchMode::LessThan => {
-          less_than(
-            path, column, conditions, skiprows, quoting, progress, emitter,
-          )
-          .await
-        }
+        SearchMode::LessThan => less_than(rdr, wtr, column, conditions, progress, emitter).await,
         SearchMode::LessThanEqual => {
-          less_than_or_equal(
-            path, column, conditions, skiprows, quoting, progress, emitter,
-          )
-          .await
+          less_than_or_equal(rdr, wtr, column, conditions, progress, emitter).await
         }
-        SearchMode::Between => {
-          between(
-            path,
-            column,
-            vec_conditions,
-            skiprows,
-            quoting,
-            progress,
-            emitter,
-          )
-          .await
-        }
+        SearchMode::Between => between(rdr, wtr, column, vec_conditions, progress, emitter).await,
         _ => Err(anyhow!("Unsupported search mode")),
       }
     }
@@ -1116,13 +954,14 @@ pub async fn search(
   condition: String,
   progress: bool,
   quoting: bool,
+  flexible: bool,
   skiprows: usize,
   app_handle: AppHandle,
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
   match perform_search(
-    path, column, condition, &mode, progress, quoting, skiprows, app_handle,
+    path, column, condition, &mode, progress, quoting, flexible, skiprows, app_handle,
   )
   .await
   {

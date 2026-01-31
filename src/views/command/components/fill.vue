@@ -9,7 +9,12 @@ import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdFill, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
+import {
+  useFlexible,
+  useProgress,
+  useQuoting,
+  useSkiprows
+} from "@/store/modules/options";
 
 const [fillChar, mode] = [ref("0"), ref("fill")];
 const [currentRows, totalRows] = [ref(0), ref(0)];
@@ -26,6 +31,7 @@ const { isDark } = useDark();
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
+const flexibleStore = useFlexible();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -78,7 +84,8 @@ async function fillData() {
       mode: mode.value,
       quoting: quotingStore.quoting,
       progress: progressStore.progress,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      flexible: flexibleStore.flexible
     });
     message(`Fill done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

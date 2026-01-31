@@ -8,7 +8,12 @@ import { message } from "@/utils/message";
 import { useDynamicHeight } from "@/utils/utils";
 import { toJson, viewOpenFile, mapHeaders } from "@/utils/view";
 import { mdSearch, useMarkdown } from "@/utils/markdown";
-import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
+import {
+  useFlexible,
+  useProgress,
+  useQuoting,
+  useSkiprows
+} from "@/store/modules/options";
 
 const mode = ref("equal");
 const placeholderText = ref(
@@ -23,6 +28,7 @@ const { mdShow } = useMarkdown(mdSearch);
 const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
+const flexibleStore = useFlexible();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -76,6 +82,7 @@ async function searchData() {
       condition: condition.value,
       progress: progressStore.progress,
       quoting: quotingStore.quoting,
+      flexible: flexibleStore.flexible,
       skiprows: skiprowsStore.skiprows
     });
     matchRows.value = Number(res[0]);
