@@ -12,8 +12,7 @@ import { useQuoting, useSkiprows } from "@/store/modules/options";
 const mode = ref("Sort");
 const modeOptions = [
   { label: "Sort", value: "Sort" },
-  { label: "ExtSort", value: "ExtSort" },
-  { label: "Index", value: "Index" }
+  { label: "ExtSort", value: "ExtSort" }
 ];
 const numOptions = [
   { label: "True", value: true },
@@ -88,12 +87,6 @@ async function sortData() {
         column: column.value,
         reverse: reverse.value,
         quoting: quotingStore.quoting
-      });
-    } else if (mode.value == "Index") {
-      rtime = await invoke("idx", {
-        path: path.value,
-        quoting: quotingStore.quoting,
-        skiprows: skiprowsStore.skiprows
       });
     }
     message(`${mode.value} done, elapsed time: ${rtime} s`, {

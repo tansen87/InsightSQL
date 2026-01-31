@@ -16,6 +16,15 @@ export default {
       }
     },
     {
+      path: "/command/components/idx",
+      name: "csv_idx",
+      component: () => import("@/views/command/components/idx.vue"),
+      meta: {
+        title: "csv_idx",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/apply",
       name: "apply",
       component: () => import("@/views/command/components/apply.vue"),

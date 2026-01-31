@@ -55,8 +55,6 @@ async fn count_record<P: AsRef<Path> + Send + Sync>(
 async fn single_process(
   file: &str,
   mode: &str,
-  start_time: Instant,
-  quoting: bool,
   skiprows: usize,
   window: &Window,
 ) -> Result<(), String> {
@@ -66,20 +64,6 @@ async fn single_process(
   window.emit("info", &filename).map_err(|e| e.to_string())?;
 
   match mode {
-    "index" => match crate::cmd::idx::create_index(file, quoting, skiprows).await {
-      Ok(_) => {
-        let end_time = Instant::now();
-        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-        window
-          .emit("success", format!("{filename}|{elapsed_time:.2} s"))
-          .map_err(|e| e.to_string())?;
-      }
-      Err(err) => {
-        window
-          .emit("err", format!("{filename}|{err}"))
-          .map_err(|e| e.to_string())?;
-      }
-    },
     "count" => match count_rows(file, skiprows).await {
       Ok(cnt) => {
         window
@@ -112,8 +96,6 @@ async fn single_process(
 fn parallel_process(
   file: &str,
   mode: &str,
-  start_time: Instant,
-  quoting: bool,
   skiprows: usize,
   window: &Window,
 ) -> Result<(), String> {
@@ -123,30 +105,6 @@ fn parallel_process(
   window.emit("info", &filename).map_err(|e| e.to_string())?;
 
   match mode {
-    "index" => {
-      let _ = tauri::async_runtime::block_on(async {
-        match crate::cmd::idx::create_index(file, quoting, skiprows).await {
-          Ok(_) => {
-            let elapsed_time = start_time.elapsed().as_secs_f64();
-            if let Err(e) = window
-              .emit("success", format!("{filename}|{elapsed_time:.2} s"))
-              .map_err(|e| e.to_string())
-            {
-              return Err(e);
-            }
-          }
-          Err(err) => {
-            if let Err(e) = window
-              .emit("err", format!("{filename}|{err}"))
-              .map_err(|e| e.to_string())
-            {
-              return Err(e);
-            }
-          }
-        }
-        Ok(())
-      });
-    }
     "count" => {
       let _ = tauri::async_runtime::block_on(async {
         match count_rows(file, skiprows).await {
@@ -202,7 +160,6 @@ fn parallel_process(
 pub async fn count(
   path: String,
   mode: String,
-  quoting: bool,
   skiprows: usize,
   window: Window,
 ) -> Result<String, String> {
@@ -212,18 +169,16 @@ pub async fn count(
   let result = if paths.len() > 1 {
     paths
       .par_iter()
-      .try_for_each(|file| parallel_process(file, &mode, start_time, quoting, skiprows, &window))
+      .try_for_each(|file| parallel_process(file, &mode, skiprows, &window))
   } else {
     Ok(if let Some(file) = paths.first() {
-      single_process(file, &mode, start_time, quoting, skiprows, &window).await?;
+      single_process(file, &mode, skiprows, &window).await?;
     })
   };
 
-  if let Err(e) = result {
-    return Err(e);
-  }
+  result?;
 
   let end_time = Instant::now();
   let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-  Ok(format!("{elapsed_time:.2}"))
+  Ok(format!("{elapsed_time:.0}"))
 }

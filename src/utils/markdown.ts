@@ -232,8 +232,6 @@ idx,name
 this is a test for lines.
 ------------------------
 \`\`\`
-
-### Index - add index for csv
 `;
 }
 
@@ -732,9 +730,7 @@ Count result: 3
 └─────┴────────┘
 \`\`\`
 
-### 2. [Index](../src-tauri/src/lib/cmd/idx.rs) - add index for csv
-
-### 3. Check - detecting issues caused by double quotation marks
+### 2. Check - detecting issues caused by double quotation marks
 \`\`\`
 Check result: 2 (This is an incorrect result)
 ┌─────┬────────┐
@@ -1097,6 +1093,14 @@ sample file
 │  1  │ tom    │
 │  2  │ jerry  │
 └─────┴────────┘
+\`\`\`
+`;
+}
+
+export function mdIndex() {
+  return `
+With an index, count & slice work instantaneously;
+and multithreading is enabled for the split.
 \`\`\`
 `;
 }

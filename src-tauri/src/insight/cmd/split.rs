@@ -143,13 +143,10 @@ pub async fn split(
   path: String,
   size: u32,
   mode: String,
-  quoting: bool,
-  skiprows: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
-  let mut opts = CsvOptions::new(path.as_str());
-  opts.set_skiprows(skiprows);
+  let opts = CsvOptions::new(path.as_str());
   let parent_path = opts
     .parent_path()
     .map_err(|e| format!("get parent path failed: {e}"))?;
@@ -175,21 +172,13 @@ pub async fn split(
       };
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok(format!("{elapsed_time:.2}"))
+      Ok(format!("{elapsed_time:.0}"))
     }
-    "index" => match crate::cmd::idx::create_index(path, quoting, skiprows).await {
-      Ok(_) => {
-        let end_time = Instant::now();
-        let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-        Ok(format!("{elapsed_time:.2}"))
-      }
-      Err(err) => Err(format!("{err}")),
-    },
     _ => match split_lines(opts, size, &output_path).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-        Ok(format!("{elapsed_time:.2}"))
+        Ok(format!("{elapsed_time:.0}"))
       }
       Err(err) => Err(format!("{err}")),
     },

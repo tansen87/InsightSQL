@@ -7,20 +7,18 @@ import { useDynamicHeight } from "@/utils/utils";
 import { viewOpenFile, toJson } from "@/utils/view";
 import { mdSplit, useMarkdown } from "@/utils/markdown";
 import { message } from "@/utils/message";
-import { useQuoting, useSkiprows } from "@/store/modules/options";
+import { useSkiprows } from "@/store/modules/options";
 
 const [path, size, mode] = [ref(""), ref(1000000), ref("rows")];
 const modeOptions = [
   { label: "Rows", value: "rows" },
-  { label: "Lines", value: "lines" },
-  { label: "Index", value: "index" }
+  { label: "Lines", value: "lines" }
 ];
 const [tableColumn, tableData] = [ref([]), ref([])];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSplit);
 const { isDark } = useDark();
-const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 
 async function selectFile() {
@@ -49,15 +47,17 @@ async function splitData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
+  if (skiprowsStore.skiprows !== 0) {
+    message("split only support skiprows=0", { type: "warning" });
+    return;
+  }
 
   try {
     isLoading.value = true;
     const rtime: string = await invoke("split", {
       path: path.value,
       size: size.value,
-      mode: mode.value,
-      quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      mode: mode.value
     });
     message(`Split done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {

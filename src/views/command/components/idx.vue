@@ -12,24 +12,18 @@ import {
   Select,
   SwitchButton
 } from "@element-plus/icons-vue";
-import { useDark } from "@pureadmin/utils";
 import { shortFileName, useDynamicHeight, updateEvent } from "@/utils/utils";
 import { message } from "@/utils/message";
-import { useMarkdown, mdCount } from "@/utils/markdown";
-import { useSkiprows } from "@/store/modules/options";
+import { useMarkdown, mdIndex } from "@/utils/markdown";
+import { useQuoting, useSkiprows } from "@/store/modules/options";
 
-const mode = ref("count");
-const modeOptions = [
-  { label: "Count", value: "count" },
-  { label: "Check", value: "check" }
-];
 const path = ref("");
 const [dialog, isLoading] = [ref(false), ref(false)];
 const fileSelect = ref([]);
 const { dynamicHeight } = useDynamicHeight(74);
-const { mdShow } = useMarkdown(mdCount);
-const { isDark } = useDark();
+const { mdShow } = useMarkdown(mdIndex);
 const skiprowsStore = useSkiprows();
+const quotingStore = useQuoting();
 
 listen("info", (event: Event<string>) => {
   const filename = event.payload;
@@ -75,8 +69,8 @@ async function selectFile() {
   }
 }
 
-// invoke count
-async function countData() {
+// invoke csv_idx
+async function createIndex() {
   if (path.value === "") {
     message("CSV file not selected", { type: "warning" });
     return;
@@ -84,12 +78,12 @@ async function countData() {
 
   try {
     isLoading.value = true;
-    const rtime: string = await invoke("count", {
+    const rtime: string = await invoke("csv_idx", {
       path: path.value,
-      mode: mode.value,
+      quoting: quotingStore.quoting,
       skiprows: skiprowsStore.skiprows
     });
-    message(`${mode.value} done, elapsed time: ${rtime} s`, {
+    message(`Create index done, elapsed time: ${rtime} s`, {
       type: "success"
     });
   } catch (err) {
@@ -108,30 +102,15 @@ async function countData() {
             Open File(s)
           </el-button>
 
-          <div class="mode-toggle w-[180px]">
-            <span
-              v-for="item in modeOptions"
-              :key="item.value"
-              class="mode-item"
-              :class="{
-                active: mode === item.value,
-                'active-dark': isDark && mode === item.value
-              }"
-              @click="mode = item.value"
-            >
-              {{ item.label }}
-            </span>
-          </div>
-
           <el-link @click="dialog = true" class="mt-auto">
-            <span class="link-text">Count</span>
+            <span class="link-text">Index</span>
           </el-link>
         </div>
       </el-splitter-panel>
 
       <el-splitter-panel>
         <el-button
-          @click="countData()"
+          @click="createIndex()"
           :loading="isLoading"
           :icon="SwitchButton"
           text
@@ -177,7 +156,7 @@ async function countData() {
 
     <el-dialog
       v-model="dialog"
-      title="Count - Count the rows of CSV files"
+      title="Index - Create an index for a CSV."
       width="70%"
     >
       <el-scrollbar :height="dynamicHeight * 0.7">

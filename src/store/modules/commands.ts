@@ -4,6 +4,12 @@ export const useCommandStore = defineStore("command", {
   state: () => ({
     commands: [
       {
+        title: "Index",
+        icon: "ri:rocket-line",
+        description: "Create an index for a CSV",
+        route: "/command/components/idx"
+      },
+      {
         title: "Apply",
         icon: "ri:stack-line",
         description:

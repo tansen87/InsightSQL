@@ -85,7 +85,7 @@ fn main() {
       enumerate::enumer,
       extsort::extsort,
       fill::fill,
-      idx::idx,
+      idx::csv_idx,
       join::join,
       pinyin::pinyin,
       rename::rename,
