@@ -29,14 +29,16 @@ pub async fn csv_to_csv<E, P>(
   quoting: bool,
   filename: String,
   progress: bool,
+  skiprows: usize,
   emitter: E,
 ) -> Result<()>
 where
   E: EventEmitter + Send + Sync + 'static,
   P: AsRef<Path> + Send + Sync,
 {
-  let opts = CsvOptions::new(&path);
-  let rdr_sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(path);
+  opts.set_skiprows(skiprows);
+  let (rdr_sep, reader) = opts.skiprows_and_delimiter()?;
   let output_path = opts.output_path(Some("fmt"), None)?;
   let sep = if wtr_sep == "\\t" {
     b'\t'
@@ -62,7 +64,7 @@ where
   let mut rdr = ReaderBuilder::new()
     .delimiter(rdr_sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let buf_writer = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
   let mut wtr = WriterBuilder::new()
@@ -184,7 +186,6 @@ where
     let record = result?;
     wtr.write_record(&record)?;
   }
-  wtr.flush()?;
 
-  Ok(())
+  Ok(wtr.flush()?)
 }

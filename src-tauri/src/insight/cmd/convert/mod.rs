@@ -63,6 +63,7 @@ pub async fn csv2csv(
   quote_style: String,
   quoting: bool,
   progress: bool,
+  skiprows: usize,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -85,6 +86,7 @@ pub async fn csv2csv(
       quoting,
       filename.to_string(),
       progress,
+      skiprows,
       emitter.clone(),
     )
     .await
@@ -132,6 +134,7 @@ pub async fn csv2xlsx(
   csv_mode: String,
   chunksize: String,
   quoting: bool,
+  skiprows: usize,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
@@ -149,7 +152,7 @@ pub async fn csv2xlsx(
       .emit_info(filename)
       .await
       .map_err(|e| e.to_string())?;
-    match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize, quoting).await {
+    match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize, quoting, skiprows).await {
       Ok(_) => {
         emitter
           .emit_success(filename)

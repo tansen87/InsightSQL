@@ -16,10 +16,12 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   use_polars: bool,
   chunk_size: usize,
   quoting: bool,
+  skiprows: usize,
 ) -> Result<()> {
   let dest = path.as_ref().with_extension("xlsx");
-  let opts = CsvOptions::new(&path);
-  let sep = opts.detect_separator()?;
+  let mut opts = CsvOptions::new(&path);
+  opts.set_skiprows(skiprows);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
 
   if use_polars {
     let row_count = opts.std_count_rows()?;
@@ -30,6 +32,7 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
     let df = CsvReadOptions::default()
       .with_parse_options(CsvParseOptions::default().with_separator(sep))
       .with_infer_schema_length(Some(0))
+      .with_skip_rows(skiprows)
       .try_into_reader_with_file_path(Some((&path.as_ref()).to_path_buf()))?
       .finish()?;
 
@@ -38,7 +41,7 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
     let rdr = ReaderBuilder::new()
       .delimiter(sep)
       .quoting(quoting)
-      .from_reader(opts.rdr_skip_rows()?);
+      .from_reader(reader);
 
     XlsxWriter::new().write_xlsx(rdr, chunk_size, dest)?;
   }

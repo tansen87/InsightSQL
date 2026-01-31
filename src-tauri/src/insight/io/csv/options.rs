@@ -159,24 +159,6 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(line_count)
   }
 
-  /// Skip the first n lines of csv
-  pub fn rdr_skip_rows(&self) -> Result<BufReader<File>> {
-    let file = File::open(&self.path)?;
-    let mut reader = BufReader::with_capacity(RDR_BUFFER_SIZE, file);
-    let mut line = String::new();
-
-    if self.skiprows > 0 {
-      for _ in 0..self.skiprows {
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
-          break;
-        }
-      }
-    }
-
-    Ok(reader)
-  }
-
   /// 跳过CSV文件开头的指定行数,并自动检测分隔符,返回分隔符与可继续读取剩余内容的reader
   ///
   /// # 返回值

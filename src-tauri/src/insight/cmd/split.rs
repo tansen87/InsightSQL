@@ -1,6 +1,6 @@
 use std::{
   fs::File,
-  io::{BufRead, BufWriter, Write},
+  io::{BufRead, BufReader, BufWriter, Write},
   time::Instant,
 };
 
@@ -8,7 +8,11 @@ use anyhow::Result;
 use csv::{ByteRecord, ReaderBuilder, Writer, WriterBuilder};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{index::Indexed, io::csv::options::CsvOptions, utils::num_of_chunks};
+use crate::{
+  index::Indexed,
+  io::csv::options::CsvOptions,
+  utils::{RDR_BUFFER_SIZE, num_of_chunks},
+};
 
 fn new_writer(
   headers: &ByteRecord,
@@ -34,9 +38,7 @@ pub async fn sequential_split_rows(
 ) -> Result<()> {
   let (sep, reader) = opts.skiprows_and_delimiter()?;
 
-  let mut rdr = ReaderBuilder::new()
-    .delimiter(sep)
-    .from_reader(reader);
+  let mut rdr = ReaderBuilder::new().delimiter(sep).from_reader(reader);
 
   let headers = rdr.byte_headers()?.clone();
 
@@ -115,8 +117,8 @@ fn new_lines_writer(
   Ok(wtr)
 }
 
-pub async fn split_lines(opts: CsvOptions<&str>, size: u32, output_path: &str) -> Result<()> {
-  let reader = opts.rdr_skip_rows()?;
+pub async fn split_lines(path: String, size: u32, output_path: &str) -> Result<()> {
+  let reader = BufReader::with_capacity(RDR_BUFFER_SIZE, File::open(path)?);
   let mut lines = reader.lines();
   let headers = lines.next().transpose()?;
 
@@ -139,11 +141,7 @@ pub async fn split_lines(opts: CsvOptions<&str>, size: u32, output_path: &str) -
 }
 
 #[tauri::command]
-pub async fn split(
-  path: String,
-  size: u32,
-  mode: String,
-) -> Result<String, String> {
+pub async fn split(path: String, size: u32, mode: String) -> Result<String, String> {
   let start_time = Instant::now();
 
   let opts = CsvOptions::new(path.as_str());
@@ -174,7 +172,7 @@ pub async fn split(
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
       Ok(format!("{elapsed_time:.0}"))
     }
-    _ => match split_lines(opts, size, &output_path).await {
+    _ => match split_lines(path, size, &output_path).await {
       Ok(_) => {
         let end_time = Instant::now();
         let elapsed_time = end_time.duration_since(start_time).as_secs_f64();

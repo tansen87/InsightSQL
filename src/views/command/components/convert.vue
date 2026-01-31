@@ -20,7 +20,7 @@ import {
 } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
-import { useProgress, useQuoting } from "@/store/modules/options";
+import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
 
 const [activeTab, chunksize, csvMode, wtrSep, skipRows, quote, quoteStyle] = [
   ref("excel"),
@@ -87,6 +87,7 @@ const { dynamicHeight } = useDynamicHeight(74);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
 const progressStore = useProgress();
+const skiprowsStore = useSkiprows();
 
 interface ExcelSheetMap {
   [filename: string]: string[];
@@ -257,7 +258,8 @@ async function convert() {
         quote: quote.value,
         quoteStyle: quoteStyle.value,
         quoting: quotingStore.quoting,
-        progress: progressStore.progress
+        progress: progressStore.progress,
+        skiprows: skiprowsStore.skiprows
       });
     } else if (activeTab.value === "encoding") {
       rtime = await invoke("encoding2utf8", {
@@ -280,7 +282,8 @@ async function convert() {
         path: path.value,
         csvMode: csvMode.value,
         chunksize: chunksize.value,
-        quoting: quotingStore.quoting
+        quoting: quotingStore.quoting,
+        skiprows: skiprowsStore.skiprows
       });
     } else if (activeTab.value === "json") {
       rtime = await invoke("json2csv", {

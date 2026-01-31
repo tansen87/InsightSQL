@@ -1,12 +1,11 @@
-use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use csv::{Reader, StringRecord};
 use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
-use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use rust_decimal::Decimal;
+use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use rust_xlsxwriter::{Format, Workbook};
 
 pub struct XlsxWriter {
@@ -23,7 +22,7 @@ impl XlsxWriter {
   /// write csv to xlsx
   pub fn write_xlsx<P: AsRef<Path>>(
     &mut self,
-    mut rdr: Reader<BufReader<File>>,
+    mut rdr: Reader<BufReader<Box<dyn Read + Send>>>,
     chunk_size: usize,
     output: P,
   ) -> Result<()> {

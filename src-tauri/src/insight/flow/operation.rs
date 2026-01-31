@@ -60,12 +60,12 @@ pub(crate) fn process_rename_only(
   output_path: PathBuf,
   quoting: bool,
 ) -> Result<()> {
-  let opts = CsvOptions::new(&input_path);
-  let sep = opts.detect_separator()?;
+  let opts = CsvOptions::new(input_path);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
@@ -92,12 +92,12 @@ pub(crate) fn process_select_only(
   output_path: PathBuf,
   quoting: bool,
 ) -> Result<()> {
-  let opts = CsvOptions::new(&input_path);
-  let sep = opts.detect_separator()?;
+  let opts = CsvOptions::new(input_path);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
@@ -145,12 +145,12 @@ pub(crate) fn process_filter_only(
   output_path: PathBuf,
   quoting: bool,
 ) -> Result<()> {
-  let opts = CsvOptions::new(&input_path);
-  let sep = opts.detect_separator()?;
+  let opts = CsvOptions::new(input_path);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
   let headers_arc = Arc::new(original_headers.clone());
@@ -210,12 +210,12 @@ pub(crate) fn process_pure_str_fast(
   output_path: PathBuf,
   quoting: bool,
 ) -> Result<()> {
-  let opts = CsvOptions::new(&input_path);
-  let sep = opts.detect_separator()?;
+  let opts = CsvOptions::new(input_path);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
 
@@ -286,12 +286,12 @@ pub(crate) fn process_select_filter(
   output_path: PathBuf,
   quoting: bool,
 ) -> Result<()> {
-  let opts = CsvOptions::new(&input_path);
-  let sep = opts.detect_separator()?;
+  let opts = CsvOptions::new(input_path);
+  let (sep, reader) = opts.skiprows_and_delimiter()?;
   let mut rdr = ReaderBuilder::new()
     .delimiter(sep)
     .quoting(quoting)
-    .from_reader(opts.rdr_skip_rows()?);
+    .from_reader(reader);
 
   let original_headers: Vec<String> = rdr.headers()?.iter().map(|s| s.to_string()).collect();
   let headers_arc = Arc::new(original_headers.clone());

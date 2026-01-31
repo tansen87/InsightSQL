@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use crate::io::csv::options::CsvOptions;
 
 pub fn csv_to_json(path: String, skiprows: usize) -> Result<String> {
-  let n_rows = 20;
+  let n_rows = 20 + skiprows;
   let mut opts = CsvOptions::new(&path);
   opts.set_skiprows(skiprows);
   let (sep, reader) = opts.skiprows_and_delimiter()?;

@@ -78,12 +78,12 @@ async fn test_split_lines() -> anyhow::Result<()> {
   }
   wtr.flush()?;
 
-  let csv_options = insight::io::csv::options::CsvOptions::new(file_path.to_str().unwrap());
   let parent_path = file_path.parent().unwrap().to_str().unwrap();
   let file_stem = file_path.file_stem().unwrap().to_str().unwrap();
   let output_path = format!("{parent_path}/{file_stem}");
 
-  insight::cmd::split::split_lines(csv_options, 2, &output_path).await?;
+  insight::cmd::split::split_lines(file_path.to_string_lossy().to_string(), 2, &output_path)
+    .await?;
 
   let output_files: Vec<_> = std::fs::read_dir(temp_dir.path())?
     .filter_map(Result::ok)
