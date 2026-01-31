@@ -38,7 +38,7 @@ where
   let total_rows = match progress {
     true => {
       opts
-        .std_count_rows()
+        .count_lines()
         .map_err(|e| anyhow!("count rows error: {e}"))?
         - skiprows
     }

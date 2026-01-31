@@ -42,7 +42,7 @@ where
   let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
 
   let total_rows = match progress {
-    true => opts.std_count_rows()?.saturating_sub(skip_rows) + 1,
+    true => opts.count_lines()?.saturating_sub(skip_rows) + 1,
     false => 0,
   };
   emitter

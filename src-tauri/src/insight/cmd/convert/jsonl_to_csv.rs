@@ -108,7 +108,8 @@ pub async fn jsonl_to_csv(path: &str, wtr_sep: &str, ignore_err: bool) -> Result
   } else {
     wtr_sep.as_bytes().get(0).copied().unwrap_or(b',')
   };
-  let opts = CsvOptions::new(path);
+  let mut opts = CsvOptions::new(path);
+  opts.set_header(false);
   let output_path = opts.output_path(Some("jsonl"), None)?;
   let mut wtr = csv::WriterBuilder::new()
     .delimiter(sep)

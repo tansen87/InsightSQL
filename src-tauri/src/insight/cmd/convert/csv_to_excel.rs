@@ -24,7 +24,7 @@ pub async fn csv_to_xlsx<P: AsRef<Path> + Send + Sync>(
   let (sep, reader) = opts.skiprows_and_delimiter()?;
 
   if use_polars {
-    let row_count = opts.std_count_rows()?;
+    let row_count = opts.count_lines()?;
     if row_count > EXCEL_MAX_ROW {
       return Err(anyhow!("{row_count} rows exceed the maximum row in Excel"));
     }

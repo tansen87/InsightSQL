@@ -21,6 +21,7 @@ pub struct CsvOptions<P: AsRef<Path> + Send + Sync> {
   skiprows: usize,
   quoting: bool,
   flexible: bool,
+  header: bool,
 }
 
 impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
@@ -30,6 +31,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
       skiprows: 0,
       quoting: true,
       flexible: false,
+      header: true,
     }
   }
 
@@ -49,6 +51,10 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
 
   pub fn set_flexible(&mut self, flexible: bool) {
     self.flexible = flexible;
+  }
+
+  pub fn set_header(&mut self, header: bool) {
+    self.header = header;
   }
 
   /// return parent path
@@ -133,14 +139,6 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(separator)
   }
 
-  /// Count csv rows (only applicable to standard csv files)
-  pub fn std_count_rows(&self) -> Result<usize> {
-    let reader = BufReader::new(File::open(&self.path)?);
-    let total_rows = reader.lines().count().saturating_sub(1);
-
-    Ok(total_rows)
-  }
-
   /// Count csv rows (applicable to all csv files)
   pub async fn idx_count_rows(&self) -> Result<usize> {
     let total_rows = crate::cmd::count::count_rows(&self.path, self.skiprows)
@@ -154,7 +152,11 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   /// Count the lines of file
   pub fn count_lines(&self) -> Result<usize> {
     let reader = BufReader::new(File::open(&self.path)?);
-    let line_count = reader.lines().count();
+    let line_count = if self.header {
+      reader.lines().count().saturating_sub(1)
+    } else {
+      reader.lines().count()
+    };
 
     Ok(line_count)
   }
