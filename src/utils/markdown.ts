@@ -1099,8 +1099,10 @@ sample file
 
 export function mdIndex() {
   return `
-With an index, count & slice work instantaneously;
-and multithreading is enabled for the split.
+### With an index, count & slice work instantaneously; and multithreading is enabled for the split.
+---
+### Slice only supports an index of skiprows equal to 0.
+---
 \`\`\`
 `;
 }

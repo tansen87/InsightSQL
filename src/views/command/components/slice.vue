@@ -2,26 +2,29 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderOpened, Files, SwitchButton } from "@element-plus/icons-vue";
+import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
 import { mapHeaders, viewOpenFile, toJson } from "@/utils/view";
 import { message } from "@/utils/message";
 import { mdSlice, useMarkdown } from "@/utils/markdown";
 import { useFlexible, useQuoting, useSkiprows } from "@/store/modules/options";
 
+const mode = ref("lines");
+const modeOptions = [
+  { label: "Lines", value: "lines" },
+  { label: "Index", value: "index" }
+];
 const [path, start, end] = [ref(""), ref("1"), ref("10")];
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSlice);
+const { isDark } = useDark();
 const quotingStore = useQuoting();
 const flexibleStore = useFlexible();
 const skiprowsStore = useSkiprows();
 
 async function selectFile() {
-  tableHeader.value = [];
-  tableColumn.value = [];
-  tableData.value = [];
-
   path.value = await viewOpenFile(false, "csv", ["*"]);
   if (path.value === null) return;
 
@@ -53,7 +56,8 @@ async function sliceData() {
       flexible: flexibleStore.flexible,
       start: start.value,
       end: end.value,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      mode: mode.value
     });
     message(`Slice done, elapsed time: ${rtime} s`, { type: "success" });
   } catch (err) {
@@ -71,6 +75,21 @@ async function sliceData() {
           <el-button @click="selectFile()" :icon="FolderOpened" text round>
             Open File
           </el-button>
+
+          <div class="mode-toggle mt-2 mb-2 w-40">
+            <span
+              v-for="item in modeOptions"
+              :key="item.value"
+              class="mode-item"
+              :class="{
+                active: mode === item.value,
+                'active-dark': isDark && mode === item.value
+              }"
+              @click="mode = item.value"
+            >
+              {{ item.label }}
+            </span>
+          </div>
 
           <el-tooltip
             content="The index of the row to slice from"

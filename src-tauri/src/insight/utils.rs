@@ -24,6 +24,11 @@ pub fn num_of_chunks(nitems: usize, chunk_size: usize) -> usize {
   n
 }
 
+pub fn parse_usize(s: &str, name: &str) -> Result<usize, String> {
+  s.parse::<usize>()
+    .map_err(|e| format!("parse '{name}' error: {e}"))
+}
+
 pub trait EventEmitter {
   fn emit_total_rows(&self, count: usize) -> impl Future<Output = Result<()>> + Send;
   fn emit_update_rows(&self, count: usize) -> impl Future<Output = Result<()>> + Send;
