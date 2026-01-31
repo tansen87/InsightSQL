@@ -64,8 +64,8 @@ const quoteOptions = [
   { label: '"', value: '"' }
 ];
 const csvModeOptions = [
-  { label: "Csv", value: "csv" },
-  { label: "Polars", value: "polars" }
+  { label: "One", value: "one" },
+  { label: "Multi", value: "multi" }
 ];
 const iErrOptions = [
   { label: "True", value: true },
@@ -474,7 +474,7 @@ async function convert() {
           </div>
 
           <el-tooltip
-            v-if="activeTab === 'csv' && csvMode === 'csv'"
+            v-if="activeTab === 'csv'"
             content="Split every N rows into a sheet"
             effect="light"
             placement="right"

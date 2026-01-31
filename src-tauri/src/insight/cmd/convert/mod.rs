@@ -141,7 +141,7 @@ pub async fn csv2xlsx(
 
   let paths: Vec<&str> = path.split('|').collect();
   let chunksize = chunksize.parse::<usize>().map_err(|e| e.to_string())?;
-  let use_polars = csv_mode != "csv";
+  let multi = csv_mode != "one";
 
   for file in paths.iter() {
     let opts = CsvOptions::new(file);
@@ -152,7 +152,7 @@ pub async fn csv2xlsx(
       .emit_info(filename)
       .await
       .map_err(|e| e.to_string())?;
-    match csv_to_excel::csv_to_xlsx(file, use_polars, chunksize, quoting, skiprows).await {
+    match csv_to_excel::csv_to_xlsx(file, multi, chunksize, quoting, skiprows).await {
       Ok(_) => {
         emitter
           .emit_success(filename)

@@ -139,7 +139,7 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     Ok(separator)
   }
 
-  /// Count csv rows (applicable to all csv files)
+  /// Count the rows of file
   pub async fn idx_count_rows(&self) -> Result<usize> {
     let total_rows = crate::cmd::count::count_rows(&self.path, self.skiprows)
       .await
