@@ -102,17 +102,12 @@ onBeforeMount(() => {
             Number of lines skipped in the file
           </span>
         </div>
-        <div style="width: 200px">
-          <el-slider
-            class="ultra-compact-slider"
-            v-model="skiprowsStore.skiprows"
-            :min="0"
-            :max="99"
-            :step="1"
-            show-input
-            input-size="small"
-          />
-        </div>
+
+        <el-input-number
+          v-model="skiprowsStore.skiprows"
+          :min="0"
+          size="small"
+        />
       </div>
     </el-card>
 
@@ -196,8 +191,7 @@ onBeforeMount(() => {
   font-size: 12px;
 }
 
-:deep(.ultra-compact-slider .el-slider__input) {
+:deep(.el-input-number) {
   width: 80px !important;
-  margin-left: -15px;
 }
 </style>
