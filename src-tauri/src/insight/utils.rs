@@ -1,12 +1,16 @@
 use std::future::Future;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
 use tauri::{AppHandle, Emitter};
 
+use crate::io::csv::options::CsvOptions;
+
 pub const EXCEL_MAX_ROW: usize = 104_8575; // no headers
 pub const RDR_BUFFER_SIZE: usize = 1 * 1024 * 1024;
 pub const WTR_BUFFER_SIZE: usize = 1 * 1024 * 1024;
+pub const DEFAULT_BATCH_SIZE: usize = 50_000;
 
 #[inline]
 pub fn num_cpus() -> usize {
@@ -40,6 +44,22 @@ pub fn njobs(jobs: Option<usize>) -> usize {
       if j == 0 || j > max_cpus { max_cpus } else { j }
     },
   )
+}
+
+#[inline]
+pub fn batch_size<P: AsRef<Path> + Send + Sync>(opts: &CsvOptions<P>, njobs: usize) -> usize {
+  let num_rows = match opts.indexed() {
+    Ok(Some(idx)) => idx.count() as usize,
+    _ => {
+      return DEFAULT_BATCH_SIZE;
+    }
+  };
+
+  if num_rows.is_multiple_of(njobs) {
+    num_rows / njobs
+  } else {
+    (num_rows / njobs) + 1
+  }
 }
 
 pub fn parse_usize(s: &str, name: &str) -> Result<usize, String> {

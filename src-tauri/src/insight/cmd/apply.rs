@@ -10,7 +10,10 @@ use rayon::{
 use regex::Regex;
 use smallvec::SmallVec;
 
-use crate::io::csv::{config::CsvConfigBuilder, options::CsvOptions};
+use crate::{
+  io::csv::{config::CsvConfigBuilder, options::CsvOptions},
+  utils,
+};
 
 #[macro_export]
 macro_rules! regex_oncelock {
@@ -232,6 +235,7 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   quoting: bool,
   skiprows: usize,
   flexible: bool,
+  threads: Option<usize>,
 ) -> Result<()> {
   let columns: Vec<&str> = columns.split('|').collect();
   if columns.is_empty() {
@@ -353,7 +357,8 @@ async fn apply_perform<P: AsRef<Path> + Send + Sync>(
   };
 
   let mut batch_record = csv::StringRecord::new();
-  let batchsize = 50_000;
+  let njobs = utils::njobs(threads);
+  let batchsize = utils::batch_size(&opts, njobs);
   let mut batch = Vec::with_capacity(batchsize);
   let mut batch_results = Vec::with_capacity(batchsize);
 
@@ -458,6 +463,7 @@ pub async fn apply(
   quoting: bool,
   skiprows: usize,
   flexible: bool,
+  threads: usize,
 ) -> Result<String, String> {
   let start_time = Instant::now();
 
@@ -473,6 +479,7 @@ pub async fn apply(
     quoting,
     skiprows,
     flexible,
+    Some(threads),
   )
   .await
   {
