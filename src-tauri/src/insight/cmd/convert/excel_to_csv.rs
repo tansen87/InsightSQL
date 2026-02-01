@@ -9,14 +9,15 @@ use calamine::{Data, HeaderRow, Range, Reader};
 use csv::{StringRecord, WriterBuilder};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 
-use crate::utils::num_cpus;
+use crate::utils;
 
 /// convert excel to csv
 pub async fn excel_to_csv<P: AsRef<Path>>(
   path: P,
-  skip_rows: u32,
+  skiprows: usize,
   sheet_name: Option<String>,
   output_path: &PathBuf,
+  threads: usize,
 ) -> Result<()> {
   let mut wtr = WriterBuilder::new().from_path(output_path)?;
 
@@ -25,7 +26,7 @@ pub async fn excel_to_csv<P: AsRef<Path>>(
   let range = match sheet_name {
     None => {
       match workbook
-        .with_header_row(HeaderRow::Row(skip_rows))
+        .with_header_row(HeaderRow::Row(skiprows as u32))
         .worksheet_range_at(0)
       {
         Some(Ok(range)) => range,
@@ -34,7 +35,7 @@ pub async fn excel_to_csv<P: AsRef<Path>>(
     }
     Some(ref name) => {
       match workbook
-        .with_header_row(HeaderRow::Row(skip_rows))
+        .with_header_row(HeaderRow::Row(skiprows as u32))
         .worksheet_range(name)
       {
         Ok(range) => range,
@@ -52,7 +53,7 @@ pub async fn excel_to_csv<P: AsRef<Path>>(
   let mut rows_iter = range.rows();
 
   // amortize allocations
-  let mut record = StringRecord::with_capacity(500, col_count);
+  let mut record = StringRecord::with_capacity(512, col_count);
   let mut col_name: String;
 
   // get the first row as header
@@ -84,16 +85,13 @@ pub async fn excel_to_csv<P: AsRef<Path>>(
     rows.push(row);
   }
 
-  // set RAYON_NUM_THREADS
-  let ncpus = num_cpus();
-  // set chunk_size to number of rows per core/thread
-  // let chunk_size = row_count.div_ceil(ncpus);
-  let chunk_size = (row_count + ncpus - 1) / ncpus;
+  let njobs = utils::njobs(Some(threads));
+  let chunk_size = utils::chunk_size(row_count, njobs);
 
   let processed_rows: Vec<Vec<StringRecord>> = rows
     .par_chunks(chunk_size)
     .map(|chunk| {
-      let mut record = StringRecord::with_capacity(500, col_count);
+      let mut record = StringRecord::with_capacity(512, col_count);
       let mut float_val;
       let mut work_date = String::new();
       let mut ryu_buffer = ryu::Buffer::new();

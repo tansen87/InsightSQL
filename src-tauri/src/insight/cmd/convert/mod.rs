@@ -215,15 +215,14 @@ pub async fn dbf2csv(path: String, wtr_sep: String, emitter: AppHandle) -> Resul
 #[tauri::command]
 pub async fn excel2csv(
   path: String,
-  skip_rows: String,
+  skiprows: usize,
   map_file_sheet: Vec<HashMap<String, String>>,
   all_sheets: bool,
   write_sheetname: bool,
+  threads: usize,
   emitter: AppHandle,
 ) -> Result<String, String> {
   let start_time = Instant::now();
-
-  let skip_rows = skip_rows.parse::<u32>().map_err(|e| e.to_string())?;
   let paths: Vec<&str> = path.split('|').collect();
 
   for file in paths.iter() {
@@ -251,7 +250,7 @@ pub async fn excel2csv(
         false => Path::new(file).with_extension("csv"),
       };
 
-      match excel_to_csv::excel_to_csv(file, skip_rows, sheet_name, &output_path).await {
+      match excel_to_csv::excel_to_csv(file, skiprows, sheet_name, &output_path, threads).await {
         Ok(_) => {
           emitter
             .emit_success(filename)
@@ -278,8 +277,14 @@ pub async fn excel2csv(
       for (index, sheet) in sheet_names.iter().enumerate() {
         let output_path = path.with_file_name(format!("{}_{}.csv", file_stem, sheet));
 
-        match excel_to_csv::excel_to_csv(file, skip_rows, Some(sheet.to_string()), &output_path)
-          .await
+        match excel_to_csv::excel_to_csv(
+          file,
+          skiprows,
+          Some(sheet.to_string()),
+          &output_path,
+          threads,
+        )
+        .await
         {
           Ok(_) => {
             // check if it is the last sheet

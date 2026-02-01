@@ -20,14 +20,18 @@ import {
 } from "@/utils/utils";
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
-import { useProgress, useQuoting, useSkiprows } from "@/store/modules/options";
+import {
+  useProgress,
+  useQuoting,
+  useSkiprows,
+  useThreads
+} from "@/store/modules/options";
 
-const [activeTab, chunksize, csvMode, wtrSep, skipRows, quote, quoteStyle] = [
+const [activeTab, chunksize, csvMode, wtrSep, quote, quoteStyle] = [
   ref("excel"),
   ref("700000"),
-  ref("csv"),
+  ref("multi"),
   ref("|"),
-  ref("0"),
   ref('"'),
   ref("necessary")
 ];
@@ -88,6 +92,7 @@ const { isDark } = useDark();
 const quotingStore = useQuoting();
 const progressStore = useProgress();
 const skiprowsStore = useSkiprows();
+const threadsStore = useThreads();
 
 interface ExcelSheetMap {
   [filename: string]: string[];
@@ -246,10 +251,11 @@ async function convert() {
       }));
       rtime = await invoke("excel2csv", {
         path: path.value,
-        skipRows: skipRows.value,
+        skiprows: skiprowsStore.skiprows,
         mapFileSheet: mapFileSheet,
         allSheets: allSheets.value,
-        writeSheetname: writeSheetname.value
+        writeSheetname: writeSheetname.value,
+        threads: threadsStore.threads
       });
     } else if (activeTab.value === "fmt") {
       rtime = await invoke("csv2csv", {
@@ -375,19 +381,6 @@ async function convert() {
                 {{ item.label }}
               </span>
             </div>
-          </el-tooltip>
-
-          <el-tooltip
-            v-if="activeTab === 'excel'"
-            content="Skip rows"
-            effect="light"
-            placement="right"
-          >
-            <el-input
-              v-model="skipRows"
-              class="mt-2 ml-2"
-              style="width: 220px"
-            />
           </el-tooltip>
 
           <!-- format csv -->
