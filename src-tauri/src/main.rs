@@ -91,7 +91,7 @@ fn main() {
       rename::rename,
       replace::replace,
       reverse::reverse,
-      search::search,
+      search::perform::search,
       select::select,
       separate::separate,
       skip::skip,

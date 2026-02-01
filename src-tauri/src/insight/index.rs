@@ -1,8 +1,6 @@
-use std::io;
-use std::ops;
+use std::{io, ops};
 
 use anyhow::Result;
-use csv;
 use csv_index::RandomAccessSimple;
 
 /// Indexed composes a CSV reader with a simple random access index.
