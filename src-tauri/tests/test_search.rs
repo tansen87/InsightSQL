@@ -1,8 +1,14 @@
 use std::io::Write;
 
-use insight::cmd::search::{filters, filters_multi};
+use insight::{
+  cmd::{
+    idx::create_index,
+    search::{filters, filters_multi},
+  },
+  io::csv::options::CsvOptions,
+};
 
-fn create_temp_csv() -> anyhow::Result<(
+async fn create_temp_csv() -> anyhow::Result<(
   tempfile::TempDir,
   csv::Reader<std::io::BufReader<Box<dyn std::io::Read + Send>>>,
   csv::Writer<std::io::BufWriter<std::fs::File>>,
@@ -35,6 +41,7 @@ fn create_temp_csv() -> anyhow::Result<(
     .to_string_lossy()
     .to_string();
 
+  create_index(&path, true, 1).await?;
   let mut opts = insight::io::csv::options::CsvOptions::new(&path);
   opts.set_skiprows(1);
   let (_sep, reader) = opts.skiprows_and_delimiter()?;
@@ -47,16 +54,20 @@ fn create_temp_csv() -> anyhow::Result<(
 
 #[tokio::test]
 async fn test_equal() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string()];
-
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
   let match_rows = filters::contains(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -72,18 +83,47 @@ async fn test_equal() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_not_equal() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_equal_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string()];
-
-  let match_rows = filters::not_equal(
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::contains(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 1);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_not_equal() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+
+  let column = "name".to_string();
+  let conditions = vec!["Tom".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::not_equal(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -104,18 +144,48 @@ async fn test_not_equal() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_contains() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+async fn test_not_equal_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
-  let conditions = vec!["at".to_string()];
-
-  let match_rows = filters::contains(
+  let conditions = vec!["Tom".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::not_equal(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 3);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_contains() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+
+  let column = "name".to_string();
+  let conditions = vec!["at".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::contains(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -126,23 +196,52 @@ async fn test_contains() -> anyhow::Result<()> {
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["name,age,gender", "Patrick,4,male"];
   assert_eq!(expected, result);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_contains_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+
+  let column = "name".to_string();
+  let conditions = vec!["at".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::contains(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 1);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_not_contains() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let conditions = vec!["at".to_string()];
-
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
   let match_rows = filters::not_contains(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -158,23 +257,52 @@ async fn test_not_contains() -> anyhow::Result<()> {
     "Sandy,24,female",
   ];
   assert_eq!(expected, result);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_not_contains_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let conditions = vec!["at".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::not_contains(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 3);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_starts_with() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string()];
-
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
   let match_rows = filters::starts_with(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -185,23 +313,53 @@ async fn test_starts_with() -> anyhow::Result<()> {
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["name,age,gender", "Patrick,4,male"];
   assert_eq!(expected, result);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_starts_with_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+
+  let column = "name".to_string();
+  let conditions = vec!["Pa".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::starts_with(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 1);
 
   Ok(temp_dir.close()?)
 }
 
 #[tokio::test]
 async fn test_not_starts_with() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string()];
-
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
   let match_rows = filters::not_starts_with(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -222,18 +380,47 @@ async fn test_not_starts_with() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_ends_with() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+async fn test_not_starts_with_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
-  let conditions = vec!["ick".to_string()];
-
-  let match_rows = filters::ends_with(
+  let conditions = vec!["Pa".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::not_starts_with(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 3);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_ends_with() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let conditions = vec!["ick".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::ends_with(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -249,18 +436,46 @@ async fn test_ends_with() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_not_ends_with() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_ends_with_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let conditions = vec!["ick".to_string()];
-
-  let match_rows = filters::not_ends_with(
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::ends_with(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 1);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_not_ends_with() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let conditions = vec!["ick".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::not_ends_with(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -281,18 +496,46 @@ async fn test_not_ends_with() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_regex() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+async fn test_not_ends_with_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let conditions = vec!["ick".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::not_ends_with(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 3);
 
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_regex() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let regex_char = r"^J.*".to_string(); // Matches any string that starts with 'J'
-
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
   let match_rows = filters::regex_search(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     regex_char,
     true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -308,18 +551,46 @@ async fn test_regex() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_is_null() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
+async fn test_regex_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let regex_char = r"^J.*".to_string(); // Matches any string that starts with 'J'
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::regex_search(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    regex_char,
+    true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 1);
 
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_is_null() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let conditions = vec!["".to_string()];
-
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
   let match_rows = filters::is_null(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -335,18 +606,46 @@ async fn test_is_null() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_is_not_null() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_is_null_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "name".to_string();
   let conditions = vec!["".to_string()];
-
-  let match_rows = filters::is_not_null(
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::is_null(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 0);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_is_not_null() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let conditions = vec!["".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::is_not_null(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -368,18 +667,46 @@ async fn test_is_not_null() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_gt() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
-  let column = "age".to_string();
-  let conditions = "18".to_string();
-
-  let match_rows = filters::greater_than(
+async fn test_is_not_null_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+  let column = "name".to_string();
+  let conditions = vec!["".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::is_not_null(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 4);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_gt() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "age".to_string();
+  let conditions = "18".to_string();
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::greater_than(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -395,18 +722,46 @@ async fn test_gt() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_ge() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_gt_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "age".to_string();
   let conditions = "18".to_string();
-
-  let match_rows = filters::greater_than_or_equal(
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::greater_than(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 2);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_ge() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "age".to_string();
+  let conditions = "18".to_string();
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::greater_than_or_equal(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -427,18 +782,46 @@ async fn test_ge() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_lt() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_ge_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "age".to_string();
   let conditions = "18".to_string();
-
-  let match_rows = filters::less_than(
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::greater_than_or_equal(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 3);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_lt() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "age".to_string();
+  let conditions = "18".to_string();
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::less_than(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -454,18 +837,46 @@ async fn test_lt() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_le() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_lt_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "age".to_string();
   let conditions = "18".to_string();
-
-  let match_rows = filters::less_than_or_equal(
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::less_than(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 1);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_le() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "age".to_string();
+  let conditions = "18".to_string();
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::less_than_or_equal(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -481,18 +892,46 @@ async fn test_le() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_between() -> anyhow::Result<()> {
-  let (temp_dir, rdr, wtr, output_path, _) = create_temp_csv()?;
-
+async fn test_le_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
   let column = "age".to_string();
-  let conditions = vec!["18".to_string(), "19".to_string()];
-
-  let match_rows = filters::between(
+  let conditions = "18".to_string();
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::less_than_or_equal(
     rdr,
     wtr,
+    opts,
+    Some(idx),
     column,
     conditions,
     true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 2);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_between() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, output_path, path) = create_temp_csv().await?;
+  let column = "age".to_string();
+  let conditions = vec!["18".to_string(), "19".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::between(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(1),
     insight::utils::MockEmitter::default(),
   )
   .await?
@@ -503,6 +942,31 @@ async fn test_between() -> anyhow::Result<()> {
   let result = context.trim().split('\n').collect::<Vec<_>>();
   let expected = vec!["name,age,gender", "Tom,18,male", "Jerry,19,male"];
   assert_eq!(expected, result);
+
+  Ok(temp_dir.close()?)
+}
+
+#[tokio::test]
+async fn test_between_parallel() -> anyhow::Result<()> {
+  let (temp_dir, rdr, wtr, _, path) = create_temp_csv().await?;
+  let column = "age".to_string();
+  let conditions = vec!["18".to_string(), "19".to_string()];
+  let opts = CsvOptions::new(path);
+  let idx = opts.indexed().unwrap().unwrap();
+  let match_rows = filters::between(
+    rdr,
+    wtr,
+    opts,
+    Some(idx),
+    column,
+    conditions,
+    true,
+    Some(2),
+    insight::utils::MockEmitter::default(),
+  )
+  .await?
+  .parse::<usize>()?;
+  assert_eq!(match_rows, 2);
 
   Ok(temp_dir.close()?)
 }
@@ -520,7 +984,7 @@ fn assert_headers_exist<R: std::io::Read>(rdr: &mut csv::Reader<R>, expected: &[
 
 #[tokio::test]
 async fn test_equal_multi() -> anyhow::Result<()> {
-  let (temp_dir, _, _, _, path) = create_temp_csv()?;
+  let (temp_dir, _, _, _, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
   let conditions = vec!["Tom".to_string(), "Jerry".to_string()];
@@ -593,7 +1057,7 @@ async fn test_equal_multi() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_contains_multi() -> anyhow::Result<()> {
-  let (temp_dir, _, _, _, path) = create_temp_csv()?;
+  let (temp_dir, _, _, _, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
   let conditions = vec!["To".to_string(), "Jer".to_string()];
@@ -666,7 +1130,7 @@ async fn test_contains_multi() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_starts_with_multi() -> anyhow::Result<()> {
-  let (temp_dir, _, _, _, path) = create_temp_csv()?;
+  let (temp_dir, _, _, _, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
   let conditions = vec!["Pa".to_string(), "San".to_string()];
@@ -739,7 +1203,7 @@ async fn test_starts_with_multi() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_ends_with_multi() -> anyhow::Result<()> {
-  let (temp_dir, _, _, _, path) = create_temp_csv()?;
+  let (temp_dir, _, _, _, path) = create_temp_csv().await?;
 
   let column = "name".to_string();
   let conditions = vec!["ick".to_string(), "dy".to_string()];

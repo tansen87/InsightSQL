@@ -10,13 +10,15 @@ use std::{
   time::Duration,
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, Writer, WriterBuilder};
+use rayon::ThreadPoolBuilder;
 use tokio::sync::oneshot;
 
 use crate::{
+  index::Indexed,
   io::csv::{options::CsvOptions, selection::Selection},
-  utils::EventEmitter,
+  utils::{self, EventEmitter},
 };
 
 fn sanitize_condition(condition: &str) -> String {
@@ -240,4 +242,100 @@ where
 
   let final_match_rows = match_rows_clone.load(Ordering::Relaxed);
   Ok(final_match_rows.to_string())
+}
+
+pub(crate) async fn generic_parallel_search<F>(
+  opts: CsvOptions<String>,
+  idx: &mut Indexed<File, File>,
+  mut wtr: csv::Writer<BufWriter<File>>,
+  column: String,
+  conditions: Vec<String>,
+  jobs: usize,
+  match_fn: F,
+) -> Result<String>
+where
+  F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
+{
+  let idx_count = idx.count() as usize;
+  if idx_count == 0 {
+    return Ok("0".to_string());
+  }
+
+  let njobs = utils::njobs(Some(jobs));
+  let chunk_size = utils::chunk_size(idx_count, njobs);
+  let nchunks = utils::num_of_chunks(idx_count, chunk_size);
+
+  let headers = idx.headers()?.clone();
+  let sel = Selection::from_headers(&idx.byte_headers()?.clone(), &[column.as_str()])?;
+
+  wtr.write_record(&headers)?;
+
+  let (send, recv) = crossbeam_channel::bounded(nchunks);
+  let pool = ThreadPoolBuilder::new()
+    .num_threads(njobs)
+    .build()
+    .map_err(|e| anyhow!("thread pool: {e}"))?;
+
+  let value = Arc::new(match_fn);
+  for i in 0..nchunks {
+    let send = send.clone();
+    let sel = sel.clone();
+    let opts = opts.clone();
+    let conditions = conditions.clone();
+    let match_fn = value.clone();
+
+    pool.spawn(move || {
+      let mut local_idx = match opts.indexed() {
+        Ok(Some(idx)) => idx,
+        _ => {
+          // 无法打开索引,发送空结果避免死锁
+          let _ = send.send(Vec::new());
+          return;
+        }
+      };
+
+      let start = (i * chunk_size) as u64;
+      let end = ((i + 1) * chunk_size).min(idx_count) as u64;
+      let count = (end - start) as usize;
+
+      if local_idx.seek(start).is_err() {
+        let _ = send.send(Vec::new());
+        return;
+      }
+
+      let mut matched = Vec::new();
+      for record_result in local_idx.byte_records().take(count) {
+        let record = match record_result {
+          Ok(r) => r,
+          Err(_) => continue, // 跳过坏记录
+        };
+        let field_index = match sel.first_indices() {
+          Ok(idx) => idx,
+          Err(_) => continue,
+        };
+
+        if let Some(value) = record.get(field_index) {
+          if let Ok(value_str) = std::str::from_utf8(value) {
+            if match_fn(value_str, &conditions) {
+              matched.push(record);
+            }
+          }
+        }
+      }
+      let _ = send.send(matched);
+    });
+  }
+
+  drop(send);
+
+  let mut total_matches = 0;
+  while let Ok(records) = recv.recv() {
+    total_matches += records.len();
+    for rec in records {
+      wtr.write_byte_record(&rec)?;
+    }
+  }
+  wtr.flush()?;
+
+  Ok(total_matches.to_string())
 }

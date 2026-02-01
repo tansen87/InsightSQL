@@ -12,7 +12,8 @@ import {
   useFlexible,
   useProgress,
   useQuoting,
-  useSkiprows
+  useSkiprows,
+  useThreads
 } from "@/store/modules/options";
 
 const mode = ref("equal");
@@ -29,6 +30,7 @@ const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 const flexibleStore = useFlexible();
+const threadsStore = useThreads();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -72,6 +74,10 @@ async function searchData() {
     message("Column not selected", { type: "warning" });
     return;
   }
+  if (skiprowsStore.skiprows > 0 && threadsStore.threads > 1) {
+    message("threads only support skiprows = 0", { type: "warning" });
+    return;
+  }
 
   try {
     isLoading.value = true;
@@ -83,7 +89,8 @@ async function searchData() {
       progress: progressStore.progress,
       quoting: quotingStore.quoting,
       flexible: flexibleStore.flexible,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprowsStore.skiprows,
+      threads: threadsStore.threads
     });
     matchRows.value = Number(res[0]);
     isBtnShow.value = true;

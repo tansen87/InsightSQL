@@ -9,7 +9,8 @@ import {
   useFlexible,
   useProgress,
   useQuoting,
-  useSkiprows
+  useSkiprows,
+  useThreads
 } from "@/store/modules/options";
 
 const { $storage } = useGlobal<GlobalPropertiesApi>();
@@ -43,6 +44,7 @@ const quotingStore = useQuoting();
 const flexibleStore = useFlexible();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
+const threadsStore = useThreads();
 
 const mixRef = ref();
 const verticalRef = ref();
@@ -94,77 +96,94 @@ onBeforeMount(() => {
 
 <template>
   <el-dialog v-model="dialog" title="Setting" width="70%">
-    <el-card class="setting-card">
-      <div class="setting-item">
-        <div class="setting-label">
-          <span class="setting-title">skiprows</span>
-          <span class="setting-desc">
-            Number of lines skipped in the file
-          </span>
+    <el-scrollbar max-height="60vh">
+      <el-card class="setting-card">
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="setting-title">skiprows</span>
+            <span class="setting-desc">
+              Number of lines skipped in the file
+            </span>
+          </div>
+          <el-input-number
+            v-model="skiprowsStore.skiprows"
+            :min="0"
+            size="small"
+          />
         </div>
+      </el-card>
 
-        <el-input-number
-          v-model="skiprowsStore.skiprows"
-          :min="0"
-          size="small"
-        />
-      </div>
-    </el-card>
-
-    <el-card class="setting-card mt-2">
-      <div class="setting-item">
-        <div class="setting-label">
-          <span class="setting-title">quoting</span>
-          <span class="setting-desc">
-            When set to false, ignore all double quotes
-          </span>
+      <el-card class="setting-card mt-2">
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="setting-title">quoting</span>
+            <span class="setting-desc">
+              When set to false, ignore all double quotes
+            </span>
+          </div>
+          <el-switch
+            :model-value="quotingStore.quoting"
+            @change="quotingStore.setQuoting"
+            inline-prompt
+            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
+            active-text="true"
+            inactive-text="false"
+          />
         </div>
-        <el-switch
-          :model-value="quotingStore.quoting"
-          @change="quotingStore.setQuoting"
-          inline-prompt
-          style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
-          active-text="true"
-          inactive-text="false"
-        />
-      </div>
-    </el-card>
+      </el-card>
 
-    <el-card class="setting-card mt-2">
-      <div class="setting-item">
-        <div class="setting-label">
-          <span class="setting-title">flexible</span>
-          <span class="setting-desc">
-            When set to false, enable column count check
-          </span>
+      <el-card class="setting-card mt-2">
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="setting-title">flexible</span>
+            <span class="setting-desc">
+              When set to false, enable column count check
+            </span>
+          </div>
+          <el-switch
+            :model-value="flexibleStore.flexible"
+            @change="flexibleStore.setFlexible"
+            inline-prompt
+            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
+            active-text="true"
+            inactive-text="false"
+          />
         </div>
-        <el-switch
-          :model-value="flexibleStore.flexible"
-          @change="flexibleStore.setFlexible"
-          inline-prompt
-          style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
-          active-text="true"
-          inactive-text="false"
-        />
-      </div>
-    </el-card>
+      </el-card>
 
-    <el-card class="setting-card mt-2">
-      <div class="setting-item">
-        <div class="setting-label">
-          <span class="setting-title">progress</span>
-          <span class="setting-desc"> When set to false, no progress bar </span>
+      <el-card class="setting-card mt-2 mb-2">
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="setting-title">progress</span>
+            <span class="setting-desc">
+              When set to false, no progress bar
+            </span>
+          </div>
+          <el-switch
+            :model-value="progressStore.progress"
+            @change="progressStore.setProgress"
+            inline-prompt
+            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
+            active-text="true"
+            inactive-text="false"
+          />
         </div>
-        <el-switch
-          :model-value="progressStore.progress"
-          @change="progressStore.setProgress"
-          inline-prompt
-          style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
-          active-text="true"
-          inactive-text="false"
-        />
-      </div>
-    </el-card>
+      </el-card>
+
+      <el-card class="setting-card">
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="setting-title">threads</span>
+            <span class="setting-desc"> Number of threads used </span>
+          </div>
+          <el-input-number
+            v-model="threadsStore.threads"
+            :min="0"
+            size="small"
+          />
+        </div>
+      </el-card>
+    </el-scrollbar>
   </el-dialog>
 </template>
 

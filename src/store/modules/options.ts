@@ -50,3 +50,15 @@ export const useProgress = defineStore("progress", {
   },
   persist: true
 });
+
+export const useThreads = defineStore("threads", {
+  state: () => ({
+    threads: 0
+  }),
+  actions: {
+    setThreads(value: string) {
+      this.threads = Math.max(0, parseInt(value) || 0);
+    }
+  },
+  persist: true
+});

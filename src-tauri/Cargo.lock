@@ -2791,6 +2791,7 @@ dependencies = [
  "calamine",
  "chrono",
  "cpc",
+ "crossbeam-channel",
  "csv",
  "csv-index",
  "dbase",

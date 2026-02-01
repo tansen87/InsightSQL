@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::Path, time::Instant};
+use std::{collections::HashSet, fs::File, path::Path, time::Instant};
 
 use anyhow::{Result, anyhow};
 use smallvec::SmallVec;
@@ -6,6 +6,7 @@ use tauri::AppHandle;
 
 use crate::{
   cmd::search::{filters, filters_multi},
+  index::Indexed,
   io::csv::{config::CsvConfigBuilder, options::CsvOptions},
   utils::EventEmitter,
 };
@@ -67,6 +68,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
   quoting: bool,
   flexible: bool,
   skiprows: usize,
+  threads: Option<usize>,
   emitter: AppHandle,
 ) -> Result<String> {
   let multi_conditions = if conditions.contains('|') {
@@ -117,7 +119,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
     }
     _ => {
       let vec_conditions = multi_conditions.to_vec();
-      let mut opts = CsvOptions::new(&path);
+      let mut opts = CsvOptions::new(path.as_ref().to_string_lossy().to_string());
       opts.set_skiprows(skiprows);
       let (sep, reader) = opts.skiprows_and_delimiter()?;
       let output_path = opts.output_path(Some("search"), None)?;
@@ -129,58 +131,211 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       let rdr = config.build_reader(reader);
       let wtr = config.build_writer(&output_path)?;
 
-      let total_rows = match progress {
-        true => opts.idx_count_rows().await?,
-        false => 0,
-      };
-      emitter.emit_total_rows(total_rows).await?;
+      let mut idx: Option<Indexed<File, File>> = None;
+
+      if let Some(threads) = threads {
+        if threads <= 1 {
+          // 单线程: emit_total_rows
+          let total_rows = if progress {
+            opts.idx_count_rows().await?
+          } else {
+            0
+          };
+          emitter.emit_total_rows(total_rows).await?;
+        } else {
+          // 多线程: 初始化idx供后续使用
+          idx = Some(
+            opts
+              .indexed()?
+              .ok_or_else(|| anyhow!("No indexed file, create index first"))?,
+          );
+        }
+      }
 
       match search_mode {
         SearchMode::Equal => {
-          filters::equal(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::equal(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::NotEqual => {
-          filters::not_equal(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::not_equal(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::Contains => {
-          filters::contains(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::contains(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::NotContains => {
-          filters::not_contains(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::not_contains(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::StartsWith => {
-          filters::starts_with(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::starts_with(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::NotStartsWith => {
-          filters::not_starts_with(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::not_starts_with(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::EndsWith => {
-          filters::ends_with(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::ends_with(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::NotEndsWith => {
-          filters::not_ends_with(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::not_ends_with(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::Regex => {
-          filters::regex_search(rdr, wtr, column, conditions, progress, emitter).await
+          filters::regex_search(
+            rdr, wtr, opts, idx, column, conditions, progress, threads, emitter,
+          )
+          .await
         }
-        SearchMode::IsNull => filters::is_null(rdr, wtr, column, vec![], progress, emitter).await,
+        SearchMode::IsNull => {
+          filters::is_null(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec![],
+            progress,
+            threads,
+            emitter,
+          )
+          .await
+        }
         SearchMode::IsNotNull => {
-          filters::is_not_null(rdr, wtr, column, vec![], progress, emitter).await
+          filters::is_not_null(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec![],
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         SearchMode::GreaterThan => {
-          filters::greater_than(rdr, wtr, column, conditions, progress, emitter).await
+          filters::greater_than(
+            rdr, wtr, opts, idx, column, conditions, progress, threads, emitter,
+          )
+          .await
         }
         SearchMode::GreaterThanEqual => {
-          filters::greater_than_or_equal(rdr, wtr, column, conditions, progress, emitter).await
+          filters::greater_than_or_equal(
+            rdr, wtr, opts, idx, column, conditions, progress, threads, emitter,
+          )
+          .await
         }
         SearchMode::LessThan => {
-          filters::less_than(rdr, wtr, column, conditions, progress, emitter).await
+          filters::less_than(
+            rdr, wtr, opts, idx, column, conditions, progress, threads, emitter,
+          )
+          .await
         }
         SearchMode::LessThanEqual => {
-          filters::less_than_or_equal(rdr, wtr, column, conditions, progress, emitter).await
+          filters::less_than_or_equal(
+            rdr, wtr, opts, idx, column, conditions, progress, threads, emitter,
+          )
+          .await
         }
         SearchMode::Between => {
-          filters::between(rdr, wtr, column, vec_conditions, progress, emitter).await
+          filters::between(
+            rdr,
+            wtr,
+            opts,
+            idx,
+            column,
+            vec_conditions,
+            progress,
+            threads,
+            emitter,
+          )
+          .await
         }
         _ => Err(anyhow!("Unsupported search mode")),
       }
@@ -198,12 +353,22 @@ pub async fn search(
   quoting: bool,
   flexible: bool,
   skiprows: usize,
+  threads: usize,
   app_handle: AppHandle,
 ) -> Result<(String, String), String> {
   let start_time = Instant::now();
 
   match perform_search(
-    path, column, condition, &mode, progress, quoting, flexible, skiprows, app_handle,
+    path,
+    column,
+    condition,
+    &mode,
+    progress,
+    quoting,
+    flexible,
+    skiprows,
+    Some(threads),
+    app_handle,
   )
   .await
   {

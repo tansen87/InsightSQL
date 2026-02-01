@@ -13,6 +13,14 @@ pub fn num_cpus() -> usize {
   num_cpus::get()
 }
 
+pub const fn chunk_size(nitems: usize, njobs: usize) -> usize {
+  if nitems < njobs {
+    nitems
+  } else {
+    nitems / njobs
+  }
+}
+
 pub fn num_of_chunks(nitems: usize, chunk_size: usize) -> usize {
   if chunk_size == 0 {
     return nitems;
@@ -22,6 +30,16 @@ pub fn num_of_chunks(nitems: usize, chunk_size: usize) -> usize {
     n += 1;
   }
   n
+}
+
+pub fn njobs(jobs: Option<usize>) -> usize {
+  let max_cpus = num_cpus();
+  jobs.map_or(
+    max_cpus,
+    |j| {
+      if j == 0 || j > max_cpus { max_cpus } else { j }
+    },
+  )
 }
 
 pub fn parse_usize(s: &str, name: &str) -> Result<usize, String> {

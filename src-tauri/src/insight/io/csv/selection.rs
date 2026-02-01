@@ -3,6 +3,7 @@ use std::{collections::HashMap, iter, slice};
 use anyhow::{Result, anyhow};
 use csv::ByteRecord;
 
+#[derive(Clone)]
 pub struct Selection {
   indices: Vec<usize>,
 }

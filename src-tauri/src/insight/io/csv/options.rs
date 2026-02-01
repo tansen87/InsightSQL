@@ -16,6 +16,7 @@ use crate::{
   utils::RDR_BUFFER_SIZE,
 };
 
+#[derive(Clone)]
 pub struct CsvOptions<P: AsRef<Path> + Send + Sync> {
   path: P,
   skiprows: usize,
