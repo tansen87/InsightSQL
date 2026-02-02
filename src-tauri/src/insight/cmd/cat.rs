@@ -72,7 +72,7 @@ async fn cat_with_polars(
     let lf = match file_extension.as_str() {
       "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => {
         let df: DataFrame = ExcelReader::from_path(file)?
-          .worksheet_range_at(0, 0)?
+          .worksheet_range_at(0, skiprows as u32)?
           .to_df()?;
 
         let excel_reader = if use_cols == vec!["all"] {
