@@ -46,6 +46,16 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
     self.decrease = decrease;
   }
 
+  pub fn file_path(&self) -> Result<&str> {
+    Ok(
+      self
+        .path
+        .as_ref()
+        .to_str()
+        .ok_or_else(|| anyhow!("No file path"))?,
+    )
+  }
+
   /// return parent path
   pub fn parent_path(&self) -> Result<&str> {
     self
@@ -410,15 +420,9 @@ impl<P: AsRef<Path> + Send + Sync> CsvOptions<P> {
   }
 
   pub fn idx_path(&self) -> PathBuf {
-    let mut p = self
-      .path
-      .as_ref()
-      .to_path_buf()
-      .into_os_string()
-      .into_string()
-      .unwrap();
-    p.push_str(".idx");
-    PathBuf::from(&p)
+    let mut p = self.path.as_ref().to_path_buf();
+    p.as_mut_os_string().push(".idx");
+    p
   }
 
   pub fn index_files(&self) -> Result<Option<(csv::Reader<File>, File)>> {

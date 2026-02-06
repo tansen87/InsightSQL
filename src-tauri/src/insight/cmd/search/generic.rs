@@ -1,8 +1,8 @@
 use std::{
   collections::{HashMap, HashSet},
   fs::File,
-  io::{BufReader, BufWriter, Read},
-  path::Path,
+  io::{BufReader, BufWriter, Cursor, Read},
+  path::{Path, PathBuf},
   sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -10,15 +10,19 @@ use std::{
   time::Duration,
 };
 
-use anyhow::{Result, anyhow};
-use csv::{ReaderBuilder, Writer, WriterBuilder};
-use rayon::ThreadPoolBuilder;
+use anyhow::Result;
+use csv::{ByteRecord, ReaderBuilder, Writer, WriterBuilder};
+use rayon::{
+  ThreadPoolBuilder,
+  iter::{IntoParallelIterator, ParallelIterator},
+};
+use tempfile::TempDir;
 use tokio::sync::oneshot;
 
 use crate::{
   index::Indexed,
   io::csv::{options::CsvOptions, selection::Selection},
-  utils::{self, EventEmitter},
+  utils::{EventEmitter, MmapOffsets},
 };
 
 fn sanitize_condition(condition: &str) -> String {
@@ -244,10 +248,22 @@ where
   Ok(final_match_rows.to_string())
 }
 
-pub(crate) async fn generic_parallel_search<F>(
+fn clean_header(header: &ByteRecord) -> ByteRecord {
+  let mut cleaned = ByteRecord::new();
+  for field in header {
+    if field.len() >= 3 && &field[0..3] == b"\xEF\xBB\xBF" {
+      cleaned.push_field(&field[3..]);
+    } else {
+      cleaned.push_field(field);
+    }
+  }
+  cleaned
+}
+
+pub(crate) fn generic_parallel_search<F>(
   opts: CsvOptions<String>,
   idx: &mut Indexed<File, File>,
-  mut wtr: csv::Writer<BufWriter<File>>,
+  mut wtr: Writer<BufWriter<File>>,
   column: String,
   conditions: Vec<String>,
   jobs: usize,
@@ -256,86 +272,170 @@ pub(crate) async fn generic_parallel_search<F>(
 where
   F: Fn(&str, &[String]) -> bool + Send + Sync + 'static,
 {
-  let idx_count = idx.count() as usize;
-  if idx_count == 0 {
+  let total_data_rows = idx.count() as usize;
+  if total_data_rows == 0 {
     return Ok("0".to_string());
   }
 
-  let njobs = utils::njobs(Some(jobs));
-  let chunk_size = utils::chunk_size(idx_count, njobs);
-  let nchunks = utils::num_of_chunks(idx_count, chunk_size);
+  let offsets = Arc::new(MmapOffsets::from_file(opts.idx_path())?);
+  let total_records = offsets.len();
+  let sep = opts.get_delimiter()?;
 
-  let headers = idx.headers()?.clone();
-  let sel = Selection::from_headers(&idx.byte_headers()?.clone(), &[column.as_str()])?;
+  if total_records != total_data_rows + 1 {
+    return Err(anyhow::anyhow!(
+      "Index inconsistency: total_records={} vs data_rows={}",
+      total_records,
+      total_data_rows
+    ));
+  }
 
-  wtr.write_record(&headers)?;
+  let csv_path = opts.file_path()?;
+  let csv_file = File::open(&csv_path)?;
+  let csv_mmap = unsafe { memmap2::Mmap::map(&csv_file)? };
+  let csv_mmap = Arc::new(csv_mmap);
 
-  let (send, recv) = crossbeam_channel::bounded(nchunks);
+  // Parse header
+  let header_start = offsets.get(0) as usize;
+  let header_end = offsets.get(1) as usize;
+  if header_start > header_end || header_end > csv_mmap.len() {
+    return Err(anyhow::anyhow!(
+      "Invalid header range: [{}..{}) in file of size {}",
+      header_start,
+      header_end,
+      csv_mmap.len()
+    ));
+  }
+
+  let header_slice = &csv_mmap[header_start..header_end];
+  let mut header_reader = ReaderBuilder::new()
+    .has_headers(false)
+    .delimiter(sep)
+    .from_reader(Cursor::new(header_slice));
+
+  let raw_header = header_reader
+    .byte_records()
+    .next()
+    .ok_or_else(|| anyhow::anyhow!("Failed to parse header"))??;
+
+  let true_header = clean_header(&raw_header);
+  let header_debug: Vec<_> = true_header
+    .iter()
+    .map(|b| String::from_utf8_lossy(b).into_owned())
+    .collect();
+  log::debug!("Cleaned header: {:?}", header_debug);
+
+  let sel = Selection::from_headers(&true_header, &[column.as_str()])?;
+  let field_index = sel.first_indices()?;
+
+  wtr.write_byte_record(&true_header)?;
+
+  // Configure thread count
+  let effective_jobs = jobs.max(1).min(num_cpus::get());
+  let chunk_size_bytes = 256 * 1024 * 1024; // 256MB
+  let file_size = csv_mmap.len();
+  let num_chunks = (file_size + chunk_size_bytes - 1) / chunk_size_bytes;
+
+  let temp_dir = TempDir::new()?;
+
   let pool = ThreadPoolBuilder::new()
-    .num_threads(njobs)
+    .num_threads(effective_jobs)
     .build()
-    .map_err(|e| anyhow!("thread pool: {e}"))?;
+    .map_err(|e| anyhow::anyhow!("Failed to create thread pool: {}", e))?;
 
-  let value = Arc::new(match_fn);
-  for i in 0..nchunks {
-    let send = send.clone();
-    let sel = sel.clone();
-    let opts = opts.clone();
-    let conditions = conditions.clone();
-    let match_fn = value.clone();
-
-    pool.spawn(move || {
-      let mut local_idx = match opts.indexed() {
-        Ok(Some(idx)) => idx,
-        _ => {
-          // 无法打开索引,发送空结果避免死锁
-          let _ = send.send(Vec::new());
-          return;
+  let results: Result<Vec<(PathBuf, usize)>> = Ok(pool.install(|| {
+    (0..num_chunks)
+      .into_par_iter()
+      .map(|chunk_id| -> Result<(PathBuf, usize)> {
+        let start_byte = chunk_id * chunk_size_bytes;
+        if start_byte >= file_size {
+          return Ok((PathBuf::new(), 0));
         }
-      };
 
-      let start = (i * chunk_size) as u64;
-      let end = ((i + 1) * chunk_size).min(idx_count) as u64;
-      let count = (end - start) as usize;
+        // Skip header: data rows start at index 1
+        let mut phys_start_idx = 1;
+        if offsets.len() <= 1 {
+          return Ok((PathBuf::new(), 0)); // no data rows
+        }
+        for i in 1..offsets.len() {
+          if offsets.get(i) as usize >= start_byte {
+            phys_start_idx = i;
+            break;
+          }
+        }
 
-      if local_idx.seek(start).is_err() {
-        let _ = send.send(Vec::new());
-        return;
-      }
+        let next_chunk_start = (chunk_id + 1) * chunk_size_bytes;
+        let mut phys_end_idx = offsets.len();
+        for i in phys_start_idx..offsets.len() {
+          if offsets.get(i) as usize >= next_chunk_start {
+            phys_end_idx = i;
+            break;
+          }
+        }
 
-      let mut matched = Vec::new();
-      for record_result in local_idx.byte_records().take(count) {
-        let record = match record_result {
-          Ok(r) => r,
-          Err(_) => continue, // 跳过坏记录
+        if phys_start_idx >= phys_end_idx {
+          return Ok((PathBuf::new(), 0));
+        }
+
+        let chunk_start = offsets.get(phys_start_idx) as usize;
+        let chunk_end = if phys_end_idx < offsets.len() {
+          offsets.get(phys_end_idx) as usize
+        } else {
+          file_size
         };
-        let field_index = match sel.first_indices() {
-          Ok(idx) => idx,
-          Err(_) => continue,
-        };
 
-        if let Some(value) = record.get(field_index) {
-          if let Ok(value_str) = std::str::from_utf8(value) {
-            if match_fn(value_str, &conditions) {
-              matched.push(record);
+        if chunk_start >= file_size || chunk_start >= chunk_end {
+          return Ok((PathBuf::new(), 0));
+        }
+
+        let slice = &csv_mmap[chunk_start..chunk_end];
+        let reader = ReaderBuilder::new()
+          .has_headers(false)
+          .delimiter(sep)
+          .from_reader(Cursor::new(slice));
+
+        let out_path = temp_dir.path().join(format!("part_{}.csv", chunk_id));
+
+        let mut local_wtr = WriterBuilder::new()
+          .delimiter(sep) // or Never, but be consistent
+          .from_path(&out_path)?;
+
+        let mut count = 0;
+        for record_result in reader.into_byte_records() {
+          let record = record_result?;
+          if let Some(value) = record.get(field_index) {
+            if let Ok(s) = std::str::from_utf8(value) {
+              if match_fn(s, &conditions) {
+                local_wtr.write_byte_record(&record)?;
+                count += 1;
+              }
             }
           }
         }
-      }
-      let _ = send.send(matched);
-    });
-  }
+        local_wtr.flush()?;
+        Ok((out_path, count))
+      })
+      .collect::<Result<Vec<_>, _>>()
+  })?);
 
-  drop(send);
+  let mut total = 0;
+  for (path, count) in results? {
+    if count == 0 || path.as_os_str().is_empty() {
+      continue;
+    }
 
-  let mut total_matches = 0;
-  while let Ok(records) = recv.recv() {
-    total_matches += records.len();
-    for rec in records {
-      wtr.write_byte_record(&rec)?;
+    let mut part_file = File::open(&path)?;
+    let part_reader = ReaderBuilder::new()
+      .delimiter(sep)
+      .has_headers(false) // temp files have no header
+      .from_reader(&mut part_file);
+
+    for record_result in part_reader.into_byte_records() {
+      let record = record_result?;
+      wtr.write_byte_record(&record)?;
+      total += 1;
     }
   }
-  wtr.flush()?;
 
-  Ok(total_matches.to_string())
+  wtr.flush()?;
+  Ok(total.to_string())
 }

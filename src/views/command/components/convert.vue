@@ -21,6 +21,7 @@ import {
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import {
+  useFlexible,
   useProgress,
   useQuoting,
   useSkiprows,
@@ -90,6 +91,7 @@ const fileSelect = ref<ListenEvent[]>([]);
 const { dynamicHeight } = useDynamicHeight(74);
 const { isDark } = useDark();
 const quotingStore = useQuoting();
+const flexibleStore = useFlexible();
 const progressStore = useProgress();
 const skiprowsStore = useSkiprows();
 const threadsStore = useThreads();
@@ -265,7 +267,8 @@ async function convert() {
         quoteStyle: quoteStyle.value,
         quoting: quotingStore.quoting,
         progress: progressStore.progress,
-        skiprows: skiprowsStore.skiprows
+        skiprows: skiprowsStore.skiprows,
+        flexible: flexibleStore.flexible
       });
     } else if (activeTab.value === "encoding") {
       rtime = await invoke("encoding2utf8", {

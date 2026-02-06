@@ -1,8 +1,10 @@
+use std::fs::File;
 use std::future::Future;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
+use memmap2::Mmap;
 use tauri::{AppHandle, Emitter};
 
 use crate::io::csv::options::CsvOptions;
@@ -65,6 +67,59 @@ pub fn batch_size<P: AsRef<Path> + Send + Sync>(opts: &CsvOptions<P>, njobs: usi
 pub fn parse_usize(s: &str, name: &str) -> Result<usize, String> {
   s.parse::<usize>()
     .map_err(|e| format!("parse '{name}' error: {e}"))
+}
+
+pub struct MmapOffsets {
+  mmap: Mmap,
+  num_offsets: usize, // 不包含最后的 total_len
+}
+
+impl MmapOffsets {
+  pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, anyhow::Error> {
+    let file = File::open(&path)?;
+    let metadata = file.metadata()?;
+    let file_len = metadata.len();
+
+    if file_len < 8 || file_len % 8 != 0 {
+      return Err(anyhow::anyhow!("Invalid index file size"));
+    }
+
+    let mmap = unsafe { Mmap::map(&file)? };
+
+    // 最后 8 字节是 total_len
+    let total_len_bytes = &mmap[file_len as usize - 8..];
+    let total_records = u64::from_be_bytes(total_len_bytes.try_into().unwrap());
+
+    let num_offsets = total_records as usize;
+    let expected_file_size = (num_offsets + 1) * 8;
+
+    if file_len != expected_file_size as u64 {
+      return Err(anyhow::anyhow!(
+        "Index file size mismatch: got {}, expected {}",
+        file_len,
+        expected_file_size
+      ));
+    }
+
+    Ok(Self { mmap, num_offsets })
+  }
+
+  #[inline]
+  pub fn get(&self, i: usize) -> u64 {
+    if i >= self.num_offsets {
+      panic!(
+        "Offset index {} out of bounds (num_offsets = {})",
+        i, self.num_offsets
+      );
+    }
+    let start = i * 8;
+    u64::from_be_bytes(self.mmap[start..start + 8].try_into().unwrap())
+  }
+
+  #[inline]
+  pub fn len(&self) -> usize {
+    self.num_offsets
+  }
 }
 
 pub trait EventEmitter {

@@ -101,9 +101,7 @@ onBeforeMount(() => {
         <div class="setting-item">
           <div class="setting-label">
             <span class="setting-title">skiprows</span>
-            <span class="setting-desc">
-              Number of lines skipped in the file
-            </span>
+            <span class="setting-desc"> Number of lines skipped </span>
           </div>
           <el-input-number
             v-model="skiprowsStore.skiprows"

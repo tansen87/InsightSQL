@@ -27,11 +27,24 @@ pub async fn equal<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, cond: &[String]| cond.contains(&value.to_string());
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    // _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -49,11 +62,25 @@ pub async fn not_equal<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, cond: &[String]| !cond.contains(&value.to_string());
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => {
+      tokio::task::spawn_blocking(move || {
+        generic_parallel_search(
+          opts,
+          &mut idx.unwrap(),
+          wtr,
+          column,
+          conditions,
+          jobs,
+          match_fn,
+        )
+      })
+      .await
+      .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
+    }
   }
 }
 
@@ -71,11 +98,23 @@ pub async fn contains<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, cond: &[String]| cond.iter().any(|cond| value.contains(cond));
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -93,11 +132,23 @@ pub async fn not_contains<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, conds: &[String]| !conds.iter().any(|cond| value.contains(cond));
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -115,11 +166,23 @@ pub async fn starts_with<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, cond: &[String]| cond.iter().any(|cond| value.starts_with(cond));
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -137,11 +200,23 @@ pub async fn not_starts_with<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, conds: &[String]| !conds.iter().any(|cond| value.starts_with(cond));
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -159,11 +234,23 @@ pub async fn ends_with<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, conds: &[String]| conds.iter().any(|cond| value.ends_with(cond));
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -181,11 +268,23 @@ pub async fn not_ends_with<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, conds: &[String]| !conds.iter().any(|cond| value.ends_with(cond));
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -204,10 +303,10 @@ where
   E: EventEmitter + Send + Sync + 'static,
 {
   let pattern = RegexBuilder::new(&regex_char).build()?;
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = move |value: &str, _: &[String]| pattern.is_match(value.as_bytes());
   match jobs {
-    0 | 1 => {
+    1 => {
       generic_search(
         rdr,
         wtr,
@@ -219,7 +318,19 @@ where
       )
       .await
     }
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, vec![regex_char], jobs, match_fn).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        vec![regex_char],
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -237,11 +348,23 @@ pub async fn is_null<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, _: &[String]| value.trim().is_empty();
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -259,11 +382,23 @@ pub async fn is_not_null<E>(
 where
   E: EventEmitter + Send + Sync + 'static,
 {
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = |value: &str, _: &[String]| !value.trim().is_empty();
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -284,7 +419,7 @@ where
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = move |value: &str, _: &[String]| {
     value
       .parse::<f64>()
@@ -292,7 +427,7 @@ where
       .unwrap_or(false)
   };
   match jobs {
-    0 | 1 => {
+    1 => {
       generic_search(
         rdr,
         wtr,
@@ -304,7 +439,19 @@ where
       )
       .await
     }
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, vec![conditions], jobs, match_fn).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        vec![conditions],
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -325,7 +472,7 @@ where
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = move |value: &str, _: &[String]| {
     value
       .parse::<f64>()
@@ -333,7 +480,7 @@ where
       .unwrap_or(false)
   };
   match jobs {
-    0 | 1 => {
+    1 => {
       generic_search(
         rdr,
         wtr,
@@ -345,7 +492,19 @@ where
       )
       .await
     }
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, vec![conditions], jobs, match_fn).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        vec![conditions],
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -366,7 +525,7 @@ where
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Invalid number: {conditions}"))?;
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = move |value: &str, _: &[String]| {
     value
       .parse::<f64>()
@@ -374,7 +533,7 @@ where
       .unwrap_or(false)
   };
   match jobs {
-    0 | 1 => {
+    1 => {
       generic_search(
         rdr,
         wtr,
@@ -386,7 +545,19 @@ where
       )
       .await
     }
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, vec![conditions], jobs, match_fn).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        vec![conditions],
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -407,7 +578,7 @@ where
   let threshold_value = conditions
     .parse::<f64>()
     .map_err(|_| anyhow!("Condition must be a valid number"))?;
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = move |value: &str, _: &[String]| {
     value
       .parse::<f64>()
@@ -415,7 +586,7 @@ where
       .unwrap_or(false)
   };
   match jobs {
-    0 | 1 => {
+    1 => {
       generic_search(
         rdr,
         wtr,
@@ -427,7 +598,19 @@ where
       )
       .await
     }
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, vec![conditions], jobs, match_fn).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        vec![conditions],
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -464,7 +647,7 @@ where
   } else {
     (val2, val1)
   };
-  let jobs = threads.unwrap_or(0);
+  let jobs = threads.unwrap_or(1);
   let match_fn = move |value: &str, _: &[String]| {
     value
       .parse::<f64>()
@@ -472,7 +655,19 @@ where
       .unwrap_or(false)
   };
   match jobs {
-    0 | 1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
+    1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
