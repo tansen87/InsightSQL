@@ -1106,3 +1106,28 @@ export function mdIndex() {
 \`\`\`
 `;
 }
+
+export function mdInsert() {
+  return `
+### position support: left, l, right, r, before, b, after, a
+\`\`\`
+sample file
+┌─────┬───────┐
+│ idx │ name  │
+├─────┼───────┤
+│  1  │ tom   │
+│  2  │ ts    │
+└─────┴───────┘
+\`\`\`
+
+(column: idx, position: <u>left|-1</u>, values: <u>CNY|3</u>)
+\`\`\`
+┌─────┬─────┬──────┬───┐
+│ CNY | idx │ name | 3 │
+├─────┼─────┼──────┼───┤
+│ CNY |  1  │ tom  | 3 │
+│ CNY |  2  │ ts   │ 3 |
+└─────┴─────┴──────┴───┘
+\`\`\`
+`;
+}

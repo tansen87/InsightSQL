@@ -6,6 +6,7 @@ pub mod enumerate;
 pub mod extsort;
 pub mod fill;
 pub mod idx;
+pub mod insert;
 pub mod join;
 pub mod pinyin;
 pub mod rename;

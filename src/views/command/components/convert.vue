@@ -31,7 +31,7 @@ import {
 const [activeTab, chunksize, csvMode, wtrSep, quote, quoteStyle] = [
   ref("excel"),
   ref("700000"),
-  ref("multi"),
+  ref("one"),
   ref("|"),
   ref('"'),
   ref("necessary")

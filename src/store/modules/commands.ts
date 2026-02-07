@@ -132,6 +132,12 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/transpose"
       },
       {
+        title: "Insert",
+        icon: "ri:insert-column-right",
+        description: "Insert columns through index",
+        route: "/command/components/insert"
+      },
+      {
         title: "Traverse",
         icon: "ri:align-right",
         description: "Traverse the directory to obtain filenames",

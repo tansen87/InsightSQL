@@ -205,6 +205,15 @@ export default {
       }
     },
     {
+      path: "/command/components/insert",
+      name: "insert",
+      component: () => import("@/views/command/components/insert.vue"),
+      meta: {
+        title: "insert",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/traverse",
       name: "traverse",
       component: () => import("@/views/command/components/traverse.vue"),

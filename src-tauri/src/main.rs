@@ -15,6 +15,7 @@ use insight::cmd::enumerate;
 use insight::cmd::extsort;
 use insight::cmd::fill;
 use insight::cmd::idx;
+use insight::cmd::insert;
 use insight::cmd::join;
 use insight::cmd::pinyin;
 use insight::cmd::rename;
@@ -86,6 +87,7 @@ fn main() {
       extsort::extsort,
       fill::fill,
       idx::csv_idx,
+      insert::insert,
       join::join,
       pinyin::pinyin,
       rename::rename,
