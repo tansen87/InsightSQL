@@ -70,14 +70,13 @@ listen("total-rows", (event: Event<number>) => {
 
 async function selectFile() {
   originalColumns.value = [];
-  path.value = "";
-  selColumns.value = [];
-  tableColumn.value = [];
-  tableData.value = [];
   totalRows.value = 0;
 
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
+  if (path.value === null) {
+    path.value = "";
+    return;
+  }
 
   try {
     originalColumns.value = await mapHeaders(

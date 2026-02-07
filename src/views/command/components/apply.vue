@@ -80,11 +80,14 @@ const flexibleStore = useFlexible();
 const threadsStore = useThreads();
 
 async function selectFile() {
+  path.value = await viewOpenFile(false, "csv", ["*"]);
+  if (path.value === null) {
+    path.value = "";
+    return;
+  }
+
   backendCompleted.value = false;
   backendInfo.value = "";
-
-  path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
 
   try {
     tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);

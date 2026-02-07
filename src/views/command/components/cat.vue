@@ -36,7 +36,7 @@ async function selectFile() {
   backendInfo.value = "";
   backendCompleted.value = false;
   try {
-    const trimFile = await trimOpenFile(true, "", ["*"], {
+    const trimFile = await trimOpenFile(true, "CSV|Excel", ["*"], {
       includeStatus: false
     });
     path.value = trimFile.filePath;

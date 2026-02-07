@@ -17,12 +17,11 @@ const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 
 async function selectFile() {
-  tableHeader.value = [];
-  tableColumn.value = [];
-  tableData.value = [];
-
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
+  if (path.value === null) {
+    path.value = "";
+    return;
+  }
 
   try {
     tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);

@@ -21,7 +21,7 @@ interface MessageParams {
   dangerouslyUseHTMLString?: boolean;
   /** 消息风格, 可选 `el` 、`antd` , 默认 `antd` */
   customClass?: messageStyle;
-  /** 显示时间, 单位为毫秒。设为 `0` 则不会自动关闭, 默认是 `3000` */
+  /** 显示时间, 单位为毫秒。设为 `0` 则不会自动关闭, 默认是 `5000` */
   duration?: number;
   /** 是否显示关闭按钮, 默认值 `true` */
   showClose?: boolean;
@@ -31,7 +31,7 @@ interface MessageParams {
   appendTo?: string | HTMLElement;
   /** 合并内容相同的消息, 不支持 `VNode` 类型的消息, 默认值 `true` */
   grouping?: boolean;
-  /** 消息放置位置, 默认值 `bottom-left` */
+  /** 消息放置位置, 默认值 `bottom-right` */
   placement?: messagePlacement;
   /** 关闭时的回调函数, 参数为被关闭的 `message` 实例 */
   onClose?: Function | null;
@@ -62,7 +62,7 @@ const message = (
       offset = 11,
       appendTo = document.body,
       grouping = true,
-      placement = "bottom-left",
+      placement = "bottom-right",
       onClose
     } = params;
 

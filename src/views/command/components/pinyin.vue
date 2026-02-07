@@ -41,14 +41,13 @@ listen("total-rows", (event: Event<number>) => {
 });
 
 async function selectFile() {
-  columns.value = "";
-  tableHeader.value = [];
-  tableColumn.value = [];
-  tableData.value = [];
-  totalRows.value = 0;
-
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
+  if (path.value === null) {
+    path.value = "";
+    return;
+  }
+
+  totalRows.value = 0;
 
   try {
     tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);

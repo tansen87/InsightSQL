@@ -18,11 +18,11 @@ const skiprowsStore = useSkiprows();
 const flexibleStore = useFlexible();
 
 async function selectFile() {
-  tableColumn.value = [];
-  tableData.value = [];
-
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
+  if (path.value === null) {
+    path.value = "";
+    return;
+  }
 
   try {
     const { columnView, dataView } = await toJson(

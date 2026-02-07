@@ -32,20 +32,16 @@ const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 
 async function selectFile(fileIndex: number) {
-  const selectColumn = fileIndex === 1 ? sel1 : sel2;
   const tableHeader = fileIndex === 1 ? tableHeader1 : tableHeader2;
   const tableColumn = fileIndex === 1 ? tableColumn1 : tableColumn2;
   const tableData = fileIndex === 1 ? tableData1 : tableData2;
   const path = fileIndex === 1 ? "path1" : "path2";
 
-  data[path] = "";
-  selectColumn.value = "";
-  tableHeader.value = [];
-  tableColumn.value = [];
-  tableData.value = [];
-
   data[path] = await viewOpenFile(false, "csv", ["*"]);
-  if (data[path] === null) return;
+  if (data[path] === null) {
+    data[path] = "";
+    return;
+  }
 
   try {
     tableHeader.value = await mapHeaders(data[path], skiprowsStore.skiprows);

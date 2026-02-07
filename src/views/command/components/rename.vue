@@ -41,13 +41,14 @@ listen("total-rows", (event: Event<number>) => {
 });
 
 async function selectFile() {
-  tableData.value = [];
-  search.value = "";
-  path.value = "";
-  totalRows.value = 0;
-
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
+  if (path.value === null) {
+    path.value = "";
+    search.value = "";
+    return;
+  }
+
+  totalRows.value = 0;
 
   try {
     const headers: string[] = await invoke("from_headers", {

@@ -22,7 +22,7 @@ const placeholderText = ref(
 );
 const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
 const [column, path, condition] = [ref(""), ref(""), ref("")];
-const [dialog, isLoading, isBtnShow] = [ref(false), ref(false), ref(false)];
+const [dialog, isLoading] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
 const { dynamicHeight } = useDynamicHeight(98);
 const { mdShow } = useMarkdown(mdSearch);
@@ -40,16 +40,13 @@ listen("total-rows", (event: Event<number>) => {
 });
 
 async function selectFile() {
-  isBtnShow.value = false;
-  path.value = "";
-  column.value = "";
-  tableHeader.value = [];
-  tableColumn.value = [];
-  tableData.value = [];
-  totalRows.value = 0;
-
   path.value = await viewOpenFile(false, "csv", ["*"]);
-  if (path.value === null) return;
+  if (path.value === null) {
+    path.value = "";
+    return;
+  }
+
+  totalRows.value = 0;
 
   try {
     tableHeader.value = await mapHeaders(path.value, skiprowsStore.skiprows);
@@ -74,7 +71,7 @@ async function searchData() {
     message("Column not selected", { type: "warning" });
     return;
   }
-  if (skiprowsStore.skiprows > 0 && threadsStore.threads > 1) {
+  if (skiprowsStore.skiprows > 0 && threadsStore.threads !== 1) {
     message("threads only support skiprows = 0", { type: "warning" });
     return;
   }
@@ -93,7 +90,6 @@ async function searchData() {
       threads: threadsStore.threads
     });
     matchRows.value = Number(res[0]);
-    isBtnShow.value = true;
     message(`Match ${res[0]} rows, elapsed time: ${res[1]} s`, {
       type: "success"
     });
@@ -212,9 +208,7 @@ async function searchData() {
         </el-table>
 
         <el-text>
-          <el-icon class="ml-2">
-            <Files />
-          </el-icon>
+          <el-icon class="ml-2"><Files /></el-icon>
           {{ path }}
         </el-text>
       </el-splitter-panel>
