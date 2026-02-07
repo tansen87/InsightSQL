@@ -22,7 +22,7 @@ use tokio::sync::oneshot;
 use crate::{
   index::Indexed,
   io::csv::{options::CsvOptions, selection::Selection},
-  utils::{EventEmitter, MmapOffsets},
+  utils::{self, EventEmitter, MmapOffsets},
 };
 
 fn sanitize_condition(condition: &str) -> String {
@@ -330,7 +330,7 @@ where
   wtr.write_byte_record(&true_header)?;
 
   // Configure thread count
-  let effective_jobs = jobs.max(1).min(num_cpus::get());
+  let njobs = utils::njobs(Some(jobs));
   let chunk_size_bytes = 256 * 1024 * 1024; // 256MB
   let file_size = csv_mmap.len();
   let num_chunks = (file_size + chunk_size_bytes - 1) / chunk_size_bytes;
@@ -338,7 +338,7 @@ where
   let temp_dir = TempDir::new()?;
 
   let pool = ThreadPoolBuilder::new()
-    .num_threads(effective_jobs)
+    .num_threads(njobs)
     .build()
     .map_err(|e| anyhow::anyhow!("Failed to create thread pool: {}", e))?;
 
