@@ -11,7 +11,7 @@ use std::{
 };
 
 use anyhow::Result;
-use csv::{ByteRecord, ReaderBuilder, Writer, WriterBuilder};
+use csv::{ReaderBuilder, Writer, WriterBuilder};
 use rayon::{
   ThreadPoolBuilder,
   iter::{IntoParallelIterator, ParallelIterator},
@@ -248,18 +248,6 @@ where
   Ok(final_match_rows.to_string())
 }
 
-fn clean_header(header: &ByteRecord) -> ByteRecord {
-  let mut cleaned = ByteRecord::new();
-  for field in header {
-    if field.len() >= 3 && &field[0..3] == b"\xEF\xBB\xBF" {
-      cleaned.push_field(&field[3..]);
-    } else {
-      cleaned.push_field(field);
-    }
-  }
-  cleaned
-}
-
 pub(crate) fn generic_parallel_search<F>(
   opts: CsvOptions<String>,
   idx: &mut Indexed<File, File>,
@@ -317,7 +305,7 @@ where
     .next()
     .ok_or_else(|| anyhow::anyhow!("Failed to parse header"))??;
 
-  let true_header = clean_header(&raw_header);
+  let true_header = utils::clean_header(&raw_header);
   let header_debug: Vec<_> = true_header
     .iter()
     .map(|b| String::from_utf8_lossy(b).into_owned())

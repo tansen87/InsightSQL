@@ -12,12 +12,13 @@ import {
   useFlexible,
   useProgress,
   useQuoting,
-  useSkiprows
+  useSkiprows,
+  useThreads
 } from "@/store/modules/options";
 
 const [isLoading, dialog] = [ref(false), ref(false)];
 const [tableHeader, tableColumn, tableData] = [ref([]), ref([]), ref([])];
-const [currentRows, totalRows] = [ref(0), ref(0)];
+const [currentRows, totalRows, matchRows] = [ref(0), ref(0), ref(0)];
 const [column, path, regexPattern, replacement] = [
   ref(""),
   ref(""),
@@ -30,6 +31,7 @@ const quotingStore = useQuoting();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 const flexibleStore = useFlexible();
+const threadsStore = useThreads();
 
 listen("update-rows", (event: Event<number>) => {
   currentRows.value = event.payload;
@@ -70,10 +72,14 @@ async function replaceData() {
     message("Column not selected", { type: "warning" });
     return;
   }
+  if (skiprowsStore.skiprows > 0 && threadsStore.threads !== 1) {
+    message("threads only support skiprows = 0", { type: "warning" });
+    return;
+  }
 
   try {
     isLoading.value = true;
-    const rtime: string = await invoke("replace", {
+    const res: string[] = await invoke("replace", {
       path: path.value,
       column: column.value,
       regexPattern: regexPattern.value,
@@ -81,9 +87,13 @@ async function replaceData() {
       quoting: quotingStore.quoting,
       progress: progressStore.progress,
       skiprows: skiprowsStore.skiprows,
-      flexible: flexibleStore.flexible
+      flexible: flexibleStore.flexible,
+      threads: threadsStore.threads
     });
-    message(`Replace done, elapsed time: ${rtime} s`, { type: "success" });
+    matchRows.value = Number(res[0]);
+    message(`Replaced ${res[0]} rows, elapsed time: ${res[1]} s`, {
+      type: "success"
+    });
   } catch (err) {
     message(err.toString(), { type: "error" });
   }
@@ -129,14 +139,20 @@ async function replaceData() {
       </el-splitter-panel>
 
       <el-splitter-panel>
-        <el-button
-          @click="replaceData()"
-          :loading="isLoading"
-          :icon="SwitchButton"
-          text
-          round
-          >Run
-        </el-button>
+        <div class="flex justify-between items-center">
+          <el-button
+            @click="replaceData()"
+            :loading="isLoading"
+            :icon="SwitchButton"
+            text
+            round
+            >Run
+          </el-button>
+
+          <el-text v-if="matchRows" style="margin-right: 8px">
+            replaced rows: {{ matchRows }}
+          </el-text>
+        </div>
 
         <el-table
           :data="tableData"

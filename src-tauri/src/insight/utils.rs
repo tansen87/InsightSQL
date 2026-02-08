@@ -4,6 +4,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
+use csv::ByteRecord;
 use memmap2::Mmap;
 use tauri::{AppHandle, Emitter};
 
@@ -120,6 +121,18 @@ impl MmapOffsets {
   pub fn len(&self) -> usize {
     self.num_offsets
   }
+}
+
+pub fn clean_header(header: &ByteRecord) -> ByteRecord {
+  let mut cleaned = ByteRecord::new();
+  for field in header {
+    if field.len() >= 3 && &field[0..3] == b"\xEF\xBB\xBF" {
+      cleaned.push_field(&field[3..]);
+    } else {
+      cleaned.push_field(field);
+    }
+  }
+  cleaned
 }
 
 pub trait EventEmitter {
