@@ -67,11 +67,15 @@ async function searchData() {
     message("CSV file not selected", { type: "warning" });
     return;
   }
-  if (column.value.length === 0) {
+  if (column.value.length === 0 && mode.value !== "irregular_regex") {
     message("Column not selected", { type: "warning" });
     return;
   }
-  if (skiprowsStore.skiprows > 0 && threadsStore.threads !== 1) {
+  if (
+    skiprowsStore.skiprows > 0 &&
+    threadsStore.threads !== 1 &&
+    mode.value !== "irregular_regex"
+  ) {
     message("threads only support skiprows = 0", { type: "warning" });
     return;
   }
@@ -131,26 +135,27 @@ async function searchData() {
               class="mt-2 ml-2"
               style="width: 240px"
             >
-              <el-option label="Equal" value="equal" />
-              <el-option label="EqualMulti" value="equal_multi" />
-              <el-option label="NotEqual" value="not_equal" />
-              <el-option label="Contains" value="contains" />
-              <el-option label="ContainsMulti" value="contains_multi" />
-              <el-option label="NotContains" value="not_contains" />
-              <el-option label="StartsWith" value="starts_with" />
-              <el-option label="StartsWithMulti" value="starts_with_multi" />
-              <el-option label="NotStartsWtih" value="not_starts_with" />
-              <el-option label="EndsWith" value="ends_with" />
-              <el-option label="EndsWithMulti" value="ends_with_multi" />
-              <el-option label="NotEndsWith" value="not_ends_with" />
+              <el-option label="equal" value="equal" />
+              <el-option label="equal_multi" value="equal_multi" />
+              <el-option label="not_equal" value="not_equal" />
+              <el-option label="contains" value="contains" />
+              <el-option label="contains_multi" value="contains_multi" />
+              <el-option label="not_contains" value="not_contains" />
+              <el-option label="starts_with" value="starts_with" />
+              <el-option label="starts_with_multi" value="starts_with_multi" />
+              <el-option label="not_starts_with" value="not_starts_with" />
+              <el-option label="ends_with" value="ends_with" />
+              <el-option label="ends_with_multi" value="ends_with_multi" />
+              <el-option label="not_ends_with" value="not_ends_with" />
               <el-option label="Regex" value="regex" />
-              <el-option label="IsNull" value="is_null" />
-              <el-option label="IsNotNull" value="is_not_null" />
+              <el-option label="is_null" value="is_null" />
+              <el-option label="is_not_null" value="is_not_null" />
               <el-option label="gt(>)" value="gt" />
               <el-option label="ge(≥)" value="ge" />
               <el-option label="lt(<)" value="lt" />
               <el-option label="le(≤)" value="le" />
-              <el-option label="Between" value="between" />
+              <el-option label="between" value="between" />
+              <el-option label="irregular_regex" value="irregular_regex" />
             </el-select>
           </el-tooltip>
 

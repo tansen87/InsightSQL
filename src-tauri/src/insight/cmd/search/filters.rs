@@ -1,6 +1,7 @@
 use std::{
   fs::File,
-  io::{BufReader, BufWriter, Read},
+  io::{BufRead, BufReader, BufWriter, Read, Write},
+  path::PathBuf,
 };
 
 use anyhow::{Result, anyhow};
@@ -10,7 +11,7 @@ use crate::{
   cmd::search::generic::{generic_parallel_search, generic_search},
   index::Indexed,
   io::csv::options::CsvOptions,
-  utils::EventEmitter,
+  utils::{EventEmitter, WTR_BUFFER_SIZE},
 };
 
 pub async fn equal<E>(
@@ -66,21 +67,19 @@ where
   let match_fn = |value: &str, cond: &[String]| !cond.contains(&value.to_string());
   match jobs {
     1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    _ => {
-      tokio::task::spawn_blocking(move || {
-        generic_parallel_search(
-          opts,
-          &mut idx.unwrap(),
-          wtr,
-          column,
-          conditions,
-          jobs,
-          match_fn,
-        )
-      })
-      .await
-      .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
-    }
+    _ => tokio::task::spawn_blocking(move || {
+      generic_parallel_search(
+        opts,
+        &mut idx.unwrap(),
+        wtr,
+        column,
+        conditions,
+        jobs,
+        match_fn,
+      )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
 }
 
@@ -670,4 +669,25 @@ where
     .await
     .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?,
   }
+}
+
+pub async fn irregular_with_regex(
+  reader: BufReader<Box<dyn Read + Send>>,
+  output_path: PathBuf,
+  pattern: String,
+) -> Result<String> {
+  let mut wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(output_path)?);
+  let re = regex::Regex::new(&pattern)?;
+
+  let mut total = 0;
+  for line in reader.lines() {
+    let line = line?;
+    if re.is_match(&line) {
+      writeln!(wtr, "{}", line)?;
+      total += 1;
+    }
+  }
+  wtr.flush()?;
+
+  Ok(total.to_string())
 }

@@ -33,6 +33,7 @@ enum SearchMode {
   LessThan,
   LessThanEqual,
   Between,
+  IrregularRegex,
 }
 
 impl From<&str> for SearchMode {
@@ -54,6 +55,7 @@ impl From<&str> for SearchMode {
       "lt" => SearchMode::LessThan,
       "le" => SearchMode::LessThanEqual,
       "between" => SearchMode::Between,
+      "irregular_regex" => SearchMode::IrregularRegex,
       _ => SearchMode::Equal,
     }
   }
@@ -336,6 +338,10 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
             emitter,
           )
           .await
+        }
+        SearchMode::IrregularRegex => {
+          let (_, reader) = opts.skiprows_and_delimiter()?;
+          filters::irregular_with_regex(reader, output_path, conditions).await
         }
         _ => Err(anyhow!("Unsupported search mode")),
       }
