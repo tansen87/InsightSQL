@@ -62,3 +62,15 @@ export const useThreads = defineStore("threads", {
   },
   persist: true
 });
+
+export const useDelimiter = defineStore("delimiter", {
+  state: () => ({
+    delimiter: "|"
+  }),
+  actions: {
+    setDelimiter(value: string) {
+      this.delimiter = value;
+    }
+  },
+  persist: true
+});

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, unref, watch, onBeforeMount, reactive } from "vue";
-import { debounce, useGlobal } from "@pureadmin/utils";
+import { debounce, useDark, useGlobal } from "@pureadmin/utils";
 import { emitter } from "@/utils/mitt";
 import { toggleTheme } from "@pureadmin/theme/dist/browser-utils";
 import { useAppStoreHook } from "@/store/modules/app";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 import {
+  useDelimiter,
   useFlexible,
   useProgress,
   useQuoting,
@@ -45,6 +46,7 @@ const flexibleStore = useFlexible();
 const skiprowsStore = useSkiprows();
 const progressStore = useProgress();
 const threadsStore = useThreads();
+const delimiterStore = useDelimiter();
 
 const mixRef = ref();
 const verticalRef = ref();
@@ -92,95 +94,131 @@ watch($storage, ({ layout }) => {
 onBeforeMount(() => {
   dataThemeChange();
 });
+
+const opts = ref("general");
+const options = [
+  { label: "General", value: "general" },
+  { label: "Read/Write", value: "readwrite" }
+];
+const { isDark } = useDark();
 </script>
 
 <template>
   <el-dialog v-model="dialog" title="Setting" width="70%">
+    <div class="mode-toggle w-[200px] ml-[0px] mb-[5px]">
+      <span
+        v-for="item in options"
+        :key="item.value"
+        class="mode-item"
+        :class="{
+          active: opts === item.value,
+          'active-dark': isDark && opts === item.value
+        }"
+        @click="opts = item.value"
+      >
+        {{ item.label }}
+      </span>
+    </div>
     <el-scrollbar max-height="60vh">
-      <el-card class="setting-card">
-        <div class="setting-item">
-          <div class="setting-label">
-            <span class="setting-title">skiprows</span>
-            <span class="setting-desc"> Number of lines skipped </span>
+      <div v-if="opts === 'general'" class="mt-1">
+        <el-card class="setting-card">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">skiprows</span>
+              <span class="setting-desc"> Number of lines skipped </span>
+            </div>
+            <el-input-number
+              v-model="skiprowsStore.skiprows"
+              :min="0"
+              size="small"
+            />
           </div>
-          <el-input-number
-            v-model="skiprowsStore.skiprows"
-            :min="0"
-            size="small"
-          />
-        </div>
-      </el-card>
+        </el-card>
+        <el-card class="setting-card">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">progress</span>
+              <span class="setting-desc">
+                When set to false, no progress bar
+              </span>
+            </div>
+            <el-switch
+              :model-value="progressStore.progress"
+              @change="progressStore.setProgress"
+              inline-prompt
+              class="setting-switch"
+              active-text="true"
+              inactive-text="false"
+            />
+          </div>
+        </el-card>
+        <el-card class="setting-card">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">threads</span>
+              <span class="setting-desc"> Number of threads used </span>
+            </div>
+            <el-input-number
+              v-model="threadsStore.threads"
+              :min="0"
+              size="small"
+            />
+          </div>
+        </el-card>
+      </div>
 
-      <el-card class="setting-card mt-2">
-        <div class="setting-item">
-          <div class="setting-label">
-            <span class="setting-title">quoting</span>
-            <span class="setting-desc">
-              When set to false, ignore all double quotes
-            </span>
+      <div v-if="opts === 'readwrite'" class="mt-1">
+        <el-card class="setting-card">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">quoting</span>
+              <span class="setting-desc">
+                When set to false, ignore all double quotes
+              </span>
+            </div>
+            <el-switch
+              :model-value="quotingStore.quoting"
+              @change="quotingStore.setQuoting"
+              inline-prompt
+              class="setting-switch"
+              active-text="true"
+              inactive-text="false"
+            />
           </div>
-          <el-switch
-            :model-value="quotingStore.quoting"
-            @change="quotingStore.setQuoting"
-            inline-prompt
-            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
-            active-text="true"
-            inactive-text="false"
-          />
-        </div>
-      </el-card>
-
-      <el-card class="setting-card mt-2">
-        <div class="setting-item">
-          <div class="setting-label">
-            <span class="setting-title">flexible</span>
-            <span class="setting-desc">
-              When set to false, enable column count check
-            </span>
+        </el-card>
+        <el-card class="setting-card">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">flexible</span>
+              <span class="setting-desc">
+                When set to false, enable column count check
+              </span>
+            </div>
+            <el-switch
+              :model-value="flexibleStore.flexible"
+              @change="flexibleStore.setFlexible"
+              inline-prompt
+              class="setting-switch"
+              active-text="true"
+              inactive-text="false"
+            />
           </div>
-          <el-switch
-            :model-value="flexibleStore.flexible"
-            @change="flexibleStore.setFlexible"
-            inline-prompt
-            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
-            active-text="true"
-            inactive-text="false"
-          />
-        </div>
-      </el-card>
-
-      <el-card class="setting-card mt-2 mb-2">
-        <div class="setting-item">
-          <div class="setting-label">
-            <span class="setting-title">progress</span>
-            <span class="setting-desc">
-              When set to false, no progress bar
-            </span>
+        </el-card>
+        <el-card class="setting-card">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">delimiter</span>
+              <span class="setting-desc"> Write the delimiter for CSV </span>
+            </div>
+            <el-select style="width: 50px" v-model="delimiterStore.delimiter">
+              <el-option label="|" value="|" />
+              <el-option label="," value="," />
+              <el-option label=";" value=";" />
+              <el-option label="\t" value="\t" />
+            </el-select>
           </div>
-          <el-switch
-            :model-value="progressStore.progress"
-            @change="progressStore.setProgress"
-            inline-prompt
-            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #000"
-            active-text="true"
-            inactive-text="false"
-          />
-        </div>
-      </el-card>
-
-      <el-card class="setting-card">
-        <div class="setting-item">
-          <div class="setting-label">
-            <span class="setting-title">threads</span>
-            <span class="setting-desc"> Number of threads used </span>
-          </div>
-          <el-input-number
-            v-model="threadsStore.threads"
-            :min="0"
-            size="small"
-          />
-        </div>
-      </el-card>
+        </el-card>
+      </div>
     </el-scrollbar>
   </el-dialog>
 </template>
@@ -206,6 +244,10 @@ onBeforeMount(() => {
 }
 .setting-desc {
   font-size: 12px;
+}
+.setting-switch {
+  --el-switch-on-color: #13ce66;
+  --el-switch-off-color: #000;
 }
 
 :deep(.el-input-number) {

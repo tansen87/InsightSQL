@@ -21,6 +21,7 @@ import {
 import { closeAllMessage, message } from "@/utils/message";
 import { trimOpenFile } from "@/utils/view";
 import {
+  useDelimiter,
   useFlexible,
   useProgress,
   useQuoting,
@@ -28,11 +29,10 @@ import {
   useThreads
 } from "@/store/modules/options";
 
-const [activeTab, chunksize, csvMode, wtrSep, quote, quoteStyle] = [
+const [activeTab, chunksize, csvMode, quote, quoteStyle] = [
   ref("excel"),
   ref("700000"),
   ref("one"),
-  ref("|"),
   ref('"'),
   ref("necessary")
 ];
@@ -57,12 +57,6 @@ const sheetsOptions = [
 const writeOptions = [
   { label: "True", value: true },
   { label: "False", value: false }
-];
-const sepOptions = [
-  { label: "|", value: "|" },
-  { label: "\\t", value: "\t" },
-  { label: ",", value: "," },
-  { label: ";", value: ";" }
 ];
 const quoteOptions = [
   { label: "'", value: "'" },
@@ -95,6 +89,7 @@ const flexibleStore = useFlexible();
 const progressStore = useProgress();
 const skiprowsStore = useSkiprows();
 const threadsStore = useThreads();
+const delimiterStore = useDelimiter();
 
 interface ExcelSheetMap {
   [filename: string]: string[];
@@ -262,7 +257,7 @@ async function convert() {
     } else if (activeTab.value === "fmt") {
       rtime = await invoke("csv2csv", {
         path: path.value,
-        wtrSep: wtrSep.value,
+        wtrSep: delimiterStore.delimiter,
         quote: quote.value,
         quoteStyle: quoteStyle.value,
         quoting: quotingStore.quoting,
@@ -279,12 +274,12 @@ async function convert() {
     } else if (activeTab.value === "access") {
       rtime = await invoke("access2csv", {
         path: path.value,
-        wtrSep: wtrSep.value
+        wtrSep: delimiterStore.delimiter
       });
     } else if (activeTab.value === "dbf") {
       rtime = await invoke("dbf2csv", {
         path: path.value,
-        wtrSep: wtrSep.value
+        wtrSep: delimiterStore.delimiter
       });
     } else if (activeTab.value === "csv") {
       rtime = await invoke("csv2xlsx", {
@@ -297,12 +292,12 @@ async function convert() {
     } else if (activeTab.value === "json") {
       rtime = await invoke("json2csv", {
         path: path.value,
-        wtrSep: wtrSep.value
+        wtrSep: delimiterStore.delimiter
       });
     } else if (activeTab.value === "jsonl") {
       rtime = await invoke("jsonl2csv", {
         path: path.value,
-        wtrSep: wtrSep.value,
+        wtrSep: delimiterStore.delimiter,
         ignoreErr: ignoreErr.value
       });
     }
@@ -388,34 +383,12 @@ async function convert() {
 
           <!-- format csv -->
           <el-tooltip
-            v-if="!new Set(['excel', 'csv', 'encoding']).has(activeTab)"
-            content="Write delimiter"
-            effect="light"
-            placement="right"
-          >
-            <div class="mode-toggle w-[220px]">
-              <span
-                v-for="item in sepOptions"
-                :key="item.value"
-                class="mode-item"
-                :class="{
-                  active: wtrSep === item.value,
-                  'active-dark': isDark && wtrSep === item.value
-                }"
-                @click="wtrSep = item.value"
-              >
-                {{ item.label }}
-              </span>
-            </div>
-          </el-tooltip>
-
-          <el-tooltip
             v-if="activeTab === 'fmt'"
             content="Quote character"
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle mt-2 w-[220px]">
+            <div class="mode-toggle w-[220px]">
               <span
                 v-for="item in quoteOptions"
                 :key="item.value"
@@ -489,7 +462,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle mt-2 w-[220px]">
+            <div class="mode-toggle w-[220px]">
               <span
                 v-for="item in iErrOptions"
                 :key="String(item.value)"
@@ -512,7 +485,7 @@ async function convert() {
             effect="light"
             placement="right"
           >
-            <div class="mode-toggle-v mt-2 w-[220px] h-[32px]">
+            <div class="mode-toggle-v w-[220px] h-[32px]">
               <span
                 v-for="item in bomOptions"
                 :key="String(item.value)"

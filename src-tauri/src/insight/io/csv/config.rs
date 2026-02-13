@@ -53,7 +53,7 @@ impl CsvConfig {
     let buf_wtr = BufWriter::with_capacity(WTR_BUFFER_SIZE, File::create(path)?);
 
     let wtr = WriterBuilder::new()
-      .delimiter(self.delimiter)
+      .delimiter(self.write_delim)
       .quote(self.quote)
       .quote_style(self.quote_style)
       .from_writer(buf_wtr);
