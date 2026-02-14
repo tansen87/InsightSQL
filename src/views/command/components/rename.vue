@@ -41,6 +41,7 @@ listen("total-rows", (event: Event<number>) => {
 });
 
 async function selectFile() {
+  tableData.value = [];
   path.value = await viewOpenFile(false, "csv", ["*"]);
   if (path.value === null) {
     path.value = "";

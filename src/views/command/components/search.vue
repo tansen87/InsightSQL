@@ -147,7 +147,7 @@ async function searchData() {
               <el-option label="ends_with" value="ends_with" />
               <el-option label="ends_with_multi" value="ends_with_multi" />
               <el-option label="not_ends_with" value="not_ends_with" />
-              <el-option label="Regex" value="regex" />
+              <el-option label="regex" value="regex" />
               <el-option label="is_null" value="is_null" />
               <el-option label="is_not_null" value="is_not_null" />
               <el-option label="gt(>)" value="gt" />
@@ -166,6 +166,7 @@ async function searchData() {
             :placeholder="placeholderText"
             class="mt-2 ml-2"
             style="width: 240px"
+            resize="none"
           />
 
           <div class="flex flex-col mt-auto">
