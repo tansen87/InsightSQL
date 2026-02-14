@@ -15,6 +15,9 @@ import boolIcon from "@iconify-icons/ri/checkbox-circle-line";
 import dateIcon from "@iconify-icons/ri/calendar-event-line";
 import listIcon from "@iconify-icons/ri/list-unordered";
 import unknowIcon from "@iconify-icons/ri/question-mark";
+import { useSkiprows } from "@/store/modules/options";
+
+const skiprows = useSkiprows();
 
 export function useSqlFileTree() {
   const sqlHistory = useSqlHistory();
@@ -132,7 +135,8 @@ export function useSqlFileTree() {
             limit: true,
             write: false,
             writeFormat: "csv",
-            outputPath: ""
+            outputPath: "",
+            skiprows: skiprows.skiprows
           });
           const result =
             typeof rawResult === "string" ? JSON.parse(rawResult) : rawResult;

@@ -147,6 +147,7 @@ async fn prepare_query(
   write: bool,
   write_format: &str,
   output_path: String,
+  skiprows: usize,
 ) -> Result<String> {
   let infer_schema_length = match varchar {
     true => 0,
@@ -204,7 +205,7 @@ async fn prepare_query(
         .finish()?
         .lazy(),
       "xls" | "xlsm" | "xlsb" | "ods" => ExcelReader::from_path(table)?
-        .worksheet_range_at(0, 0)?
+        .worksheet_range_at(0, skiprows as u32)?
         .to_df()?
         .lazy(),
       "xlsx" => {
@@ -217,7 +218,7 @@ async fn prepare_query(
         let df: DataFrame = match n {
           Some(n) => FastExcelReader::from_path(table)?.fast_to_df(n, 0)?,
           None => ExcelReader::from_path(table)?
-            .worksheet_range_at(0, 0)?
+            .worksheet_range_at(0, skiprows as u32)?
             .to_df()?,
         };
         df.lazy()
@@ -230,6 +231,8 @@ async fn prepare_query(
           .with_separator(vec_sep[idx])
           .with_infer_schema_length(Some(infer_schema_length))
           .with_encoding(CsvEncoding::LossyUtf8)
+          .with_low_memory(true)
+          .with_skip_lines(skiprows)
           .finish()?;
 
         csv_reader
@@ -304,6 +307,7 @@ pub async fn query(
   write: bool,
   write_format: String,
   output_path: String,
+  skiprows: usize,
 ) -> Result<String, String> {
   let file_path: Vec<&str> = path.split('|').collect();
 
@@ -315,6 +319,7 @@ pub async fn query(
     write,
     &write_format,
     output_path,
+    skiprows
   )
   .await
   {

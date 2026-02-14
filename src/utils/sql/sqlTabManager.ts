@@ -4,6 +4,9 @@ import { v4 as uuidv4 } from "uuid";
 import { invoke } from "@tauri-apps/api/core";
 import { message } from "@/utils/message";
 import { save } from "@tauri-apps/plugin-dialog";
+import { useSkiprows } from "@/store/modules/options";
+
+const skiprows = useSkiprows();
 
 export interface ResultTab {
   id: string;
@@ -81,7 +84,8 @@ export function useSqlTabManager(options: ResultTabOptions) {
         limit: limit.value,
         write,
         writeFormat: writeOptions?.writeFormat || "csv",
-        outputPath: writeOptions?.outputPath || ""
+        outputPath: writeOptions?.outputPath || "",
+        skiprows: skiprows.skiprows
       });
 
       if (!write) {
