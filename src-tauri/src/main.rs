@@ -11,6 +11,7 @@ use insight::cmd::apply;
 use insight::cmd::cat;
 use insight::cmd::convert;
 use insight::cmd::count;
+use insight::cmd::datefmt;
 use insight::cmd::enumerate;
 use insight::cmd::extsort;
 use insight::cmd::fill;
@@ -83,6 +84,7 @@ fn main() {
       convert::perform::json2csv,
       convert::perform::jsonl2csv,
       count::count,
+      datefmt::datefmt,
       enumerate::enumer,
       extsort::extsort,
       fill::fill,

@@ -138,6 +138,12 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/insert"
       },
       {
+        title: "DateFmt",
+        icon: "ri:calendar-line",
+        description: "Format Dates",
+        route: "/command/components/datefmt"
+      },
+      {
         title: "Traverse",
         icon: "ri:align-right",
         description: "Traverse the directory to obtain filenames",

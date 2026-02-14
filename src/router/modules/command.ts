@@ -214,6 +214,15 @@ export default {
       }
     },
     {
+      path: "/command/components/datefmt",
+      name: "datefmt",
+      component: () => import("@/views/command/components/datefmt.vue"),
+      meta: {
+        title: "datefmt",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/traverse",
       name: "traverse",
       component: () => import("@/views/command/components/traverse.vue"),

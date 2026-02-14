@@ -2,6 +2,7 @@ pub mod apply;
 pub mod cat;
 pub mod convert;
 pub mod count;
+pub mod datefmt;
 pub mod enumerate;
 pub mod extsort;
 pub mod fill;
