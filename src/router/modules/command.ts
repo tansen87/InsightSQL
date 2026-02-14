@@ -97,6 +97,15 @@ export default {
       }
     },
     {
+      path: "/command/components/searchChain",
+      name: "search chain",
+      component: () => import("@/views/command/components/searchChain.vue"),
+      meta: {
+        title: "search chain",
+        showLink: false
+      }
+    },
+    {
       path: "/command/components/fill",
       name: "fill",
       component: () => import("@/views/command/components/fill.vue"),

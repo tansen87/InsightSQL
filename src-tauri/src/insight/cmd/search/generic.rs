@@ -427,3 +427,86 @@ where
   wtr.flush()?;
   Ok(total.to_string())
 }
+
+pub(crate) async fn generic_search_chain<E, F>(
+  mut rdr: csv::Reader<BufReader<Box<dyn Read + Send>>>,
+  mut wtr: csv::Writer<BufWriter<File>>,
+  columns: Vec<String>,
+  progress: bool,
+  match_fn: F,
+  emitter: E,
+) -> Result<String, anyhow::Error>
+where
+  E: EventEmitter + Send + Sync + 'static,
+  F: Fn(&[&str]) -> bool + Send + Sync + 'static,
+{
+  if columns.is_empty() {
+    return Err(anyhow::anyhow!("At least one column must be specified"));
+  }
+
+  // 获取列索引（基于 header）
+  let sel = Selection::from_headers(
+    rdr.byte_headers()?,
+    &columns.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+  )?;
+
+  // 写入 header 到输出
+  wtr.write_record(rdr.headers()?)?;
+
+  let rows = Arc::new(AtomicUsize::new(0));
+  let match_rows = Arc::new(AtomicUsize::new(0));
+  let match_rows_clone = Arc::clone(&match_rows);
+  let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
+  let (done_tx, mut done_rx) = oneshot::channel::<usize>();
+
+  let timer_task = if progress {
+    let rows_clone = Arc::clone(&rows);
+    Some(tokio::spawn(async move {
+      let mut interval = tokio::time::interval(std::time::Duration::from_millis(500));
+      loop {
+        tokio::select! {
+            _ = interval.tick() => {
+                let r = rows_clone.load(Ordering::Relaxed);
+                let _ = emitter.emit_update_rows(r).await;
+            },
+            Ok(final_rows) = (&mut done_rx) => {
+                let _ = emitter.emit_update_rows(final_rows).await;
+                break;
+            },
+            _ = (&mut stop_rx) => break,
+        }
+      }
+    }))
+  } else {
+    None
+  };
+
+  let counter_task = tokio::task::spawn_blocking(move || {
+    for result in rdr.records() {
+      let record = result?;
+      let values: Vec<&str> = sel
+        .get_indices()
+        .iter()
+        .map(|&idx| record.get(idx).unwrap_or(""))
+        .collect();
+
+      if match_fn(&values) {
+        wtr.write_record(&record)?;
+        match_rows.fetch_add(1, Ordering::Relaxed);
+      }
+      rows.fetch_add(1, Ordering::Relaxed);
+    }
+
+    let final_rows = rows.load(Ordering::Relaxed);
+    let _ = done_tx.send(final_rows);
+    Ok::<_, anyhow::Error>(wtr.flush()?)
+  });
+
+  counter_task.await??;
+  let _ = stop_tx.send(());
+  if let Some(task) = timer_task {
+    task.await?;
+  }
+
+  Ok(match_rows_clone.load(Ordering::Relaxed).to_string())
+}

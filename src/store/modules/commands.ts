@@ -60,6 +60,12 @@ export const useCommandStore = defineStore("command", {
         route: "/command/components/search"
       },
       {
+        title: "Search Chain",
+        icon: "ri:filter-3-fill",
+        description: "Chain search selects fields that match rows",
+        route: "/command/components/searchChain"
+      },
+      {
         title: "Fill",
         icon: "ri:rhythm-fill",
         description: "Fill empty fields in selected columns of a CSV",

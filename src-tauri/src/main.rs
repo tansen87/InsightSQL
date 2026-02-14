@@ -96,6 +96,7 @@ fn main() {
       replace::replace,
       reverse::reverse,
       search::perform::search,
+      search::perform::search_chain,
       select::select,
       separate::separate,
       skip::skip,

@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 use tauri::AppHandle;
 
 use crate::{
-  cmd::search::{filters, filters_multi},
+  cmd::search::{filters, filters_chain, filters_multi},
   index::Indexed,
   io::csv::{config::CsvConfigBuilder, options::CsvOptions},
   utils::EventEmitter,
@@ -381,7 +381,41 @@ pub async fn search(
     Ok(match_rows) => {
       let end_time = Instant::now();
       let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
-      Ok((match_rows, format!("{elapsed_time:.2}")))
+      Ok((match_rows, format!("{elapsed_time:.0}")))
+    }
+    Err(err) => Err(format!("{err}")),
+  }
+}
+
+#[derive(serde::Deserialize)]
+pub struct ColumnConfig {
+  pub(crate) column: String,
+  pub(crate) mode: String,
+  pub(crate) condition: String,
+}
+
+#[tauri::command]
+pub async fn search_chain(
+  path: String,
+  configs: Vec<ColumnConfig>,
+  logics: Vec<String>,
+  progress: bool,
+  quoting: bool,
+  flexible: bool,
+  skiprows: usize,
+  app_handle: AppHandle,
+) -> Result<(String, String), String> {
+  let start_time = Instant::now();
+
+  match filters_chain::search_with_chain(
+    path, configs, logics, skiprows, quoting, flexible, progress, app_handle,
+  )
+  .await
+  {
+    Ok(match_rows) => {
+      let end_time = Instant::now();
+      let elapsed_time = end_time.duration_since(start_time).as_secs_f64();
+      Ok((match_rows, format!("{elapsed_time:.0}")))
     }
     Err(err) => Err(format!("{err}")),
   }

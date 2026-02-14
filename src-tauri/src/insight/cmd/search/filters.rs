@@ -32,7 +32,6 @@ where
   let match_fn = |value: &str, cond: &[String]| cond.contains(&value.to_string());
   match jobs {
     1 => generic_search(rdr, wtr, column, conditions, progress, match_fn, emitter).await,
-    // _ => generic_parallel_search(opts, &mut idx.unwrap(), wtr, column, conditions, jobs, match_fn).await,
     _ => tokio::task::spawn_blocking(move || {
       generic_parallel_search(
         opts,
