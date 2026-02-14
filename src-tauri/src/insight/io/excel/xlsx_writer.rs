@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use csv::{Reader, StringRecord};
-use polars::{datatypes::AnyValue, frame::DataFrame, series::Series};
-use rust_decimal::Decimal;
+use polars::prelude::Column;
+use polars::{datatypes::AnyValue, frame::DataFrame};
 use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use rust_xlsxwriter::{Format, Workbook};
 
@@ -53,12 +53,13 @@ impl XlsxWriter {
     let worksheet = self.workbook.add_worksheet();
 
     // Ensure that each Series in the DataFrame is a single chunk
-    let rechunk_df = df
-      .iter()
-      .map(|series| Self::rechunk_series(series))
-      .collect::<Vec<_>>()
+    let columns: Vec<Column> = df
+      .columns()
       .into_iter()
-      .collect::<DataFrame>();
+      .map(|series| Self::rechunk_series(series))
+      .collect();
+
+    let rechunk_df = DataFrame::new_infer_height(columns)?;
 
     // write headers to xlsx
     let headers = rechunk_df.get_column_names();
@@ -68,77 +69,67 @@ impl XlsxWriter {
 
     let format = Format::new().set_num_format("0.00");
 
-    // write data to xlsx
-    for (row, row_data) in rechunk_df.iter().enumerate() {
-      for (col, col_data) in row_data.iter().enumerate() {
+    let num_rows = rechunk_df.height();
+    let columns = rechunk_df.columns();
+
+    for row in 0..num_rows {
+      for (col, series) in columns.iter().enumerate() {
+        let col_data = series.get(row)?;
+
         match col_data {
-          AnyValue::Float64(values) => {
-            let decimal_values = Decimal::from_f64(values)
-              .unwrap_or(Decimal::new(0, 0))
+          AnyValue::Float64(val) => {
+            let decimal_values = rust_decimal::Decimal::from_f64(val)
+              .unwrap_or(rust_decimal::Decimal::new(0, 0))
               .round_dp(2)
               .to_f64()
               .unwrap_or(0.0);
             worksheet.write_number_with_format(
-              (col + 1).try_into()?,
-              row.try_into()?,
+              (row + 1).try_into()?,
+              col.try_into()?,
               decimal_values,
               &format,
             )?;
           }
-          AnyValue::Float32(values) => {
-            let decimal_values = Decimal::from_f32(values)
-              .unwrap_or(Decimal::new(0, 0))
+          AnyValue::Float32(val) => {
+            let decimal_values = rust_decimal::Decimal::from_f32(val)
+              .unwrap_or(rust_decimal::Decimal::new(0, 0))
               .round_dp(2)
               .to_f32()
               .unwrap_or(0.0);
             worksheet.write_number_with_format(
-              (col + 1).try_into()?,
-              row.try_into()?,
+              (row + 1).try_into()?,
+              col.try_into()?,
               decimal_values,
               &format,
             )?;
           }
-          AnyValue::String(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values)?;
+          AnyValue::String(val) => {
+            worksheet.write_string((row + 1).try_into()?, col.try_into()?, val)?;
           }
-          AnyValue::Int64(values) => {
-            worksheet.write_number(
-              (col + 1).try_into()?,
-              row.try_into()?,
-              values.to_f64().unwrap_or(0.0),
-            )?;
+          AnyValue::Int64(val) => {
+            worksheet.write_number((row + 1).try_into()?, col.try_into()?, val as f64)?;
           }
-          AnyValue::Int32(values) => {
-            worksheet.write_number(
-              (col + 1).try_into()?,
-              row.try_into()?,
-              values.to_f64().unwrap_or(0.0),
-            )?;
+          AnyValue::Int32(val) => {
+            worksheet.write_number((row + 1).try_into()?, col.try_into()?, val as f64)?;
           }
-          AnyValue::Int16(values) => {
-            worksheet.write_number(
-              (col + 1).try_into()?,
-              row.try_into()?,
-              values.to_f64().unwrap_or(0.0),
-            )?;
+          AnyValue::Int16(val) => {
+            worksheet.write_number((row + 1).try_into()?, col.try_into()?, val as f64)?;
           }
-          AnyValue::Int8(values) => {
-            worksheet.write_number(
-              (col + 1).try_into()?,
-              row.try_into()?,
-              values.to_f64().unwrap_or(0.0),
-            )?;
+          AnyValue::Int8(val) => {
+            worksheet.write_number((row + 1).try_into()?, col.try_into()?, val as f64)?;
           }
-          AnyValue::UInt32(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+          AnyValue::UInt32(val) => {
+            worksheet.write_string((row + 1).try_into()?, col.try_into()?, val.to_string())?;
           }
-          AnyValue::UInt16(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+          AnyValue::UInt16(val) => {
+            worksheet.write_string((row + 1).try_into()?, col.try_into()?, val.to_string())?;
           }
-          AnyValue::UInt8(values) => {
-            worksheet.write_string((col + 1).try_into()?, row.try_into()?, values.to_string())?;
+          AnyValue::UInt8(val) => {
+            worksheet.write_string((row + 1).try_into()?, col.try_into()?, val.to_string())?;
           }
-          _ => {}
+          _ => {
+            worksheet.write_blank((row + 1).try_into()?, col.try_into()?, &format)?;
+          }
         }
       }
     }
@@ -146,8 +137,8 @@ impl XlsxWriter {
     Ok(self.workbook.save(output_path)?)
   }
 
-  fn rechunk_series(series: &Series) -> Series {
-    if series.chunks().len() > 1 {
+  fn rechunk_series(series: &Column) -> Column {
+    if series.n_chunks() > 1 {
       series.rechunk()
     } else {
       series.clone()

@@ -66,7 +66,7 @@ impl ToPolarsDataFrame for Range<Data> {
       .collect();
 
     // constructing DataFrame
-    let df = DataFrame::new(series)?;
+    let df = DataFrame::new_infer_height(series)?;
 
     Ok(df)
   }
@@ -192,6 +192,6 @@ impl FastToDataFrame for FastExcelReader {
       .map(|(col, data)| Column::new(col.into(), data))
       .collect();
 
-    Ok(DataFrame::new(series)?)
+    Ok(DataFrame::new_infer_height(series)?)
   }
 }

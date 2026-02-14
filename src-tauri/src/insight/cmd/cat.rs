@@ -13,7 +13,7 @@ use polars::{
   frame::DataFrame,
   lazy::dsl::{functions::concat_lf_diagonal, lit},
   prelude::{
-    CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, PlPath, SerWriter, UnionArgs, col,
+    CsvWriter, IntoLazy, LazyCsvReader, LazyFileListReader, PlRefPath, SerWriter, UnionArgs, col,
   },
 };
 
@@ -86,7 +86,7 @@ async fn cat_with_polars(
       }
       _ => {
         let p: Arc<Path> = Arc::from(PathBuf::from(file));
-        let csv_reader = LazyCsvReader::new(PlPath::Local(p))
+        let csv_reader = LazyCsvReader::new(PlRefPath::try_from_path(&p)?)
           .with_has_header(true)
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
@@ -116,6 +116,7 @@ async fn cat_with_polars(
       rechunk: true,
       to_supertypes: true,
       diagonal: true,
+      strict: false,
       from_partitioned_ds: false,
       maintain_order: true,
     },

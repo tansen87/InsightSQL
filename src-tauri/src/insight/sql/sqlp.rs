@@ -12,8 +12,7 @@ use anyhow::{Result, anyhow};
 use polars::{
   io::SerReader,
   prelude::{
-    CsvEncoding, CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonReader, JsonWriter, LazyCsvReader,
-    LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, PlPath, SerWriter,
+    CsvEncoding, CsvWriter, DataFrame, IntoLazy, JsonFormat, JsonReader, JsonWriter, LazyCsvReader, LazyFileListReader, LazyFrame, OptFlags, ParquetWriter, PlRefPath, SerWriter
   },
   sql::SQLContext,
 };
@@ -154,7 +153,7 @@ async fn prepare_query(
     false => 10000,
   };
 
-  let mut ctx = SQLContext::new();
+  let ctx = SQLContext::new();
 
   let mut opt_state = OptFlags::from_bits_truncate(0);
   opt_state |= OptFlags::default();
@@ -192,7 +191,7 @@ async fn prepare_query(
     let lf = match file_extension.as_str() {
       "parquet" => {
         let p: Arc<Path> = Arc::from(PathBuf::from(table));
-        LazyFrame::scan_parquet(PlPath::Local(p), Default::default())?
+        LazyFrame::scan_parquet(PlRefPath::try_from_path(&p)?, Default::default())?
       }
       "json" => JsonReader::new(BufReader::new(File::open(table)?))
         .with_json_format(JsonFormat::Json)
@@ -225,7 +224,7 @@ async fn prepare_query(
       }
       "csv" | "tsv" | "psv" | "txt" | "dat" => {
         let p: Arc<Path> = Arc::from(PathBuf::from(table));
-        let csv_reader = LazyCsvReader::new(PlPath::Local(p))
+        let csv_reader = LazyCsvReader::new(PlRefPath::try_from_path(&p)?)
           .with_has_header(true)
           .with_missing_is_null(true)
           .with_separator(vec_sep[idx])
@@ -285,7 +284,7 @@ fn extract_schema(df: &DataFrame) -> HashMap<String, String> {
 }
 
 fn query_df_to_json(mut df: DataFrame) -> Result<String> {
-  if df.is_empty() {
+  if df == DataFrame::empty() {
     let empty_json = serde_json::json!({});
     return Ok(empty_json.to_string());
   }

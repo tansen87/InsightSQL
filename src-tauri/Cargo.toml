@@ -33,7 +33,7 @@ atoi_simd = "0.17.0"
 byteorder = "1.5.0"
 calamine = { version = "0.32.0", features = ["dates"] }
 cpc = "1.9.3"
-chrono = "0.4.42"
+chrono = "^0.4.41"
 crossbeam-channel = "0.5"
 csv = "1.4.0"
 csv-index = "0.1.6"
@@ -51,7 +51,7 @@ memmap2 = "0.9"
 num_cpus = "1"
 odbc-api = "9.0.0"
 pinyin = { version = "0.11.0", features = ["plain"] }
-polars = { version = "0.52.0", features = [
+polars = { version = "0.53.0", features = [
     "cse",
     "sql",
     "lazy",
