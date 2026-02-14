@@ -136,7 +136,7 @@ async fn perform_search<P: AsRef<Path> + Send + Sync + 'static>(
       let mut idx: Option<Indexed<File, File>> = None;
 
       if let Some(threads) = threads {
-        if threads <= 1 {
+        if threads == 1 {
           // 单线程: emit_total_rows
           let total_rows = if progress {
             opts.idx_count_rows().await?
