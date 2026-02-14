@@ -16,7 +16,7 @@ use tokio::sync::oneshot;
 
 use crate::{
   io::csv::options::CsvOptions,
-  utils::{EventEmitter, RDR_BUFFER_SIZE, WTR_BUFFER_SIZE},
+  utils::{self, EventEmitter, RDR_BUFFER_SIZE, WTR_BUFFER_SIZE},
 };
 
 pub async fn skip_csv<E, F, P>(
@@ -120,9 +120,7 @@ pub async fn skip(
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  let skip_rows = skip_rows
-    .parse::<usize>()
-    .map_err(|e| format!("parse skip rows error: {e}"))?;
+  let skip_rows = utils::parse_usize(&skip_rows, "skiprows")?;
 
   for fp in paths.iter() {
     let file_name = Path::new(fp)

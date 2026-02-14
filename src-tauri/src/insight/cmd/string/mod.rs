@@ -27,7 +27,7 @@ pub async fn str_slice(
     path,
     column.as_str(),
     n.parse::<i32>().map_err(|e| e.to_string())?,
-    length.parse::<usize>().map_err(|e| e.to_string())?,
+    crate::utils::parse_usize(&length, "length")?,
     reverse,
     slice_mode,
     quoting,

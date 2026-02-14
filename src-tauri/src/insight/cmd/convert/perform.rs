@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path, time::Instant};
 use anyhow::Result;
 use tauri::AppHandle;
 
-use crate::{cmd::convert, io::csv::options::CsvOptions, utils::EventEmitter};
+use crate::{cmd::convert, io::csv::options::CsvOptions, utils::{self, EventEmitter}};
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
@@ -133,7 +133,7 @@ pub async fn csv2xlsx(
   let start_time = Instant::now();
 
   let paths: Vec<&str> = path.split('|').collect();
-  let chunksize = chunksize.parse::<usize>().map_err(|e| e.to_string())?;
+  let chunksize = utils::parse_usize(&chunksize, "chunksize")?;
   let multi = csv_mode != "one";
 
   for file in paths.iter() {

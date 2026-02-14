@@ -8,8 +8,8 @@ use std::{
 use anyhow::{Result, anyhow};
 use csv::{ReaderBuilder, WriterBuilder};
 
-use crate::io::csv::options::CsvOptions;
 use crate::utils::WTR_BUFFER_SIZE;
+use crate::{io::csv::options::CsvOptions, utils};
 
 /// 将CSV文件拆分为good行和bad行
 ///
@@ -144,7 +144,7 @@ pub async fn separate(
   match separate_csv(
     path,
     quoting,
-    Some(expected_columns.parse::<usize>().unwrap_or(0)),
+    Some(utils::parse_usize(&expected_columns, "expected_columns").unwrap_or(0)),
     skiprows,
   )
   .await
