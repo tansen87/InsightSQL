@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { FolderOpened, Loading, SwitchButton } from "@element-plus/icons-vue";
 import { useDark } from "@pureadmin/utils";
 import { useDynamicHeight } from "@/utils/utils";
@@ -13,8 +14,7 @@ import { useQuoting, useSkiprows } from "@/store/modules/options";
 const mode = ref("polars");
 const modeOptions = [
   { label: "Polars", value: "polars" },
-  { label: "Csv", value: "csv" },
-  { label: "Duplicate", value: "duplicate" }
+  { label: "Csv", value: "csv" }
 ];
 const [columns, backendInfo, path] = [ref(""), ref(""), ref("")];
 const [fileSelect, originalColumns] = [ref([]), ref([])];
@@ -26,8 +26,25 @@ const [isLoading, backendCompleted, dialog] = [
 const { dynamicHeight } = useDynamicHeight(74);
 const { mdShow } = useMarkdown(mdCat);
 const { isDark } = useDark();
-const quotingStore = useQuoting();
-const skiprowsStore = useSkiprows();
+const quoting = useQuoting();
+const skiprows = useSkiprows();
+
+listen("dupler-msg", (event: any) => {
+  const duplerMsg: any = event.payload;
+  fileSelect.value.forEach(file => {
+    if (file.filename === duplerMsg.split("|")[0]) {
+      file.infoMsg = duplerMsg.split("|")[2];
+    }
+  });
+});
+listen("dupler-err", (event: any) => {
+  const duplerErr: string = event.payload;
+  fileSelect.value.forEach(file => {
+    if (file.filename === duplerErr.split("|")[0]) {
+      file.infoMsg = duplerErr.split("|")[1];
+    }
+  });
+});
 
 async function selectFile() {
   columns.value = "";
@@ -41,6 +58,7 @@ async function selectFile() {
     });
     path.value = trimFile.filePath;
     fileSelect.value = trimFile.fileInfo;
+
     message("fetching headers...", {
       type: "info",
       duration: 0,
@@ -48,15 +66,25 @@ async function selectFile() {
     });
     const headers: string[] = await invoke("inter_headers", {
       path: path.value,
-      skiprows: skiprowsStore.skiprows
+      skiprows: skiprows.skiprows
     });
     originalColumns.value = headers.map(header => ({
       label: header,
       value: header
     }));
-    closeAllMessage();
-    backendInfo.value = "headers fetched successfully";
+
+    message("find duplicate headers...", {
+      type: "info",
+      duration: 0,
+      icon: Loading
+    });
+    await invoke("dupli_headers", {
+      path: path.value,
+      skiprows: skiprows.skiprows
+    });
+    backendInfo.value = "find duplicate headers done";
     backendCompleted.value = true;
+    closeAllMessage();
   } catch (err) {
     closeAllMessage();
     message(err.toString(), { type: "error" });
@@ -67,21 +95,6 @@ async function selectFile() {
 async function concatData() {
   if (path.value === "") {
     message("File not selected", { type: "warning" });
-    return;
-  }
-  if (mode.value === "duplicate") {
-    message("find duplicate headers...", {
-      type: "info",
-      duration: 0,
-      icon: Loading
-    });
-    await invoke("dupli_headers", {
-      path: path.value,
-      skiprows: skiprowsStore.skiprows
-    });
-    backendInfo.value = "find duplicate headers done";
-    backendCompleted.value = true;
-    closeAllMessage();
     return;
   }
 
@@ -109,8 +122,8 @@ async function concatData() {
       fileType: saveFileType,
       mode: mode.value,
       useCols: useCols,
-      quoting: quotingStore.quoting,
-      skiprows: skiprowsStore.skiprows
+      quoting: quoting.quoting,
+      skiprows: skiprows.skiprows
     });
     backendInfo.value = `${mode.value} done, elapsed time: ${rtime} s`;
     backendCompleted.value = true;
