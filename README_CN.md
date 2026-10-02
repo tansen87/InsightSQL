@@ -1,6 +1,6 @@
 <h1>insight-x</h1>
 
-### 此项目不再更新,请参考 [csv wings](https://github.com/tansen87/csv-wings) & [Easy Csv](https://github.com/tansen87/easy-csv).
+### 此项目不再更新, 请参考 [easy-csv](https://github.com/tansen87/easy-csv).
 
 [English](./README.md) | 中文
 
